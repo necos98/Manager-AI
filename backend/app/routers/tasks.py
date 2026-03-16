@@ -33,7 +33,7 @@ async def list_tasks(
 async def get_task(project_id: uuid.UUID, task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     service = TaskService(db)
     try:
-        task = await service._get_task_for_project(task_id, project_id)
+        task = await service.get_for_project(task_id, project_id)
     except ValueError:
         raise HTTPException(status_code=404, detail="Resource not found")
     except PermissionError as e:

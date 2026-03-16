@@ -19,7 +19,7 @@ class TaskService:
     async def get_by_id(self, task_id: uuid.UUID) -> Task | None:
         return await self.session.get(Task, task_id)
 
-    async def _get_task_for_project(self, task_id: uuid.UUID, project_id: uuid.UUID) -> Task:
+    async def get_for_project(self, task_id: uuid.UUID, project_id: uuid.UUID) -> Task:
         task = await self.get_by_id(task_id)
         if task is None:
             raise ValueError("Task not found")
@@ -62,7 +62,7 @@ class TaskService:
         new_status: TaskStatus,
         decline_feedback: str | None = None,
     ) -> Task:
-        task = await self._get_task_for_project(task_id, project_id)
+        task = await self.get_for_project(task_id, project_id)
         if new_status == TaskStatus.CANCELED:
             task.status = TaskStatus.CANCELED
             await self.session.flush()
@@ -76,7 +76,7 @@ class TaskService:
         return task
 
     async def update_fields(self, task_id: uuid.UUID, project_id: uuid.UUID, **kwargs) -> Task:
-        task = await self._get_task_for_project(task_id, project_id)
+        task = await self.get_for_project(task_id, project_id)
         for key, value in kwargs.items():
             if value is not None:
                 setattr(task, key, value)
@@ -87,7 +87,7 @@ class TaskService:
         return await self.update_fields(task_id, project_id, name=name)
 
     async def save_plan(self, task_id: uuid.UUID, project_id: uuid.UUID, plan: str) -> Task:
-        task = await self._get_task_for_project(task_id, project_id)
+        task = await self.get_for_project(task_id, project_id)
         if task.status not in (TaskStatus.NEW, TaskStatus.DECLINED):
             raise ValueError(f"Can only save plan for tasks in New or Declined status, got {task.status.value}")
         task.plan = plan
@@ -96,7 +96,7 @@ class TaskService:
         return task
 
     async def complete_task(self, task_id: uuid.UUID, project_id: uuid.UUID, recap: str) -> Task:
-        task = await self._get_task_for_project(task_id, project_id)
+        task = await self.get_for_project(task_id, project_id)
         if task.status != TaskStatus.ACCEPTED:
             raise ValueError(f"Can only complete tasks in Accepted status, got {task.status.value}")
         task.recap = recap
@@ -105,7 +105,7 @@ class TaskService:
         return task
 
     async def delete(self, task_id: uuid.UUID, project_id: uuid.UUID) -> bool:
-        task = await self._get_task_for_project(task_id, project_id)
+        task = await self.get_for_project(task_id, project_id)
         await self.session.delete(task)
         await self.session.flush()
         return True
