@@ -16,6 +16,11 @@ app.add_middleware(
 app.include_router(projects.router)
 app.include_router(tasks.router)
 
+from app.mcp.server import mcp
+
+# Mount MCP server on /mcp using Streamable HTTP
+app.mount("/mcp", mcp.streamable_http_app())
+
 
 @app.get("/health")
 async def health():
