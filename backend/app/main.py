@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.mcp.server import mcp
 from app.routers import projects, tasks
 
 app = FastAPI(title="Manager AI", version="0.1.0")
@@ -15,8 +16,6 @@ app.add_middleware(
 
 app.include_router(projects.router)
 app.include_router(tasks.router)
-
-from app.mcp.server import mcp
 
 # Mount MCP server on /mcp using Streamable HTTP
 app.mount("/mcp", mcp.streamable_http_app())

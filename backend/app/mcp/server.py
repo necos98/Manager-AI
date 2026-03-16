@@ -16,7 +16,11 @@ async def get_next_task(project_id: str) -> dict | None:
     """
     async with async_session() as session:
         task_service = TaskService(session)
-        task = await task_service.get_next_task(uuid.UUID(project_id))
+        try:
+            pid = uuid.UUID(project_id)
+        except ValueError:
+            return {"error": f"Invalid project_id: {project_id!r}"}
+        task = await task_service.get_next_task(pid)
         if task is None:
             return None
         result = {
@@ -74,7 +78,11 @@ async def get_project_context(project_id: str) -> dict:
     """Get project information (name, path, description)."""
     async with async_session() as session:
         project_service = ProjectService(session)
-        project = await project_service.get_by_id(uuid.UUID(project_id))
+        try:
+            pid = uuid.UUID(project_id)
+        except ValueError:
+            return {"error": f"Invalid project_id: {project_id!r}"}
+        project = await project_service.get_by_id(pid)
         if project is None:
             return {"error": "Project not found"}
         return {
