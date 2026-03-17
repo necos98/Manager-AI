@@ -4,7 +4,7 @@ import { api } from "../api/client";
 
 export default function NewProjectPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", path: "", description: "" });
+  const [form, setForm] = useState({ name: "", path: "", description: "", tech_stack: "" });
   const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
@@ -51,6 +51,16 @@ export default function NewProjectPage() {
             className="w-full border rounded px-3 py-2"
             rows={4}
             placeholder="Describe the project context..."
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Tech Stack</label>
+          <textarea
+            value={form.tech_stack}
+            onChange={(e) => setForm({ ...form, tech_stack: e.target.value })}
+            className="w-full border rounded px-3 py-2"
+            rows={3}
+            placeholder="Languages, frameworks, databases, infra… e.g. Python 3.12, FastAPI, PostgreSQL, React, Tailwind"
           />
         </div>
         <div className="flex gap-3">
