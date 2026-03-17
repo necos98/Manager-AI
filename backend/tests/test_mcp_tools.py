@@ -1,4 +1,5 @@
 import uuid
+from contextlib import asynccontextmanager
 
 import pytest
 import pytest_asyncio
@@ -6,12 +7,14 @@ import pytest_asyncio
 from app.models.task import TaskStatus
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
+import app.mcp.server as mcp_server
+from unittest.mock import patch
 
 
 @pytest_asyncio.fixture
 async def project(db_session):
     service = ProjectService(db_session)
-    return await service.create(name="MCP Test", path="/tmp/mcp", description="MCP test project")
+    return await service.create(name="MCP Test", path="/tmp/mcp", description="MCP test project", tech_stack="Python, FastAPI")
 
 
 @pytest.fixture
@@ -81,6 +84,26 @@ async def test_mcp_project_context(project_service, project):
     assert fetched.name == "MCP Test"
     assert fetched.path == "/tmp/mcp"
     assert fetched.description == "MCP test project"
+    assert fetched.tech_stack == "Python, FastAPI"
+
+
+@pytest.mark.asyncio
+async def test_mcp_get_project_context_includes_tech_stack(db_session, project):
+    """get_project_context tool returns tech_stack in its dict"""
+
+    @asynccontextmanager
+    async def fake_session():
+        yield db_session
+
+    class MockSessionmaker:
+        def __call__(self):
+            return fake_session()
+
+    with patch("app.mcp.server.async_session", MockSessionmaker()):
+        result = await mcp_server.get_project_context(str(project.id))
+
+    assert result["tech_stack"] == "Python, FastAPI"
+    assert result["name"] == "MCP Test"
 
 
 @pytest.mark.asyncio

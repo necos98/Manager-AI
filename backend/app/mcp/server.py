@@ -75,7 +75,7 @@ async def get_task_status(project_id: str, task_id: str) -> dict:
 
 @mcp.tool()
 async def get_project_context(project_id: str) -> dict:
-    """Get project information (name, path, description)."""
+    """Get project information (name, path, description, tech_stack)."""
     async with async_session() as session:
         project_service = ProjectService(session)
         try:
@@ -90,6 +90,7 @@ async def get_project_context(project_id: str) -> dict:
             "name": project.name,
             "path": project.path,
             "description": project.description,
+            "tech_stack": project.tech_stack,
         }
 
 
