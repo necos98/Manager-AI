@@ -68,3 +68,34 @@ async def test_delete_project(client):
     project_id = create_resp.json()["id"]
     response = await client.delete(f"/api/projects/{project_id}")
     assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_create_project_with_tech_stack(client):
+    response = await client.post(
+        "/api/projects",
+        json={"name": "Test", "path": "/tmp/test", "tech_stack": "Python, FastAPI"},
+    )
+    assert response.status_code == 201
+    assert response.json()["tech_stack"] == "Python, FastAPI"
+
+
+@pytest.mark.asyncio
+async def test_create_project_tech_stack_defaults_to_empty(client):
+    response = await client.post("/api/projects", json={"name": "Test", "path": "/tmp"})
+    assert response.status_code == 201
+    assert response.json()["tech_stack"] == ""
+
+
+@pytest.mark.asyncio
+async def test_update_project_tech_stack(client):
+    create_resp = await client.post(
+        "/api/projects",
+        json={"name": "Test", "path": "/tmp", "tech_stack": "Python"},
+    )
+    project_id = create_resp.json()["id"]
+    response = await client.put(
+        f"/api/projects/{project_id}", json={"tech_stack": "Python, React"}
+    )
+    assert response.status_code == 200
+    assert response.json()["tech_stack"] == "Python, React"

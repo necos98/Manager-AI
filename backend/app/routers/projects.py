@@ -21,7 +21,9 @@ async def _enrich_project(service: ProjectService, project) -> dict:
 @router.post("", response_model=ProjectResponse, status_code=201)
 async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
-    project = await service.create(name=data.name, path=data.path, description=data.description)
+    project = await service.create(
+        name=data.name, path=data.path, description=data.description, tech_stack=data.tech_stack
+    )
     await db.commit()
     return await _enrich_project(service, project)
 

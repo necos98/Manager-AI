@@ -47,3 +47,22 @@ async def test_delete_project(db_session):
     deleted = await service.delete(project.id)
     assert deleted is True
     assert await service.get_by_id(project.id) is None
+
+
+async def test_create_project_with_tech_stack(db_session):
+    service = ProjectService(db_session)
+    project = await service.create(name="Test", path="/tmp/test", tech_stack="Python, FastAPI")
+    assert project.tech_stack == "Python, FastAPI"
+
+
+async def test_create_project_tech_stack_defaults_to_empty(db_session):
+    service = ProjectService(db_session)
+    project = await service.create(name="Test", path="/tmp/test")
+    assert project.tech_stack == ""
+
+
+async def test_update_project_tech_stack(db_session):
+    service = ProjectService(db_session)
+    project = await service.create(name="Test", path="/tmp/test", tech_stack="Python")
+    updated = await service.update(project.id, tech_stack="Python, FastAPI, React")
+    assert updated.tech_stack == "Python, FastAPI, React"
