@@ -6,7 +6,7 @@ from app.database import async_session
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
 
-mcp = FastMCP("Manager AI")
+mcp = FastMCP("Manager AI", streamable_http_path="/")
 
 
 @mcp.tool()
