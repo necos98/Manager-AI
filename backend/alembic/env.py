@@ -2,11 +2,10 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config import settings
-from app.database import Base
+from app.database import Base, ensure_data_dir
 from app.models import Project, Task  # noqa: F401 — ensure models are registered
 
 config = context.config
@@ -23,13 +22,13 @@ def run_migrations_offline():
 
 
 def do_run_migrations(connection):
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(connection=connection, target_metadata=target_metadata, render_as_batch=True)
     with context.begin_transaction():
-        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         context.run_migrations()
 
 
 async def run_migrations_online():
+    ensure_data_dir()
     connectable = create_async_engine(settings.database_url)
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
