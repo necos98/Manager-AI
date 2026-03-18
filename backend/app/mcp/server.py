@@ -1,5 +1,3 @@
-import uuid
-
 from mcp.server.fastmcp import FastMCP
 
 from app.database import async_session
@@ -16,15 +14,11 @@ async def get_next_task(project_id: str) -> dict | None:
     """
     async with async_session() as session:
         task_service = TaskService(session)
-        try:
-            pid = uuid.UUID(project_id)
-        except ValueError:
-            return {"error": f"Invalid project_id: {project_id!r}"}
-        task = await task_service.get_next_task(pid)
+        task = await task_service.get_next_task(project_id)
         if task is None:
             return None
         result = {
-            "id": str(task.id),
+            "id": task.id,
             "description": task.description,
             "status": task.status.value,
         }
@@ -39,14 +33,14 @@ async def get_task_details(project_id: str, task_id: str) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
         try:
-            task = await task_service.get_for_project(uuid.UUID(task_id), uuid.UUID(project_id))
+            task = await task_service.get_for_project(task_id, project_id)
         except ValueError:
             return {"error": "Task not found"}
         except PermissionError as e:
             return {"error": str(e)}
         return {
-            "id": str(task.id),
-            "project_id": str(task.project_id),
+            "id": task.id,
+            "project_id": task.project_id,
             "name": task.name,
             "description": task.description,
             "status": task.status.value,
@@ -65,12 +59,12 @@ async def get_task_status(project_id: str, task_id: str) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
         try:
-            task = await task_service.get_for_project(uuid.UUID(task_id), uuid.UUID(project_id))
+            task = await task_service.get_for_project(task_id, project_id)
         except ValueError:
             return {"error": "Task not found"}
         except PermissionError as e:
             return {"error": str(e)}
-        return {"id": str(task.id), "status": task.status.value}
+        return {"id": task.id, "status": task.status.value}
 
 
 @mcp.tool()
@@ -78,15 +72,11 @@ async def get_project_context(project_id: str) -> dict:
     """Get project information (name, path, description, tech_stack)."""
     async with async_session() as session:
         project_service = ProjectService(session)
-        try:
-            pid = uuid.UUID(project_id)
-        except ValueError:
-            return {"error": f"Invalid project_id: {project_id!r}"}
-        project = await project_service.get_by_id(pid)
+        project = await project_service.get_by_id(project_id)
         if project is None:
             return {"error": "Project not found"}
         return {
-            "id": str(project.id),
+            "id": project.id,
             "name": project.name,
             "path": project.path,
             "description": project.description,
@@ -100,9 +90,9 @@ async def set_task_name(project_id: str, task_id: str, name: str) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
         try:
-            task = await task_service.set_name(uuid.UUID(task_id), uuid.UUID(project_id), name)
+            task = await task_service.set_name(task_id, project_id, name)
             await session.commit()
-            return {"id": str(task.id), "name": task.name}
+            return {"id": task.id, "name": task.name}
         except (ValueError, PermissionError) as e:
             await session.rollback()
             return {"error": str(e)}
@@ -110,13 +100,26 @@ async def set_task_name(project_id: str, task_id: str, name: str) -> dict:
 
 @mcp.tool()
 async def save_task_plan(project_id: str, task_id: str, plan: str) -> dict:
-    """Save a markdown plan for a task and set status to Planned. Only works for tasks in New or Declined status."""
+    """Save a markdown plan for a task and set status to Planned. Only works for tasks in New or Declined status.
+
+    IMPORTANT: After saving a plan, you MUST stop and wait for the user to approve or decline
+    the plan via the frontend. Do NOT proceed with implementation until the task status
+    changes to 'Accepted'. Poll get_task_status to check, but only after the user tells you
+    they have reviewed the plan.
+    """
     async with async_session() as session:
         task_service = TaskService(session)
         try:
-            task = await task_service.save_plan(uuid.UUID(task_id), uuid.UUID(project_id), plan)
+            task = await task_service.save_plan(task_id, project_id, plan)
             await session.commit()
-            return {"id": str(task.id), "status": task.status.value, "plan": task.plan}
+            return {
+                "id": task.id,
+                "status": task.status.value,
+                "plan": task.plan,
+                "message": "Plan saved. STOP HERE — do NOT proceed with implementation. "
+                "The user must review and approve this plan in the frontend before you can continue. "
+                "Wait for the user to confirm approval, then check the task status with get_task_status.",
+            }
         except (ValueError, PermissionError) as e:
             await session.rollback()
             return {"error": str(e)}
@@ -128,9 +131,9 @@ async def complete_task(project_id: str, task_id: str, recap: str) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
         try:
-            task = await task_service.complete_task(uuid.UUID(task_id), uuid.UUID(project_id), recap)
+            task = await task_service.complete_task(task_id, project_id, recap)
             await session.commit()
-            return {"id": str(task.id), "status": task.status.value, "recap": task.recap}
+            return {"id": task.id, "status": task.status.value, "recap": task.recap}
         except (ValueError, PermissionError) as e:
             await session.rollback()
             return {"error": str(e)}

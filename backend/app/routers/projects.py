@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,7 +34,7 @@ async def list_projects(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
-async def get_project(project_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_project(project_id: str, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
     if project is None:
@@ -45,7 +43,7 @@ async def get_project(project_id: uuid.UUID, db: AsyncSession = Depends(get_db))
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
-async def update_project(project_id: uuid.UUID, data: ProjectUpdate, db: AsyncSession = Depends(get_db)):
+async def update_project(project_id: str, data: ProjectUpdate, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.update(project_id, **data.model_dump(exclude_unset=True))
     if project is None:
@@ -56,7 +54,7 @@ async def update_project(project_id: uuid.UUID, data: ProjectUpdate, db: AsyncSe
 
 
 @router.delete("/{project_id}", status_code=204)
-async def delete_project(project_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def delete_project(project_id: str, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     deleted = await service.delete(project_id)
     if not deleted:

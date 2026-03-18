@@ -1,5 +1,3 @@
-import uuid
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,10 +18,10 @@ class ProjectService:
         result = await self.session.execute(select(Project).order_by(Project.created_at.desc()))
         return list(result.scalars().all())
 
-    async def get_by_id(self, project_id: uuid.UUID) -> Project | None:
+    async def get_by_id(self, project_id: str) -> Project | None:
         return await self.session.get(Project, project_id)
 
-    async def update(self, project_id: uuid.UUID, **kwargs) -> Project | None:
+    async def update(self, project_id: str, **kwargs) -> Project | None:
         project = await self.get_by_id(project_id)
         if project is None:
             return None
@@ -33,7 +31,7 @@ class ProjectService:
         await self.session.flush()
         return project
 
-    async def delete(self, project_id: uuid.UUID) -> bool:
+    async def delete(self, project_id: str) -> bool:
         project = await self.get_by_id(project_id)
         if project is None:
             return False
@@ -41,10 +39,10 @@ class ProjectService:
         await self.session.flush()
         return True
 
-    async def get_task_counts(self, project_id: uuid.UUID) -> dict[str, int]:
+    async def get_task_counts(self, project_id: str) -> dict[str, int]:
         from sqlalchemy import func as sqlfunc, select as sqlselect
 
-        from app.models.task import Task, TaskStatus
+        from app.models.task import Task
 
         result = await self.session.execute(
             sqlselect(Task.status, sqlfunc.count())

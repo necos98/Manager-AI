@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -22,8 +21,8 @@ class TaskStatusUpdate(BaseModel):
 
 
 class TaskResponse(BaseModel):
-    id: uuid.UUID
-    project_id: uuid.UUID
+    id: str
+    project_id: str
     name: str | None
     description: str
     status: TaskStatus
