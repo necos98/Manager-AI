@@ -6,6 +6,7 @@ Starts both the FastAPI backend and the Vite frontend dev server.
 Press Ctrl+C to stop both.
 """
 
+import os
 import platform
 import shutil
 import signal
@@ -13,8 +14,25 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+try:
+    from dotenv import load_dotenv
+    _HAS_DOTENV = True
+except ImportError:
+    _HAS_DOTENV = False
 
 ROOT = Path(__file__).resolve().parent
+
+if _HAS_DOTENV:
+    load_dotenv(ROOT / ".env")
+else:
+    # Fallback: parse .env manually for BACKEND_PORT
+    _env_file = ROOT / ".env"
+    if _env_file.exists():
+        for line in _env_file.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, _, val = line.partition("=")
+                os.environ.setdefault(key.strip(), val.strip())
 BACKEND_DIR = ROOT / "backend"
 FRONTEND_DIR = ROOT / "frontend"
 VENV_DIR = ROOT / "venv"
@@ -78,6 +96,8 @@ def run_migrations():
 
 
 def main():
+    backend_port = int(os.environ.get("BACKEND_PORT", 8000))
+
     check_prerequisites()
     setup_venv()
     setup_frontend()
@@ -87,7 +107,7 @@ def main():
     print("=" * 50)
     print("  Manager AI")
     print("  Frontend: http://localhost:5173")
-    print("  Backend:  http://localhost:8000")
+    print(f"  Backend:  http://localhost:{backend_port}")
     print("  Press Ctrl+C to stop")
     print("=" * 50)
     print()
@@ -99,16 +119,18 @@ def main():
             "app.main:app",
             "--reload",
             "--host", "127.0.0.1",
-            "--port", "8000",
+            "--port", str(backend_port),
         ],
         cwd=str(BACKEND_DIR),
     )
 
-    # Start frontend
+    # Start frontend — pass backend URL so Vite proxy points to the right port
     npm_cmd = "npm.cmd" if IS_WINDOWS else "npm"
+    frontend_env = {**os.environ, "BACKEND_URL": f"http://localhost:{backend_port}"}
     frontend_proc = subprocess.Popen(
         [npm_cmd, "run", "dev"],
         cwd=str(FRONTEND_DIR),
+        env=frontend_env,
     )
 
     processes = [backend_proc, frontend_proc]
