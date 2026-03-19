@@ -28,53 +28,54 @@ def project_service(db_session):
 
 
 @pytest.mark.asyncio
-async def test_mcp_get_next_task_flow(task_service, project):
-    """Simulates the full MCP flow: get_next_task → set_name → save_plan"""
-    await task_service.create(project_id=project.id, description="Low priority task", priority=3)
-    await task_service.create(project_id=project.id, description="High priority task", priority=1)
+async def test_mcp_autonomous_workflow(task_service, project):
+    """Simulates full autonomous flow: create_spec → create_plan → accept → complete"""
+    task = await task_service.create(project_id=project.id, description="Feature Z", priority=1)
 
-    task = await task_service.get_next_task(project.id)
-    assert task.description == "High priority task"
+    # Claude writes spec
+    await task_service.create_spec(task.id, project.id, "# Spec\n\nBuild feature Z.")
+    assert task.status == TaskStatus.REASONING
+    assert task.specification == "# Spec\n\nBuild feature Z."
 
-    await task_service.set_name(task.id, project.id, "Important Feature")
-    assert task.name == "Important Feature"
+    # Claude refines spec after user feedback
+    await task_service.edit_spec(task.id, project.id, "# Spec v2\n\nBuild feature Z with extra.")
+    assert task.specification == "# Spec v2\n\nBuild feature Z with extra."
+    assert task.status == TaskStatus.REASONING
 
-    await task_service.save_plan(task.id, project.id, "# Plan\n\nStep 1: Do it")
-    assert task.status == TaskStatus.PLANNED
-    assert task.plan == "# Plan\n\nStep 1: Do it"
-
-
-@pytest.mark.asyncio
-async def test_mcp_decline_and_replan_flow(task_service, project):
-    """Simulates: plan → decline with feedback → get_next_task returns declined → replan"""
-    task = await task_service.create(project_id=project.id, description="Feature X", priority=1)
-
-    await task_service.save_plan(task.id, project.id, "# Plan v1")
+    # Claude writes plan
+    await task_service.create_plan(task.id, project.id, "# Plan\n\nStep 1: Do it.")
     assert task.status == TaskStatus.PLANNED
 
-    await task_service.update_status(task.id, project.id, TaskStatus.DECLINED, decline_feedback="Need more detail")
-    assert task.status == TaskStatus.DECLINED
-    assert task.decline_feedback == "Need more detail"
+    # User approves in conversation, Claude accepts
+    await task_service.accept_task(task.id, project.id)
+    assert task.status == TaskStatus.ACCEPTED
 
-    next_task = await task_service.get_next_task(project.id)
-    assert next_task.id == task.id
-    assert next_task.decline_feedback == "Need more detail"
-
-    await task_service.save_plan(task.id, project.id, "# Plan v2\n\nMore detailed plan")
-    assert task.status == TaskStatus.PLANNED
+    # Claude completes
+    result = await task_service.complete_task(task.id, project.id, "Done.")
+    assert result.status == TaskStatus.FINISHED
 
 
 @pytest.mark.asyncio
 async def test_mcp_complete_flow(task_service, project):
-    """Simulates: plan → accept → complete with recap"""
+    """Simulates: spec → plan → accept → complete with recap"""
     task = await task_service.create(project_id=project.id, description="Feature Y", priority=1)
-    await task_service.save_plan(task.id, project.id, "# Plan")
-    await task_service.update_status(task.id, project.id, TaskStatus.ACCEPTED)
+    await task_service.create_spec(task.id, project.id, "# Spec")
+    await task_service.create_plan(task.id, project.id, "# Plan")
+    await task_service.accept_task(task.id, project.id)
     assert task.status == TaskStatus.ACCEPTED
 
     result = await task_service.complete_task(task.id, project.id, "Implemented feature Y successfully")
     assert result.status == TaskStatus.FINISHED
     assert result.recap == "Implemented feature Y successfully"
+
+
+@pytest.mark.asyncio
+async def test_mcp_cancel_flow(task_service, project):
+    """Claude can cancel from any status"""
+    task = await task_service.create(project_id=project.id, description="Cancel me", priority=1)
+    await task_service.create_spec(task.id, project.id, "# Spec")
+    result = await task_service.cancel_task(task.id, project.id)
+    assert result.status == TaskStatus.CANCELED
 
 
 @pytest.mark.asyncio
@@ -107,6 +108,29 @@ async def test_mcp_get_project_context_includes_tech_stack(db_session, project):
 
 
 @pytest.mark.asyncio
+async def test_mcp_get_task_details_includes_specification(db_session, project):
+    """get_task_details returns specification field"""
+    task_service = TaskService(db_session)
+    task = await task_service.create(project_id=project.id, description="Spec task", priority=1)
+    await task_service.create_spec(task.id, project.id, "# My Spec")
+    await db_session.refresh(task)  # populate server_default fields (created_at, updated_at)
+
+    @asynccontextmanager
+    async def fake_session():
+        yield db_session
+
+    class MockSessionmaker:
+        def __call__(self):
+            return fake_session()
+
+    with patch("app.mcp.server.async_session", MockSessionmaker()):
+        result = await mcp_server.get_task_details(str(project.id), str(task.id))
+
+    assert result["specification"] == "# My Spec"
+    assert result["status"] == "Reasoning"
+
+
+@pytest.mark.asyncio
 async def test_mcp_task_project_validation(task_service, project):
     """All MCP tools must validate project_id ownership"""
     task = await task_service.create(project_id=project.id, description="Test", priority=1)
@@ -116,7 +140,7 @@ async def test_mcp_task_project_validation(task_service, project):
         await task_service.set_name(task.id, fake_project_id, "Name")
 
     with pytest.raises(PermissionError, match="does not belong"):
-        await task_service.save_plan(task.id, fake_project_id, "Plan")
+        await task_service.create_spec(task.id, fake_project_id, "Spec")
 
     with pytest.raises(PermissionError, match="does not belong"):
         await task_service.complete_task(task.id, fake_project_id, "Recap")
