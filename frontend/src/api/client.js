@@ -20,6 +20,7 @@ export const api = {
   createProject: (data) => request("/projects", { method: "POST", body: JSON.stringify(data) }),
   updateProject: (id, data) => request(`/projects/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteProject: (id) => request(`/projects/${id}`, { method: "DELETE" }),
+  installManagerJson: (id) => request(`/projects/${id}/install-manager-json`, { method: "POST" }),
 
   // Tasks
   listTasks: (projectId, status) => {

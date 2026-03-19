@@ -1,3 +1,6 @@
+import json
+import os
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -60,3 +63,15 @@ async def delete_project(project_id: str, db: AsyncSession = Depends(get_db)):
     if not deleted:
         raise HTTPException(status_code=404, detail="Resource not found")
     await db.commit()
+
+
+@router.post("/{project_id}/install-manager-json", status_code=200)
+async def install_manager_json(project_id: str, db: AsyncSession = Depends(get_db)):
+    service = ProjectService(db)
+    project = await service.get_by_id(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    dest = os.path.join(project.path, "manager.json")
+    with open(dest, "w", encoding="utf-8") as f:
+        json.dump({"project_id": project.id}, f, indent=2)
+    return {"path": dest}

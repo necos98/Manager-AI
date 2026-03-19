@@ -15,6 +15,9 @@ export default function ProjectDetailPage() {
   const [editForm, setEditForm] = useState({ name: "", path: "", description: "", tech_stack: "" });
   const [editError, setEditError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [showMcpSetup, setShowMcpSetup] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const [installMsg, setInstallMsg] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -120,13 +123,61 @@ export default function ProjectDetailPage() {
           <>
             <div className="flex items-start justify-between">
               <h1 className="text-2xl font-bold">{project.name}</h1>
-              <button
-                onClick={startEditing}
-                className="text-sm text-blue-600 hover:text-blue-800 px-3 py-1 rounded border border-blue-200 hover:bg-blue-50"
-              >
-                Edit
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const blob = new Blob(
+                      [JSON.stringify({ project_id: project.id }, null, 2)],
+                      { type: "application/json" }
+                    );
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "manager.json";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="text-sm text-green-600 hover:text-green-800 px-3 py-1 rounded border border-green-200 hover:bg-green-50"
+                >
+                  Export manager.json
+                </button>
+                <button
+                  disabled={installing}
+                  onClick={async () => {
+                    setInstalling(true);
+                    setInstallMsg(null);
+                    try {
+                      const res = await api.installManagerJson(project.id);
+                      setInstallMsg({ ok: true, text: `Installed → ${res.path}` });
+                    } catch (err) {
+                      setInstallMsg({ ok: false, text: err.message });
+                    } finally {
+                      setInstalling(false);
+                    }
+                  }}
+                  className="text-sm text-teal-600 hover:text-teal-800 px-3 py-1 rounded border border-teal-200 hover:bg-teal-50 disabled:opacity-50"
+                >
+                  {installing ? "Installing..." : "Install manager.json"}
+                </button>
+                <button
+                  onClick={() => setShowMcpSetup(true)}
+                  className="text-sm text-purple-600 hover:text-purple-800 px-3 py-1 rounded border border-purple-200 hover:bg-purple-50"
+                >
+                  MCP Setup
+                </button>
+                <button
+                  onClick={startEditing}
+                  className="text-sm text-blue-600 hover:text-blue-800 px-3 py-1 rounded border border-blue-200 hover:bg-blue-50"
+                >
+                  Edit
+                </button>
+              </div>
             </div>
+            {installMsg && (
+              <p className={`text-xs mt-1 ${installMsg.ok ? "text-teal-700" : "text-red-600"}`}>
+                {installMsg.text}
+              </p>
+            )}
             <p className="text-sm text-gray-500 font-mono">{project.path}</p>
             {project.description && <p className="text-gray-600 mt-2">{project.description}</p>}
             {project.tech_stack && (
@@ -162,6 +213,82 @@ export default function ProjectDetailPage() {
       </div>
 
       <TaskList tasks={tasks} projectId={id} />
+
+      {showMcpSetup && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowMcpSetup(false); }}
+        >
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-bold">MCP Server Setup</h2>
+              <button
+                onClick={() => setShowMcpSetup(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <h3 className="font-medium text-sm text-gray-700 mb-1">Endpoint URL</h3>
+                <code className="block bg-gray-100 rounded px-3 py-2 text-sm font-mono break-all">
+                  http://localhost:8000/mcp/
+                </code>
+              </div>
+
+              <div>
+                <h3 className="font-medium text-sm text-gray-700 mb-2">Claude Code</h3>
+                <p className="text-sm text-gray-500 mb-2">
+                  Run this command in your terminal:
+                </p>
+                <pre className="bg-gray-100 rounded px-3 py-2 text-sm font-mono overflow-x-auto whitespace-pre">claude mcp add --transport http ManagerAi http://localhost:8000/mcp/</pre>
+              </div>
+
+              <div>
+                <h3 className="font-medium text-sm text-gray-700 mb-2">Other MCP Clients</h3>
+                <p className="text-sm text-gray-500 mb-2">
+                  Add this to your client configuration (Streamable HTTP):
+                </p>
+                <pre className="bg-gray-100 rounded px-3 py-2 text-sm font-mono overflow-x-auto whitespace-pre">
+{JSON.stringify({
+  mcpServers: {
+    "ManagerAi": {
+      type: "url",
+      url: "http://localhost:8000/mcp/"
+    }
+  }
+}, null, 2)}
+                </pre>
+              </div>
+
+              <div>
+                <h3 className="font-medium text-sm text-gray-700 mb-1">Project ID</h3>
+                <p className="text-sm text-gray-500 mb-2">
+                  Most tools require the <code className="bg-gray-100 px-1 rounded">project_id</code> parameter. Use:
+                </p>
+                <code className="block bg-gray-100 rounded px-3 py-2 text-sm font-mono break-all">
+                  {project.id}
+                </code>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <p className="text-sm text-blue-800">
+                  <span className="font-medium">Tip:</span> Use the "Export manager.json" button to download a file containing the project ID. Place it in the root of your project so your AI agent can read it automatically.
+                </p>
+              </div>
+            </div>
+            <div className="p-4 border-t">
+              <button
+                onClick={() => setShowMcpSetup(false)}
+                className="w-full px-4 py-2 rounded border hover:bg-gray-50 text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
