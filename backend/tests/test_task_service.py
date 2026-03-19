@@ -153,3 +153,150 @@ async def test_task_project_mismatch(db_session, project):
     other_project_id = uuid.uuid4()
     with pytest.raises(PermissionError, match="does not belong"):
         await service.set_name(task.id, other_project_id, "Name")
+
+
+# ── create_spec ──────────────────────────────────────────────────────────────
+
+async def test_create_spec_from_new(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Spec me", priority=1)
+    updated = await service.create_spec(task.id, project.id, "# Spec\n\nDo X.")
+    assert updated.specification == "# Spec\n\nDo X."
+    assert updated.status == TaskStatus.REASONING
+
+
+async def test_create_spec_from_declined(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Respec me", priority=1)
+    task.status = TaskStatus.DECLINED
+    await db_session.flush()
+    updated = await service.create_spec(task.id, project.id, "# New Spec")
+    assert updated.status == TaskStatus.REASONING
+
+
+async def test_create_spec_invalid_status(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Already reasoning", priority=1)
+    task.status = TaskStatus.REASONING
+    await db_session.flush()
+    with pytest.raises(ValueError, match="New or Declined"):
+        await service.create_spec(task.id, project.id, "# Spec")
+
+
+async def test_create_spec_blank_raises(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Test", priority=1)
+    with pytest.raises(ValueError, match="blank"):
+        await service.create_spec(task.id, project.id, "   ")
+
+
+# ── edit_spec ─────────────────────────────────────────────────────────────────
+
+async def test_edit_spec(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Edit spec", priority=1)
+    await service.create_spec(task.id, project.id, "# Original")
+    updated = await service.edit_spec(task.id, project.id, "# Updated Spec")
+    assert updated.specification == "# Updated Spec"
+    assert updated.status == TaskStatus.REASONING
+
+
+async def test_edit_spec_wrong_status(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Not reasoning", priority=1)
+    with pytest.raises(ValueError, match="Reasoning status"):
+        await service.edit_spec(task.id, project.id, "# Spec")
+
+
+async def test_edit_spec_blank_raises(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Test", priority=1)
+    task.status = TaskStatus.REASONING
+    await db_session.flush()
+    with pytest.raises(ValueError, match="blank"):
+        await service.edit_spec(task.id, project.id, "")
+
+
+# ── create_plan ───────────────────────────────────────────────────────────────
+
+async def test_create_plan_from_reasoning(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Plan me", priority=1)
+    await service.create_spec(task.id, project.id, "# Spec")
+    updated = await service.create_plan(task.id, project.id, "# Plan\n\nStep 1.")
+    assert updated.plan == "# Plan\n\nStep 1."
+    assert updated.status == TaskStatus.PLANNED
+
+
+async def test_create_plan_wrong_status(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Not reasoned", priority=1)
+    with pytest.raises(ValueError, match="Reasoning status"):
+        await service.create_plan(task.id, project.id, "# Plan")
+
+
+async def test_create_plan_blank_raises(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Test", priority=1)
+    task.status = TaskStatus.REASONING
+    await db_session.flush()
+    with pytest.raises(ValueError, match="blank"):
+        await service.create_plan(task.id, project.id, "  ")
+
+
+# ── edit_plan ─────────────────────────────────────────────────────────────────
+
+async def test_edit_plan(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Edit plan", priority=1)
+    await service.create_spec(task.id, project.id, "# Spec")
+    await service.create_plan(task.id, project.id, "# Plan v1")
+    updated = await service.edit_plan(task.id, project.id, "# Plan v2")
+    assert updated.plan == "# Plan v2"
+    assert updated.status == TaskStatus.PLANNED
+
+
+async def test_edit_plan_wrong_status(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Not planned", priority=1)
+    with pytest.raises(ValueError, match="Planned status"):
+        await service.edit_plan(task.id, project.id, "# Plan")
+
+
+async def test_edit_plan_blank_raises(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Test", priority=1)
+    task.status = TaskStatus.PLANNED
+    await db_session.flush()
+    with pytest.raises(ValueError, match="blank"):
+        await service.edit_plan(task.id, project.id, "")
+
+
+# ── accept_task ───────────────────────────────────────────────────────────────
+
+async def test_accept_task(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Accept me", priority=1)
+    task.status = TaskStatus.PLANNED
+    await db_session.flush()
+    updated = await service.accept_task(task.id, project.id)
+    assert updated.status == TaskStatus.ACCEPTED
+
+
+async def test_accept_task_wrong_status(db_session, project):
+    service = TaskService(db_session)
+    task = await service.create(project_id=project.id, description="Not planned", priority=1)
+    with pytest.raises(ValueError, match="Planned status"):
+        await service.accept_task(task.id, project.id)
+
+
+# ── cancel_task ───────────────────────────────────────────────────────────────
+
+async def test_cancel_task_from_any_status(db_session, project):
+    service = TaskService(db_session)
+    for status in [TaskStatus.NEW, TaskStatus.REASONING, TaskStatus.PLANNED, TaskStatus.ACCEPTED]:
+        task = await service.create(project_id=project.id, description=f"Cancel from {status}", priority=1)
+        task.status = status
+        await db_session.flush()
+        updated = await service.cancel_task(task.id, project.id)
+        assert updated.status == TaskStatus.CANCELED
