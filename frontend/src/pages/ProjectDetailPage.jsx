@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import TaskList from "../components/TaskList";
 
-const STATUSES = ["All", "New", "Planned", "Accepted", "Declined", "Finished", "Canceled"];
+const STATUSES = ["All", "New", "Reasoning", "Planned", "Accepted", "Declined", "Finished", "Canceled"];
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
