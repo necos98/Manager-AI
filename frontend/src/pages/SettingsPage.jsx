@@ -132,17 +132,24 @@ export default function SettingsPage() {
         ))}
       </div>
 
+      {/* Server name restart warning */}
+      {activeTab === "Server" && (
+        <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+          Server name changes take effect after restarting the backend. Note: only the value in <code className="bg-amber-100 px-1 rounded">default_settings.json</code> is applied on restart.
+        </div>
+      )}
+
       {/* Description changes warning */}
       {activeTab === "Tool Descriptions" && (
         <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
-          Le modifiche alle descrizioni dei tool hanno effetto dopo il riavvio del backend.
+          Tool description changes take effect after restarting the backend.
         </div>
       )}
 
       {/* Settings list */}
       <div className="space-y-5">
         {filteredSettings.length === 0 && (
-          <p className="text-gray-500 text-sm">Nessun setting in questa categoria.</p>
+          <p className="text-gray-500 text-sm">No settings in this category.</p>
         )}
         {filteredSettings.map((setting) => (
           <div key={setting.key} className="border rounded-lg p-4 bg-white">
@@ -160,7 +167,7 @@ export default function SettingsPage() {
                   <button
                     onClick={() => handleReset(setting)}
                     disabled={resetting[setting.key]}
-                    title="Ripristina valore predefinito"
+                    title="Reset to default"
                     className="text-gray-400 hover:text-gray-600 text-base leading-none disabled:opacity-50"
                   >
                     ↺
@@ -177,7 +184,7 @@ export default function SettingsPage() {
               className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
             />
             {!setting.is_customized && (
-              <p className="text-xs text-gray-400 mt-1">Valore predefinito</p>
+              <p className="text-xs text-gray-400 mt-1">Default value</p>
             )}
             <div className="flex justify-end mt-2">
               <button
@@ -185,7 +192,7 @@ export default function SettingsPage() {
                 disabled={saving[setting.key] || !isDirty(setting)}
                 className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {saving[setting.key] ? "Salvataggio..." : "Save"}
+                {saving[setting.key] ? "Saving..." : "Save"}
               </button>
             </div>
           </div>
@@ -197,20 +204,20 @@ export default function SettingsPage() {
         {resetConfirm ? (
           <div className="flex items-center gap-3">
             <p className="text-sm text-gray-600">
-              Ripristinare tutti i setting ai valori predefiniti?
+              Reset all settings to defaults?
             </p>
             <button
               onClick={handleResetAll}
               disabled={resettingAll}
               className="bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700 disabled:opacity-50"
             >
-              {resettingAll ? "..." : "Conferma"}
+              {resettingAll ? "..." : "Confirm"}
             </button>
             <button
               onClick={() => setResetConfirm(false)}
               className="px-3 py-1.5 rounded text-sm border hover:bg-gray-50"
             >
-              Annulla
+              Cancel
             </button>
           </div>
         ) : (
@@ -218,7 +225,7 @@ export default function SettingsPage() {
             onClick={() => setResetConfirm(true)}
             className="text-sm text-red-600 hover:text-red-800"
           >
-            Ripristina tutti i valori predefiniti
+            Reset all to defaults
           </button>
         )}
       </div>
