@@ -28,6 +28,7 @@ class TaskResponse(BaseModel):
     status: TaskStatus
     priority: int
     plan: str | None
+    specification: str | None = None
     recap: str | None
     decline_feedback: str | None
     created_at: datetime

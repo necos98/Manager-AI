@@ -11,6 +11,7 @@ from app.database import Base
 
 class TaskStatus(str, enum.Enum):
     NEW = "New"
+    REASONING = "Reasoning"
     PLANNED = "Planned"
     ACCEPTED = "Accepted"
     DECLINED = "Declined"
@@ -22,6 +23,7 @@ class TaskStatus(str, enum.Enum):
 VALID_TRANSITIONS = {
     (TaskStatus.NEW, TaskStatus.PLANNED),
     (TaskStatus.DECLINED, TaskStatus.PLANNED),
+    (TaskStatus.REASONING, TaskStatus.PLANNED),
     (TaskStatus.PLANNED, TaskStatus.ACCEPTED),
     (TaskStatus.PLANNED, TaskStatus.DECLINED),
     (TaskStatus.ACCEPTED, TaskStatus.FINISHED),
@@ -39,6 +41,7 @@ class Task(Base):
     status: Mapped[TaskStatus] = mapped_column(Enum(TaskStatus), nullable=False, default=TaskStatus.NEW)
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
     plan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    specification: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     recap: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     decline_feedback: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
