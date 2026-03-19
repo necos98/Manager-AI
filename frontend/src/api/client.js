@@ -36,4 +36,15 @@ export const api = {
     request(`/projects/${projectId}/tasks/${taskId}/status`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteTask: (projectId, taskId) =>
     request(`/projects/${projectId}/tasks/${taskId}`, { method: "DELETE" }),
+
+  // Settings
+  getSettings: () => request("/settings"),
+  updateSetting: (key, value) =>
+    request(`/settings/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      body: JSON.stringify({ value }),
+    }),
+  resetSetting: (key) =>
+    request(`/settings/${encodeURIComponent(key)}`, { method: "DELETE" }),
+  resetAllSettings: () => request("/settings", { method: "DELETE" }),
 };

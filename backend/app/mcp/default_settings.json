@@ -1,0 +1,11 @@
+{
+  "server.name": "Manager AI",
+  "tool.get_next_task.description": "Get the highest priority task that needs work (Declined before New, then by priority). Returns task id, description, status, and decline_feedback if present. Returns null if none available.",
+  "tool.get_task_details.description": "Get all details of a specific task.",
+  "tool.get_task_status.description": "Get the current status of a task.",
+  "tool.get_project_context.description": "Get project information (name, path, description, tech_stack).",
+  "tool.set_task_name.description": "Set the name of a task after analysis.",
+  "tool.save_task_plan.description": "Save a markdown plan for a task and set status to Planned. Only works for tasks in New or Declined status.\n\nIMPORTANT: After saving a plan, you MUST stop and wait for the user to approve or decline the plan via the frontend. Do NOT proceed with implementation until the task status changes to 'Accepted'. Poll get_task_status to check, but only after the user tells you they have reviewed the plan.",
+  "tool.save_task_plan.response_message": "Plan saved. STOP HERE — do NOT proceed with implementation. The user must review and approve this plan in the frontend before you can continue. Wait for the user to confirm approval, then check the task status with get_task_status.",
+  "tool.complete_task.description": "Mark a task as Finished and save the recap. Only works for tasks in Accepted status."
+}
