@@ -22,7 +22,7 @@ async def test_list_settings_returns_all_defaults(client):
     response = await client.get("/api/settings")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 9
+    assert len(data) == 12
     keys = [s["key"] for s in data]
     assert "server.name" in keys
     assert all(not s["is_customized"] for s in data)
