@@ -102,6 +102,68 @@ class TaskService:
         await self.session.flush()
         return task
 
+    async def create_spec(self, task_id: str, project_id: str, spec: str) -> Task:
+        if not spec or not spec.strip():
+            raise ValueError("Specification cannot be blank")
+        task = await self.get_for_project(task_id, project_id)
+        if task.status not in (TaskStatus.NEW, TaskStatus.DECLINED):
+            raise ValueError(
+                f"Can only create spec for tasks in New or Declined status, got {task.status.value}"
+            )
+        task.specification = spec
+        task.status = TaskStatus.REASONING
+        await self.session.flush()
+        return task
+
+    async def edit_spec(self, task_id: str, project_id: str, spec: str) -> Task:
+        if not spec or not spec.strip():
+            raise ValueError("Specification cannot be blank")
+        task = await self.get_for_project(task_id, project_id)
+        if task.status != TaskStatus.REASONING:
+            raise ValueError("Task must be in Reasoning status to edit spec")
+        task.specification = spec
+        await self.session.flush()
+        return task
+
+    async def create_plan(self, task_id: str, project_id: str, plan: str) -> Task:
+        if not plan or not plan.strip():
+            raise ValueError("Plan cannot be blank")
+        task = await self.get_for_project(task_id, project_id)
+        if task.status != TaskStatus.REASONING:
+            raise ValueError(
+                f"Can only create plan for tasks in Reasoning status, got {task.status.value}"
+            )
+        task.plan = plan
+        task.status = TaskStatus.PLANNED
+        await self.session.flush()
+        return task
+
+    async def edit_plan(self, task_id: str, project_id: str, plan: str) -> Task:
+        if not plan or not plan.strip():
+            raise ValueError("Plan cannot be blank")
+        task = await self.get_for_project(task_id, project_id)
+        if task.status != TaskStatus.PLANNED:
+            raise ValueError("Task must be in Planned status to edit plan")
+        task.plan = plan
+        await self.session.flush()
+        return task
+
+    async def accept_task(self, task_id: str, project_id: str) -> Task:
+        task = await self.get_for_project(task_id, project_id)
+        if task.status != TaskStatus.PLANNED:
+            raise ValueError(
+                f"Can only accept tasks in Planned status, got {task.status.value}"
+            )
+        task.status = TaskStatus.ACCEPTED
+        await self.session.flush()
+        return task
+
+    async def cancel_task(self, task_id: str, project_id: str) -> Task:
+        task = await self.get_for_project(task_id, project_id)
+        task.status = TaskStatus.CANCELED
+        await self.session.flush()
+        return task
+
     async def delete(self, task_id: str, project_id: str) -> bool:
         task = await self.get_for_project(task_id, project_id)
         await self.session.delete(task)
