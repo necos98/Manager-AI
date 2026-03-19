@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import NewProjectPage from "./pages/NewProjectPage";
 import NewTaskPage from "./pages/NewTaskPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
@@ -15,9 +15,9 @@ export default function App() {
             <a href="/" className="text-xl font-bold text-gray-900">
               Manager AI
             </a>
-            <a href="/settings" className="text-sm text-gray-500 hover:text-gray-900">
+            <Link to="/settings" className="text-sm text-gray-500 hover:text-gray-900">
               Settings
-            </a>
+            </Link>
           </div>
         </header>
         <main className="max-w-5xl mx-auto px-4 py-8">

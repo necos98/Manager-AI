@@ -25,6 +25,8 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState([]);
   const [edited, setEdited] = useState({});
   const [saving, setSaving] = useState({});
+  const [resetting, setResetting] = useState({});
+  const [resettingAll, setResettingAll] = useState(false);
   const [activeTab, setActiveTab] = useState("Server");
   const [resetConfirm, setResetConfirm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -64,6 +66,7 @@ export default function SettingsPage() {
   };
 
   const handleReset = async (setting) => {
+    setResetting((prev) => ({ ...prev, [setting.key]: true }));
     try {
       await api.resetSetting(setting.key);
       setSettings((prev) =>
@@ -78,10 +81,17 @@ export default function SettingsPage() {
       });
     } catch (e) {
       alert(e.message);
+    } finally {
+      setResetting((prev) => {
+        const next = { ...prev };
+        delete next[setting.key];
+        return next;
+      });
     }
   };
 
   const handleResetAll = async () => {
+    setResettingAll(true);
     try {
       await api.resetAllSettings();
       setSettings((prev) =>
@@ -91,6 +101,8 @@ export default function SettingsPage() {
       setResetConfirm(false);
     } catch (e) {
       alert(e.message);
+    } finally {
+      setResettingAll(false);
     }
   };
 
@@ -147,8 +159,9 @@ export default function SettingsPage() {
                 {setting.is_customized && (
                   <button
                     onClick={() => handleReset(setting)}
+                    disabled={resetting[setting.key]}
                     title="Ripristina valore predefinito"
-                    className="text-gray-400 hover:text-gray-600 text-base leading-none"
+                    className="text-gray-400 hover:text-gray-600 text-base leading-none disabled:opacity-50"
                   >
                     ↺
                   </button>
@@ -188,9 +201,10 @@ export default function SettingsPage() {
             </p>
             <button
               onClick={handleResetAll}
-              className="bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700"
+              disabled={resettingAll}
+              className="bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700 disabled:opacity-50"
             >
-              Conferma
+              {resettingAll ? "..." : "Conferma"}
             </button>
             <button
               onClick={() => setResetConfirm(false)}
