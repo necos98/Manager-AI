@@ -8,7 +8,8 @@ Aggiunta di un sistema di configurazione dei testi forniti all'LLM tramite MCP. 
 
 - Permettere la modifica dei testi MCP (tool descriptions + response messages) senza toccare il codice
 - Gestire i default tramite un file JSON versionabile via git
-- Il MCP server legge i testi dal DB ad ogni chiamata (aggiornamento senza restart)
+- I response messages vengono letti dal DB ad ogni chiamata MCP (aggiornamento in tempo reale)
+- Le tool descriptions richiedono un restart del backend per essere aggiornate (limite del protocollo MCP: le descrizioni vengono esposte alla handshake, non ad ogni chiamata)
 - Frontend con UI organizzata per categoria, badge "Customized", reset per singolo setting e globale
 
 ## Stack
@@ -23,13 +24,33 @@ Nessuna modifica allo stack esistente: FastAPI, SQLAlchemy, SQLite, React + Tail
 |-------|------|------|
 | `key` | VARCHAR(255) | PK, es. `tool.save_task_plan.response_message` |
 | `value` | TEXT | Valore personalizzato dall'utente |
-| `updated_at` | TIMESTAMP | Auto-aggiornato |
+| `updated_at` | TIMESTAMP | `server_default=func.now()`, `onupdate=func.now()` |
 
 La tabella contiene **solo i setting personalizzati**. Se una chiave non è presente, si usa il default dal JSON. Il reset cancella la riga (non sovrascrive con il default).
 
+### Modello SQLAlchemy
+
+Nuovo file `backend/app/models/setting.py`:
+
+```python
+class Setting(Base):
+    __tablename__ = "settings"
+
+    key: Mapped[str] = mapped_column(String(255), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+```
+
 ### File `backend/app/mcp/default_settings.json`
 
-Source of truth per i valori di default. Versionabile via git.
+Source of truth per i valori di default. Versionabile via git. Contiene **9 chiavi totali**: 1 server, 7 tool descriptions, 1 response message.
+
+Convenzione chiavi:
+- `server.<campo>` — configurazione del server MCP
+- `tool.<nome_tool>.description` — descrizione nel catalogo strumenti di Claude (richiede restart per aggiornare)
+- `tool.<nome_tool>.response_message` — testo nel corpo della risposta del tool (aggiornato in tempo reale)
 
 ```json
 {
@@ -39,42 +60,15 @@ Source of truth per i valori di default. Versionabile via git.
   "tool.get_task_status.description": "Get the current status of a task.",
   "tool.get_project_context.description": "Get project information (name, path, description, tech_stack).",
   "tool.set_task_name.description": "Set the name of a task after analysis.",
-  "tool.save_task_plan.description": "Save a markdown plan for a task and set status to Planned. Only works for tasks in New or Declined status.\n\nIMPORTANT: After saving a plan, you MUST stop and wait for the user to approve or decline the plan via the frontend. Do NOT proceed with implementation until the task status changes to 'Accepted'. Poll get_task_status to check, but only after the user tells you they have reviewed the plan.",
+  "tool.save_task_plan.description": "Save a markdown plan for a task and set status to Planned. Only works for tasks in New or Declined status.\n\nIMPORTANT: After saving a plan, you MUST stop and wait for the user to approve or decline the plan via the frontend. Do NOT proceed with implementation until the task status changes to 'Accepted'.",
   "tool.save_task_plan.response_message": "Plan saved. STOP HERE — do NOT proceed with implementation. The user must review and approve this plan in the frontend before you can continue. Wait for the user to confirm approval, then check the task status with get_task_status.",
   "tool.complete_task.description": "Mark a task as Finished and save the recap. Only works for tasks in Accepted status."
 }
 ```
 
-La convenzione delle chiavi è:
-- `server.<campo>` — configurazione del server MCP
-- `tool.<nome_tool>.description` — descrizione nel catalogo strumenti di Claude
-- `tool.<nome_tool>.response_message` — testo nel corpo della risposta del tool
+Solo `save_task_plan` ha un `response_message` configurabile perché è l'unico tool che restituisce un testo istruzionale a Claude. Gli altri tool restituiscono dati strutturati.
 
 ## Backend
-
-### Modello SQLAlchemy
-
-Nuovo file `backend/app/models/setting.py`:
-
-```python
-class Setting(Base):
-    __tablename__ = "settings"
-    key: Mapped[str] = mapped_column(String(255), primary_key=True)
-    value: Mapped[str] = mapped_column(Text, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
-```
-
-### SettingsService
-
-Nuovo file `backend/app/services/settings_service.py`:
-
-- `get(key: str) -> str` — valore da DB se esiste, altrimenti dal JSON
-- `get_all() -> list[SettingOut]` — merge DB + JSON, con flag `is_customized`
-- `set(key: str, value: str) -> Setting` — upsert in DB
-- `reset(key: str) -> None` — delete dalla DB
-- `reset_all() -> None` — delete tutte le righe
-
-Il JSON viene caricato una volta in memoria al primo accesso (`functools.lru_cache` o variabile modulo).
 
 ### Schema Pydantic
 
@@ -88,66 +82,112 @@ class SettingOut(BaseModel):
     is_customized: bool # True se presente in DB
 
 class SettingUpdate(BaseModel):
-    value: str
+    value: str = Field(..., min_length=1)
 ```
+
+### SettingsService
+
+Nuovo file `backend/app/services/settings_service.py`. Segue il pattern esistente: costruttore con `session: AsyncSession`.
+
+```python
+class SettingsService:
+    def __init__(self, session: AsyncSession): ...
+
+    async def get(self, key: str) -> str:
+        """Ritorna il valore DB se la riga esiste, altrimenti il valore dal JSON.
+        Solleva KeyError se la chiave non è presente nel JSON (mai in DB senza default)."""
+
+    async def get_all(self) -> list[SettingOut]:
+        """Merge DB + JSON defaults. Solo chiavi presenti nel JSON sono incluse.
+        Chiavi in DB senza corrispondenza nel JSON vengono ignorate."""
+
+    async def set(self, key: str, value: str) -> Setting:
+        """Upsert in DB. Solleva KeyError se la chiave non è nel JSON — il router
+        catcha KeyError e restituisce HTTP 404."""
+
+    async def reset(self, key: str) -> None:
+        """Delete ORM della riga da DB. Idempotente: nessun errore se la chiave non è personalizzata."""
+
+    async def reset_all(self) -> None:
+        """Delete ORM di tutte le righe (non bulk SQL, per coerenza con il lifecycle ORM)."""
+```
+
+Il JSON viene letto una volta e tenuto in memoria come variabile di modulo (non richiede lru_cache, è read-only).
 
 ### Router REST
 
-Nuovo file `backend/app/routers/settings.py`, montato in `main.py`:
+Nuovo file `backend/app/routers/settings.py`, montato in `main.py` con `app.include_router(settings.router)`.
 
-| Metodo | Endpoint | Descrizione |
-|--------|----------|-------------|
-| GET | `/api/settings` | Lista tutti i setting con valore attivo, default e is_customized |
-| PUT | `/api/settings/{key}` | Salva personalizzazione (upsert) |
-| DELETE | `/api/settings/{key}` | Reset singolo setting |
-| DELETE | `/api/settings` | Reset tutti i setting |
+**Importante per il routing FastAPI:** la route `DELETE /api/settings` deve essere registrata **prima** di `DELETE /api/settings/{key}` per evitare conflitti.
+
+| Metodo | Endpoint | Response | Descrizione |
+|--------|----------|----------|-------------|
+| GET | `/api/settings` | `200 list[SettingOut]` | Lista tutti i setting con valore attivo, default e is_customized |
+| PUT | `/api/settings/{key}` | `200 SettingOut` | Salva personalizzazione (upsert). Il service solleva KeyError → router restituisce 404 se la chiave non è nel JSON |
+| DELETE | `/api/settings` | `204 No Content` | Reset tutti i setting |
+| DELETE | `/api/settings/{key}` | `204 No Content` | Reset singolo setting (idempotente) |
 
 ### MCP server
 
-Il server MCP viene modificato per leggere i testi dal DB ad ogni chiamata:
+**Tool descriptions:** lette da `default_settings.json` all'avvio del server (import time) e passate come `description=` ai decoratori `@mcp.tool()`. Le modifiche tramite frontend richiedono un **restart del backend** per essere applicate alle descriptions. Questo comportamento è comunicato all'utente nel frontend con una nota nella tab "Tool Descriptions".
 
-**Tool descriptions:** lette dal JSON al momento del decoratore `@mcp.tool(description=...)`. Statiche per sessione MCP corrente, aggiornate alla prossima connessione di Claude. (Limite tecnico del protocollo MCP: le descrizioni vengono esposte al momento della handshake, non ad ogni chiamata.)
+**Response messages:** letti dal DB ad ogni invocazione tramite `SettingsService`. Aggiornamento in tempo reale.
 
-**Response messages:** letti dal DB ad ogni invocazione del tool tramite `SettingsService`. Aggiornamento in tempo reale senza restart.
-
-Esempio per `save_task_plan`:
+Esempio integrazione in `save_task_plan`:
 
 ```python
 @mcp.tool()
 async def save_task_plan(project_id: str, task_id: str, plan: str) -> dict:
     async with async_session() as session:
         settings_service = SettingsService(session)
-        response_msg = await settings_service.get("tool.save_task_plan.response_message")
         task_service = TaskService(session)
-        # ... logica esistente ...
-        return {"message": response_msg, ...}
+        try:
+            task = await task_service.save_plan(task_id, project_id, plan)
+            await session.commit()
+            response_msg = await settings_service.get("tool.save_task_plan.response_message")
+            return {
+                "id": task.id,
+                "status": task.status.value,
+                "plan": task.plan,
+                "message": response_msg,
+            }
+        except (ValueError, PermissionError) as e:
+            await session.rollback()
+            return {"error": str(e)}
 ```
+
+### Migrazione Alembic
+
+Nuova migrazione Alembic (deliverable esplicito) che crea la tabella `settings`. Non modifica tabelle esistenti.
 
 ## Frontend
 
-### Nuova route
+### Aggiornamenti App.jsx
 
-`/settings` — aggiunta in `App.jsx` e link nell'header.
+- Aggiunta route `/settings` → `<SettingsPage />`
+- Aggiunta link "Settings" nell'`<header>` esistente accanto al logo
 
-### Pagina `SettingsPage`
+### Nuova pagina `SettingsPage`
 
-Organizzata in **3 tab**:
+Organizzata in **3 tab**. La categoria è derivata dal prefisso della chiave:
 
-| Tab | Chiavi |
-|-----|--------|
-| **Server** | `server.name` |
-| **Tool Descriptions** | `tool.*.description` |
-| **Response Messages** | `tool.*.response_message` |
+| Tab | Prefisso chiave | Esempio chiavi |
+|-----|----------------|---------------|
+| **Server** | `server.` | `server.name` |
+| **Tool Descriptions** | `tool.*.description` | `tool.save_task_plan.description` |
+| **Response Messages** | `tool.*.response_message` | `tool.save_task_plan.response_message` |
+
+**Nota visibile nella tab "Tool Descriptions":** "Le modifiche alle descrizioni dei tool hanno effetto dopo il riavvio del backend."
 
 **Per ogni setting:**
 - Label leggibile derivata dalla chiave (es. `tool.save_task_plan.response_message` → "Save Task Plan")
 - Textarea con il valore corrente
-- Badge **"Customized"** (colore accent) se `is_customized: true`
-- Pulsante reset (↺) per singolo setting — chiamata DELETE, ritorna al default
-- Pulsante **"Save"** per ogni campo — salvataggio individuale
+- Badge **"Customized"** (accent color) se `is_customized: true`
+- Pulsante reset (↺) per singolo setting — chiama `DELETE /api/settings/{key}`, aggiorna stato locale
+- Pulsante **"Save"** per ogni campo — salvataggio individuale tramite `PUT /api/settings/{key}`
 
 **In fondo alla pagina:**
-- Pulsante "Reset all to defaults" con dialog di conferma
+- Pulsante "Reset all to defaults" con dialog di conferma — chiama `DELETE /api/settings`
 
 ### API client
 
@@ -155,18 +195,12 @@ Aggiunte a `frontend/src/api/client.js`:
 
 ```js
 getSettings: () => request("/settings"),
-updateSetting: (key, value) => request(`/settings/${encodeURIComponent(key)}`, { method: "PUT", body: JSON.stringify({ value }) }),
-resetSetting: (key) => request(`/settings/${encodeURIComponent(key)}`, { method: "DELETE" }),
+updateSetting: (key, value) =>
+  request(`/settings/${encodeURIComponent(key)}`, {
+    method: "PUT",
+    body: JSON.stringify({ value }),
+  }),
+resetSetting: (key) =>
+  request(`/settings/${encodeURIComponent(key)}`, { method: "DELETE" }),
 resetAllSettings: () => request("/settings", { method: "DELETE" }),
 ```
-
-## Migrazione database
-
-Nuova migrazione Alembic che crea la tabella `settings`. Non modifica tabelle esistenti.
-
-## Note implementative
-
-- Il file `default_settings.json` viene letto con `importlib.resources` o path relativo al modulo Python
-- Chiavi non riconosciute nel DB (es. da versioni precedenti) vengono ignorate in `get_all()`
-- Il DELETE su `/api/settings/{key}` ritorna 204 anche se la chiave non era personalizzata (idempotente)
-- Reset globale usa una singola query `DELETE FROM settings`
