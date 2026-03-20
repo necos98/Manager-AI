@@ -12,7 +12,7 @@ def mock_service():
     svc.active_count = MagicMock(return_value=0)
     svc.create = MagicMock(return_value={
         "id": "term-1",
-        "task_id": "task-1",
+        "issue_id": "task-1",
         "project_id": "proj-1",
         "project_path": "C:/fake",
         "status": "active",
@@ -23,7 +23,7 @@ def mock_service():
     svc.kill = MagicMock()
     svc.get = MagicMock(return_value={
         "id": "term-1",
-        "task_id": "task-1",
+        "issue_id": "task-1",
         "project_id": "proj-1",
         "project_path": "C:/fake",
         "status": "active",
@@ -54,7 +54,7 @@ async def test_create_terminal(client, mock_service):
          patch("app.routers.terminals.os.path.isdir", return_value=True):
         mock_path.return_value = "C:/fake"
         resp = await client.post("/api/terminals", json={
-            "task_id": "task-1",
+            "issue_id": "task-1",
             "project_id": "proj-1",
         })
         assert resp.status_code == 201
@@ -68,7 +68,7 @@ async def test_create_terminal_invalid_project(client, mock_service):
     with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path:
         mock_path.side_effect = ValueError("Project not found")
         resp = await client.post("/api/terminals", json={
-            "task_id": "task-1",
+            "issue_id": "task-1",
             "project_id": "nonexistent",
         })
         assert resp.status_code == 400
@@ -92,4 +92,4 @@ async def test_delete_terminal_not_found(client, mock_service):
 async def test_list_terminals_with_project_filter(client, mock_service):
     resp = await client.get("/api/terminals?project_id=proj-1")
     assert resp.status_code == 200
-    mock_service.list_active.assert_called_with(project_id="proj-1", task_id=None)
+    mock_service.list_active.assert_called_with(project_id="proj-1", issue_id=None)

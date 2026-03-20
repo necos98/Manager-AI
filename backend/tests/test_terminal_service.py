@@ -26,29 +26,29 @@ class TestTerminalServiceRegistry:
             MockPTY.return_value = mock_pty
 
             term = service.create(
-                task_id="task-1",
+                issue_id="task-1",
                 project_id="proj-1",
                 project_path="C:/fake/path",
             )
 
-            assert term["task_id"] == "task-1"
+            assert term["issue_id"] == "task-1"
             assert term["project_id"] == "proj-1"
             assert term["status"] == "active"
             assert len(service.list_active()) == 1
 
-    def test_create_duplicate_task_returns_existing(self, service):
+    def test_create_duplicate_issue_returns_existing(self, service):
         with patch("app.services.terminal_service.PTY") as MockPTY:
             mock_pty = MagicMock()
             mock_pty.spawn = MagicMock()
             MockPTY.return_value = mock_pty
 
             term1 = service.create(
-                task_id="task-1",
+                issue_id="task-1",
                 project_id="proj-1",
                 project_path="C:/fake/path",
             )
             term2 = service.create(
-                task_id="task-1",
+                issue_id="task-1",
                 project_id="proj-1",
                 project_path="C:/fake/path",
             )
@@ -62,7 +62,7 @@ class TestTerminalServiceRegistry:
             MockPTY.return_value = mock_pty
 
             term = service.create(
-                task_id="task-1",
+                issue_id="task-1",
                 project_id="proj-1",
                 project_path="C:/fake/path",
             )
@@ -80,7 +80,7 @@ class TestTerminalServiceRegistry:
             MockPTY.return_value = mock_pty
 
             term = service.create(
-                task_id="task-1",
+                issue_id="task-1",
                 project_id="proj-1",
                 project_path="C:/fake/path",
             )
@@ -97,23 +97,23 @@ class TestTerminalServiceRegistry:
             mock_pty.spawn = MagicMock()
             MockPTY.return_value = mock_pty
 
-            service.create(task_id="t1", project_id="p1", project_path="C:/a")
-            service.create(task_id="t2", project_id="p2", project_path="C:/b")
+            service.create(issue_id="t1", project_id="p1", project_path="C:/a")
+            service.create(issue_id="t2", project_id="p2", project_path="C:/b")
 
             p1_terms = service.list_active(project_id="p1")
             assert len(p1_terms) == 1
             assert p1_terms[0]["project_id"] == "p1"
 
-    def test_list_filter_by_task(self, service):
+    def test_list_filter_by_issue(self, service):
         with patch("app.services.terminal_service.PTY") as MockPTY:
             mock_pty = MagicMock()
             mock_pty.spawn = MagicMock()
             MockPTY.return_value = mock_pty
 
-            service.create(task_id="t1", project_id="p1", project_path="C:/a")
-            service.create(task_id="t2", project_id="p1", project_path="C:/a")
+            service.create(issue_id="t1", project_id="p1", project_path="C:/a")
+            service.create(issue_id="t2", project_id="p1", project_path="C:/a")
 
-            t1_terms = service.list_active(task_id="t1")
+            t1_terms = service.list_active(issue_id="t1")
             assert len(t1_terms) == 1
 
     def test_active_count(self, service):
@@ -123,7 +123,7 @@ class TestTerminalServiceRegistry:
             MockPTY.return_value = mock_pty
 
             assert service.active_count() == 0
-            service.create(task_id="t1", project_id="p1", project_path="C:/a")
+            service.create(issue_id="t1", project_id="p1", project_path="C:/a")
             assert service.active_count() == 1
 
     def test_resize(self, service):
@@ -133,7 +133,7 @@ class TestTerminalServiceRegistry:
             MockPTY.return_value = mock_pty
 
             term = service.create(
-                task_id="task-1",
+                issue_id="task-1",
                 project_id="proj-1",
                 project_path="C:/fake/path",
             )
