@@ -15,7 +15,6 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
   const MAX_RETRIES = 5;
   const cleanedUpRef = useRef(false);
 
-  // Keep ref in sync with latest prop
   useEffect(() => {
     onSessionEndRef.current = onSessionEnd;
   }, [onSessionEnd]);
@@ -25,55 +24,51 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
     cleanedUpRef.current = false;
 
     const container = containerRef.current;
-    let term = null;
-    let fitAddon = null;
-    let resizeObserver = null;
 
-    function initTerminal() {
-      if (cleanedUpRef.current) return;
+    // Clear any leftover DOM from a previous xterm instance
+    // (React StrictMode disposes then re-creates)
+    container.innerHTML = "";
 
-      term = new Terminal({
-        cursorBlink: true,
-        fontSize: 14,
-        fontFamily: "'Cascadia Code', 'Consolas', monospace",
-        theme: {
-          background: "#0d0d0d",
-          foreground: "#cdd6f4",
-          cursor: "#89b4fa",
-        },
-      });
+    const term = new Terminal({
+      cursorBlink: true,
+      fontSize: 14,
+      fontFamily: "'Cascadia Code', 'Consolas', monospace",
+      theme: {
+        background: "#0d0d0d",
+        foreground: "#cdd6f4",
+        cursor: "#89b4fa",
+      },
+    });
 
-      fitAddon = new FitAddon();
-      const webLinksAddon = new WebLinksAddon();
+    const fitAddon = new FitAddon();
+    const webLinksAddon = new WebLinksAddon();
+    term.loadAddon(fitAddon);
+    term.loadAddon(webLinksAddon);
 
-      term.loadAddon(fitAddon);
-      term.loadAddon(webLinksAddon);
-      term.open(container);
-      fitAddon.fit();
+    terminalRef.current = term;
+    fitAddonRef.current = fitAddon;
 
-      terminalRef.current = term;
-      fitAddonRef.current = fitAddon;
+    // Only open xterm once the container has real dimensions.
+    // open() creates a Viewport that reads dimensions synchronously;
+    // if height is 0 it crashes.
+    let opened = false;
 
-      connect();
+    function openIfReady() {
+      if (opened || cleanedUpRef.current) return;
+      if (container.clientHeight === 0 || container.clientWidth === 0) return;
 
-      term.onData((data) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(data);
-        }
-      });
-
-      resizeObserver = new ResizeObserver(() => {
-        if (!container || container.clientHeight === 0) return;
+      opened = true;
+      try {
+        term.open(container);
         fitAddon.fit();
-        const dims = fitAddon.proposeDimensions();
-        if (dims && wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
-        }
-      });
-      resizeObserver.observe(container);
+      } catch (e) {
+        console.warn("xterm open/fit error:", e);
+        return;
+      }
+      connectWs();
     }
 
-    function connect() {
+    function connectWs() {
       if (cleanedUpRef.current) return;
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/api/terminals/${terminalId}/ws`;
@@ -81,18 +76,17 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
       wsRef.current = ws;
 
       ws.onopen = () => {
+        if (cleanedUpRef.current) { ws.close(); return; }
         setStatus("connected");
         retryCountRef.current = 0;
-        if (fitAddon) {
-          const dims = fitAddon.proposeDimensions();
-          if (dims) {
-            ws.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
-          }
+        const dims = fitAddon.proposeDimensions();
+        if (dims && dims.cols && dims.rows) {
+          ws.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
         }
       };
 
       ws.onmessage = (event) => {
-        if (term) term.write(event.data);
+        if (term && !cleanedUpRef.current) term.write(event.data);
       };
 
       ws.onclose = (event) => {
@@ -106,42 +100,51 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
         if (retryCountRef.current < MAX_RETRIES) {
           const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 30000);
           retryCountRef.current++;
-          setTimeout(connect, delay);
+          setTimeout(connectWs, delay);
         }
       };
 
       ws.onerror = () => {};
     }
 
-    // Wait for the container to have actual dimensions before opening xterm.
-    // xterm's open() triggers Viewport which reads dimensions synchronously;
-    // if the container has 0 height, it crashes.
-    if (container.clientHeight > 0) {
-      initTerminal();
-    } else {
-      const observer = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          if (entry.contentRect.height > 0) {
-            observer.disconnect();
-            initTerminal();
-            return;
-          }
-        }
-      });
-      observer.observe(container);
+    term.onData((data) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(data);
+      }
+    });
 
-      // Clean up the waiting observer if effect is destroyed before init
-      return () => {
-        cleanedUpRef.current = true;
-        observer.disconnect();
-      };
-    }
+    const resizeObserver = new ResizeObserver(() => {
+      if (cleanedUpRef.current) return;
+      // If not yet opened, try now that we have dimensions
+      if (!opened) { openIfReady(); return; }
+      if (container.clientHeight === 0) return;
+      try {
+        fitAddon.fit();
+        const dims = fitAddon.proposeDimensions();
+        if (dims && dims.cols && dims.rows && wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
+        }
+      } catch {
+        // ignore fit errors during transitions
+      }
+    });
+    resizeObserver.observe(container);
+
+    // Try to open immediately if container already has dimensions
+    openIfReady();
 
     return () => {
       cleanedUpRef.current = true;
-      if (resizeObserver) resizeObserver.disconnect();
-      wsRef.current?.close();
-      if (term) term.dispose();
+      resizeObserver.disconnect();
+      if (wsRef.current) {
+        wsRef.current.onclose = null; // prevent reconnect attempts
+        wsRef.current.close();
+      }
+      // Defer dispose to avoid interfering with xterm's internal setTimeout callbacks
+      const termToDispose = term;
+      setTimeout(() => {
+        try { termToDispose.dispose(); } catch {}
+      }, 50);
     };
   }, [terminalId]);
 

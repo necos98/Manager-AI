@@ -180,12 +180,3 @@ async def terminal_ws(
     except Exception:
         pty_read_task.cancel()
         ws_read_task.cancel()
-    finally:
-        # Close PTY to unblock any stuck pty.read() in the thread pool,
-        # preventing orphaned reader threads from lingering indefinitely.
-        try:
-            pty = service.get_pty(terminal_id)
-            if hasattr(pty, "close"):
-                pty.close()
-        except (KeyError, Exception):
-            pass
