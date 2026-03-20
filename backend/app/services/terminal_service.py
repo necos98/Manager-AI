@@ -1,0 +1,106 @@
+import uuid
+from datetime import datetime, timezone
+
+from winpty import PTY
+
+
+class TerminalService:
+    """In-memory registry of active terminal sessions with PTY lifecycle management."""
+
+    def __init__(self):
+        self._terminals: dict[str, dict] = {}
+
+    def create(
+        self,
+        task_id: str,
+        project_id: str,
+        project_path: str,
+        cols: int = 120,
+        rows: int = 30,
+    ) -> dict:
+        # Return existing terminal for this task (no duplicates)
+        for term in self._terminals.values():
+            if term["task_id"] == task_id and term["status"] == "active":
+                return self._to_response(term)
+
+        pty = PTY(cols, rows)
+        pty.spawn(r"C:\Windows\System32\cmd.exe", cwd=project_path)
+
+        term_id = str(uuid.uuid4())
+        entry = {
+            "id": term_id,
+            "task_id": task_id,
+            "project_id": project_id,
+            "project_path": project_path,
+            "pty": pty,
+            "status": "active",
+            "created_at": datetime.now(timezone.utc),
+            "cols": cols,
+            "rows": rows,
+        }
+        self._terminals[term_id] = entry
+        return self._to_response(entry)
+
+    def get(self, terminal_id: str) -> dict:
+        if terminal_id not in self._terminals:
+            raise KeyError(f"Terminal {terminal_id} not found")
+        return self._to_response(self._terminals[terminal_id])
+
+    def get_pty(self, terminal_id: str) -> PTY:
+        if terminal_id not in self._terminals:
+            raise KeyError(f"Terminal {terminal_id} not found")
+        return self._terminals[terminal_id]["pty"]
+
+    def list_active(
+        self,
+        project_id: str | None = None,
+        task_id: str | None = None,
+    ) -> list[dict]:
+        results = []
+        for term in self._terminals.values():
+            if term["status"] != "active":
+                continue
+            if project_id and term["project_id"] != project_id:
+                continue
+            if task_id and term["task_id"] != task_id:
+                continue
+            results.append(self._to_response(term))
+        return results
+
+    def active_count(self) -> int:
+        return sum(1 for t in self._terminals.values() if t["status"] == "active")
+
+    def kill(self, terminal_id: str) -> None:
+        if terminal_id not in self._terminals:
+            raise KeyError(f"Terminal {terminal_id} not found")
+        entry = self._terminals.pop(terminal_id)
+        try:
+            pty = entry["pty"]
+            if hasattr(pty, "close"):
+                pty.close()
+        except Exception:
+            pass
+
+    def mark_closed(self, terminal_id: str) -> None:
+        if terminal_id in self._terminals:
+            self._terminals.pop(terminal_id)
+
+    def resize(self, terminal_id: str, cols: int, rows: int) -> None:
+        if terminal_id not in self._terminals:
+            raise KeyError(f"Terminal {terminal_id} not found")
+        entry = self._terminals[terminal_id]
+        entry["cols"] = cols
+        entry["rows"] = rows
+        entry["pty"].set_size(cols, rows)
+
+    def _to_response(self, entry: dict) -> dict:
+        return {
+            "id": entry["id"],
+            "task_id": entry["task_id"],
+            "project_id": entry["project_id"],
+            "project_path": entry["project_path"],
+            "status": entry["status"],
+            "created_at": entry["created_at"],
+            "cols": entry["cols"],
+            "rows": entry["rows"],
+        }
