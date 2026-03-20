@@ -4,74 +4,57 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from app.database import async_session
+from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
 
-# Load descriptions from default_settings.json at startup.
-# Tool descriptions are static for the lifetime of this process
-# (MCP protocol exposes them at handshake time, not per-call).
-# To apply DB-stored description overrides, restart the backend.
 _defaults_path = Path(__file__).parent / "default_settings.json"
 _desc = json.loads(_defaults_path.read_text(encoding="utf-8"))
 
 mcp = FastMCP(_desc["server.name"], streamable_http_path="/")
 
 
-# DISABLED: Claude Code selects tasks autonomously via conversation
-# @mcp.tool(description=_desc["tool.get_next_task.description"])
-# async def get_next_task(project_id: str) -> dict | None:
-#     async with async_session() as session:
-#         task_service = TaskService(session)
-#         task = await task_service.get_next_task(project_id)
-#         if task is None:
-#             return None
-#         result = {
-#             "id": task.id,
-#             "description": task.description,
-#             "status": task.status.value,
-#         }
-#         if task.decline_feedback:
-#             result["decline_feedback"] = task.decline_feedback
-#         return result
-
-
-@mcp.tool(description=_desc["tool.get_task_details.description"])
-async def get_task_details(project_id: str, task_id: str) -> dict:
+@mcp.tool(description=_desc["tool.get_issue_details.description"])
+async def get_issue_details(project_id: str, issue_id: str) -> dict:
     async with async_session() as session:
-        task_service = TaskService(session)
+        issue_service = IssueService(session)
         try:
-            task = await task_service.get_for_project(task_id, project_id)
+            issue = await issue_service.get_for_project(issue_id, project_id)
         except ValueError:
-            return {"error": "Task not found"}
+            return {"error": "Issue not found"}
         except PermissionError as e:
             return {"error": str(e)}
         return {
-            "id": task.id,
-            "project_id": task.project_id,
-            "name": task.name,
-            "description": task.description,
-            "status": task.status.value,
-            "priority": task.priority,
-            "specification": task.specification,
-            "plan": task.plan,
-            "recap": task.recap,
-            "decline_feedback": task.decline_feedback,
-            "created_at": task.created_at.isoformat() if task.created_at else None,
-            "updated_at": task.updated_at.isoformat() if task.updated_at else None,
+            "id": issue.id,
+            "project_id": issue.project_id,
+            "name": issue.name,
+            "description": issue.description,
+            "status": issue.status.value,
+            "priority": issue.priority,
+            "specification": issue.specification,
+            "plan": issue.plan,
+            "recap": issue.recap,
+            "decline_feedback": issue.decline_feedback,
+            "tasks": [
+                {"id": t.id, "name": t.name, "status": t.status.value, "order": t.order}
+                for t in issue.tasks
+            ],
+            "created_at": issue.created_at.isoformat() if issue.created_at else None,
+            "updated_at": issue.updated_at.isoformat() if issue.updated_at else None,
         }
 
 
-@mcp.tool(description=_desc["tool.get_task_status.description"])
-async def get_task_status(project_id: str, task_id: str) -> dict:
+@mcp.tool(description=_desc["tool.get_issue_status.description"])
+async def get_issue_status(project_id: str, issue_id: str) -> dict:
     async with async_session() as session:
-        task_service = TaskService(session)
+        issue_service = IssueService(session)
         try:
-            task = await task_service.get_for_project(task_id, project_id)
+            issue = await issue_service.get_for_project(issue_id, project_id)
         except ValueError:
-            return {"error": "Task not found"}
+            return {"error": "Issue not found"}
         except PermissionError as e:
             return {"error": str(e)}
-        return {"id": task.id, "status": task.status.value}
+        return {"id": issue.id, "status": issue.status.value}
 
 
 @mcp.tool(description=_desc["tool.get_project_context.description"])
@@ -90,12 +73,171 @@ async def get_project_context(project_id: str) -> dict:
         }
 
 
-@mcp.tool(description=_desc["tool.set_task_name.description"])
-async def set_task_name(project_id: str, task_id: str, name: str) -> dict:
+@mcp.tool(description=_desc["tool.set_issue_name.description"])
+async def set_issue_name(project_id: str, issue_id: str, name: str) -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.set_name(issue_id, project_id, name)
+            await session.commit()
+            return {"id": issue.id, "name": issue.name}
+        except (ValueError, PermissionError) as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.complete_issue.description"])
+async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.complete_issue(issue_id, project_id, recap)
+            await session.commit()
+            return {"id": issue.id, "status": issue.status.value, "recap": issue.recap}
+        except (ValueError, PermissionError) as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.create_issue_spec.description"])
+async def create_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.create_spec(issue_id, project_id, spec)
+            await session.commit()
+            return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
+        except (ValueError, PermissionError) as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.edit_issue_spec.description"])
+async def edit_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.edit_spec(issue_id, project_id, spec)
+            await session.commit()
+            return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
+        except (ValueError, PermissionError) as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.create_issue_plan.description"])
+async def create_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.create_plan(issue_id, project_id, plan)
+            await session.commit()
+            return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
+        except (ValueError, PermissionError) as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.edit_issue_plan.description"])
+async def edit_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.edit_plan(issue_id, project_id, plan)
+            await session.commit()
+            return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
+        except (ValueError, PermissionError) as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.accept_issue.description"])
+async def accept_issue(project_id: str, issue_id: str) -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.accept_issue(issue_id, project_id)
+            await session.commit()
+            return {"id": issue.id, "status": issue.status.value}
+        except (ValueError, PermissionError) as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.decline_issue.description"])
+async def decline_issue(project_id: str, issue_id: str, feedback: str) -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.decline_issue(issue_id, project_id, feedback)
+            await session.commit()
+            return {"id": issue.id, "status": issue.status.value, "decline_feedback": issue.decline_feedback}
+        except (ValueError, PermissionError) as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.cancel_issue.description"])
+async def cancel_issue(project_id: str, issue_id: str) -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.cancel_issue(issue_id, project_id)
+            await session.commit()
+            return {"id": issue.id, "status": issue.status.value}
+        except (ValueError, PermissionError) as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+# ── Task tools (atomic plan tasks) ──────────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.create_plan_tasks.description"])
+async def create_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
         try:
-            task = await task_service.set_name(task_id, project_id, name)
+            created = await task_service.create_bulk(issue_id, tasks)
+            await session.commit()
+            return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
+        except Exception as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.replace_plan_tasks.description"])
+async def replace_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
+    async with async_session() as session:
+        task_service = TaskService(session)
+        try:
+            created = await task_service.replace_all(issue_id, tasks)
+            await session.commit()
+            return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
+        except Exception as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.update_task_status.description"])
+async def update_task_status(task_id: str, status: str) -> dict:
+    async with async_session() as session:
+        task_service = TaskService(session)
+        try:
+            task = await task_service.update(task_id, status=status)
+            await session.commit()
+            return {"id": task.id, "name": task.name, "status": task.status.value}
+        except (ValueError, PermissionError) as e:
+            await session.rollback()
+            return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.update_task_name.description"])
+async def update_task_name(task_id: str, name: str) -> dict:
+    async with async_session() as session:
+        task_service = TaskService(session)
+        try:
+            task = await task_service.update(task_id, name=name)
             await session.commit()
             return {"id": task.id, "name": task.name}
         except (ValueError, PermissionError) as e:
@@ -103,113 +245,22 @@ async def set_task_name(project_id: str, task_id: str, name: str) -> dict:
             return {"error": str(e)}
 
 
-# DISABLED: Replaced by create_task_plan + edit_task_plan
-# @mcp.tool(description=_desc["tool.save_task_plan.description"])
-# async def save_task_plan(project_id: str, task_id: str, plan: str) -> dict:
-#     async with async_session() as session:
-#         task_service = TaskService(session)
-#         settings_service = SettingsService(session)
-#         try:
-#             task = await task_service.save_plan(task_id, project_id, plan)
-#             await session.commit()
-#             response_msg = await settings_service.get("tool.save_task_plan.response_message")
-#             return {
-#                 "id": task.id,
-#                 "status": task.status.value,
-#                 "plan": task.plan,
-#                 "message": response_msg,
-#             }
-#         except (ValueError, PermissionError) as e:
-#             await session.rollback()
-#             return {"error": str(e)}
-
-
-@mcp.tool(description=_desc["tool.complete_task.description"])
-async def complete_task(project_id: str, task_id: str, recap: str) -> dict:
+@mcp.tool(description=_desc["tool.delete_task.description"])
+async def delete_task(task_id: str) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
         try:
-            task = await task_service.complete_task(task_id, project_id, recap)
+            await task_service.delete(task_id)
             await session.commit()
-            return {"id": task.id, "status": task.status.value, "recap": task.recap}
-        except (ValueError, PermissionError) as e:
+            return {"deleted": True}
+        except ValueError as e:
             await session.rollback()
             return {"error": str(e)}
 
 
-@mcp.tool(description=_desc["tool.create_task_spec.description"])
-async def create_task_spec(project_id: str, task_id: str, spec: str) -> dict:
+@mcp.tool(description=_desc["tool.get_plan_tasks.description"])
+async def get_plan_tasks(issue_id: str) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
-        try:
-            task = await task_service.create_spec(task_id, project_id, spec)
-            await session.commit()
-            return {"id": task.id, "status": task.status.value, "specification": task.specification}
-        except (ValueError, PermissionError) as e:
-            await session.rollback()
-            return {"error": str(e)}
-
-
-@mcp.tool(description=_desc["tool.edit_task_spec.description"])
-async def edit_task_spec(project_id: str, task_id: str, spec: str) -> dict:
-    async with async_session() as session:
-        task_service = TaskService(session)
-        try:
-            task = await task_service.edit_spec(task_id, project_id, spec)
-            await session.commit()
-            return {"id": task.id, "status": task.status.value, "specification": task.specification}
-        except (ValueError, PermissionError) as e:
-            await session.rollback()
-            return {"error": str(e)}
-
-
-@mcp.tool(description=_desc["tool.create_task_plan.description"])
-async def create_task_plan(project_id: str, task_id: str, plan: str) -> dict:
-    async with async_session() as session:
-        task_service = TaskService(session)
-        try:
-            task = await task_service.create_plan(task_id, project_id, plan)
-            await session.commit()
-            return {"id": task.id, "status": task.status.value, "plan": task.plan}
-        except (ValueError, PermissionError) as e:
-            await session.rollback()
-            return {"error": str(e)}
-
-
-@mcp.tool(description=_desc["tool.edit_task_plan.description"])
-async def edit_task_plan(project_id: str, task_id: str, plan: str) -> dict:
-    async with async_session() as session:
-        task_service = TaskService(session)
-        try:
-            task = await task_service.edit_plan(task_id, project_id, plan)
-            await session.commit()
-            return {"id": task.id, "status": task.status.value, "plan": task.plan}
-        except (ValueError, PermissionError) as e:
-            await session.rollback()
-            return {"error": str(e)}
-
-
-@mcp.tool(description=_desc["tool.accept_task.description"])
-async def accept_task(project_id: str, task_id: str) -> dict:
-    async with async_session() as session:
-        task_service = TaskService(session)
-        try:
-            task = await task_service.accept_task(task_id, project_id)
-            await session.commit()
-            return {"id": task.id, "status": task.status.value}
-        except (ValueError, PermissionError) as e:
-            await session.rollback()
-            return {"error": str(e)}
-
-
-@mcp.tool(description=_desc["tool.cancel_task.description"])
-async def cancel_task(project_id: str, task_id: str) -> dict:
-    async with async_session() as session:
-        task_service = TaskService(session)
-        try:
-            task = await task_service.cancel_task(task_id, project_id)
-            await session.commit()
-            return {"id": task.id, "status": task.status.value}
-        except (ValueError, PermissionError) as e:
-            await session.rollback()
-            return {"error": str(e)}
+        tasks = await task_service.list_by_issue(issue_id)
+        return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in tasks]}
