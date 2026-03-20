@@ -1,171 +1,56 @@
-from sqlalchemy import case, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.task import VALID_TRANSITIONS, Task, TaskStatus
+from app.models.task import VALID_TASK_TRANSITIONS, Task, TaskStatus
 
 
 class TaskService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create(self, project_id: str, description: str, priority: int = 3) -> Task:
-        task = Task(project_id=project_id, description=description, priority=priority)
-        self.session.add(task)
+    async def create_bulk(self, issue_id: str, tasks: list[dict]) -> list[Task]:
+        created = []
+        for i, t in enumerate(tasks):
+            task = Task(issue_id=issue_id, name=t["name"], order=i)
+            self.session.add(task)
+            created.append(task)
         await self.session.flush()
-        return task
+        return created
 
-    async def get_by_id(self, task_id: str) -> Task | None:
-        return await self.session.get(Task, task_id)
+    async def replace_all(self, issue_id: str, tasks: list[dict]) -> list[Task]:
+        await self.session.execute(
+            delete(Task).where(Task.issue_id == issue_id)
+        )
+        return await self.create_bulk(issue_id, tasks)
 
-    async def get_for_project(self, task_id: str, project_id: str) -> Task:
-        task = await self.get_by_id(task_id)
+    async def get_by_id(self, task_id: str) -> Task:
+        task = await self.session.get(Task, task_id)
         if task is None:
             raise ValueError("Task not found")
-        if task.project_id != project_id:
-            raise PermissionError("Task does not belong to project")
         return task
 
-    async def list_by_project(
-        self, project_id: str, status: TaskStatus | None = None
-    ) -> list[Task]:
-        query = select(Task).where(Task.project_id == project_id)
-        if status is not None:
-            query = query.where(Task.status == status)
-        query = query.order_by(Task.priority.asc(), Task.created_at.asc())
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
-
-    async def get_next_task(self, project_id: str) -> Task | None:
-        query = (
-            select(Task)
-            .where(Task.project_id == project_id)
-            .where(Task.status.in_([TaskStatus.NEW, TaskStatus.DECLINED]))
-            .order_by(
-                case(
-                    (Task.status == TaskStatus.DECLINED, 0),
-                    (Task.status == TaskStatus.NEW, 1),
-                ).asc(),
-                Task.priority.asc(),
-                Task.created_at.asc(),
-            )
-            .limit(1)
-        )
-        result = await self.session.execute(query)
-        return result.scalar_one_or_none()
-
-    async def update_status(
-        self,
-        task_id: str,
-        project_id: str,
-        new_status: TaskStatus,
-        decline_feedback: str | None = None,
-    ) -> Task:
-        task = await self.get_for_project(task_id, project_id)
-        if new_status == TaskStatus.CANCELED:
-            task.status = TaskStatus.CANCELED
-            await self.session.flush()
-            return task
-        if (task.status, new_status) not in VALID_TRANSITIONS:
-            raise ValueError(f"Invalid state transition from {task.status.value} to {new_status.value}")
-        task.status = new_status
-        if new_status == TaskStatus.DECLINED and decline_feedback:
-            task.decline_feedback = decline_feedback
+    async def update(self, task_id: str, **kwargs) -> Task:
+        task = await self.get_by_id(task_id)
+        if "status" in kwargs and kwargs["status"] is not None:
+            new_status = kwargs["status"]
+            if isinstance(new_status, str):
+                new_status = TaskStatus(new_status)
+            if (task.status, new_status) not in VALID_TASK_TRANSITIONS:
+                raise ValueError(f"Invalid task transition from {task.status.value} to {new_status.value}")
+            task.status = new_status
+        if "name" in kwargs and kwargs["name"] is not None:
+            task.name = kwargs["name"]
         await self.session.flush()
         return task
 
-    async def update_fields(self, task_id: str, project_id: str, **kwargs) -> Task:
-        task = await self.get_for_project(task_id, project_id)
-        for key, value in kwargs.items():
-            if value is not None:
-                setattr(task, key, value)
-        await self.session.flush()
-        return task
-
-    async def set_name(self, task_id: str, project_id: str, name: str) -> Task:
-        return await self.update_fields(task_id, project_id, name=name)
-
-    async def save_plan(self, task_id: str, project_id: str, plan: str) -> Task:
-        task = await self.get_for_project(task_id, project_id)
-        if task.status not in (TaskStatus.NEW, TaskStatus.DECLINED):
-            raise ValueError(f"Can only save plan for tasks in New or Declined status, got {task.status.value}")
-        task.plan = plan
-        task.status = TaskStatus.PLANNED
-        await self.session.flush()
-        return task
-
-    async def complete_task(self, task_id: str, project_id: str, recap: str) -> Task:
-        task = await self.get_for_project(task_id, project_id)
-        if task.status != TaskStatus.ACCEPTED:
-            raise ValueError(f"Can only complete tasks in Accepted status, got {task.status.value}")
-        task.recap = recap
-        task.status = TaskStatus.FINISHED
-        await self.session.flush()
-        return task
-
-    async def create_spec(self, task_id: str, project_id: str, spec: str) -> Task:
-        if not spec or not spec.strip():
-            raise ValueError("Specification cannot be blank")
-        task = await self.get_for_project(task_id, project_id)
-        if task.status not in (TaskStatus.NEW, TaskStatus.DECLINED):
-            raise ValueError(
-                f"Can only create spec for tasks in New or Declined status, got {task.status.value}"
-            )
-        task.specification = spec
-        task.status = TaskStatus.REASONING
-        await self.session.flush()
-        return task
-
-    async def edit_spec(self, task_id: str, project_id: str, spec: str) -> Task:
-        if not spec or not spec.strip():
-            raise ValueError("Specification cannot be blank")
-        task = await self.get_for_project(task_id, project_id)
-        if task.status != TaskStatus.REASONING:
-            raise ValueError("Task must be in Reasoning status to edit spec")
-        task.specification = spec
-        await self.session.flush()
-        return task
-
-    async def create_plan(self, task_id: str, project_id: str, plan: str) -> Task:
-        if not plan or not plan.strip():
-            raise ValueError("Plan cannot be blank")
-        task = await self.get_for_project(task_id, project_id)
-        if task.status != TaskStatus.REASONING:
-            raise ValueError(
-                f"Can only create plan for tasks in Reasoning status, got {task.status.value}"
-            )
-        task.plan = plan
-        task.status = TaskStatus.PLANNED
-        await self.session.flush()
-        return task
-
-    async def edit_plan(self, task_id: str, project_id: str, plan: str) -> Task:
-        if not plan or not plan.strip():
-            raise ValueError("Plan cannot be blank")
-        task = await self.get_for_project(task_id, project_id)
-        if task.status != TaskStatus.PLANNED:
-            raise ValueError("Task must be in Planned status to edit plan")
-        task.plan = plan
-        await self.session.flush()
-        return task
-
-    async def accept_task(self, task_id: str, project_id: str) -> Task:
-        task = await self.get_for_project(task_id, project_id)
-        if task.status != TaskStatus.PLANNED:
-            raise ValueError(
-                f"Can only accept tasks in Planned status, got {task.status.value}"
-            )
-        task.status = TaskStatus.ACCEPTED
-        await self.session.flush()
-        return task
-
-    async def cancel_task(self, task_id: str, project_id: str) -> Task:
-        task = await self.get_for_project(task_id, project_id)
-        task.status = TaskStatus.CANCELED
-        await self.session.flush()
-        return task
-
-    async def delete(self, task_id: str, project_id: str) -> bool:
-        task = await self.get_for_project(task_id, project_id)
+    async def delete(self, task_id: str) -> bool:
+        task = await self.get_by_id(task_id)
         await self.session.delete(task)
         await self.session.flush()
         return True
+
+    async def list_by_issue(self, issue_id: str) -> list[Task]:
+        result = await self.session.execute(
+            select(Task).where(Task.issue_id == issue_id).order_by(Task.order.asc())
+        )
+        return list(result.scalars().all())
