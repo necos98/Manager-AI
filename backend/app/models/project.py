@@ -18,4 +18,4 @@ class Project(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
+    issues = relationship("Issue", back_populates="project", cascade="all, delete-orphan")
