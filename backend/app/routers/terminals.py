@@ -137,7 +137,9 @@ async def terminal_ws(
         loop = asyncio.get_running_loop()
         try:
             while True:
-                data = await loop.run_in_executor(_pty_executor, pty.read)
+                data = await loop.run_in_executor(
+                    _pty_executor, lambda: pty.read(blocking=True)
+                )
                 if not data:
                     service.mark_closed(terminal_id)
                     await websocket.close(code=1000, reason="Terminal session ended")
