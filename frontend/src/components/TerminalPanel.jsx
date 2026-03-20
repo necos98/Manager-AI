@@ -39,7 +39,14 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
     term.loadAddon(fitAddon);
     term.loadAddon(webLinksAddon);
     term.open(containerRef.current);
-    fitAddon.fit();
+
+    // Defer fit() until the browser has laid out the container,
+    // otherwise xterm crashes reading dimensions of a 0-height element.
+    requestAnimationFrame(() => {
+      if (containerRef.current && containerRef.current.clientHeight > 0) {
+        fitAddon.fit();
+      }
+    });
 
     terminalRef.current = term;
     fitAddonRef.current = fitAddon;
@@ -89,6 +96,7 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
     });
 
     const resizeObserver = new ResizeObserver(() => {
+      if (!containerRef.current || containerRef.current.clientHeight === 0) return;
       fitAddon.fit();
       const dims = fitAddon.proposeDimensions();
       if (dims && wsRef.current?.readyState === WebSocket.OPEN) {
