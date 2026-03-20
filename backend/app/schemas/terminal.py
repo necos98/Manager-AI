@@ -24,5 +24,7 @@ class TerminalListResponse(BaseModel):
     task_id: str
     project_id: str
     project_path: str
+    task_name: str | None = None
+    project_name: str | None = None
     status: str
     created_at: datetime

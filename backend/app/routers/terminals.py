@@ -1,5 +1,7 @@
 import asyncio
 import json
+import logging
+import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.terminal import TerminalCreate, TerminalListResponse, TerminalResponse
 from app.services.terminal_service import TerminalService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/terminals", tags=["terminals"])
 
@@ -39,6 +43,9 @@ async def create_terminal(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    if not os.path.isdir(project_path):
+        raise HTTPException(status_code=400, detail=f"Project path does not exist: {project_path}")
+
     try:
         terminal = service.create(
             task_id=data.task_id,
@@ -51,6 +58,8 @@ async def create_terminal(
     return TerminalResponse(**terminal)
 
 
+# NOTE: /config and /count MUST be defined before /{terminal_id} routes
+# to avoid FastAPI matching them as path parameters.
 @router.get("/config")
 async def terminal_config(
     db: AsyncSession = Depends(get_db),
@@ -69,9 +78,20 @@ async def terminal_config(
 async def list_terminals(
     project_id: str | None = Query(None),
     task_id: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
     service: TerminalService = Depends(get_terminal_service),
 ):
-    return service.list_active(project_id=project_id, task_id=task_id)
+    from app.models.project import Project
+    from app.models.task import Task
+
+    terminals = service.list_active(project_id=project_id, task_id=task_id)
+    # Enrich with task/project names
+    for term in terminals:
+        project = await db.get(Project, term["project_id"])
+        task = await db.get(Task, term["task_id"])
+        term["project_name"] = project.name if project else None
+        term["task_name"] = (task.name or task.description[:50]) if task else None
+    return terminals
 
 
 @router.get("/count")
@@ -109,7 +129,7 @@ async def terminal_ws(
 
     async def pty_to_ws():
         """Read from PTY, send to WebSocket."""
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         try:
             while True:
                 data = await loop.run_in_executor(None, pty.read)
@@ -118,8 +138,10 @@ async def terminal_ws(
                     await websocket.close(code=1000, reason="Terminal session ended")
                     break
                 await websocket.send_text(data)
-        except (WebSocketDisconnect, Exception):
+        except WebSocketDisconnect:
             pass
+        except Exception:
+            logger.warning("pty_to_ws error for terminal %s", terminal_id, exc_info=True)
 
     async def ws_to_pty():
         """Read from WebSocket, write to PTY."""
@@ -135,8 +157,10 @@ async def terminal_ws(
                     except (json.JSONDecodeError, KeyError):
                         pass
                 pty.write(message)
-        except (WebSocketDisconnect, Exception):
+        except WebSocketDisconnect:
             pass
+        except Exception:
+            logger.warning("ws_to_pty error for terminal %s", terminal_id, exc_info=True)
 
     pty_read_task = asyncio.create_task(pty_to_ws())
     ws_read_task = asyncio.create_task(ws_to_pty())

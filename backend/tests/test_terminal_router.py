@@ -50,7 +50,8 @@ async def test_list_terminals_empty(client, mock_service):
 
 @pytest.mark.asyncio
 async def test_create_terminal(client, mock_service):
-    with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path:
+    with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path, \
+         patch("app.routers.terminals.os.path.isdir", return_value=True):
         mock_path.return_value = "C:/fake"
         resp = await client.post("/api/terminals", json={
             "task_id": "task-1",

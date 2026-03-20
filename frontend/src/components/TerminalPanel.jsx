@@ -9,9 +9,15 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
   const terminalRef = useRef(null);
   const wsRef = useRef(null);
   const fitAddonRef = useRef(null);
+  const onSessionEndRef = useRef(onSessionEnd);
   const [status, setStatus] = useState("connecting");
   const retryCountRef = useRef(0);
   const MAX_RETRIES = 5;
+
+  // Keep ref in sync with latest prop
+  useEffect(() => {
+    onSessionEndRef.current = onSessionEnd;
+  }, [onSessionEnd]);
 
   useEffect(() => {
     if (!terminalId || !containerRef.current) return;
@@ -60,7 +66,7 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
       ws.onclose = (event) => {
         if (event.code === 1000 && event.reason === "Terminal session ended") {
           setStatus("ended");
-          if (onSessionEnd) onSessionEnd();
+          if (onSessionEndRef.current) onSessionEndRef.current();
           return;
         }
         setStatus("disconnected");

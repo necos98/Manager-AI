@@ -57,9 +57,9 @@ export default function TerminalsPage() {
                 style={{ boxShadow: "0 0 6px #4ade80" }}
               />
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900">{term.task_id}</p>
+                <p className="font-medium text-gray-900">{term.task_name || term.task_id}</p>
                 <p className="text-sm text-gray-500">
-                  <span className="text-blue-600">{term.project_id}</span>
+                  <span className="text-blue-600">{term.project_name || term.project_id}</span>
                   {" · "}Started {formatAge(term.created_at)}
                 </p>
               </div>

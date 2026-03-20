@@ -1,7 +1,11 @@
+import os
+import threading
 import uuid
 from datetime import datetime, timezone
 
 from winpty import PTY
+
+DEFAULT_SHELL = os.environ.get("MANAGER_AI_SHELL", r"C:\Windows\System32\cmd.exe")
 
 
 class TerminalService:
@@ -9,6 +13,7 @@ class TerminalService:
 
     def __init__(self):
         self._terminals: dict[str, dict] = {}
+        self._lock = threading.Lock()
 
     def create(
         self,
@@ -18,13 +23,14 @@ class TerminalService:
         cols: int = 120,
         rows: int = 30,
     ) -> dict:
-        # Return existing terminal for this task (no duplicates)
-        for term in self._terminals.values():
-            if term["task_id"] == task_id and term["status"] == "active":
-                return self._to_response(term)
+        with self._lock:
+            # Return existing terminal for this task (no duplicates)
+            for term in self._terminals.values():
+                if term["task_id"] == task_id and term["status"] == "active":
+                    return self._to_response(term)
 
         pty = PTY(cols, rows)
-        pty.spawn(r"C:\Windows\System32\cmd.exe", cwd=project_path)
+        pty.spawn(DEFAULT_SHELL, cwd=project_path)
 
         term_id = str(uuid.uuid4())
         entry = {
@@ -38,7 +44,8 @@ class TerminalService:
             "cols": cols,
             "rows": rows,
         }
-        self._terminals[term_id] = entry
+        with self._lock:
+            self._terminals[term_id] = entry
         return self._to_response(entry)
 
     def get(self, terminal_id: str) -> dict:
@@ -71,9 +78,10 @@ class TerminalService:
         return sum(1 for t in self._terminals.values() if t["status"] == "active")
 
     def kill(self, terminal_id: str) -> None:
-        if terminal_id not in self._terminals:
-            raise KeyError(f"Terminal {terminal_id} not found")
-        entry = self._terminals.pop(terminal_id)
+        with self._lock:
+            if terminal_id not in self._terminals:
+                raise KeyError(f"Terminal {terminal_id} not found")
+            entry = self._terminals.pop(terminal_id)
         try:
             pty = entry["pty"]
             if hasattr(pty, "close"):
@@ -82,8 +90,9 @@ class TerminalService:
             pass
 
     def mark_closed(self, terminal_id: str) -> None:
-        if terminal_id in self._terminals:
-            self._terminals.pop(terminal_id)
+        with self._lock:
+            if terminal_id in self._terminals:
+                self._terminals.pop(terminal_id)
 
     def resize(self, terminal_id: str, cols: int, rows: int) -> None:
         if terminal_id not in self._terminals:

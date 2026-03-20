@@ -4,7 +4,6 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from app.database import async_session
-from app.models.task import TaskStatus
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
 
@@ -15,7 +14,7 @@ from app.services.task_service import TaskService
 _defaults_path = Path(__file__).parent / "default_settings.json"
 _desc = json.loads(_defaults_path.read_text(encoding="utf-8"))
 
-mcp = FastMCP(_desc["server.name"], instructions=_desc["server.instructions"], streamable_http_path="/")
+mcp = FastMCP(_desc["server.name"], streamable_http_path="/")
 
 
 # DISABLED: Claude Code selects tasks autonomously via conversation
@@ -201,51 +200,6 @@ async def accept_task(project_id: str, task_id: str) -> dict:
         except (ValueError, PermissionError) as e:
             await session.rollback()
             return {"error": str(e)}
-
-
-@mcp.tool(description=_desc["tool.create_task.description"])
-async def create_task(project_id: str, description: str, priority: int = 3, name: str | None = None) -> dict:
-    async with async_session() as session:
-        task_service = TaskService(session)
-        try:
-            task = await task_service.create(project_id, description, priority)
-            if name:
-                task = await task_service.set_name(task.id, project_id, name)
-            await session.commit()
-            return {
-                "id": task.id,
-                "name": task.name,
-                "description": task.description,
-                "status": task.status.value,
-                "priority": task.priority,
-            }
-        except Exception as e:
-            await session.rollback()
-            return {"error": str(e)}
-
-
-@mcp.tool(description=_desc["tool.list_tasks_by_status.description"])
-async def list_tasks_by_status(project_id: str, status: str | None = None) -> dict:
-    async with async_session() as session:
-        task_service = TaskService(session)
-        try:
-            task_status = TaskStatus(status) if status is not None else None
-        except ValueError:
-            valid = [s.value for s in TaskStatus]
-            return {"error": f"Invalid status '{status}'. Valid values: {valid}"}
-        tasks = await task_service.list_by_project(project_id, task_status)
-        return {
-            "tasks": [
-                {
-                    "id": t.id,
-                    "name": t.name,
-                    "description": t.description,
-                    "status": t.status.value,
-                    "priority": t.priority,
-                }
-                for t in tasks
-            ]
-        }
 
 
 @mcp.tool(description=_desc["tool.cancel_task.description"])
