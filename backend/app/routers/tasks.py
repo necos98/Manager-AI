@@ -27,6 +27,8 @@ async def create_tasks(
     service = TaskService(db)
     tasks = await service.create_bulk(issue_id, [t.model_dump() for t in data.tasks])
     await db.commit()
+    for t in tasks:
+        await db.refresh(t)
     return tasks
 
 
@@ -50,6 +52,7 @@ async def update_task(
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     await db.commit()
+    await db.refresh(task)
     return task
 
 
@@ -74,4 +77,6 @@ async def replace_tasks(
     service = TaskService(db)
     tasks = await service.replace_all(issue_id, [t.model_dump() for t in data.tasks])
     await db.commit()
+    for t in tasks:
+        await db.refresh(t)
     return tasks

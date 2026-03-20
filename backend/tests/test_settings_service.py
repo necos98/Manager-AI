@@ -28,12 +28,11 @@ async def test_get_raises_keyerror_for_unknown_key(service):
 
 async def test_get_all_returns_all_defaults_not_customized(service):
     settings = await service.get_all()
-    assert len(settings) == 12
+    assert len(settings) == 20
     keys = [s.key for s in settings]
     assert "server.name" in keys
-    assert "tool.create_task_spec.description" in keys
-    assert "tool.save_task_plan.response_message" not in keys
-    assert "tool.get_next_task.description" not in keys
+    assert "tool.create_issue_spec.description" in keys
+    assert "tool.create_plan_tasks.description" in keys
     assert all(not s.is_customized for s in settings)
     for s in settings:
         assert s.value == s.default
@@ -95,7 +94,7 @@ async def test_reset_is_idempotent_when_not_customized(service):
 
 async def test_reset_all_clears_all_customizations(db_session, service):
     await service.set("server.name", "Custom 1")
-    await service.set("tool.get_task_status.description", "Custom 2")
+    await service.set("tool.get_issue_status.description", "Custom 2")
     await db_session.commit()
     await service.reset_all()
     await db_session.commit()
