@@ -39,14 +39,14 @@ class ProjectService:
         await self.session.flush()
         return True
 
-    async def get_task_counts(self, project_id: str) -> dict[str, int]:
+    async def get_issue_counts(self, project_id: str) -> dict[str, int]:
         from sqlalchemy import func as sqlfunc, select as sqlselect
 
-        from app.models.task import Task
+        from app.models.issue import Issue
 
         result = await self.session.execute(
-            sqlselect(Task.status, sqlfunc.count())
-            .where(Task.project_id == project_id)
-            .group_by(Task.status)
+            sqlselect(Issue.status, sqlfunc.count())
+            .where(Issue.project_id == project_id)
+            .group_by(Issue.status)
         )
         return {row[0].value: row[1] for row in result.all()}

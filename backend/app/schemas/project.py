@@ -25,6 +25,6 @@ class ProjectResponse(BaseModel):
     tech_stack: str
     created_at: datetime
     updated_at: datetime
-    task_counts: dict[str, int] = {}
+    issue_counts: dict[str, int] = {}
 
     model_config = {"from_attributes": True}

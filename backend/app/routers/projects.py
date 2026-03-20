@@ -12,10 +12,10 @@ router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
 async def _enrich_project(service: ProjectService, project) -> dict:
-    """Add task_counts to a project response."""
-    counts = await service.get_task_counts(project.id)
+    """Add issue_counts to a project response."""
+    counts = await service.get_issue_counts(project.id)
     result = ProjectResponse.model_validate(project)
-    result.task_counts = counts
+    result.issue_counts = counts
     return result
 
 
