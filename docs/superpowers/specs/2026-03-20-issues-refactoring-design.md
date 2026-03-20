@@ -71,8 +71,12 @@ Nessuna perdita di dati: la rename preserva tutti i record esistenti.
 **`models/issue.py`** (ex `models/task.py`):
 - Classe `Issue` con `__tablename__ = "issues"`
 - Enum `IssueStatus` (ex `TaskStatus`): NEW, REASONING, PLANNED, ACCEPTED, DECLINED, FINISHED, CANCELED
-- `VALID_TRANSITIONS` con `IssueStatus` — nota: le transizioni NEW→REASONING e DECLINED→REASONING sono gestite implicitamente da `create_spec()` nel service, non nel set `VALID_TRANSITIONS`
-- Relationship: `tasks = relationship("Task", back_populates="issue", cascade="all, delete-orphan")`
+- `VALID_TRANSITIONS` aggiornato con `IssueStatus`:
+  - **Rimuovere**: (NEW, PLANNED), (DECLINED, PLANNED) — non si salta piu' REASONING
+  - **Aggiungere**: (REASONING, PLANNED) — unica via verso PLANNED
+  - Le transizioni NEW→REASONING e DECLINED→REASONING restano gestite implicitamente da `create_spec()` nel service
+  - Transizioni finali: (REASONING→PLANNED), (PLANNED→ACCEPTED), (PLANNED→DECLINED), (ACCEPTED→FINISHED), qualsiasi→CANCELED
+- Relationship: `tasks = relationship("Task", back_populates="issue", cascade="all, delete-orphan", order_by="Task.order")`
 
 **`models/project.py`** (aggiorna):
 - Rinomina relationship: `tasks = relationship("Task", ...)` → `issues = relationship("Issue", back_populates="project")`
@@ -90,7 +94,7 @@ Nessuna perdita di dati: la rename preserva tutti i record esistenti.
 - `IssueCreate(description, priority)`
 - `IssueUpdate(description?, priority?)`
 - `IssueStatusUpdate(status, decline_feedback?)`
-- `IssueResponse(id, project_id, name, description, status, priority, specification, plan, recap, decline_feedback, tasks[], created_at, updated_at)`
+- `IssueResponse(id, project_id, name, description, status, priority, specification, plan, recap, decline_feedback, tasks: list[TaskResponse] = [], created_at, updated_at)` — importa `TaskResponse` da `schemas/task.py`
 
 **`schemas/task.py`** (nuovo):
 - `TaskCreate(name)`
@@ -104,6 +108,7 @@ Nessuna perdita di dati: la rename preserva tutti i record esistenti.
 - Stessa logica, rinominata: `IssueService`
 - Tutti i metodi restano identici nella semantica, solo nomi aggiornati
 - `get_next_task()` → `get_next_issue()` (seleziona prossima issue per priorita')
+- `decline_issue(issue_id, project_id, feedback)` — nuovo metodo, PLANNED → DECLINED con feedback (simmetrico ad `accept_issue`)
 - `save_plan()` — rimuovere, metodo legacy gia' disabilitato nel MCP
 - `get_for_project` usa `selectinload(Issue.tasks)` per eager loading dei task atomici
 
@@ -178,7 +183,8 @@ Il sistema terminali e' collegato alle issue (ex task). Tutti i riferimenti a `t
 
 - **`schemas/terminal.py`**: `TerminalCreate.task_id` → `issue_id`, `TerminalResponse.task_id` → `issue_id`, `task_name` → `issue_name`
 - **`services/terminal_service.py`**: parametro `task_id` → `issue_id`, deduplicazione per `issue_id`
-- **`routers/terminals.py`**: query param `task_id` → `issue_id`, enrichment query su modello `Issue`
+- **`routers/terminals.py`**: query param `task_id` → `issue_id`, import `Task` → `Issue`, `db.get(Task, ...)` → `db.get(Issue, ...)`, enrichment dict key `task_name` → `issue_name`
+- **`frontend/src/api/client.js`**: body di `createTerminal` cambia `{ task_id: ... }` → `{ issue_id: ... }`
 
 ## Frontend
 
@@ -243,6 +249,7 @@ Aggiungere gestione dei nuovi valori `TaskStatus`: PENDING, IN_PROGRESS, COMPLET
 - **"issue"**: il contenitore top-level (ex "task") — spec, plan, recap
 - **"task"**: i passi atomici strutturati dentro al plan di un issue
 - Quando nel codice si legge "task" deve riferirsi SOLO ai task atomici
+- **Import**: tutti gli import del vecchio `Task` (ora `Issue`) nel codebase devono essere aggiornati. `models/__init__.py` esporta sia `Issue` che `Task` (il nuovo modello atomico)
 
 ## File coinvolti (~40)
 
