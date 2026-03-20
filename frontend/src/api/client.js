@@ -47,4 +47,19 @@ export const api = {
   resetSetting: (key) =>
     request(`/settings/${encodeURIComponent(key)}`, { method: "DELETE" }),
   resetAllSettings: () => request("/settings", { method: "DELETE" }),
+
+  // Terminals
+  listTerminals: (projectId, taskId) => {
+    const params = new URLSearchParams();
+    if (projectId) params.set("project_id", projectId);
+    if (taskId) params.set("task_id", taskId);
+    const qs = params.toString();
+    return request(`/terminals${qs ? `?${qs}` : ""}`);
+  },
+  createTerminal: (taskId, projectId) =>
+    request("/terminals", { method: "POST", body: JSON.stringify({ task_id: taskId, project_id: projectId }) }),
+  killTerminal: (terminalId) =>
+    request(`/terminals/${terminalId}`, { method: "DELETE" }),
+  terminalCount: () => request("/terminals/count"),
+  terminalConfig: () => request("/terminals/config"),
 };
