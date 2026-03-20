@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
-import TaskList from "../components/TaskList";
+import IssueList from "../components/IssueList";
 
 const STATUSES = ["All", "New", "Reasoning", "Planned", "Accepted", "Declined", "Finished", "Canceled"];
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const [project, setProject] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [activeTerminalTaskIds, setActiveTerminalTaskIds] = useState([]);
+  const [issues, setIssues] = useState([]);
+  const [activeTerminalIssueIds, setActiveTerminalIssueIds] = useState([]);
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -23,12 +23,12 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     Promise.all([
       api.getProject(id),
-      api.listTasks(id, filter === "All" ? null : filter),
+      api.listIssues(id, filter === "All" ? null : filter),
       api.listTerminals(id),
-    ]).then(([p, t, terms]) => {
+    ]).then(([p, i, terms]) => {
       setProject(p);
-      setTasks(t);
-      setActiveTerminalTaskIds(terms.map((term) => term.task_id));
+      setIssues(i);
+      setActiveTerminalIssueIds(terms.map((term) => term.issue_id));
     }).finally(() => setLoading(false));
   }, [id, filter]);
 
@@ -127,9 +127,9 @@ export default function ProjectDetailPage() {
             <div className="flex items-start justify-between">
               <div className="flex items-center">
                 <h1 className="text-2xl font-bold">{project.name}</h1>
-                {activeTerminalTaskIds.length > 0 && (
+                {activeTerminalIssueIds.length > 0 && (
                   <span className="text-sm text-green-600 ml-3">
-                    ● {activeTerminalTaskIds.length} terminal{activeTerminalTaskIds.length > 1 ? "s" : ""} active
+                    ● {activeTerminalIssueIds.length} terminal{activeTerminalIssueIds.length > 1 ? "s" : ""} active
                   </span>
                 )}
               </div>
@@ -215,14 +215,14 @@ export default function ProjectDetailPage() {
           ))}
         </div>
         <Link
-          to={`/projects/${id}/tasks/new`}
+          to={`/projects/${id}/issues/new`}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          New Task
+          New Issue
         </Link>
       </div>
 
-      <TaskList tasks={tasks} projectId={id} activeTerminalTaskIds={activeTerminalTaskIds} />
+      <IssueList issues={issues} projectId={id} activeTerminalIssueIds={activeTerminalIssueIds} />
 
       {showMcpSetup && (
         <div

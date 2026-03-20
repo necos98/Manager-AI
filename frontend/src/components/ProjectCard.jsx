@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import StatusBadge from "./StatusBadge";
 
 export default function ProjectCard({ project }) {
-  const counts = project.task_counts || {};
+  const counts = project.issue_counts || {};
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
   return (

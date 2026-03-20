@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import { api } from "./api/client";
 import NewProjectPage from "./pages/NewProjectPage";
-import NewTaskPage from "./pages/NewTaskPage";
+import NewIssuePage from "./pages/NewIssuePage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import ProjectsPage from "./pages/ProjectsPage";
-import TaskDetailPage from "./pages/TaskDetailPage";
+import IssueDetailPage from "./pages/IssueDetailPage";
 import TerminalsPage from "./pages/TerminalsPage";
 import SettingsPage from "./pages/SettingsPage";
 
@@ -55,8 +55,8 @@ export default function App() {
             <Route path="/" element={<ProjectsPage />} />
             <Route path="/projects/new" element={<NewProjectPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
-            <Route path="/projects/:id/tasks/new" element={<NewTaskPage />} />
-            <Route path="/projects/:id/tasks/:taskId" element={<TaskDetailPage />} />
+            <Route path="/projects/:id/issues/new" element={<NewIssuePage />} />
+            <Route path="/projects/:id/issues/:issueId" element={<IssueDetailPage />} />
             <Route path="/terminals" element={<TerminalsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>

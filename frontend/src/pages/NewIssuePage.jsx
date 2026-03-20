@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 
-export default function NewTaskPage() {
+export default function NewIssuePage() {
   const { id: projectId } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState({ description: "", priority: 3 });
@@ -11,7 +11,7 @@ export default function NewTaskPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.createTask(projectId, form);
+      await api.createIssue(projectId, form);
       navigate(`/projects/${projectId}`);
     } catch (err) {
       setError(err.message);
@@ -20,7 +20,7 @@ export default function NewTaskPage() {
 
   return (
     <div className="max-w-lg">
-      <h1 className="text-2xl font-bold mb-6">New Task</h1>
+      <h1 className="text-2xl font-bold mb-6">New Issue</h1>
       {error && <p className="text-red-600 mb-4">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

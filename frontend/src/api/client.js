@@ -22,20 +22,32 @@ export const api = {
   deleteProject: (id) => request(`/projects/${id}`, { method: "DELETE" }),
   installManagerJson: (id) => request(`/projects/${id}/install-manager-json`, { method: "POST" }),
 
-  // Tasks
-  listTasks: (projectId, status) => {
+  // Issues (ex Tasks)
+  listIssues: (projectId, status) => {
     const params = status ? `?status=${status}` : "";
-    return request(`/projects/${projectId}/tasks${params}`);
+    return request(`/projects/${projectId}/issues${params}`);
   },
-  getTask: (projectId, taskId) => request(`/projects/${projectId}/tasks/${taskId}`),
-  createTask: (projectId, data) =>
-    request(`/projects/${projectId}/tasks`, { method: "POST", body: JSON.stringify(data) }),
-  updateTask: (projectId, taskId, data) =>
-    request(`/projects/${projectId}/tasks/${taskId}`, { method: "PUT", body: JSON.stringify(data) }),
-  updateTaskStatus: (projectId, taskId, data) =>
-    request(`/projects/${projectId}/tasks/${taskId}/status`, { method: "PATCH", body: JSON.stringify(data) }),
-  deleteTask: (projectId, taskId) =>
-    request(`/projects/${projectId}/tasks/${taskId}`, { method: "DELETE" }),
+  getIssue: (projectId, issueId) => request(`/projects/${projectId}/issues/${issueId}`),
+  createIssue: (projectId, data) =>
+    request(`/projects/${projectId}/issues`, { method: "POST", body: JSON.stringify(data) }),
+  updateIssue: (projectId, issueId, data) =>
+    request(`/projects/${projectId}/issues/${issueId}`, { method: "PUT", body: JSON.stringify(data) }),
+  updateIssueStatus: (projectId, issueId, data) =>
+    request(`/projects/${projectId}/issues/${issueId}/status`, { method: "PATCH", body: JSON.stringify(data) }),
+  deleteIssue: (projectId, issueId) =>
+    request(`/projects/${projectId}/issues/${issueId}`, { method: "DELETE" }),
+
+  // Tasks (atomic plan tasks)
+  listTasks: (projectId, issueId) =>
+    request(`/projects/${projectId}/issues/${issueId}/tasks`),
+  createTasks: (projectId, issueId, tasks) =>
+    request(`/projects/${projectId}/issues/${issueId}/tasks`, { method: "POST", body: JSON.stringify({ tasks }) }),
+  replaceTasks: (projectId, issueId, tasks) =>
+    request(`/projects/${projectId}/issues/${issueId}/tasks`, { method: "PUT", body: JSON.stringify({ tasks }) }),
+  updateTask: (projectId, issueId, taskId, data) =>
+    request(`/projects/${projectId}/issues/${issueId}/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  deleteTask: (projectId, issueId, taskId) =>
+    request(`/projects/${projectId}/issues/${issueId}/tasks/${taskId}`, { method: "DELETE" }),
 
   // Settings
   getSettings: () => request("/settings"),
@@ -49,15 +61,15 @@ export const api = {
   resetAllSettings: () => request("/settings", { method: "DELETE" }),
 
   // Terminals
-  listTerminals: (projectId, taskId) => {
+  listTerminals: (projectId, issueId) => {
     const params = new URLSearchParams();
     if (projectId) params.set("project_id", projectId);
-    if (taskId) params.set("task_id", taskId);
+    if (issueId) params.set("issue_id", issueId);
     const qs = params.toString();
     return request(`/terminals${qs ? `?${qs}` : ""}`);
   },
-  createTerminal: (taskId, projectId) =>
-    request("/terminals", { method: "POST", body: JSON.stringify({ task_id: taskId, project_id: projectId }) }),
+  createTerminal: (issueId, projectId) =>
+    request("/terminals", { method: "POST", body: JSON.stringify({ issue_id: issueId, project_id: projectId }) }),
   killTerminal: (terminalId) =>
     request(`/terminals/${terminalId}`, { method: "DELETE" }),
   terminalCount: () => request("/terminals/count"),

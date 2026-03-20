@@ -57,7 +57,7 @@ export default function TerminalsPage() {
                 style={{ boxShadow: "0 0 6px #4ade80" }}
               />
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900">{term.task_name || term.task_id}</p>
+                <p className="font-medium text-gray-900">{term.issue_name || term.issue_id}</p>
                 <p className="text-sm text-gray-500">
                   <span className="text-blue-600">{term.project_name || term.project_id}</span>
                   {" · "}Started {formatAge(term.created_at)}
@@ -65,10 +65,10 @@ export default function TerminalsPage() {
               </div>
               <div className="flex gap-2 ml-4">
                 <Link
-                  to={`/projects/${term.project_id}/tasks/${term.task_id}`}
+                  to={`/projects/${term.project_id}/issues/${term.issue_id}`}
                   className="text-sm text-blue-600 border border-blue-200 px-3 py-1.5 rounded hover:bg-blue-50"
                 >
-                  Go to Task
+                  Go to Issue
                 </Link>
                 <button
                   onClick={() => handleKill(term.id)}
