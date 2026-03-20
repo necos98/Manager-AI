@@ -7,7 +7,10 @@ export default defineConfig({
   server: {
     host: true,
     proxy: {
-      "/api": process.env.BACKEND_URL || "http://localhost:8000",
+      "/api": {
+        target: process.env.BACKEND_URL || "http://localhost:8000",
+        ws: true,
+      },
     },
   },
 });

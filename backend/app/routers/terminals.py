@@ -1,0 +1,153 @@
+import asyncio
+import json
+
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.schemas.terminal import TerminalCreate, TerminalListResponse, TerminalResponse
+from app.services.terminal_service import TerminalService
+
+router = APIRouter(prefix="/api/terminals", tags=["terminals"])
+
+# Singleton service instance
+_terminal_service = TerminalService()
+
+
+def get_terminal_service() -> TerminalService:
+    return _terminal_service
+
+
+async def get_project_path(project_id: str, db: AsyncSession) -> str:
+    """Look up project path from DB. Raises ValueError if not found."""
+    from app.models.project import Project
+
+    project = await db.get(Project, project_id)
+    if project is None:
+        raise ValueError(f"Project {project_id} not found")
+    return project.path
+
+
+@router.post("", response_model=TerminalResponse, status_code=201)
+async def create_terminal(
+    data: TerminalCreate,
+    db: AsyncSession = Depends(get_db),
+    service: TerminalService = Depends(get_terminal_service),
+):
+    try:
+        project_path = await get_project_path(data.project_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    try:
+        terminal = service.create(
+            task_id=data.task_id,
+            project_id=data.project_id,
+            project_path=project_path,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
+
+    return TerminalResponse(**terminal)
+
+
+@router.get("/config")
+async def terminal_config(
+    db: AsyncSession = Depends(get_db),
+):
+    """Return terminal configuration including soft limit."""
+    from app.services.settings_service import SettingsService
+    svc = SettingsService(db)
+    try:
+        limit = int(await svc.get("terminal_soft_limit"))
+    except (KeyError, ValueError):
+        limit = 5
+    return {"soft_limit": limit}
+
+
+@router.get("", response_model=list[TerminalListResponse])
+async def list_terminals(
+    project_id: str | None = Query(None),
+    task_id: str | None = Query(None),
+    service: TerminalService = Depends(get_terminal_service),
+):
+    return service.list_active(project_id=project_id, task_id=task_id)
+
+
+@router.get("/count")
+async def terminal_count(
+    service: TerminalService = Depends(get_terminal_service),
+):
+    return {"count": service.active_count()}
+
+
+@router.delete("/{terminal_id}", status_code=204)
+async def delete_terminal(
+    terminal_id: str,
+    service: TerminalService = Depends(get_terminal_service),
+):
+    try:
+        service.kill(terminal_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Terminal not found")
+
+
+@router.websocket("/{terminal_id}/ws")
+async def terminal_ws(
+    terminal_id: str,
+    websocket: WebSocket,
+    service: TerminalService = Depends(get_terminal_service),
+):
+    try:
+        service.get(terminal_id)
+    except KeyError:
+        await websocket.close(code=4004, reason="Terminal not found")
+        return
+
+    await websocket.accept()
+    pty = service.get_pty(terminal_id)
+
+    async def pty_to_ws():
+        """Read from PTY, send to WebSocket."""
+        loop = asyncio.get_event_loop()
+        try:
+            while True:
+                data = await loop.run_in_executor(None, pty.read)
+                if not data:
+                    service.mark_closed(terminal_id)
+                    await websocket.close(code=1000, reason="Terminal session ended")
+                    break
+                await websocket.send_text(data)
+        except (WebSocketDisconnect, Exception):
+            pass
+
+    async def ws_to_pty():
+        """Read from WebSocket, write to PTY."""
+        try:
+            while True:
+                message = await websocket.receive_text()
+                if message.startswith('{"type":"resize"'):
+                    try:
+                        msg = json.loads(message)
+                        if msg.get("type") == "resize":
+                            service.resize(terminal_id, msg["cols"], msg["rows"])
+                            continue
+                    except (json.JSONDecodeError, KeyError):
+                        pass
+                pty.write(message)
+        except (WebSocketDisconnect, Exception):
+            pass
+
+    pty_read_task = asyncio.create_task(pty_to_ws())
+    ws_read_task = asyncio.create_task(ws_to_pty())
+
+    try:
+        done, pending = await asyncio.wait(
+            [pty_read_task, ws_read_task],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        for task in pending:
+            task.cancel()
+    except Exception:
+        pty_read_task.cancel()
+        ws_read_task.cancel()

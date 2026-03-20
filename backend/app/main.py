@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.mcp.server import mcp
-from app.routers import projects, settings, tasks
+from app.routers import projects, settings, tasks, terminals
 
 # Get the MCP Starlette sub-app (creates session manager lazily)
 mcp_app = mcp.streamable_http_app()
@@ -29,6 +29,7 @@ app.add_middleware(
 app.include_router(projects.router)
 app.include_router(tasks.router)
 app.include_router(settings.router)
+app.include_router(terminals.router)
 
 # Mount MCP sub-app at /mcp (sub-app routes at / internally)
 app.mount("/mcp", mcp_app)

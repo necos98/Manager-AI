@@ -1,5 +1,6 @@
 {
   "server.name": "Manager AI",
+  "server.instructions": "Manager AI helps you manage tasks and projects. To call any tool you need a project_id, which you can find in the manager_ai.json file located in the root of the project you are working on.",
   "tool.get_task_details.description": "Get all details of a specific task. Returns: id, project_id, name, description, status, priority, specification (markdown, may be null), plan (markdown, may be null), recap (markdown, may be null), decline_feedback (may be null), created_at, updated_at.",
   "tool.get_task_status.description": "Get the current status of a task.",
   "tool.get_project_context.description": "Get project information (name, path, description, tech_stack).",
@@ -10,5 +11,8 @@
   "tool.create_task_plan.description": "Write an implementation plan for a task and move it to Planned status. Only works for tasks in Reasoning status. The plan should describe the step-by-step implementation approach.",
   "tool.edit_task_plan.description": "Update the implementation plan of a task that is in Planned status. Use this to revise the plan based on user feedback. Does not change the task status.",
   "tool.accept_task.description": "Accept a task and move it to Accepted status. Only works for tasks in Planned status. Call this after the user confirms the plan in conversation.",
-  "tool.cancel_task.description": "Cancel a task, moving it to Canceled status. Can be called from any status. Use when the user says to discard or skip this task."
+  "tool.cancel_task.description": "Cancel a task, moving it to Canceled status. Can be called from any status. Use when the user says to discard or skip this task.",
+  "tool.create_task.description": "Create a new task in a project. Returns the created task id, description, status, and priority.",
+  "tool.list_tasks_by_status.description": "List all tasks in a project filtered by status. The status parameter is optional — if omitted, all tasks are returned. Valid values: New, Reasoning, Planned, Accepted, Declined, Finished, Canceled. Returns a list of tasks with id, name, description, status, and priority, ordered by priority then creation date.",
+  "terminal_soft_limit": "5"
 }
