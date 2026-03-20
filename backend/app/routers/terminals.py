@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +14,10 @@ from app.services.terminal_service import TerminalService
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/terminals", tags=["terminals"])
+
+# Dedicated thread pool for blocking PTY reads so they don't starve
+# the default asyncio executor used by DB queries, HTTP, etc.
+_pty_executor = ThreadPoolExecutor(max_workers=20, thread_name_prefix="pty-read")
 
 # Singleton service instance
 _terminal_service = TerminalService()
@@ -132,7 +137,7 @@ async def terminal_ws(
         loop = asyncio.get_running_loop()
         try:
             while True:
-                data = await loop.run_in_executor(None, pty.read)
+                data = await loop.run_in_executor(_pty_executor, pty.read)
                 if not data:
                     service.mark_closed(terminal_id)
                     await websocket.close(code=1000, reason="Terminal session ended")
@@ -175,3 +180,12 @@ async def terminal_ws(
     except Exception:
         pty_read_task.cancel()
         ws_read_task.cancel()
+    finally:
+        # Close PTY to unblock any stuck pty.read() in the thread pool,
+        # preventing orphaned reader threads from lingering indefinitely.
+        try:
+            pty = service.get_pty(terminal_id)
+            if hasattr(pty, "close"):
+                pty.close()
+        except (KeyError, Exception):
+            pass
