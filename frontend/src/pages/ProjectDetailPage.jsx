@@ -9,6 +9,7 @@ export default function ProjectDetailPage() {
   const { id } = useParams();
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [activeTerminalTaskIds, setActiveTerminalTaskIds] = useState([]);
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -23,9 +24,11 @@ export default function ProjectDetailPage() {
     Promise.all([
       api.getProject(id),
       api.listTasks(id, filter === "All" ? null : filter),
-    ]).then(([p, t]) => {
+      api.listTerminals(id),
+    ]).then(([p, t, terms]) => {
       setProject(p);
       setTasks(t);
+      setActiveTerminalTaskIds(terms.map((term) => term.task_id));
     }).finally(() => setLoading(false));
   }, [id, filter]);
 
@@ -122,7 +125,14 @@ export default function ProjectDetailPage() {
         ) : (
           <>
             <div className="flex items-start justify-between">
-              <h1 className="text-2xl font-bold">{project.name}</h1>
+              <div className="flex items-center">
+                <h1 className="text-2xl font-bold">{project.name}</h1>
+                {activeTerminalTaskIds.length > 0 && (
+                  <span className="text-sm text-green-600 ml-3">
+                    ● {activeTerminalTaskIds.length} terminal{activeTerminalTaskIds.length > 1 ? "s" : ""} active
+                  </span>
+                )}
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => {
@@ -212,7 +222,7 @@ export default function ProjectDetailPage() {
         </Link>
       </div>
 
-      <TaskList tasks={tasks} projectId={id} />
+      <TaskList tasks={tasks} projectId={id} activeTerminalTaskIds={activeTerminalTaskIds} />
 
       {showMcpSetup && (
         <div
