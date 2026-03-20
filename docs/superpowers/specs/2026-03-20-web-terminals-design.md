@@ -141,9 +141,9 @@ Asyncio loop with two concurrent tasks:
 ## Error Handling
 
 - PTY spawn fails → HTTP 500 with clear message
-- WebSocket drops → frontend auto-retry with exponential backoff (1s, 2s, 4s)
+- WebSocket drops → frontend auto-retry with exponential backoff (1s, 2s, 4s, max 5 retries, cap at 30s)
 - Project path doesn't exist → HTTP 400 at POST time
-- Soft limit reached → HTTP 200 with `warning: true`, frontend shows warning modal
+- Soft limit reached → POST still creates the terminal but response includes `warning: true`; frontend intercepts BEFORE sending the POST by checking current count via GET, shows warning modal, only sends POST if user clicks "Open Anyway"
 
 ## Future Enhancements (not in v1)
 
