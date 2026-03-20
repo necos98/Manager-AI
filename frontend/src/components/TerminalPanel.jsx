@@ -13,6 +13,7 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
   const [status, setStatus] = useState("connecting");
   const retryCountRef = useRef(0);
   const MAX_RETRIES = 5;
+  const cleanedUpRef = useRef(false);
 
   // Keep ref in sync with latest prop
   useEffect(() => {
@@ -21,37 +22,59 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
 
   useEffect(() => {
     if (!terminalId || !containerRef.current) return;
+    cleanedUpRef.current = false;
 
-    const term = new Terminal({
-      cursorBlink: true,
-      fontSize: 14,
-      fontFamily: "'Cascadia Code', 'Consolas', monospace",
-      theme: {
-        background: "#0d0d0d",
-        foreground: "#cdd6f4",
-        cursor: "#89b4fa",
-      },
-    });
+    const container = containerRef.current;
+    let term = null;
+    let fitAddon = null;
+    let resizeObserver = null;
 
-    const fitAddon = new FitAddon();
-    const webLinksAddon = new WebLinksAddon();
+    function initTerminal() {
+      if (cleanedUpRef.current) return;
 
-    term.loadAddon(fitAddon);
-    term.loadAddon(webLinksAddon);
-    term.open(containerRef.current);
+      term = new Terminal({
+        cursorBlink: true,
+        fontSize: 14,
+        fontFamily: "'Cascadia Code', 'Consolas', monospace",
+        theme: {
+          background: "#0d0d0d",
+          foreground: "#cdd6f4",
+          cursor: "#89b4fa",
+        },
+      });
 
-    // Defer fit() until the browser has laid out the container,
-    // otherwise xterm crashes reading dimensions of a 0-height element.
-    requestAnimationFrame(() => {
-      if (containerRef.current && containerRef.current.clientHeight > 0) {
+      fitAddon = new FitAddon();
+      const webLinksAddon = new WebLinksAddon();
+
+      term.loadAddon(fitAddon);
+      term.loadAddon(webLinksAddon);
+      term.open(container);
+      fitAddon.fit();
+
+      terminalRef.current = term;
+      fitAddonRef.current = fitAddon;
+
+      connect();
+
+      term.onData((data) => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(data);
+        }
+      });
+
+      resizeObserver = new ResizeObserver(() => {
+        if (!container || container.clientHeight === 0) return;
         fitAddon.fit();
-      }
-    });
-
-    terminalRef.current = term;
-    fitAddonRef.current = fitAddon;
+        const dims = fitAddon.proposeDimensions();
+        if (dims && wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
+        }
+      });
+      resizeObserver.observe(container);
+    }
 
     function connect() {
+      if (cleanedUpRef.current) return;
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/api/terminals/${terminalId}/ws`;
       const ws = new WebSocket(wsUrl);
@@ -60,17 +83,20 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
       ws.onopen = () => {
         setStatus("connected");
         retryCountRef.current = 0;
-        const dims = fitAddon.proposeDimensions();
-        if (dims) {
-          ws.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
+        if (fitAddon) {
+          const dims = fitAddon.proposeDimensions();
+          if (dims) {
+            ws.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
+          }
         }
       };
 
       ws.onmessage = (event) => {
-        term.write(event.data);
+        if (term) term.write(event.data);
       };
 
       ws.onclose = (event) => {
+        if (cleanedUpRef.current) return;
         if (event.code === 1000 && event.reason === "Terminal session ended") {
           setStatus("ended");
           if (onSessionEndRef.current) onSessionEndRef.current();
@@ -87,28 +113,35 @@ export default function TerminalPanel({ terminalId, onSessionEnd }) {
       ws.onerror = () => {};
     }
 
-    connect();
+    // Wait for the container to have actual dimensions before opening xterm.
+    // xterm's open() triggers Viewport which reads dimensions synchronously;
+    // if the container has 0 height, it crashes.
+    if (container.clientHeight > 0) {
+      initTerminal();
+    } else {
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.contentRect.height > 0) {
+            observer.disconnect();
+            initTerminal();
+            return;
+          }
+        }
+      });
+      observer.observe(container);
 
-    term.onData((data) => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(data);
-      }
-    });
-
-    const resizeObserver = new ResizeObserver(() => {
-      if (!containerRef.current || containerRef.current.clientHeight === 0) return;
-      fitAddon.fit();
-      const dims = fitAddon.proposeDimensions();
-      if (dims && wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
-      }
-    });
-    resizeObserver.observe(containerRef.current);
+      // Clean up the waiting observer if effect is destroyed before init
+      return () => {
+        cleanedUpRef.current = true;
+        observer.disconnect();
+      };
+    }
 
     return () => {
-      resizeObserver.disconnect();
+      cleanedUpRef.current = true;
+      if (resizeObserver) resizeObserver.disconnect();
       wsRef.current?.close();
-      term.dispose();
+      if (term) term.dispose();
     };
   }, [terminalId]);
 
