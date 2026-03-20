@@ -4,13 +4,13 @@ from pydantic import BaseModel
 
 
 class TerminalCreate(BaseModel):
-    task_id: str
+    issue_id: str
     project_id: str
 
 
 class TerminalResponse(BaseModel):
     id: str
-    task_id: str
+    issue_id: str
     project_id: str
     project_path: str
     status: str
@@ -21,10 +21,10 @@ class TerminalResponse(BaseModel):
 
 class TerminalListResponse(BaseModel):
     id: str
-    task_id: str
+    issue_id: str
     project_id: str
     project_path: str
-    task_name: str | None = None
+    issue_name: str | None = None
     project_name: str | None = None
     status: str
     created_at: datetime

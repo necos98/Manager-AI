@@ -53,7 +53,7 @@ async def create_terminal(
 
     try:
         terminal = service.create(
-            task_id=data.task_id,
+            issue_id=data.issue_id,
             project_id=data.project_id,
             project_path=project_path,
         )
@@ -82,20 +82,20 @@ async def terminal_config(
 @router.get("", response_model=list[TerminalListResponse])
 async def list_terminals(
     project_id: str | None = Query(None),
-    task_id: str | None = Query(None),
+    issue_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     service: TerminalService = Depends(get_terminal_service),
 ):
     from app.models.project import Project
-    from app.models.task import Task
+    from app.models.issue import Issue
 
-    terminals = service.list_active(project_id=project_id, task_id=task_id)
-    # Enrich with task/project names
+    terminals = service.list_active(project_id=project_id, issue_id=issue_id)
+    # Enrich with issue/project names
     for term in terminals:
         project = await db.get(Project, term["project_id"])
-        task = await db.get(Task, term["task_id"])
+        issue = await db.get(Issue, term["issue_id"])
         term["project_name"] = project.name if project else None
-        term["task_name"] = (task.name or task.description[:50]) if task else None
+        term["issue_name"] = (issue.name or issue.description[:50]) if issue else None
     return terminals
 
 

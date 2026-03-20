@@ -17,16 +17,16 @@ class TerminalService:
 
     def create(
         self,
-        task_id: str,
+        issue_id: str,
         project_id: str,
         project_path: str,
         cols: int = 120,
         rows: int = 30,
     ) -> dict:
         with self._lock:
-            # Return existing terminal for this task (no duplicates)
+            # Return existing terminal for this issue (no duplicates)
             for term in self._terminals.values():
-                if term["task_id"] == task_id and term["status"] == "active":
+                if term["issue_id"] == issue_id and term["status"] == "active":
                     return self._to_response(term)
 
         pty = PTY(cols, rows)
@@ -35,7 +35,7 @@ class TerminalService:
         term_id = str(uuid.uuid4())
         entry = {
             "id": term_id,
-            "task_id": task_id,
+            "issue_id": issue_id,
             "project_id": project_id,
             "project_path": project_path,
             "pty": pty,
@@ -61,7 +61,7 @@ class TerminalService:
     def list_active(
         self,
         project_id: str | None = None,
-        task_id: str | None = None,
+        issue_id: str | None = None,
     ) -> list[dict]:
         results = []
         for term in self._terminals.values():
@@ -69,7 +69,7 @@ class TerminalService:
                 continue
             if project_id and term["project_id"] != project_id:
                 continue
-            if task_id and term["task_id"] != task_id:
+            if issue_id and term["issue_id"] != issue_id:
                 continue
             results.append(self._to_response(term))
         return results
@@ -105,7 +105,7 @@ class TerminalService:
     def _to_response(self, entry: dict) -> dict:
         return {
             "id": entry["id"],
-            "task_id": entry["task_id"],
+            "issue_id": entry["issue_id"],
             "project_id": entry["project_id"],
             "project_path": entry["project_path"],
             "status": entry["status"],
