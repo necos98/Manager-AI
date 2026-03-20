@@ -143,7 +143,7 @@ async def terminal_ws(
                     await websocket.close(code=1000, reason="Terminal session ended")
                     break
                 await websocket.send_text(data)
-        except WebSocketDisconnect:
+        except (WebSocketDisconnect, RuntimeError):
             pass
         except Exception:
             logger.warning("pty_to_ws error for terminal %s", terminal_id, exc_info=True)
@@ -162,7 +162,7 @@ async def terminal_ws(
                     except (json.JSONDecodeError, KeyError):
                         pass
                 pty.write(message)
-        except WebSocketDisconnect:
+        except (WebSocketDisconnect, RuntimeError):
             pass
         except Exception:
             logger.warning("ws_to_pty error for terminal %s", terminal_id, exc_info=True)
