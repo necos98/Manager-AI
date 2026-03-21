@@ -3,7 +3,10 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
+from datetime import datetime, timezone
+
 from app.database import async_session
+from app.services.event_service import event_service
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
@@ -188,6 +191,27 @@ async def cancel_issue(project_id: str, issue_id: str) -> dict:
         except (ValueError, PermissionError) as e:
             await session.rollback()
             return {"error": str(e)}
+
+
+@mcp.tool(description=_desc["tool.send_notification.description"])
+async def send_notification(project_id: str, issue_id: str, title: str, message: str = "") -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.get_for_project(issue_id, project_id)
+        except (ValueError, PermissionError) as e:
+            return {"error": str(e)}
+        issue_name = issue.name or issue.description[:50]
+        await event_service.emit({
+            "type": "notification",
+            "title": title,
+            "message": message,
+            "project_id": project_id,
+            "issue_id": issue_id,
+            "issue_name": issue_name,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return {"success": True}
 
 
 # ── Task tools (atomic plan tasks) ──────────────────────────────────────────
