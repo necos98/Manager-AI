@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
+import TerminalCommandsEditor from "../components/TerminalCommandsEditor";
 
-const TABS = ["Server", "Tool Descriptions", "Response Messages"];
+const TABS = ["Server", "Tool Descriptions", "Response Messages", "Terminal"];
 
 function getCategory(key) {
   if (key.startsWith("server.")) return "Server";
@@ -147,88 +148,101 @@ export default function SettingsPage() {
       )}
 
       {/* Settings list */}
-      <div className="space-y-5">
-        {filteredSettings.length === 0 && (
-          <p className="text-gray-500 text-sm">No settings in this category.</p>
-        )}
-        {filteredSettings.map((setting) => (
-          <div key={setting.key} className="border rounded-lg p-4 bg-white">
-            <div className="flex items-center justify-between mb-2">
-              <label className="font-medium text-sm text-gray-800">
-                {formatLabel(setting.key)}
-              </label>
-              <div className="flex items-center gap-2">
-                {setting.is_customized && (
-                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium">
-                    Customized
-                  </span>
-                )}
-                {setting.is_customized && (
-                  <button
-                    onClick={() => handleReset(setting)}
-                    disabled={resetting[setting.key]}
-                    title="Reset to default"
-                    className="text-gray-400 hover:text-gray-600 text-base leading-none disabled:opacity-50"
-                  >
-                    ↺
-                  </button>
-                )}
+      {activeTab !== "Terminal" && (
+        <div className="space-y-5">
+          {filteredSettings.length === 0 && (
+            <p className="text-gray-500 text-sm">No settings in this category.</p>
+          )}
+          {filteredSettings.map((setting) => (
+            <div key={setting.key} className="border rounded-lg p-4 bg-white">
+              <div className="flex items-center justify-between mb-2">
+                <label className="font-medium text-sm text-gray-800">
+                  {formatLabel(setting.key)}
+                </label>
+                <div className="flex items-center gap-2">
+                  {setting.is_customized && (
+                    <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium">
+                      Customized
+                    </span>
+                  )}
+                  {setting.is_customized && (
+                    <button
+                      onClick={() => handleReset(setting)}
+                      disabled={resetting[setting.key]}
+                      title="Reset to default"
+                      className="text-gray-400 hover:text-gray-600 text-base leading-none disabled:opacity-50"
+                    >
+                      ↺
+                    </button>
+                  )}
+                </div>
+              </div>
+              <textarea
+                value={getValue(setting)}
+                onChange={(e) =>
+                  setEdited((prev) => ({ ...prev, [setting.key]: e.target.value }))
+                }
+                rows={setting.key.endsWith(".description") ? 4 : 5}
+                className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
+              />
+              {!setting.is_customized && (
+                <p className="text-xs text-gray-400 mt-1">Default value</p>
+              )}
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => handleSave(setting)}
+                  disabled={saving[setting.key] || !isDirty(setting)}
+                  className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving[setting.key] ? "Saving..." : "Save"}
+                </button>
               </div>
             </div>
-            <textarea
-              value={getValue(setting)}
-              onChange={(e) =>
-                setEdited((prev) => ({ ...prev, [setting.key]: e.target.value }))
-              }
-              rows={setting.key.endsWith(".description") ? 4 : 5}
-              className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
-            />
-            {!setting.is_customized && (
-              <p className="text-xs text-gray-400 mt-1">Default value</p>
-            )}
-            <div className="flex justify-end mt-2">
-              <button
-                onClick={() => handleSave(setting)}
-                disabled={saving[setting.key] || !isDirty(setting)}
-                className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving[setting.key] ? "Saving..." : "Save"}
-              </button>
-            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "Terminal" && (
+        <div>
+          <div className="mb-5 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+            These commands run automatically when opening a terminal. They apply only when a project has no project-specific commands.
           </div>
-        ))}
-      </div>
+          <TerminalCommandsEditor projectId={null} />
+        </div>
+      )}
 
       {/* Reset all */}
-      <div className="mt-8 pt-6 border-t">
-        {resetConfirm ? (
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-gray-600">
-              Reset all settings to defaults?
-            </p>
+      {activeTab !== "Terminal" && (
+        <div className="mt-8 pt-6 border-t">
+          {resetConfirm ? (
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-gray-600">
+                Reset all settings to defaults?
+              </p>
+              <button
+                onClick={handleResetAll}
+                disabled={resettingAll}
+                className="bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700 disabled:opacity-50"
+              >
+                {resettingAll ? "..." : "Confirm"}
+              </button>
+              <button
+                onClick={() => setResetConfirm(false)}
+                className="px-3 py-1.5 rounded text-sm border hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
             <button
-              onClick={handleResetAll}
-              disabled={resettingAll}
-              className="bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700 disabled:opacity-50"
+              onClick={() => setResetConfirm(true)}
+              className="text-sm text-red-600 hover:text-red-800"
             >
-              {resettingAll ? "..." : "Confirm"}
+              Reset all to defaults
             </button>
-            <button
-              onClick={() => setResetConfirm(false)}
-              className="px-3 py-1.5 rounded text-sm border hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setResetConfirm(true)}
-            className="text-sm text-red-600 hover:text-red-800"
-          >
-            Reset all to defaults
-          </button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
