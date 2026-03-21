@@ -77,6 +77,7 @@ export const api = {
   terminalConfig: () => request("/terminals/config"),
 
   // Terminal Commands
+  terminalCommandVariables: () => request("/terminal-commands/variables"),
   listTerminalCommands: (projectId) => {
     const params = projectId != null ? `?project_id=${projectId}` : "";
     return request(`/terminal-commands${params}`);

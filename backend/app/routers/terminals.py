@@ -68,6 +68,7 @@ async def create_terminal(
         if commands:
             pty = service.get_pty(terminal["id"])
             # Resolve dynamic variables in commands
+            # Variable names are defined in terminal_commands.TEMPLATE_VARIABLES
             variables = {
                 "$issue_id": data.issue_id,
                 "$project_id": data.project_id,

@@ -3,6 +3,7 @@ import { api } from "../api/client";
 
 export default function TerminalCommandsEditor({ projectId = null }) {
   const [commands, setCommands] = useState([]);
+  const [variables, setVariables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newCmd, setNewCmd] = useState("");
 
@@ -16,6 +17,7 @@ export default function TerminalCommandsEditor({ projectId = null }) {
 
   useEffect(() => {
     load();
+    api.terminalCommandVariables().then(setVariables);
   }, [projectId]);
 
   const handleAdd = async () => {
@@ -124,6 +126,20 @@ export default function TerminalCommandsEditor({ projectId = null }) {
           Add
         </button>
       </div>
+
+      {variables.length > 0 && (
+        <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded text-sm">
+          <p className="text-gray-600 font-medium mb-1">Available variables</p>
+          <div className="space-y-0.5">
+            {variables.map((v) => (
+              <p key={v.name} className="text-gray-500">
+                <code className="text-blue-600 bg-blue-50 px-1 rounded font-mono">{v.name}</code>
+                {" "}&mdash; {v.description}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

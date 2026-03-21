@@ -12,6 +12,18 @@ from app.services.terminal_command_service import TerminalCommandService
 
 router = APIRouter(prefix="/api/terminal-commands", tags=["terminal-commands"])
 
+# Single source of truth for available template variables
+TEMPLATE_VARIABLES = [
+    {"name": "$issue_id", "description": "ID of the issue the terminal is opened for"},
+    {"name": "$project_id", "description": "ID of the project"},
+    {"name": "$project_path", "description": "Filesystem path of the project"},
+]
+
+
+@router.get("/variables")
+async def list_template_variables():
+    return TEMPLATE_VARIABLES
+
 
 @router.get("", response_model=list[TerminalCommandOut])
 async def list_terminal_commands(
