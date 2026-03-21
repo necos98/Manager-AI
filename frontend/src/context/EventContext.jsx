@@ -57,7 +57,7 @@ export function EventProvider({ children }) {
           id: Date.now() + Math.random(),
           ...data,
         };
-        setToasts((prev) => [toast, ...prev]);
+        setToasts((prev) => [toast, ...prev].slice(0, 5));
         playNotificationSound();
       } catch (e) {
         // Ignore unparseable messages

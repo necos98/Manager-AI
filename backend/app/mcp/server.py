@@ -201,7 +201,7 @@ async def send_notification(project_id: str, issue_id: str, title: str, message:
             issue = await issue_service.get_for_project(issue_id, project_id)
         except (ValueError, PermissionError) as e:
             return {"error": str(e)}
-        issue_name = issue.name or issue.description[:50]
+        issue_name = issue.name or (issue.description or "")[:50] or "Untitled issue"
         await event_service.emit({
             "type": "notification",
             "title": title,

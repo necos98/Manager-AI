@@ -41,6 +41,11 @@ function Toast({ toast, onDismiss, onClick }) {
             {toast.issue_name}
           </p>
         )}
+        {toast.message && (
+          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+            {toast.message}
+          </p>
+        )}
         {!toast.title && !toast.issue_name && (
           <p className="text-sm text-gray-600">New notification</p>
         )}
