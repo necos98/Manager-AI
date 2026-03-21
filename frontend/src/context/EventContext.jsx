@@ -6,17 +6,9 @@ const EventContext = createContext(null);
 
 function playNotificationSound() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = ctx.createOscillator();
-    const gain = ctx.createGain();
-    oscillator.connect(gain);
-    gain.connect(ctx.destination);
-    oscillator.frequency.value = 800;
-    oscillator.type = "sine";
-    gain.gain.value = 0.3;
-    oscillator.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-    oscillator.stop(ctx.currentTime + 0.5);
+    const audio = new Audio("/sounds/notification.mp3");
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
   } catch (e) {
     // Audio API unavailable or blocked — silently ignore
   }
@@ -84,7 +76,9 @@ export function EventProvider({ children }) {
       cleanedUpRef.current = true;
       clearTimeout(reconnectTimeoutRef.current);
       if (wsRef.current) {
-        wsRef.current.close();
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.close();
+        }
         wsRef.current = null;
       }
     };

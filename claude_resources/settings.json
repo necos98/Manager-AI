@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -Command \"$input_data = $input | Out-String; $parsed = $input_data | ConvertFrom-Json; $body = @{type='notification'; title=$parsed.title; message=$parsed.message; terminal_id=$env:MANAGER_AI_TERMINAL_ID; issue_id=$env:MANAGER_AI_ISSUE_ID; project_id=$env:MANAGER_AI_PROJECT_ID} | ConvertTo-Json; try { Invoke-RestMethod -Uri ($env:MANAGER_AI_BASE_URL + '/api/events') -Method Post -ContentType 'application/json' -Body $body } catch {}\""
+          }
+        ]
+      }
+    ]
+  }
+}
