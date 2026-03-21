@@ -5,6 +5,7 @@ import IssueList from "../components/IssueList";
 import TerminalCommandsEditor from "../components/TerminalCommandsEditor";
 
 const STATUSES = ["All", "New", "Reasoning", "Planned", "Accepted", "Declined", "Finished", "Canceled"];
+const TABS = ["Issues", "Summary", "Terminal Settings"];
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
@@ -13,6 +14,7 @@ export default function ProjectDetailPage() {
   const [activeTerminalIssueIds, setActiveTerminalIssueIds] = useState([]);
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("Issues");
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", path: "", description: "", tech_stack: "" });
   const [editError, setEditError] = useState(null);
@@ -66,77 +68,146 @@ export default function ProjectDetailPage() {
 
   return (
     <div>
+      {/* Header */}
       <div className="mb-6">
-        {editing ? (
-          <form onSubmit={saveEdit} className="space-y-3 max-w-lg">
-            {editError && <p className="text-red-600 text-sm">{editError}</p>}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-              <input
-                type="text"
-                required
-                value={editForm.name}
-                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full border rounded px-3 py-2"
-              />
+        <div className="flex items-start justify-between">
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold">{project.name}</h1>
+            {activeTerminalIssueIds.length > 0 && (
+              <span className="text-sm text-green-600 ml-3">
+                ● {activeTerminalIssueIds.length} terminal{activeTerminalIssueIds.length > 1 ? "s" : ""} active
+              </span>
+            )}
+          </div>
+        </div>
+        <p className="text-sm text-gray-500 font-mono">{project.path}</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-0 mb-6 border-b">
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              activeTab === tab
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Issues Tab */}
+      {activeTab === "Issues" && (
+        <>
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex gap-2">
+              {STATUSES.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFilter(s)}
+                  className={`px-3 py-1 rounded text-sm ${
+                    filter === s ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Path</label>
-              <input
-                type="text"
-                required
-                value={editForm.path}
-                onChange={(e) => setEditForm({ ...editForm, path: e.target.value })}
-                className="w-full border rounded px-3 py-2 font-mono"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea
-                value={editForm.description}
-                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                className="w-full border rounded px-3 py-2"
-                rows={3}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tech Stack</label>
-              <textarea
-                value={editForm.tech_stack}
-                onChange={(e) => setEditForm({ ...editForm, tech_stack: e.target.value })}
-                className="w-full border rounded px-3 py-2"
-                rows={3}
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={saving}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={cancelEditing}
-                className="px-4 py-2 rounded border hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
-          <>
-            <div className="flex items-start justify-between">
-              <div className="flex items-center">
-                <h1 className="text-2xl font-bold">{project.name}</h1>
-                {activeTerminalIssueIds.length > 0 && (
-                  <span className="text-sm text-green-600 ml-3">
-                    ● {activeTerminalIssueIds.length} terminal{activeTerminalIssueIds.length > 1 ? "s" : ""} active
-                  </span>
-                )}
+            <Link
+              to={`/projects/${id}/issues/new`}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              New Issue
+            </Link>
+          </div>
+          <IssueList issues={issues} projectId={id} activeTerminalIssueIds={activeTerminalIssueIds} />
+        </>
+      )}
+
+      {/* Summary Tab */}
+      {activeTab === "Summary" && (
+        <div>
+          {editing ? (
+            <form onSubmit={saveEdit} className="space-y-3 max-w-lg">
+              {editError && <p className="text-red-600 text-sm">{editError}</p>}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                />
               </div>
-              <div className="flex gap-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Path</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.path}
+                  onChange={(e) => setEditForm({ ...editForm, path: e.target.value })}
+                  className="w-full border rounded px-3 py-2 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tech Stack</label>
+                <textarea
+                  value={editForm.tech_stack}
+                  onChange={(e) => setEditForm({ ...editForm, tech_stack: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEditing}
+                  className="px-4 py-2 rounded border hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {project.description && <p className="text-gray-600">{project.description}</p>}
+                {project.tech_stack && (
+                  <p className="text-sm text-gray-500">
+                    <span className="font-medium">Tech Stack:</span> {project.tech_stack}
+                  </p>
+                )}
+                <p className="text-xs text-gray-400 font-mono">ID: {project.id}</p>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-6">
+                <button
+                  onClick={startEditing}
+                  className="text-sm text-blue-600 hover:text-blue-800 px-3 py-1 rounded border border-blue-200 hover:bg-blue-50"
+                >
+                  Edit
+                </button>
                 <button
                   onClick={() => {
                     const blob = new Blob(
@@ -197,69 +268,33 @@ export default function ProjectDetailPage() {
                 >
                   MCP Setup
                 </button>
-                <button
-                  onClick={startEditing}
-                  className="text-sm text-blue-600 hover:text-blue-800 px-3 py-1 rounded border border-blue-200 hover:bg-blue-50"
-                >
-                  Edit
-                </button>
               </div>
-            </div>
-            {installMsg && (
-              <p className={`text-xs mt-1 ${installMsg.ok ? "text-teal-700" : "text-red-600"}`}>
-                {installMsg.text}
-              </p>
-            )}
-            {claudeMsg && (
-              <p className={`text-xs mt-1 ${claudeMsg.ok ? "text-orange-700" : "text-red-600"}`}>
-                {claudeMsg.text}
-              </p>
-            )}
-            <p className="text-sm text-gray-500 font-mono">{project.path}</p>
-            {project.description && <p className="text-gray-600 mt-2">{project.description}</p>}
-            {project.tech_stack && (
-              <p className="text-sm text-gray-500 mt-1">
-                <span className="font-medium">Tech Stack:</span> {project.tech_stack}
-              </p>
-            )}
-            <p className="text-xs text-gray-400 mt-1 font-mono">ID: {project.id}</p>
-          </>
-        )}
-      </div>
-
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-2">
-          {STATUSES.map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              className={`px-3 py-1 rounded text-sm ${
-                filter === s ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
+              {installMsg && (
+                <p className={`text-xs mt-2 ${installMsg.ok ? "text-teal-700" : "text-red-600"}`}>
+                  {installMsg.text}
+                </p>
+              )}
+              {claudeMsg && (
+                <p className={`text-xs mt-1 ${claudeMsg.ok ? "text-orange-700" : "text-red-600"}`}>
+                  {claudeMsg.text}
+                </p>
+              )}
+            </>
+          )}
         </div>
-        <Link
-          to={`/projects/${id}/issues/new`}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          New Issue
-        </Link>
-      </div>
+      )}
 
-      <IssueList issues={issues} projectId={id} activeTerminalIssueIds={activeTerminalIssueIds} />
+      {/* Terminal Settings Tab */}
+      {activeTab === "Terminal Settings" && (
+        <div>
+          <p className="text-sm text-gray-500 mb-4">
+            These commands run when opening a terminal for this project. When set, they override the global terminal commands.
+          </p>
+          <TerminalCommandsEditor projectId={id} />
+        </div>
+      )}
 
-      {/* Terminal Settings */}
-      <div className="mt-8 pt-6 border-t">
-        <h2 className="text-lg font-bold mb-2">Terminal Settings</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          These commands run when opening a terminal for this project. When set, they override the global terminal commands.
-        </p>
-        <TerminalCommandsEditor projectId={id} />
-      </div>
-
+      {/* MCP Setup Modal */}
       {showMcpSetup && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
