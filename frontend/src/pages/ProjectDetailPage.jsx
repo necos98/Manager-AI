@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import IssueList from "../components/IssueList";
+import TerminalCommandsEditor from "../components/TerminalCommandsEditor";
 
 const STATUSES = ["All", "New", "Reasoning", "Planned", "Accepted", "Declined", "Finished", "Canceled"];
 
@@ -19,6 +20,8 @@ export default function ProjectDetailPage() {
   const [showMcpSetup, setShowMcpSetup] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [installMsg, setInstallMsg] = useState(null);
+  const [installingClaude, setInstallingClaude] = useState(false);
+  const [claudeMsg, setClaudeMsg] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -170,6 +173,25 @@ export default function ProjectDetailPage() {
                   {installing ? "Installing..." : "Install manager.json"}
                 </button>
                 <button
+                  disabled={installingClaude}
+                  onClick={async () => {
+                    setInstallingClaude(true);
+                    setClaudeMsg(null);
+                    try {
+                      const res = await api.installClaudeResources(project.id);
+                      const count = res.copied.length;
+                      setClaudeMsg({ ok: true, text: `Installed ${count} item${count !== 1 ? "s" : ""} → ${res.path}` });
+                    } catch (err) {
+                      setClaudeMsg({ ok: false, text: err.message });
+                    } finally {
+                      setInstallingClaude(false);
+                    }
+                  }}
+                  className="text-sm text-orange-600 hover:text-orange-800 px-3 py-1 rounded border border-orange-200 hover:bg-orange-50 disabled:opacity-50"
+                >
+                  {installingClaude ? "Installing..." : "Install Claude Resources"}
+                </button>
+                <button
                   onClick={() => setShowMcpSetup(true)}
                   className="text-sm text-purple-600 hover:text-purple-800 px-3 py-1 rounded border border-purple-200 hover:bg-purple-50"
                 >
@@ -186,6 +208,11 @@ export default function ProjectDetailPage() {
             {installMsg && (
               <p className={`text-xs mt-1 ${installMsg.ok ? "text-teal-700" : "text-red-600"}`}>
                 {installMsg.text}
+              </p>
+            )}
+            {claudeMsg && (
+              <p className={`text-xs mt-1 ${claudeMsg.ok ? "text-orange-700" : "text-red-600"}`}>
+                {claudeMsg.text}
               </p>
             )}
             <p className="text-sm text-gray-500 font-mono">{project.path}</p>
@@ -223,6 +250,15 @@ export default function ProjectDetailPage() {
       </div>
 
       <IssueList issues={issues} projectId={id} activeTerminalIssueIds={activeTerminalIssueIds} />
+
+      {/* Terminal Settings */}
+      <div className="mt-8 pt-6 border-t">
+        <h2 className="text-lg font-bold mb-2">Terminal Settings</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          These commands run when opening a terminal for this project. When set, they override the global terminal commands.
+        </p>
+        <TerminalCommandsEditor projectId={id} />
+      </div>
 
       {showMcpSetup && (
         <div
