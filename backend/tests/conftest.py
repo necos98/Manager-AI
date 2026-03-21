@@ -3,17 +3,19 @@ from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.database import Base
-from app.models import Issue, Project, Setting, Task  # noqa: F401
+from app.models import Issue, Project, Setting, Task, TerminalCommand  # noqa: F401
 
 
 @pytest_asyncio.fixture
 async def db_session():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
 
-    # Register a listener to ignore unknown column types (Vector) in SQLite
+    # Enable FK enforcement and ignore unknown column types (Vector) in SQLite
     @event.listens_for(engine.sync_engine, "connect")
     def _set_sqlite_pragma(dbapi_conn, connection_record):
-        pass
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
     # Create tables, skipping Vector columns that SQLite can't handle
     def _create_tables(connection):
