@@ -67,7 +67,19 @@ async def create_terminal(
         commands = await cmd_service.resolve(data.project_id)
         if commands:
             pty = service.get_pty(terminal["id"])
-            cmd_string = " && ".join(c.command for c in commands) + "\r\n"
+            # Resolve dynamic variables in commands
+            variables = {
+                "$issue_id": data.issue_id,
+                "$project_id": data.project_id,
+                "$project_path": project_path,
+            }
+            resolved = []
+            for c in commands:
+                cmd = c.command
+                for var, val in variables.items():
+                    cmd = cmd.replace(var, val)
+                resolved.append(cmd)
+            cmd_string = " && ".join(resolved) + "\r\n"
             pty.write(cmd_string)
     except Exception:
         logger.warning("Failed to inject startup commands for terminal %s", terminal["id"], exc_info=True)
