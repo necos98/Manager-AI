@@ -67,7 +67,7 @@ async def create_terminal(
         commands = await cmd_service.resolve(data.project_id)
         if commands:
             pty = service.get_pty(terminal["id"])
-            cmd_string = " && ".join(c.command for c in commands) + "\n"
+            cmd_string = " && ".join(c.command for c in commands) + "\r\n"
             pty.write(cmd_string)
     except Exception:
         logger.warning("Failed to inject startup commands for terminal %s", terminal["id"], exc_info=True)
