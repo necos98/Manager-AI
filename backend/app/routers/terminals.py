@@ -61,6 +61,20 @@ async def create_terminal(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
 
+    # Inject Manager AI environment variables into the terminal
+    try:
+        pty = service.get_pty(terminal["id"])
+        env_vars = {
+            "MANAGER_AI_TERMINAL_ID": terminal["id"],
+            "MANAGER_AI_ISSUE_ID": data.issue_id,
+            "MANAGER_AI_PROJECT_ID": data.project_id,
+            "MANAGER_AI_BASE_URL": "http://localhost:8000",
+        }
+        env_commands = " && ".join(f"set {k}={v}" for k, v in env_vars.items())
+        pty.write(env_commands + "\r\n")
+    except Exception:
+        logger.warning("Failed to inject env vars for terminal %s", terminal["id"], exc_info=True)
+
     # Inject startup commands into the PTY
     try:
         cmd_service = TerminalCommandService(db)
@@ -157,6 +171,11 @@ async def terminal_ws(
     await websocket.accept()
     pty = service.get_pty(terminal_id)
 
+    # Replay buffered output so reconnecting clients see previous content
+    buffered = service.get_buffered_output(terminal_id)
+    if buffered:
+        await websocket.send_text(buffered)
+
     async def pty_to_ws():
         """Read from PTY, send to WebSocket."""
         loop = asyncio.get_running_loop()
@@ -169,6 +188,7 @@ async def terminal_ws(
                     service.mark_closed(terminal_id)
                     await websocket.close(code=1000, reason="Terminal session ended")
                     break
+                service.append_output(terminal_id, data)
                 await websocket.send_text(data)
         except (WebSocketDisconnect, RuntimeError):
             pass
