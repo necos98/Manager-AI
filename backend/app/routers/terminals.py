@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.terminal import TerminalCreate, TerminalListResponse, TerminalResponse
 from app.services.terminal_service import TerminalService
+from app.services.terminal_command_service import TerminalCommandService
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,17 @@ async def create_terminal(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
+
+    # Inject startup commands into the PTY
+    try:
+        cmd_service = TerminalCommandService(db)
+        commands = await cmd_service.resolve(data.project_id)
+        if commands:
+            pty = service.get_pty(terminal["id"])
+            cmd_string = " && ".join(c.command for c in commands) + "\n"
+            pty.write(cmd_string)
+    except Exception:
+        logger.warning("Failed to inject startup commands for terminal %s", terminal["id"], exc_info=True)
 
     return TerminalResponse(**terminal)
 
