@@ -21,6 +21,7 @@ export const api = {
   updateProject: (id, data) => request(`/projects/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteProject: (id) => request(`/projects/${id}`, { method: "DELETE" }),
   installManagerJson: (id) => request(`/projects/${id}/install-manager-json`, { method: "POST" }),
+  installClaudeResources: (id) => request(`/projects/${id}/install-claude-resources`, { method: "POST" }),
 
   // Issues (ex Tasks)
   listIssues: (projectId, status) => {
@@ -74,4 +75,18 @@ export const api = {
     request(`/terminals/${terminalId}`, { method: "DELETE" }),
   terminalCount: () => request("/terminals/count"),
   terminalConfig: () => request("/terminals/config"),
+
+  // Terminal Commands
+  listTerminalCommands: (projectId) => {
+    const params = projectId != null ? `?project_id=${projectId}` : "";
+    return request(`/terminal-commands${params}`);
+  },
+  createTerminalCommand: (data) =>
+    request("/terminal-commands", { method: "POST", body: JSON.stringify(data) }),
+  updateTerminalCommand: (id, data) =>
+    request(`/terminal-commands/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  reorderTerminalCommands: (commands) =>
+    request("/terminal-commands/reorder", { method: "PUT", body: JSON.stringify({ commands }) }),
+  deleteTerminalCommand: (id) =>
+    request(`/terminal-commands/${id}`, { method: "DELETE" }),
 };
