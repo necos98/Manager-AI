@@ -20,6 +20,13 @@ class TerminalCommandUpdate(BaseModel):
     command: str | None = Field(None, min_length=1)
     sort_order: int | None = None
 
+    @field_validator("command")
+    @classmethod
+    def no_newlines(cls, v):
+        if v is not None and ("\n" in v or "\r" in v):
+            raise ValueError("Command must not contain newlines")
+        return v
+
 
 class TerminalCommandOut(BaseModel):
     id: int
