@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.mcp.server import mcp
-from app.routers import issues, projects, settings, tasks, terminals
+from app.routers import issues, projects, settings, tasks, terminals, terminal_commands
 
 mcp_app = mcp.streamable_http_app()
 
@@ -30,6 +30,7 @@ app.include_router(issues.router)
 app.include_router(tasks.router)
 app.include_router(settings.router)
 app.include_router(terminals.router)
+app.include_router(terminal_commands.router)
 
 app.mount("/mcp", mcp_app)
 
