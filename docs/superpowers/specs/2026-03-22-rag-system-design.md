@@ -57,10 +57,11 @@ Tabella unica: `project_context_chunks`
 | `source_id` | string | `file_id` o `issue_id` |
 | `title` | string | Titolo riassuntivo (nome file o titolo issue) |
 | `chunk_index` | int | Posizione del chunk nella sorgente |
-| `metadata` | JSON | Extra info (mime_type, issue_status, pagina, ecc.) |
+| `total_chunks` | int | Numero totale di chunk per questa sorgente |
+| `metadata` | JSON | Extra info per display (mime_type, issue_status, ecc.). Non usato per filtering |
 | `created_at` | string (ISO) | Timestamp creazione |
 
-Re-indexing: quando un file viene sovrascritto o un'issue viene ri-completata, si eliminano tutti i chunk con quel `source_id` e si ri-generano.
+Re-indexing: quando un file viene sovrascritto o un'issue viene ri-completata, si eliminano tutti i chunk con quel `source_id` e si ri-generano. Per evitare race condition su re-index concorrenti dello stesso `source_id`, la pipeline usa un lock per `source_id` (asyncio.Lock per chiave).
 
 ## Content Extractors
 
@@ -107,7 +108,9 @@ class ExtractorRegistry:
 {issue.recap}
 ```
 
-Aggiungere un nuovo extractor: creare un file, definire `supported_mimetypes`, implementare `extract()`. Il registry lo scopre automaticamente.
+Aggiungere un nuovo extractor: creare un file, definire `supported_mimetypes`, implementare `extract()`, registrarlo nel lifespan di `main.py`.
+
+Tipi non supportati: se un file viene caricato con un MIME type senza extractor registrato, la pipeline lo salta e broadcast un evento `"embedding_skipped"` con motivo. Il file resta salvato normalmente, solo l'embedding non avviene.
 
 ## Embedding Driver
 
@@ -118,14 +121,16 @@ class EmbeddingDriver:
     dimension: int
 
     def embed(self, texts: list[str]) -> list[list[float]]:
-        # Batch embedding
+        # Batch embedding — metodo sincrono (CPU-bound)
 ```
+
+**Nota async:** `embed()` e tutte le operazioni LanceDB sono sincrone/CPU-bound. La pipeline le wrappa con `asyncio.to_thread()` per non bloccare l'event loop.
 
 ### Driver iniziale: SentenceTransformerDriver
 
-- Modello: `all-MiniLM-L6-v2` (384 dim, ~80MB)
-- Caricamento lazy al primo utilizzo
-- Batch nativo
+- Modello: `all-MiniLM-L6-v2` (384 dim, ~80MB, download al primo utilizzo)
+- Caricamento lazy al primo utilizzo (non all'avvio dell'app)
+- Batch nativo con batch size massimo di 32 chunk per chiamata
 - Singleton in memoria
 
 ### Configurazione
@@ -153,6 +158,8 @@ Tre step:
 1. **Split per paragrafi** — separa su `\n\n`
 2. **Merge piccoli** — paragrafi sotto ~100 token uniti al successivo
 3. **Split grandi** — paragrafi oltre `max_tokens` spezzati per frasi (`. `) con overlap
+
+Il conteggio token usa `len(text.split())` come approssimazione (word count). Sufficiente per il chunking, non serve un tokenizer specifico.
 
 Per le issue, spec/plan/recap sono chunk logici naturali. Split interviene solo se superano `max_tokens`.
 
@@ -189,15 +196,18 @@ File upload API
 complete_issue (MCP tool)
   → status → FINISHED (esistente)
   → fire hooks (esistente)
-  → asyncio.create_task(embed_pipeline(...))
+  → estrai dati issue (title, spec, plan, recap) PRIMA di creare il task
+  → asyncio.create_task(embed_pipeline(extracted_data))
 
   Background:
-    → IssueExtractor.extract(issue)
+    → IssueExtractor.extract(extracted_data)  # riceve dati già estratti, non l'ORM object
     → TextChunker.chunk(text)
-    → EmbeddingDriver.embed(chunks)
-    → LanceDB.add(records)
+    → EmbeddingDriver.embed(chunks)           # via asyncio.to_thread
+    → LanceDB.add(records)                    # via asyncio.to_thread
     → EventService.broadcast("embedding_completed", {source_type, source_id})
 ```
+
+**Nota:** i dati dell'issue vengono estratti nel contesto della session attiva e passati al background task come dict/dataclass, non come ORM object. Questo evita problemi di session lifecycle (la session si chiude prima che il task in background esegua).
 
 ### Re-indexing e cleanup
 
@@ -208,7 +218,8 @@ complete_issue (MCP tool)
 ### Errori
 
 - Embedding fallito non blocca il file/issue — solo la parte vettoriale manca
-- Broadcast `"embedding_failed"` per notifica frontend
+- Broadcast `"embedding_failed"` con payload: `{source_type, source_id, title, error: str}`
+- Broadcast `"embedding_skipped"` quando il MIME type non ha un extractor registrato
 - Nessun retry automatico
 
 ## MCP Tools
@@ -234,11 +245,14 @@ Output:
     ]
 ```
 
+La ricerca usa distanza coseno (cosine similarity). Score normalizzato 0-1, dove 1 = identico. LanceDB inizialmente usa flat search (brute-force); indici ANN (IVF_PQ) sono un'ottimizzazione futura per dataset grandi.
+
 ### get_context_chunk_details
 
 ```
 Input:
   - chunk_id: str
+  - project_id: str       # validazione che il chunk appartenga al progetto
 
 Output:
   {
@@ -306,9 +320,32 @@ backend/app/
 
 Nessun nuovo router REST. L'embedding e' asincrono, i MCP tool sono l'unica interfaccia di ricerca. Il frontend riceve notifiche WebSocket di completamento.
 
+## Configurazione completa
+
+```env
+# Embedding
+EMBEDDING_DRIVER=sentence_transformer    # default
+EMBEDDING_MODEL=all-MiniLM-L6-v2        # default
+
+# Chunking
+CHUNK_MAX_TOKENS=500                     # default
+CHUNK_OVERLAP_TOKENS=50                  # default
+```
+
+Tutti i valori hanno default nella classe `Settings` di `config.py`.
+
+## Testing
+
+- I componenti `rag/` (extractors, chunker, driver) sono testabili in isolamento senza FastAPI
+- LanceDB usa una directory temporanea (`tmp_path` di pytest) nei test
+- Il `SentenceTransformerDriver` nei test viene mockato per evitare il download del modello in CI
+- I test di integrazione della pipeline verificano il flusso extract → chunk → embed → store → search con un driver mock che restituisce vettori random
+
 ## Nuove dipendenze
 
 ```
-sentence-transformers   # embedding locale (include torch)
+sentence-transformers   # embedding locale (include torch, ~2GB totali con dipendenze)
 pypdf                   # estrazione testo da PDF
 ```
+
+Nota: `sentence-transformers` include PyTorch come dipendenza. Il modello (~80MB) viene scaricato al primo utilizzo, non all'installazione.
