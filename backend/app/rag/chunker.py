@@ -58,11 +58,23 @@ class TextChunker:
         return merged
 
     def _split_large(self, text: str) -> list[str]:
-        """Split a large block by sentences, with overlap."""
+        """Split a large block by sentences, with overlap. Falls back to word-level splitting."""
         # Split on ". " (sentence boundary) while preserving the period
         parts = text.split(". ")
         sentences = [p + "." for p in parts[:-1]] + [parts[-1]] if len(parts) > 1 else [text]
         sentences = [s.strip() for s in sentences if s.strip()]
+
+        # If a sentence is still larger than max_tokens, split it by words
+        expanded = []
+        for sentence in sentences:
+            words = sentence.split()
+            if len(words) > self.max_tokens:
+                # Break the sentence into word-level chunks
+                for start in range(0, len(words), self.max_tokens):
+                    expanded.append(" ".join(words[start:start + self.max_tokens]))
+            else:
+                expanded.append(sentence)
+        sentences = expanded
 
         chunks = []
         current_words = []
