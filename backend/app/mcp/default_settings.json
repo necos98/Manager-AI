@@ -1,6 +1,6 @@
 {
   "server.name": "Manager AI",
-  "tool.get_issue_details.description": "Get all details of a specific issue. Returns: id, project_id, name, description, status, priority, specification (markdown), plan (markdown), recap (markdown), decline_feedback, tasks (atomic plan tasks), created_at, updated_at.",
+  "tool.get_issue_details.description": "Get all details of a specific issue. Returns: id, project_id, name, description, status, priority, specification (markdown), plan (markdown), recap (markdown), tasks (atomic plan tasks), created_at, updated_at.",
   "tool.get_issue_status.description": "Get the current status of an issue.",
   "tool.get_project_context.description": "Get project information (name, path, description, tech_stack).",
   "tool.set_issue_name.description": "Set the name of an issue after analysis.",
