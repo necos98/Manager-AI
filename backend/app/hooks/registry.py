@@ -10,7 +10,7 @@ from typing import Callable
 from app.services.event_service import event_service
 
 
-class HookEvent(Enum):
+class HookEvent(str, Enum):
     ISSUE_COMPLETED = "issue_completed"
     ISSUE_ACCEPTED = "issue_accepted"
     ISSUE_CANCELLED = "issue_cancelled"
