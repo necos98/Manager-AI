@@ -3,7 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.exceptions import InvalidTransitionError, NotFoundError, ValidationError
+from app.hooks.registry import HookContext, HookEvent, hook_registry
 from app.models.issue import VALID_TRANSITIONS, Issue, IssueStatus
+from app.services.project_service import ProjectService
 
 
 class IssueService:
@@ -82,12 +84,45 @@ class IssueService:
         return await self.update_fields(issue_id, project_id, name=name)
 
     async def complete_issue(self, issue_id: str, project_id: str, recap: str) -> Issue:
+        if not recap or not recap.strip():
+            raise ValidationError("Recap cannot be blank")
         issue = await self.get_for_project(issue_id, project_id)
         if issue.status != IssueStatus.ACCEPTED:
             raise InvalidTransitionError(f"Can only complete issues in Accepted status, got {issue.status.value}")
+        # Enforce task completion
+        from app.services.task_service import TaskService
+        from app.models.task import TaskStatus
+        task_service = TaskService(self.session)
+        tasks = await task_service.list_by_issue(issue.id)
+        if tasks:
+            pending = [t for t in tasks if t.status != TaskStatus.COMPLETED]
+            if pending:
+                names = ", ".join(t.name for t in pending)
+                raise ValidationError(
+                    f"Cannot complete: {len(pending)} tasks not finished: {names}"
+                )
         issue.recap = recap
         issue.status = IssueStatus.FINISHED
         await self.session.flush()
+        # Fire hook with project context
+        project_service = ProjectService(self.session)
+        project = await project_service.get_by_id(project_id)
+        await hook_registry.fire(
+            HookEvent.ISSUE_COMPLETED,
+            HookContext(
+                project_id=project_id,
+                issue_id=issue_id,
+                event=HookEvent.ISSUE_COMPLETED,
+                metadata={
+                    "issue_name": issue.name or "",
+                    "recap": issue.recap or "",
+                    "project_name": project.name if project else "",
+                    "project_path": project.path if project else "",
+                    "project_description": project.description if project else "",
+                    "tech_stack": project.tech_stack if project else "",
+                },
+            ),
+        )
         return issue
 
     async def create_spec(self, issue_id: str, project_id: str, spec: str) -> Issue:
@@ -144,12 +179,20 @@ class IssueService:
             )
         issue.status = IssueStatus.ACCEPTED
         await self.session.flush()
+        await hook_registry.fire(
+            HookEvent.ISSUE_ACCEPTED,
+            HookContext(project_id=project_id, issue_id=issue_id, event=HookEvent.ISSUE_ACCEPTED),
+        )
         return issue
 
     async def cancel_issue(self, issue_id: str, project_id: str) -> Issue:
         issue = await self.get_for_project(issue_id, project_id)
         issue.status = IssueStatus.CANCELED
         await self.session.flush()
+        await hook_registry.fire(
+            HookEvent.ISSUE_CANCELLED,
+            HookContext(project_id=project_id, issue_id=issue_id, event=HookEvent.ISSUE_CANCELLED),
+        )
         return issue
 
     async def delete(self, issue_id: str, project_id: str) -> bool:
