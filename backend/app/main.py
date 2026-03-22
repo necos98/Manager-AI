@@ -18,7 +18,7 @@ from app.rag.extractors.txt_extractor import TxtExtractor
 from app.rag.extractors.pdf_extractor import PdfExtractor
 from app.rag.pipeline import EmbeddingPipeline
 from app.rag.store import VectorStore
-from app.routers import events, files, issues, projects, settings, tasks, terminals, terminal_commands
+from app.routers import events, files, issues, projects, settings as settings_router, tasks, terminals, terminal_commands
 from app.services.event_service import event_service
 from app.services.rag_service import RagService
 
@@ -79,7 +79,7 @@ app.include_router(files.formats_router)
 app.include_router(files.router)
 app.include_router(issues.router)
 app.include_router(tasks.router)
-app.include_router(settings.router)
+app.include_router(settings_router.router)
 app.include_router(terminals.router)
 app.include_router(terminal_commands.router)
 app.include_router(events.router)
