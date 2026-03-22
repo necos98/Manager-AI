@@ -1,16 +1,25 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.hooks import hook_registry
+import app.hooks.handlers  # noqa: F401 — triggers @hook decorator registration
 from app.mcp.server import mcp
-from app.routers import events, issues, projects, settings, tasks, terminals, terminal_commands
+from app.routers import events, files, issues, projects, settings, tasks, terminals, terminal_commands
+
+logger = logging.getLogger(__name__)
 
 mcp_app = mcp.streamable_http_app()
 
 
 @asynccontextmanager
 async def lifespan(app):
+    logger.info("Hook registry: %d event(s) registered", len(hook_registry._hooks))
+    for event, hooks in hook_registry._hooks.items():
+        for h in hooks:
+            logger.info("  %s -> %s", event.value, h.name)
     async with mcp.session_manager.run():
         yield
 
@@ -26,6 +35,7 @@ app.add_middleware(
 )
 
 app.include_router(projects.router)
+app.include_router(files.router)
 app.include_router(issues.router)
 app.include_router(tasks.router)
 app.include_router(settings.router)
