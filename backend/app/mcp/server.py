@@ -38,7 +38,6 @@ async def get_issue_details(project_id: str, issue_id: str) -> dict:
             "specification": issue.specification,
             "plan": issue.plan,
             "recap": issue.recap,
-            "decline_feedback": issue.decline_feedback,
             "tasks": [
                 {"id": t.id, "name": t.name, "status": t.status.value, "order": t.order}
                 for t in issue.tasks

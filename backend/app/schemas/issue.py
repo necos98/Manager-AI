@@ -18,7 +18,6 @@ class IssueUpdate(BaseModel):
 
 class IssueStatusUpdate(BaseModel):
     status: IssueStatus
-    decline_feedback: str | None = None
 
 
 class IssueResponse(BaseModel):
@@ -31,7 +30,6 @@ class IssueResponse(BaseModel):
     plan: str | None
     specification: str | None = None
     recap: str | None
-    decline_feedback: str | None
     tasks: list[TaskResponse] = []
     created_at: datetime
     updated_at: datetime

@@ -14,15 +14,14 @@ class IssueStatus(str, enum.Enum):
     REASONING = "Reasoning"
     PLANNED = "Planned"
     ACCEPTED = "Accepted"
-    DECLINED = "Declined"
     FINISHED = "Finished"
     CANCELED = "Canceled"
 
 
 VALID_TRANSITIONS = {
+    (IssueStatus.NEW, IssueStatus.REASONING),
     (IssueStatus.REASONING, IssueStatus.PLANNED),
     (IssueStatus.PLANNED, IssueStatus.ACCEPTED),
-    (IssueStatus.PLANNED, IssueStatus.DECLINED),
     (IssueStatus.ACCEPTED, IssueStatus.FINISHED),
 }
 
@@ -39,7 +38,6 @@ class Issue(Base):
     plan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     specification: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     recap: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    decline_feedback: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
