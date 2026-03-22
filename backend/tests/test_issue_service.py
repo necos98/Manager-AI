@@ -7,6 +7,7 @@ from app.exceptions import InvalidTransitionError, NotFoundError, ValidationErro
 from app.models.issue import IssueStatus
 from app.services.project_service import ProjectService
 from app.services.issue_service import IssueService
+from app.services.task_service import TaskService
 
 
 @pytest_asyncio.fixture
@@ -88,8 +89,9 @@ async def test_set_issue_name(db_session, project):
 async def test_complete_issue(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Finish me", priority=1)
-    issue.status = IssueStatus.ACCEPTED
-    await db_session.flush()
+    await service.create_spec(issue.id, project.id, "# Spec")
+    await service.create_plan(issue.id, project.id, "# Plan")
+    await service.accept_issue(issue.id, project.id)
     updated = await service.complete_issue(issue.id, project.id, "All done. Implemented X and Y.")
     assert updated.status == IssueStatus.FINISHED
     assert updated.recap == "All done. Implemented X and Y."
@@ -100,6 +102,54 @@ async def test_complete_issue_invalid_status(db_session, project):
     issue = await service.create(project_id=project.id, description="Not ready", priority=1)
     with pytest.raises(InvalidTransitionError, match="Can only complete"):
         await service.complete_issue(issue.id, project.id, "Done")
+
+
+async def test_complete_issue_with_pending_tasks_raises(db_session, project):
+    service = IssueService(db_session)
+    issue = await service.create(project_id=project.id, description="Has tasks", priority=1)
+    await service.create_spec(issue.id, project.id, "# Spec")
+    await service.create_plan(issue.id, project.id, "# Plan")
+    await service.accept_issue(issue.id, project.id)
+    # Add pending tasks
+    task_service = TaskService(db_session)
+    await task_service.create_bulk(issue.id, [{"name": "Task 1"}, {"name": "Task 2"}])
+    with pytest.raises(ValidationError, match="tasks not finished"):
+        await service.complete_issue(issue.id, project.id, "Done")
+
+
+async def test_complete_issue_with_all_tasks_completed(db_session, project):
+    service = IssueService(db_session)
+    issue = await service.create(project_id=project.id, description="Tasks done", priority=1)
+    await service.create_spec(issue.id, project.id, "# Spec")
+    await service.create_plan(issue.id, project.id, "# Plan")
+    await service.accept_issue(issue.id, project.id)
+    # Add and complete tasks
+    task_service = TaskService(db_session)
+    tasks = await task_service.create_bulk(issue.id, [{"name": "Task 1"}])
+    await task_service.update(tasks[0].id, status="In Progress")
+    await task_service.update(tasks[0].id, status="Completed")
+    updated = await service.complete_issue(issue.id, project.id, "All done")
+    assert updated.status == IssueStatus.FINISHED
+
+
+async def test_complete_issue_without_tasks_allowed(db_session, project):
+    service = IssueService(db_session)
+    issue = await service.create(project_id=project.id, description="No tasks", priority=1)
+    await service.create_spec(issue.id, project.id, "# Spec")
+    await service.create_plan(issue.id, project.id, "# Plan")
+    await service.accept_issue(issue.id, project.id)
+    updated = await service.complete_issue(issue.id, project.id, "Done without tasks")
+    assert updated.status == IssueStatus.FINISHED
+
+
+async def test_complete_issue_blank_recap_raises(db_session, project):
+    service = IssueService(db_session)
+    issue = await service.create(project_id=project.id, description="Blank recap", priority=1)
+    await service.create_spec(issue.id, project.id, "# Spec")
+    await service.create_plan(issue.id, project.id, "# Plan")
+    await service.accept_issue(issue.id, project.id)
+    with pytest.raises(ValidationError, match="blank"):
+        await service.complete_issue(issue.id, project.id, "   ")
 
 
 async def test_issue_project_mismatch(db_session, project):
