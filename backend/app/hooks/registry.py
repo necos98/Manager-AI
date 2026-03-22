@@ -1,6 +1,7 @@
 """Hook registry: defines events, hook base class, and the registry that fires hooks."""
 
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -9,12 +10,13 @@ from typing import Callable
 
 from app.services.event_service import event_service
 
+logger = logging.getLogger(__name__)
+
 
 class HookEvent(str, Enum):
     ISSUE_COMPLETED = "issue_completed"
     ISSUE_ACCEPTED = "issue_accepted"
     ISSUE_CANCELLED = "issue_cancelled"
-    ISSUE_DECLINED = "issue_declined"
 
 
 @dataclass
@@ -80,6 +82,7 @@ class HookRegistry:
         try:
             result = await hook.execute(context)
         except Exception as exc:  # noqa: BLE001
+            logger.error("Hook %s failed with exception: %s", hook.name, exc)
             await event_service.emit(
                 {
                     "type": "hook_failed",
@@ -104,6 +107,7 @@ class HookRegistry:
                 }
             )
         else:
+            logger.warning("Hook %s returned error: %s", hook.name, result.error)
             await event_service.emit(
                 {
                     "type": "hook_failed",

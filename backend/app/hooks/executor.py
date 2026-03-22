@@ -1,9 +1,12 @@
 """Claude Code executor: runs `claude` CLI as a subprocess for a given project."""
 
 import asyncio
+import logging
 import os
 import time
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -102,6 +105,7 @@ class ClaudeCodeExecutor:
 
         except FileNotFoundError:
             duration = time.monotonic() - start
+            logger.error("'claude' CLI not found on PATH")
             return ExecutorResult(
                 success=False,
                 error="'claude' executable not found. Ensure Claude Code CLI is installed and on PATH.",
@@ -109,6 +113,7 @@ class ClaudeCodeExecutor:
             )
         except Exception as exc:  # noqa: BLE001
             duration = time.monotonic() - start
+            logger.error("Claude Code executor failed: %s", exc)
             return ExecutorResult(
                 success=False,
                 error=str(exc),
