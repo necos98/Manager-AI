@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 
-const ACCEPT = ".txt,.doc,.docx,.pdf,.xls,.xlsx";
+const ACCEPT = ".txt,.md,.doc,.docx,.pdf,.xls,.xlsx";
 
 function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
