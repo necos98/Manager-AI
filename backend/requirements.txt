@@ -12,3 +12,5 @@ httpx==0.28.1
 pytest==8.3.5
 pytest-asyncio==0.25.3
 pywinpty>=2.0.0
+sentence-transformers>=3.0.0
+pypdf>=4.0.0
