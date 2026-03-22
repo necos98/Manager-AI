@@ -1,3 +1,4 @@
+import asyncio
 import json
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from datetime import datetime, timezone
 
 from app.database import async_session
 from app.exceptions import AppError
+from app.rag import get_rag_service
 from app.services.event_service import event_service
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
@@ -112,8 +114,25 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
         issue_service = IssueService(session)
         try:
             issue = await issue_service.complete_issue(issue_id, project_id, recap)
+            # Extract data while session is open
+            issue_data = {
+                "name": issue.name or (issue.description or "")[:100],
+                "specification": issue.specification,
+                "plan": issue.plan,
+                "recap": issue.recap,
+            }
+            issue_id_val = issue.id
             await session.commit()
-            return {"id": issue.id, "status": issue.status.value, "recap": issue.recap}
+
+            # Trigger async embedding
+            rag = get_rag_service()
+            asyncio.create_task(rag.embed_issue(
+                project_id=project_id,
+                source_id=issue_id_val,
+                issue_data=issue_data,
+            ))
+
+            return {"id": issue_id_val, "status": issue.status.value, "recap": issue.recap}
         except AppError as e:
             return {"error": e.message}
 
