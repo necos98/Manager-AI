@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import pytest
 import pytest_asyncio
 
+from app.exceptions import NotFoundError
 from app.models.issue import IssueStatus
 from app.services.project_service import ProjectService
 from app.services.issue_service import IssueService
@@ -136,11 +137,11 @@ async def test_mcp_issue_project_validation(issue_service, project):
     issue = await issue_service.create(project_id=project.id, description="Test", priority=1)
     fake_project_id = uuid.uuid4()
 
-    with pytest.raises(PermissionError, match="does not belong"):
+    with pytest.raises(NotFoundError, match="Issue not found"):
         await issue_service.set_name(issue.id, fake_project_id, "Name")
 
-    with pytest.raises(PermissionError, match="does not belong"):
+    with pytest.raises(NotFoundError, match="Issue not found"):
         await issue_service.create_spec(issue.id, fake_project_id, "Spec")
 
-    with pytest.raises(PermissionError, match="does not belong"):
+    with pytest.raises(NotFoundError, match="Issue not found"):
         await issue_service.complete_issue(issue.id, fake_project_id, "Recap")

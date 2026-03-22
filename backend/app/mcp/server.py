@@ -6,7 +6,7 @@ from mcp.server.fastmcp import FastMCP
 from datetime import datetime, timezone
 
 from app.database import async_session
-from app.hooks import hook_registry, HookEvent, HookContext
+from app.exceptions import AppError
 from app.services.event_service import event_service
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
@@ -24,10 +24,8 @@ async def get_issue_details(project_id: str, issue_id: str) -> dict:
         issue_service = IssueService(session)
         try:
             issue = await issue_service.get_for_project(issue_id, project_id)
-        except ValueError:
-            return {"error": "Issue not found"}
-        except PermissionError as e:
-            return {"error": str(e)}
+        except AppError as e:
+            return {"error": e.message}
         return {
             "id": issue.id,
             "project_id": issue.project_id,
@@ -53,10 +51,8 @@ async def get_issue_status(project_id: str, issue_id: str) -> dict:
         issue_service = IssueService(session)
         try:
             issue = await issue_service.get_for_project(issue_id, project_id)
-        except ValueError:
-            return {"error": "Issue not found"}
-        except PermissionError as e:
-            return {"error": str(e)}
+        except AppError as e:
+            return {"error": e.message}
         return {"id": issue.id, "status": issue.status.value}
 
 
@@ -105,9 +101,9 @@ async def set_issue_name(project_id: str, issue_id: str, name: str) -> dict:
             issue = await issue_service.set_name(issue_id, project_id, name)
             await session.commit()
             return {"id": issue.id, "name": issue.name}
-        except (ValueError, PermissionError) as e:
+        except AppError as e:
             await session.rollback()
-            return {"error": str(e)}
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.complete_issue.description"])
@@ -117,29 +113,9 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
         try:
             issue = await issue_service.complete_issue(issue_id, project_id, recap)
             await session.commit()
-        except (ValueError, PermissionError) as e:
-            await session.rollback()
-            return {"error": str(e)}
-        # Fire hooks in background (after commit, outside try/except)
-        project_service = ProjectService(session)
-        project = await project_service.get_by_id(project_id)
-        await hook_registry.fire(
-            HookEvent.ISSUE_COMPLETED,
-            HookContext(
-                project_id=project_id,
-                issue_id=issue_id,
-                event=HookEvent.ISSUE_COMPLETED,
-                metadata={
-                    "issue_name": issue.name or "",
-                    "recap": issue.recap or "",
-                    "project_name": project.name if project else "",
-                    "project_path": project.path if project else "",
-                    "project_description": project.description if project else "",
-                    "tech_stack": project.tech_stack if project else "",
-                },
-            ),
-        )
-        return {"id": issue.id, "status": issue.status.value, "recap": issue.recap}
+            return {"id": issue.id, "status": issue.status.value, "recap": issue.recap}
+        except AppError as e:
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.create_issue_spec.description"])
@@ -150,9 +126,9 @@ async def create_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
             issue = await issue_service.create_spec(issue_id, project_id, spec)
             await session.commit()
             return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
-        except (ValueError, PermissionError) as e:
+        except AppError as e:
             await session.rollback()
-            return {"error": str(e)}
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.edit_issue_spec.description"])
@@ -163,9 +139,9 @@ async def edit_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
             issue = await issue_service.edit_spec(issue_id, project_id, spec)
             await session.commit()
             return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
-        except (ValueError, PermissionError) as e:
+        except AppError as e:
             await session.rollback()
-            return {"error": str(e)}
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.create_issue_plan.description"])
@@ -176,9 +152,9 @@ async def create_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
             issue = await issue_service.create_plan(issue_id, project_id, plan)
             await session.commit()
             return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
-        except (ValueError, PermissionError) as e:
+        except AppError as e:
             await session.rollback()
-            return {"error": str(e)}
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.edit_issue_plan.description"])
@@ -189,9 +165,9 @@ async def edit_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
             issue = await issue_service.edit_plan(issue_id, project_id, plan)
             await session.commit()
             return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
-        except (ValueError, PermissionError) as e:
+        except AppError as e:
             await session.rollback()
-            return {"error": str(e)}
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.accept_issue.description"])
@@ -201,36 +177,9 @@ async def accept_issue(project_id: str, issue_id: str) -> dict:
         try:
             issue = await issue_service.accept_issue(issue_id, project_id)
             await session.commit()
-        except (ValueError, PermissionError) as e:
-            await session.rollback()
-            return {"error": str(e)}
-        await hook_registry.fire(
-            HookEvent.ISSUE_ACCEPTED,
-            HookContext(project_id=project_id, issue_id=issue_id, event=HookEvent.ISSUE_ACCEPTED),
-        )
-        return {"id": issue.id, "status": issue.status.value}
-
-
-@mcp.tool(description=_desc["tool.decline_issue.description"])
-async def decline_issue(project_id: str, issue_id: str, feedback: str) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.decline_issue(issue_id, project_id, feedback)
-            await session.commit()
-        except (ValueError, PermissionError) as e:
-            await session.rollback()
-            return {"error": str(e)}
-        await hook_registry.fire(
-            HookEvent.ISSUE_DECLINED,
-            HookContext(
-                project_id=project_id,
-                issue_id=issue_id,
-                event=HookEvent.ISSUE_DECLINED,
-                metadata={"feedback": issue.decline_feedback or ""},
-            ),
-        )
-        return {"id": issue.id, "status": issue.status.value, "decline_feedback": issue.decline_feedback}
+            return {"id": issue.id, "status": issue.status.value}
+        except AppError as e:
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.cancel_issue.description"])
@@ -240,14 +189,9 @@ async def cancel_issue(project_id: str, issue_id: str) -> dict:
         try:
             issue = await issue_service.cancel_issue(issue_id, project_id)
             await session.commit()
-        except (ValueError, PermissionError) as e:
-            await session.rollback()
-            return {"error": str(e)}
-        await hook_registry.fire(
-            HookEvent.ISSUE_CANCELLED,
-            HookContext(project_id=project_id, issue_id=issue_id, event=HookEvent.ISSUE_CANCELLED),
-        )
-        return {"id": issue.id, "status": issue.status.value}
+            return {"id": issue.id, "status": issue.status.value}
+        except AppError as e:
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.send_notification.description"])
@@ -256,8 +200,8 @@ async def send_notification(project_id: str, issue_id: str, title: str, message:
         issue_service = IssueService(session)
         try:
             issue = await issue_service.get_for_project(issue_id, project_id)
-        except (ValueError, PermissionError) as e:
-            return {"error": str(e)}
+        except AppError as e:
+            return {"error": e.message}
         issue_name = issue.name or (issue.description or "")[:50] or "Untitled issue"
         await event_service.emit({
             "type": "notification",
@@ -308,9 +252,9 @@ async def update_task_status(task_id: str, status: str) -> dict:
             task = await task_service.update(task_id, status=status)
             await session.commit()
             return {"id": task.id, "name": task.name, "status": task.status.value}
-        except (ValueError, PermissionError) as e:
+        except AppError as e:
             await session.rollback()
-            return {"error": str(e)}
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.update_task_name.description"])
@@ -321,9 +265,9 @@ async def update_task_name(task_id: str, name: str) -> dict:
             task = await task_service.update(task_id, name=name)
             await session.commit()
             return {"id": task.id, "name": task.name}
-        except (ValueError, PermissionError) as e:
+        except AppError as e:
             await session.rollback()
-            return {"error": str(e)}
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.delete_task.description"])
@@ -334,9 +278,9 @@ async def delete_task(task_id: str) -> dict:
             await task_service.delete(task_id)
             await session.commit()
             return {"deleted": True}
-        except ValueError as e:
+        except AppError as e:
             await session.rollback()
-            return {"error": str(e)}
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.get_plan_tasks.description"])
