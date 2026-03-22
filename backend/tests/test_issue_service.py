@@ -86,6 +86,14 @@ async def test_set_issue_name(db_session, project):
     assert updated.name == "My Issue Name"
 
 
+async def test_set_name_too_long_raises(db_session, project):
+    service = IssueService(db_session)
+    issue = await service.create(project_id=project.id, description="Test", priority=1)
+    long_name = "x" * 501
+    with pytest.raises(ValidationError, match="500"):
+        await service.set_name(issue.id, project.id, long_name)
+
+
 async def test_complete_issue(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Finish me", priority=1)

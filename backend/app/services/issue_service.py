@@ -81,6 +81,8 @@ class IssueService:
         return issue
 
     async def set_name(self, issue_id: str, project_id: str, name: str) -> Issue:
+        if len(name) > 500:
+            raise ValidationError("Name must be 500 characters or less")
         return await self.update_fields(issue_id, project_id, name=name)
 
     async def complete_issue(self, issue_id: str, project_id: str, recap: str) -> Issue:
