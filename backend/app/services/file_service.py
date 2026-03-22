@@ -7,10 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.project_file import ProjectFile
 
-ALLOWED_EXTENSIONS = {"txt", "doc", "docx", "pdf", "xls", "xlsx"}
+ALLOWED_EXTENSIONS = {"txt", "md", "doc", "docx", "pdf", "xls", "xlsx"}
 
 MIME_MAP = {
     "txt": "text/plain",
+    "md": "text/markdown",
     "doc": "application/msword",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "pdf": "application/pdf",

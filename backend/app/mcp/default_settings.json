@@ -19,5 +19,7 @@
   "tool.get_plan_tasks.description": "Get all atomic plan tasks for an issue, ordered by execution order.",
   "tool.send_notification.description": "Send a notification to the user. Use this when you have finished responding and are waiting for user input, or when something requires the user's attention. The notification will appear as a toast with a sound in the Manager AI web interface.",
   "terminal_soft_limit": "5",
-  "tool.update_project_context.description": "Update the project context (description and/or tech_stack). Only updates fields that are provided."
+  "tool.update_project_context.description": "Update the project context (description and/or tech_stack). Only updates fields that are provided.",
+  "tool.search_project_context.description": "Search project context using semantic similarity. Searches across embedded files and completed issues. Returns a list of matching chunks with preview, score, and source info. Use get_context_chunk_details to get the full text of a result.",
+  "tool.get_context_chunk_details.description": "Get full details of a specific context chunk found via search_project_context. Returns the complete text, metadata, and links to adjacent chunks for navigation."
 }

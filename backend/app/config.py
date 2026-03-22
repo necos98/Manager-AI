@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     database_url: str = f"sqlite+aiosqlite:///{_PROJECT_ROOT / 'data' / 'manager_ai.db'}"
     lancedb_path: str = str(_PROJECT_ROOT / "data" / "lancedb")
     backend_port: int = 8000
+    embedding_driver: str = "sentence_transformer"
+    embedding_model: str = "all-MiniLM-L6-v2"
+    chunk_max_tokens: int = 500
+    chunk_overlap_tokens: int = 50
 
     model_config = {"env_file": ".env"}
 

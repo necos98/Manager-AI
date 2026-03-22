@@ -1,3 +1,4 @@
+import asyncio
 import json
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from datetime import datetime, timezone
 
 from app.database import async_session
 from app.exceptions import AppError
+from app.rag import get_rag_service
 from app.services.event_service import event_service
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
@@ -112,8 +114,25 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
         issue_service = IssueService(session)
         try:
             issue = await issue_service.complete_issue(issue_id, project_id, recap)
+            # Extract data while session is open
+            issue_data = {
+                "name": issue.name or (issue.description or "")[:100],
+                "specification": issue.specification,
+                "plan": issue.plan,
+                "recap": issue.recap,
+            }
+            issue_id_val = issue.id
             await session.commit()
-            return {"id": issue.id, "status": issue.status.value, "recap": issue.recap}
+
+            # Trigger async embedding
+            rag = get_rag_service()
+            asyncio.create_task(rag.embed_issue(
+                project_id=project_id,
+                source_id=issue_id_val,
+                issue_data=issue_data,
+            ))
+
+            return {"id": issue_id_val, "status": issue.status.value, "recap": issue.recap}
         except AppError as e:
             return {"error": e.message}
 
@@ -289,3 +308,29 @@ async def get_plan_tasks(issue_id: str) -> dict:
         task_service = TaskService(session)
         tasks = await task_service.list_by_issue(issue_id)
         return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in tasks]}
+
+
+# ── RAG tools (project context search) ─────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.search_project_context.description"])
+async def search_project_context(
+    project_id: str,
+    query: str,
+    source_type: str | None = None,
+    limit: int = 5,
+) -> dict:
+    rag = get_rag_service()
+    results = await rag.search(
+        query=query, project_id=project_id, source_type=source_type, limit=limit
+    )
+    return {"results": results}
+
+
+@mcp.tool(description=_desc["tool.get_context_chunk_details.description"])
+async def get_context_chunk_details(project_id: str, chunk_id: str) -> dict:
+    rag = get_rag_service()
+    chunk = await rag.get_chunk_details(chunk_id=chunk_id, project_id=project_id)
+    if chunk is None:
+        return {"error": "Chunk not found or does not belong to this project"}
+    return chunk
