@@ -218,6 +218,8 @@ async def _validate_tasks_completed(self, issue):
 
 Same pattern in `issue_service.cancel_issue()` if terminals are open for that issue.
 
+Note: `terminal_service` is a singleton (not session-scoped like DB services), so dependency injection differs — import the global instance directly rather than injecting via session.
+
 ### Files Affected
 
 - Modified: `app/services/project_service.py` (add terminal cleanup)
@@ -229,16 +231,16 @@ Same pattern in `issue_service.cancel_issue()` if terminals are open for that is
 
 ### Problem
 
-MCP tool parameters like `spec`, `plan`, `recap` accept empty strings. A blank spec can advance the state machine.
+Some service methods accept empty strings where they shouldn't. `create_spec()` and `create_plan()` already validate for empty/blank input. But `complete_issue(recap)` and `set_issue_name(name)` do not.
 
 ### Design
 
-Validation lives in service methods (not MCP layer):
+Validation lives in service methods (not MCP layer). Add validation where missing:
 
-- `create_spec(spec)`: raises `ValidationError` if `spec.strip()` is empty
-- `create_plan(plan)`: raises `ValidationError` if `plan.strip()` is empty
 - `complete_issue(recap)`: raises `ValidationError` if `recap.strip()` is empty
 - `set_issue_name(name)`: raises `ValidationError` if `name` exceeds 500 chars
+
+Note: `create_spec()` and `create_plan()` already validate — no changes needed there.
 
 Since both MCP and REST call the same service, validation is applied uniformly.
 
