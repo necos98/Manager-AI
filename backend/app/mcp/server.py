@@ -6,7 +6,9 @@ from mcp.server.fastmcp import FastMCP
 from datetime import datetime, timezone
 
 from app.database import async_session
+from app.hooks import hook_registry, HookEvent, HookContext
 from app.services.event_service import event_service
+from app.services.file_service import FileService
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
@@ -76,6 +78,27 @@ async def get_project_context(project_id: str) -> dict:
         }
 
 
+@mcp.tool(description=_desc["tool.update_project_context.description"])
+async def update_project_context(project_id: str, description: str | None = None, tech_stack: str | None = None) -> dict:
+    async with async_session() as session:
+        project_service = ProjectService(session)
+        project = await project_service.get_by_id(project_id)
+        if project is None:
+            return {"error": "Project not found"}
+        if description is not None:
+            project.description = description
+        if tech_stack is not None:
+            project.tech_stack = tech_stack
+        await session.commit()
+        return {
+            "id": project.id,
+            "name": project.name,
+            "path": project.path,
+            "description": project.description,
+            "tech_stack": project.tech_stack,
+        }
+
+
 @mcp.tool(description=_desc["tool.set_issue_name.description"])
 async def set_issue_name(project_id: str, issue_id: str, name: str) -> dict:
     async with async_session() as session:
@@ -96,6 +119,25 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
         try:
             issue = await issue_service.complete_issue(issue_id, project_id, recap)
             await session.commit()
+            # Fire hooks in background
+            project_service = ProjectService(session)
+            project = await project_service.get_by_id(project_id)
+            await hook_registry.fire(
+                HookEvent.ISSUE_COMPLETED,
+                HookContext(
+                    project_id=project_id,
+                    issue_id=issue_id,
+                    event=HookEvent.ISSUE_COMPLETED,
+                    metadata={
+                        "issue_name": issue.name or "",
+                        "recap": issue.recap or "",
+                        "project_name": project.name if project else "",
+                        "project_path": project.path if project else "",
+                        "project_description": project.description if project else "",
+                        "tech_stack": project.tech_stack if project else "",
+                    },
+                ),
+            )
             return {"id": issue.id, "status": issue.status.value, "recap": issue.recap}
         except (ValueError, PermissionError) as e:
             await session.rollback()
@@ -161,6 +203,10 @@ async def accept_issue(project_id: str, issue_id: str) -> dict:
         try:
             issue = await issue_service.accept_issue(issue_id, project_id)
             await session.commit()
+            await hook_registry.fire(
+                HookEvent.ISSUE_ACCEPTED,
+                HookContext(project_id=project_id, issue_id=issue_id, event=HookEvent.ISSUE_ACCEPTED),
+            )
             return {"id": issue.id, "status": issue.status.value}
         except (ValueError, PermissionError) as e:
             await session.rollback()
@@ -174,6 +220,15 @@ async def decline_issue(project_id: str, issue_id: str, feedback: str) -> dict:
         try:
             issue = await issue_service.decline_issue(issue_id, project_id, feedback)
             await session.commit()
+            await hook_registry.fire(
+                HookEvent.ISSUE_DECLINED,
+                HookContext(
+                    project_id=project_id,
+                    issue_id=issue_id,
+                    event=HookEvent.ISSUE_DECLINED,
+                    metadata={"feedback": issue.decline_feedback or ""},
+                ),
+            )
             return {"id": issue.id, "status": issue.status.value, "decline_feedback": issue.decline_feedback}
         except (ValueError, PermissionError) as e:
             await session.rollback()
@@ -187,6 +242,10 @@ async def cancel_issue(project_id: str, issue_id: str) -> dict:
         try:
             issue = await issue_service.cancel_issue(issue_id, project_id)
             await session.commit()
+            await hook_registry.fire(
+                HookEvent.ISSUE_CANCELLED,
+                HookContext(project_id=project_id, issue_id=issue_id, event=HookEvent.ISSUE_CANCELLED),
+            )
             return {"id": issue.id, "status": issue.status.value}
         except (ValueError, PermissionError) as e:
             await session.rollback()

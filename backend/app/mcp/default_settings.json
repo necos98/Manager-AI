@@ -19,5 +19,6 @@
   "tool.delete_task.description": "Delete a single atomic plan task.",
   "tool.get_plan_tasks.description": "Get all atomic plan tasks for an issue, ordered by execution order.",
   "tool.send_notification.description": "Send a notification to the user. Use this when you have finished responding and are waiting for user input, or when something requires the user's attention. The notification will appear as a toast with a sound in the Manager AI web interface.",
-  "terminal_soft_limit": "5"
+  "terminal_soft_limit": "5",
+  "tool.update_project_context.description": "Update the project context (description and/or tech_stack). Only updates fields that are provided."
 }
