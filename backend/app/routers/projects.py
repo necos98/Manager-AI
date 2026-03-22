@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 from app.services.project_service import ProjectService
+from app.services.terminal_service import terminal_service
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -60,9 +61,16 @@ async def update_project(project_id: str, data: ProjectUpdate, db: AsyncSession 
 @router.delete("/{project_id}", status_code=204)
 async def delete_project(project_id: str, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
-    deleted = await service.delete(project_id)
-    if not deleted:
+    project = await service.get_by_id(project_id)
+    if project is None:
         raise HTTPException(status_code=404, detail="Resource not found")
+    # Kill active terminals for this project
+    for term in terminal_service.list_active(project_id=project_id):
+        try:
+            terminal_service.kill(term["id"])
+        except KeyError:
+            pass
+    await service.delete(project_id)
     await db.commit()
 
 

@@ -140,3 +140,7 @@ class TerminalService:
             "cols": entry["cols"],
             "rows": entry["rows"],
         }
+
+
+# Module-level singleton
+terminal_service = TerminalService()

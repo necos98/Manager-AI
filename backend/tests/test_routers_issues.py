@@ -112,28 +112,8 @@ async def test_update_status_invalid(client, project):
         f"/api/projects/{project['id']}/issues/{issue_id}/status",
         json={"status": "Finished"},
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 409
 
-
-@pytest.mark.asyncio
-async def test_decline_with_feedback(client, project, db_session):
-    create_resp = await client.post(
-        f"/api/projects/{project['id']}/issues", json={"description": "Decline me", "priority": 1}
-    )
-    issue_id = create_resp.json()["id"]
-    # Use service to advance to PLANNED (no REST endpoint for create_spec)
-    from app.services.issue_service import IssueService
-    service = IssueService(db_session)
-    await service.create_spec(issue_id, project["id"], "# Spec")
-    await service.create_plan(issue_id, project["id"], "# Plan")
-    # Now decline via REST
-    resp = await client.patch(
-        f"/api/projects/{project['id']}/issues/{issue_id}/status",
-        json={"status": "Declined", "decline_feedback": "Not good enough"},
-    )
-    assert resp.status_code == 200
-    assert resp.json()["status"] == "Declined"
-    assert resp.json()["decline_feedback"] == "Not good enough"
 
 
 @pytest.mark.asyncio

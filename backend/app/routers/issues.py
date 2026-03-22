@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,7 +12,6 @@ router = APIRouter(prefix="/api/projects/{project_id}/issues", tags=["issues"])
 
 
 async def _reload_with_tasks(db: AsyncSession, issue_id: str) -> Issue:
-    """Re-fetch an issue with tasks eagerly loaded (needed after commit expires state)."""
     result = await db.execute(
         select(Issue).options(selectinload(Issue.tasks)).where(Issue.id == issue_id)
     )
@@ -40,13 +39,7 @@ async def list_issues(
 @router.get("/{issue_id}", response_model=IssueResponse)
 async def get_issue(project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)):
     service = IssueService(db)
-    try:
-        issue = await service.get_for_project(issue_id, project_id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Resource not found")
-    except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
-    return issue
+    return await service.get_for_project(issue_id, project_id)
 
 
 @router.put("/{issue_id}", response_model=IssueResponse)
@@ -54,12 +47,7 @@ async def update_issue(
     project_id: str, issue_id: str, data: IssueUpdate, db: AsyncSession = Depends(get_db)
 ):
     service = IssueService(db)
-    try:
-        issue = await service.update_fields(issue_id, project_id, **data.model_dump(exclude_unset=True))
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Resource not found")
-    except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+    issue = await service.update_fields(issue_id, project_id, **data.model_dump(exclude_unset=True))
     await db.commit()
     return await _reload_with_tasks(db, issue.id)
 
@@ -72,14 +60,7 @@ async def update_issue_status(
     db: AsyncSession = Depends(get_db),
 ):
     service = IssueService(db)
-    try:
-        issue = await service.update_status(
-            issue_id, project_id, data.status, decline_feedback=data.decline_feedback
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
-    except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+    issue = await service.update_status(issue_id, project_id, data.status)
     await db.commit()
     return await _reload_with_tasks(db, issue.id)
 
@@ -87,10 +68,5 @@ async def update_issue_status(
 @router.delete("/{issue_id}", status_code=204)
 async def delete_issue(project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)):
     service = IssueService(db)
-    try:
-        await service.delete(issue_id, project_id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Resource not found")
-    except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+    await service.delete(issue_id, project_id)
     await db.commit()

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas.terminal import TerminalCreate, TerminalListResponse, TerminalResponse
-from app.services.terminal_service import TerminalService
+from app.services.terminal_service import TerminalService, terminal_service
 from app.services.terminal_command_service import TerminalCommandService
 
 logger = logging.getLogger(__name__)
@@ -20,12 +20,9 @@ router = APIRouter(prefix="/api/terminals", tags=["terminals"])
 # the default asyncio executor used by DB queries, HTTP, etc.
 _pty_executor = ThreadPoolExecutor(max_workers=20, thread_name_prefix="pty-read")
 
-# Singleton service instance
-_terminal_service = TerminalService()
-
 
 def get_terminal_service() -> TerminalService:
-    return _terminal_service
+    return terminal_service
 
 
 async def get_project_path(project_id: str, db: AsyncSession) -> str:
