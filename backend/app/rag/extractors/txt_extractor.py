@@ -3,7 +3,7 @@ from app.rag.extractors.base import ContentExtractor, ExtractedContent
 
 class TxtExtractor(ContentExtractor):
     source_type = "file"
-    supported_mimetypes = ["text/plain"]
+    supported_mimetypes = ["text/plain", "text/markdown"]
 
     def extract(self, source: str, **kwargs) -> ExtractedContent:
         """Extract text from a plain text file. source = file path."""

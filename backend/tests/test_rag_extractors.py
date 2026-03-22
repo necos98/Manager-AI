@@ -46,6 +46,23 @@ def test_txt_extractor():
     assert "Second paragraph" in result.text
 
 
+def test_txt_extractor_supports_markdown():
+    extractor = TxtExtractor()
+    assert "text/markdown" in extractor.supported_mimetypes
+    registry = ExtractorRegistry()
+    registry.register(extractor)
+    assert registry.get("text/markdown") is extractor
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8") as f:
+        f.write("# Heading\n\nSome **bold** text")
+        f.flush()
+        result = extractor.extract(f.name, original_name="README.md")
+    os.unlink(f.name)
+    assert result.title == "README.md"
+    assert "# Heading" in result.text
+    assert "**bold**" in result.text
+
+
 def test_issue_extractor():
     extractor = IssueExtractor()
     assert extractor.source_type == "issue"
