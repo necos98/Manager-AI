@@ -72,16 +72,23 @@ def setup_venv():
 
 
 def setup_frontend():
-    """Install frontend dependencies if needed."""
+    """Install frontend dependencies and build for production."""
+    npm_cmd = "npm.cmd" if IS_WINDOWS else "npm"
     if not (FRONTEND_DIR / "node_modules").exists():
         print("[...] Installing frontend dependencies...")
-        npm_cmd = "npm.cmd" if IS_WINDOWS else "npm"
         subprocess.run(
             [npm_cmd, "install", "--legacy-peer-deps"],
             cwd=str(FRONTEND_DIR),
             check=True,
         )
         print("[ok] Frontend dependencies installed")
+    print("[...] Building frontend...")
+    subprocess.run(
+        [npm_cmd, "run", "build"],
+        cwd=str(FRONTEND_DIR),
+        check=True,
+    )
+    print("[ok] Frontend build complete")
 
 
 def run_migrations():
@@ -107,7 +114,7 @@ def main():
     print()
     print("=" * 50)
     print("  Manager AI")
-    print("  Frontend: http://localhost:5173")
+    print("  Frontend: http://localhost:4173")
     print(f"  Backend:  http://localhost:{backend_port}")
     print("  Press Ctrl+C to stop")
     print("=" * 50)
@@ -147,7 +154,7 @@ def main():
     npm_cmd = "npm.cmd" if IS_WINDOWS else "npm"
     frontend_env = {**os.environ, "BACKEND_URL": f"http://localhost:{backend_port}"}
     frontend_proc = subprocess.Popen(
-        [npm_cmd, "run", "dev"],
+        [npm_cmd, "run", "preview"],
         cwd=str(FRONTEND_DIR),
         env=frontend_env,
     )
