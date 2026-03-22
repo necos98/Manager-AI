@@ -308,3 +308,29 @@ async def get_plan_tasks(issue_id: str) -> dict:
         task_service = TaskService(session)
         tasks = await task_service.list_by_issue(issue_id)
         return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in tasks]}
+
+
+# ── RAG tools (project context search) ─────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.search_project_context.description"])
+async def search_project_context(
+    project_id: str,
+    query: str,
+    source_type: str | None = None,
+    limit: int = 5,
+) -> dict:
+    rag = get_rag_service()
+    results = await rag.search(
+        query=query, project_id=project_id, source_type=source_type, limit=limit
+    )
+    return {"results": results}
+
+
+@mcp.tool(description=_desc["tool.get_context_chunk_details.description"])
+async def get_context_chunk_details(project_id: str, chunk_id: str) -> dict:
+    rag = get_rag_service()
+    chunk = await rag.get_chunk_details(chunk_id=chunk_id, project_id=project_id)
+    if chunk is None:
+        return {"error": "Chunk not found or does not belong to this project"}
+    return chunk
