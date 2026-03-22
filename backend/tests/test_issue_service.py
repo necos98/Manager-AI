@@ -3,6 +3,7 @@ import uuid
 import pytest
 import pytest_asyncio
 
+from app.exceptions import InvalidTransitionError, NotFoundError, ValidationError
 from app.models.issue import IssueStatus
 from app.services.project_service import ProjectService
 from app.services.issue_service import IssueService
@@ -49,18 +50,6 @@ async def test_get_next_issue_priority_order(db_session, project):
     assert issue.description == "High priority"
 
 
-async def test_get_next_issue_declined_before_new(db_session, project):
-    service = IssueService(db_session)
-    new_issue = await service.create(project_id=project.id, description="New issue", priority=1)
-    declined_issue = await service.create(project_id=project.id, description="Declined issue", priority=5)
-    declined_issue.status = IssueStatus.DECLINED
-    declined_issue.decline_feedback = "Try again"
-    await db_session.flush()
-
-    issue = await service.get_next_issue(project.id)
-    assert issue.id == declined_issue.id
-
-
 async def test_get_next_issue_none_available(db_session, project):
     service = IssueService(db_session)
     issue = await service.get_next_issue(project.id)
@@ -78,7 +67,7 @@ async def test_update_status_valid_transition(db_session, project):
 async def test_update_status_invalid_transition(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Skip ahead", priority=1)
-    with pytest.raises(ValueError, match="Invalid state transition"):
+    with pytest.raises(InvalidTransitionError, match="Invalid state transition"):
         await service.update_status(issue.id, project.id, IssueStatus.FINISHED)
 
 
@@ -89,31 +78,11 @@ async def test_update_status_canceled_from_any(db_session, project):
     assert updated.status == IssueStatus.CANCELED
 
 
-async def test_update_status_declined_saves_feedback(db_session, project):
-    service = IssueService(db_session)
-    issue = await service.create(project_id=project.id, description="Decline me", priority=1)
-    await service.create_spec(issue.id, project.id, "# Spec")
-    await service.update_status(issue.id, project.id, IssueStatus.PLANNED)
-    updated = await service.update_status(issue.id, project.id, IssueStatus.DECLINED, decline_feedback="Not good enough")
-    assert updated.status == IssueStatus.DECLINED
-    assert updated.decline_feedback == "Not good enough"
-
-
 async def test_set_issue_name(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Name me", priority=1)
     updated = await service.set_name(issue.id, project.id, "My Issue Name")
     assert updated.name == "My Issue Name"
-
-
-async def test_decline_issue(db_session, project):
-    service = IssueService(db_session)
-    issue = await service.create(project_id=project.id, description="Decline me", priority=1)
-    await service.create_spec(issue.id, project.id, "# Spec")
-    await service.create_plan(issue.id, project.id, "# Plan")
-    updated = await service.decline_issue(issue.id, project.id, "Not good enough")
-    assert updated.status == IssueStatus.DECLINED
-    assert updated.decline_feedback == "Not good enough"
 
 
 async def test_complete_issue(db_session, project):
@@ -129,7 +98,7 @@ async def test_complete_issue(db_session, project):
 async def test_complete_issue_invalid_status(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Not ready", priority=1)
-    with pytest.raises(ValueError, match="Can only complete"):
+    with pytest.raises(InvalidTransitionError, match="Can only complete"):
         await service.complete_issue(issue.id, project.id, "Done")
 
 
@@ -137,7 +106,7 @@ async def test_issue_project_mismatch(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Test", priority=1)
     other_project_id = uuid.uuid4()
-    with pytest.raises(PermissionError, match="does not belong"):
+    with pytest.raises(NotFoundError, match="not found"):
         await service.set_name(issue.id, other_project_id, "Name")
 
 
@@ -151,28 +120,19 @@ async def test_create_spec_from_new(db_session, project):
     assert updated.status == IssueStatus.REASONING
 
 
-async def test_create_spec_from_declined(db_session, project):
-    service = IssueService(db_session)
-    issue = await service.create(project_id=project.id, description="Respec me", priority=1)
-    issue.status = IssueStatus.DECLINED
-    await db_session.flush()
-    updated = await service.create_spec(issue.id, project.id, "# New Spec")
-    assert updated.status == IssueStatus.REASONING
-
-
 async def test_create_spec_invalid_status(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Already reasoning", priority=1)
     issue.status = IssueStatus.REASONING
     await db_session.flush()
-    with pytest.raises(ValueError, match="New or Declined"):
+    with pytest.raises(InvalidTransitionError, match="New"):
         await service.create_spec(issue.id, project.id, "# Spec")
 
 
 async def test_create_spec_blank_raises(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Test", priority=1)
-    with pytest.raises(ValueError, match="blank"):
+    with pytest.raises(ValidationError, match="blank"):
         await service.create_spec(issue.id, project.id, "   ")
 
 
@@ -190,7 +150,7 @@ async def test_edit_spec(db_session, project):
 async def test_edit_spec_wrong_status(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Not reasoning", priority=1)
-    with pytest.raises(ValueError, match="Reasoning status"):
+    with pytest.raises(InvalidTransitionError, match="Reasoning"):
         await service.edit_spec(issue.id, project.id, "# Spec")
 
 
@@ -199,7 +159,7 @@ async def test_edit_spec_blank_raises(db_session, project):
     issue = await service.create(project_id=project.id, description="Test", priority=1)
     issue.status = IssueStatus.REASONING
     await db_session.flush()
-    with pytest.raises(ValueError, match="blank"):
+    with pytest.raises(ValidationError, match="blank"):
         await service.edit_spec(issue.id, project.id, "")
 
 
@@ -217,7 +177,7 @@ async def test_create_plan_from_reasoning(db_session, project):
 async def test_create_plan_wrong_status(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Not reasoned", priority=1)
-    with pytest.raises(ValueError, match="Reasoning status"):
+    with pytest.raises(InvalidTransitionError, match="Reasoning"):
         await service.create_plan(issue.id, project.id, "# Plan")
 
 
@@ -226,7 +186,7 @@ async def test_create_plan_blank_raises(db_session, project):
     issue = await service.create(project_id=project.id, description="Test", priority=1)
     issue.status = IssueStatus.REASONING
     await db_session.flush()
-    with pytest.raises(ValueError, match="blank"):
+    with pytest.raises(ValidationError, match="blank"):
         await service.create_plan(issue.id, project.id, "  ")
 
 
@@ -245,7 +205,7 @@ async def test_edit_plan(db_session, project):
 async def test_edit_plan_wrong_status(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Not planned", priority=1)
-    with pytest.raises(ValueError, match="Planned status"):
+    with pytest.raises(InvalidTransitionError, match="Planned"):
         await service.edit_plan(issue.id, project.id, "# Plan")
 
 
@@ -254,7 +214,7 @@ async def test_edit_plan_blank_raises(db_session, project):
     issue = await service.create(project_id=project.id, description="Test", priority=1)
     issue.status = IssueStatus.PLANNED
     await db_session.flush()
-    with pytest.raises(ValueError, match="blank"):
+    with pytest.raises(ValidationError, match="blank"):
         await service.edit_plan(issue.id, project.id, "")
 
 
@@ -272,7 +232,7 @@ async def test_accept_issue(db_session, project):
 async def test_accept_issue_wrong_status(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Not planned", priority=1)
-    with pytest.raises(ValueError, match="Planned status"):
+    with pytest.raises(InvalidTransitionError, match="Planned"):
         await service.accept_issue(issue.id, project.id)
 
 

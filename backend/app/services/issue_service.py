@@ -1,7 +1,8 @@
-from sqlalchemy import case, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.exceptions import InvalidTransitionError, NotFoundError, ValidationError
 from app.models.issue import VALID_TRANSITIONS, Issue, IssueStatus
 
 
@@ -26,9 +27,9 @@ class IssueService:
         )
         issue = result.scalar_one_or_none()
         if issue is None:
-            raise ValueError("Issue not found")
+            raise NotFoundError("Issue not found")
         if issue.project_id != project_id:
-            raise PermissionError("Issue does not belong to project")
+            raise NotFoundError("Issue not found")
         return issue
 
     async def list_by_project(
@@ -45,15 +46,8 @@ class IssueService:
         query = (
             select(Issue)
             .where(Issue.project_id == project_id)
-            .where(Issue.status.in_([IssueStatus.NEW, IssueStatus.DECLINED]))
-            .order_by(
-                case(
-                    (Issue.status == IssueStatus.DECLINED, 0),
-                    (Issue.status == IssueStatus.NEW, 1),
-                ).asc(),
-                Issue.priority.asc(),
-                Issue.created_at.asc(),
-            )
+            .where(Issue.status == IssueStatus.NEW)
+            .order_by(Issue.priority.asc(), Issue.created_at.asc())
             .limit(1)
         )
         result = await self.session.execute(query)
@@ -64,7 +58,6 @@ class IssueService:
         issue_id: str,
         project_id: str,
         new_status: IssueStatus,
-        decline_feedback: str | None = None,
     ) -> Issue:
         issue = await self.get_for_project(issue_id, project_id)
         if new_status == IssueStatus.CANCELED:
@@ -72,10 +65,8 @@ class IssueService:
             await self.session.flush()
             return issue
         if (issue.status, new_status) not in VALID_TRANSITIONS:
-            raise ValueError(f"Invalid state transition from {issue.status.value} to {new_status.value}")
+            raise InvalidTransitionError(f"Invalid state transition from {issue.status.value} to {new_status.value}")
         issue.status = new_status
-        if new_status == IssueStatus.DECLINED and decline_feedback:
-            issue.decline_feedback = decline_feedback
         await self.session.flush()
         return issue
 
@@ -93,7 +84,7 @@ class IssueService:
     async def complete_issue(self, issue_id: str, project_id: str, recap: str) -> Issue:
         issue = await self.get_for_project(issue_id, project_id)
         if issue.status != IssueStatus.ACCEPTED:
-            raise ValueError(f"Can only complete issues in Accepted status, got {issue.status.value}")
+            raise InvalidTransitionError(f"Can only complete issues in Accepted status, got {issue.status.value}")
         issue.recap = recap
         issue.status = IssueStatus.FINISHED
         await self.session.flush()
@@ -101,11 +92,11 @@ class IssueService:
 
     async def create_spec(self, issue_id: str, project_id: str, spec: str) -> Issue:
         if not spec or not spec.strip():
-            raise ValueError("Specification cannot be blank")
+            raise ValidationError("Specification cannot be blank")
         issue = await self.get_for_project(issue_id, project_id)
-        if issue.status not in (IssueStatus.NEW, IssueStatus.DECLINED):
-            raise ValueError(
-                f"Can only create spec for issues in New or Declined status, got {issue.status.value}"
+        if issue.status != IssueStatus.NEW:
+            raise InvalidTransitionError(
+                f"Can only create spec for issues in New status, got {issue.status.value}"
             )
         issue.specification = spec
         issue.status = IssueStatus.REASONING
@@ -114,20 +105,20 @@ class IssueService:
 
     async def edit_spec(self, issue_id: str, project_id: str, spec: str) -> Issue:
         if not spec or not spec.strip():
-            raise ValueError("Specification cannot be blank")
+            raise ValidationError("Specification cannot be blank")
         issue = await self.get_for_project(issue_id, project_id)
         if issue.status != IssueStatus.REASONING:
-            raise ValueError("Issue must be in Reasoning status to edit spec")
+            raise InvalidTransitionError("Issue must be in Reasoning status to edit spec")
         issue.specification = spec
         await self.session.flush()
         return issue
 
     async def create_plan(self, issue_id: str, project_id: str, plan: str) -> Issue:
         if not plan or not plan.strip():
-            raise ValueError("Plan cannot be blank")
+            raise ValidationError("Plan cannot be blank")
         issue = await self.get_for_project(issue_id, project_id)
         if issue.status != IssueStatus.REASONING:
-            raise ValueError(
+            raise InvalidTransitionError(
                 f"Can only create plan for issues in Reasoning status, got {issue.status.value}"
             )
         issue.plan = plan
@@ -137,10 +128,10 @@ class IssueService:
 
     async def edit_plan(self, issue_id: str, project_id: str, plan: str) -> Issue:
         if not plan or not plan.strip():
-            raise ValueError("Plan cannot be blank")
+            raise ValidationError("Plan cannot be blank")
         issue = await self.get_for_project(issue_id, project_id)
         if issue.status != IssueStatus.PLANNED:
-            raise ValueError("Issue must be in Planned status to edit plan")
+            raise InvalidTransitionError("Issue must be in Planned status to edit plan")
         issue.plan = plan
         await self.session.flush()
         return issue
@@ -148,21 +139,10 @@ class IssueService:
     async def accept_issue(self, issue_id: str, project_id: str) -> Issue:
         issue = await self.get_for_project(issue_id, project_id)
         if issue.status != IssueStatus.PLANNED:
-            raise ValueError(
+            raise InvalidTransitionError(
                 f"Can only accept issues in Planned status, got {issue.status.value}"
             )
         issue.status = IssueStatus.ACCEPTED
-        await self.session.flush()
-        return issue
-
-    async def decline_issue(self, issue_id: str, project_id: str, feedback: str) -> Issue:
-        issue = await self.get_for_project(issue_id, project_id)
-        if issue.status != IssueStatus.PLANNED:
-            raise ValueError(
-                f"Can only decline issues in Planned status, got {issue.status.value}"
-            )
-        issue.status = IssueStatus.DECLINED
-        issue.decline_feedback = feedback
         await self.session.flush()
         return issue
 
