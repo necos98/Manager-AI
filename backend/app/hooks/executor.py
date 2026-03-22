@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import time
 from dataclasses import dataclass
 
 
@@ -20,10 +21,8 @@ class ClaudeCodeExecutor:
         self,
         prompt: str,
         project_path: str,
-        env_vars: dict[str, str] | None = None,
-        timeout: float = 300,
-        base_url: str = "http://localhost:8000",
-        project_id: str = "",
+        env_vars: dict | None = None,
+        timeout: int = 300,
     ) -> ExecutorResult:
         """
         Spawn `claude` with the given prompt (sent via stdin) and return the result.
@@ -33,14 +32,18 @@ class ClaudeCodeExecutor:
             project_path: Working directory for the subprocess.
             env_vars:     Additional environment variables to inject.
             timeout:      Maximum seconds to wait for the process (default 300).
-            base_url:     Manager AI base URL injected as MANAGER_AI_BASE_URL.
-            project_id:   Project ID injected as MANAGER_AI_PROJECT_ID.
         """
         env = os.environ.copy()
 
-        # Default Manager AI env vars
-        env["MANAGER_AI_PROJECT_ID"] = project_id
-        env["MANAGER_AI_BASE_URL"] = base_url
+        # Default Manager AI env vars, sourced from the current environment
+        env.setdefault(
+            "MANAGER_AI_PROJECT_ID",
+            os.environ.get("MANAGER_AI_PROJECT_ID", ""),
+        )
+        env.setdefault(
+            "MANAGER_AI_BASE_URL",
+            os.environ.get("MANAGER_AI_BASE_URL", "http://localhost:8000"),
+        )
 
         if env_vars:
             env.update(env_vars)
@@ -51,8 +54,6 @@ class ClaudeCodeExecutor:
             "--allowedTools",
             "mcp__ManagerAi__*",
         ]
-
-        import time
 
         start = time.monotonic()
 

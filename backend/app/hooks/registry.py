@@ -116,6 +116,10 @@ class HookRegistry:
             )
 
 
+# Global singleton
+hook_registry = HookRegistry()
+
+
 def hook(event: HookEvent) -> Callable[[type[BaseHook]], type[BaseHook]]:
     """Class decorator that registers a BaseHook subclass with the global registry."""
 
@@ -124,7 +128,3 @@ def hook(event: HookEvent) -> Callable[[type[BaseHook]], type[BaseHook]]:
         return cls
 
     return decorator
-
-
-# Global singleton
-hook_registry = HookRegistry()
