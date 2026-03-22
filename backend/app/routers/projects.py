@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,3 +76,32 @@ async def install_manager_json(project_id: str, db: AsyncSession = Depends(get_d
     with open(dest, "w", encoding="utf-8") as f:
         json.dump({"project_id": project.id}, f, indent=2)
     return {"path": dest}
+
+
+@router.post("/{project_id}/install-claude-resources", status_code=200)
+async def install_claude_resources(project_id: str, db: AsyncSession = Depends(get_db)):
+    service = ProjectService(db)
+    project = await service.get_by_id(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Resource not found")
+
+    src = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "claude_resources")
+    if not os.path.isdir(src):
+        raise HTTPException(status_code=404, detail="claude_resources folder not found")
+
+    dest = os.path.join(project.path, ".claude")
+    os.makedirs(dest, exist_ok=True)
+
+    copied = []
+    for item in os.listdir(src):
+        if item.startswith("."):
+            continue
+        s = os.path.join(src, item)
+        d = os.path.join(dest, item)
+        if os.path.isdir(s):
+            shutil.copytree(s, d, dirs_exist_ok=True)
+        else:
+            shutil.copy2(s, d)
+        copied.append(item)
+
+    return {"path": dest, "copied": copied}

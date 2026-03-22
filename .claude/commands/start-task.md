@@ -1,0 +1,1 @@
+Start working the next task by calling the "Manager_AI" MCP.

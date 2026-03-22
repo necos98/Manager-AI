@@ -90,4 +90,22 @@ export const api = {
     request("/terminal-commands/reorder", { method: "PUT", body: JSON.stringify({ commands }) }),
   deleteTerminalCommand: (id) =>
     request(`/terminal-commands/${id}`, { method: "DELETE" }),
+
+  // Project Files
+  listFiles: (projectId) => request(`/projects/${projectId}/files`),
+  uploadFiles: async (projectId, formData) => {
+    const res = await fetch(`${BASE}/projects/${projectId}/files`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+      throw new Error(err.detail || "Upload failed");
+    }
+    return res.json();
+  },
+  getFileDownloadUrl: (projectId, fileId) =>
+    `${BASE}/projects/${projectId}/files/${fileId}/download`,
+  deleteFile: (projectId, fileId) =>
+    request(`/projects/${projectId}/files/${fileId}`, { method: "DELETE" }),
 };

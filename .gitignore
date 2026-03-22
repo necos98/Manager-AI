@@ -15,6 +15,7 @@ dist/
 
 # Data
 data/
+project_resources/
 
 # IDE
 .idea/

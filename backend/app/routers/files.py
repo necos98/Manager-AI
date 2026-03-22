@@ -1,0 +1,63 @@
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.schemas.project_file import ProjectFileResponse
+from app.services.file_service import FileService
+from app.services.project_service import ProjectService
+
+router = APIRouter(prefix="/api/projects/{project_id}/files", tags=["files"])
+
+
+async def _check_project(project_id: str, db: AsyncSession):
+    project = await ProjectService(db).get_by_id(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
+
+
+@router.post("", response_model=list[ProjectFileResponse], status_code=201)
+async def upload_files(project_id: str, files: list[UploadFile], db: AsyncSession = Depends(get_db)):
+    await _check_project(project_id, db)
+    service = FileService(db)
+    try:
+        records = await service.upload_files(project_id, files)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    await db.commit()
+    return [ProjectFileResponse.from_model(r) for r in records]
+
+
+@router.get("", response_model=list[ProjectFileResponse])
+async def list_files(project_id: str, db: AsyncSession = Depends(get_db)):
+    await _check_project(project_id, db)
+    service = FileService(db)
+    records = await service.list_by_project(project_id)
+    return [ProjectFileResponse.from_model(r) for r in records]
+
+
+@router.get("/{file_id}/download")
+async def download_file(project_id: str, file_id: str, db: AsyncSession = Depends(get_db)):
+    await _check_project(project_id, db)
+    service = FileService(db)
+    record = await service.get_by_id(project_id, file_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    file_path = service.get_file_path(project_id, record.stored_name)
+    return FileResponse(
+        path=file_path,
+        filename=record.original_name,
+        media_type=record.mime_type,
+    )
+
+
+@router.delete("/{file_id}", status_code=204)
+async def delete_file(project_id: str, file_id: str, db: AsyncSession = Depends(get_db)):
+    await _check_project(project_id, db)
+    service = FileService(db)
+    deleted = await service.delete(project_id, file_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="File not found")
+    await db.commit()

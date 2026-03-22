@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import FileGallery from "../components/FileGallery";
 import IssueList from "../components/IssueList";
 import TerminalCommandsEditor from "../components/TerminalCommandsEditor";
 
 const STATUSES = ["All", "New", "Reasoning", "Planned", "Accepted", "Declined", "Finished", "Canceled"];
-const TABS = ["Issues", "Summary", "Terminal Settings"];
+const TABS = ["Issues", "Files", "Summary", "Terminal Settings"];
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
@@ -126,6 +127,11 @@ export default function ProjectDetailPage() {
           </div>
           <IssueList issues={issues} projectId={id} activeTerminalIssueIds={activeTerminalIssueIds} />
         </>
+      )}
+
+      {/* Files Tab */}
+      {activeTab === "Files" && (
+        <FileGallery projectId={id} />
       )}
 
       {/* Summary Tab */}

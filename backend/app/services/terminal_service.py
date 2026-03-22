@@ -7,12 +7,17 @@ from winpty import PTY
 
 DEFAULT_SHELL = os.environ.get("MANAGER_AI_SHELL", r"C:\Windows\System32\cmd.exe")
 
+# Maximum size of the output buffer per terminal (in bytes).
+# When exceeded, oldest output is trimmed from the front.
+MAX_BUFFER_SIZE = 100_000  # ~100 KB
+
 
 class TerminalService:
     """In-memory registry of active terminal sessions with PTY lifecycle management."""
 
     def __init__(self):
         self._terminals: dict[str, dict] = {}
+        self._buffers: dict[str, bytearray] = {}
         self._lock = threading.Lock()
 
     def create(
@@ -46,6 +51,7 @@ class TerminalService:
         }
         with self._lock:
             self._terminals[term_id] = entry
+            self._buffers[term_id] = bytearray()
         return self._to_response(entry)
 
     def get(self, terminal_id: str) -> dict:
@@ -77,11 +83,31 @@ class TerminalService:
     def active_count(self) -> int:
         return sum(1 for t in self._terminals.values() if t["status"] == "active")
 
+    def append_output(self, terminal_id: str, data: str) -> None:
+        """Append PTY output to the terminal's scrollback buffer."""
+        with self._lock:
+            buf = self._buffers.get(terminal_id)
+            if buf is None:
+                return
+            buf.extend(data.encode("utf-8", errors="replace"))
+            if len(buf) > MAX_BUFFER_SIZE:
+                excess = len(buf) - MAX_BUFFER_SIZE
+                del buf[:excess]
+
+    def get_buffered_output(self, terminal_id: str) -> str:
+        """Return all buffered output for a terminal."""
+        with self._lock:
+            buf = self._buffers.get(terminal_id)
+            if not buf:
+                return ""
+            return buf.decode("utf-8", errors="replace")
+
     def kill(self, terminal_id: str) -> None:
         with self._lock:
             if terminal_id not in self._terminals:
                 raise KeyError(f"Terminal {terminal_id} not found")
             entry = self._terminals.pop(terminal_id)
+            self._buffers.pop(terminal_id, None)
         try:
             pty = entry["pty"]
             if hasattr(pty, "close"):
@@ -93,6 +119,7 @@ class TerminalService:
         with self._lock:
             if terminal_id in self._terminals:
                 self._terminals.pop(terminal_id)
+            self._buffers.pop(terminal_id, None)
 
     def resize(self, terminal_id: str, cols: int, rows: int) -> None:
         if terminal_id not in self._terminals:

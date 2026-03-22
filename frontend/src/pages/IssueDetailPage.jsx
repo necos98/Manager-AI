@@ -15,6 +15,8 @@ export default function IssueDetailPage() {
   const [activeTab, setActiveTab] = useState("details");
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -67,6 +69,21 @@ export default function IssueDetailPage() {
     }
   };
 
+  const deleteIssue = async () => {
+    setDeleting(true);
+    try {
+      if (terminalId) {
+        try { await api.killTerminal(terminalId); } catch { /* ignore */ }
+      }
+      await api.deleteIssue(projectId, issueId);
+      navigate(`/projects/${projectId}`);
+    } catch (err) {
+      alert("Failed to delete issue: " + err.message);
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   if (loading) return <p>Loading...</p>;
   if (!issue) return <p>Issue not found.</p>;
 
@@ -84,22 +101,30 @@ export default function IssueDetailPage() {
         <button onClick={() => navigate(`/projects/${projectId}`)} className="text-blue-600 hover:underline">
           &larr; Back to issues
         </button>
-        {terminalId ? (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowCloseConfirm(true)}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 flex items-center gap-2 text-sm"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="border border-red-300 text-red-600 px-4 py-2 rounded hover:bg-red-50 text-sm"
           >
-            <span className="font-mono">&#9632;</span> Close Terminal
+            Delete Issue
           </button>
-        ) : (
-          <button
-            onClick={openTerminal}
-            disabled={terminalLoading}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-sm"
-          >
-            <span className="font-mono">&#9654;</span> {terminalLoading ? "Opening..." : "Open Terminal"}
-          </button>
-        )}
+          {terminalId ? (
+            <button
+              onClick={() => setShowCloseConfirm(true)}
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 flex items-center gap-2 text-sm"
+            >
+              <span className="font-mono">&#9632;</span> Close Terminal
+            </button>
+          ) : (
+            <button
+              onClick={openTerminal}
+              disabled={terminalLoading}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-sm"
+            >
+              <span className="font-mono">&#9654;</span> {terminalLoading ? "Opening..." : "Open Terminal"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -225,6 +250,21 @@ export default function IssueDetailPage() {
             <div className="flex gap-3 justify-end">
               <button onClick={() => setShowLimitWarning(false)} className="px-4 py-2 rounded border hover:bg-gray-50 text-sm">Cancel</button>
               <button onClick={doOpenTerminal} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">Open Anyway</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}>
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-bold mb-2 text-red-600">Delete Issue?</h3>
+            <p className="text-gray-600 text-sm mb-4">This will permanently delete this issue and all its tasks. This action cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setShowDeleteConfirm(false)} disabled={deleting} className="px-4 py-2 rounded border hover:bg-gray-50 text-sm">Cancel</button>
+              <button onClick={deleteIssue} disabled={deleting} className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 disabled:opacity-50 text-sm">
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
             </div>
           </div>
         </div>

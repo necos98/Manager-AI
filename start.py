@@ -10,6 +10,7 @@ import os
 import platform
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -64,7 +65,7 @@ def setup_venv():
 
     print("[...] Installing backend dependencies...")
     subprocess.run(
-        [str(VENV_PIP), "install", "-r", str(BACKEND_DIR / "requirements.txt"), "-q"],
+        [str(VENV_PYTHON), "-m", "pip", "install", "-r", str(BACKEND_DIR / "requirements.txt"), "-q"],
         check=True,
     )
     print("[ok] Backend dependencies installed")
@@ -88,7 +89,7 @@ def run_migrations():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     print("[...] Running database migrations...")
     subprocess.run(
-        [str(VENV_ALEMBIC), "upgrade", "head"],
+        [str(VENV_PYTHON), "-m", "alembic", "upgrade", "head"],
         cwd=str(BACKEND_DIR),
         check=True,
     )
@@ -123,6 +124,24 @@ def main():
         ],
         cwd=str(BACKEND_DIR),
     )
+
+    # Wait for backend to be ready before starting frontend
+    print("[...] Waiting for backend to be ready...")
+    for i in range(30):
+        # Check if backend process crashed
+        if backend_proc.poll() is not None:
+            print(f"[!] Backend exited with code {backend_proc.returncode}")
+            sys.exit(1)
+        try:
+            with socket.create_connection(("127.0.0.1", backend_port), timeout=1):
+                break
+        except OSError:
+            time.sleep(0.5)
+    else:
+        print("[!] Backend did not start within 15 seconds")
+        backend_proc.terminate()
+        sys.exit(1)
+    print("[ok] Backend is ready")
 
     # Start frontend — pass backend URL so Vite proxy points to the right port
     npm_cmd = "npm.cmd" if IS_WINDOWS else "npm"

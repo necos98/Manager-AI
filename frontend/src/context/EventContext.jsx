@@ -4,13 +4,27 @@ import ToastContainer from "../components/ToastContainer";
 
 const EventContext = createContext(null);
 
+// Create audio once and unlock it on first user interaction (browser autoplay policy)
+const notificationAudio = new Audio("/sounds/notification.wav");
+notificationAudio.volume = 0.5;
+
+function unlockAudio() {
+  notificationAudio.play().then(() => {
+    notificationAudio.pause();
+    notificationAudio.currentTime = 0;
+  }).catch(() => {});
+  document.removeEventListener("click", unlockAudio);
+  document.removeEventListener("keydown", unlockAudio);
+}
+document.addEventListener("click", unlockAudio);
+document.addEventListener("keydown", unlockAudio);
+
 function playNotificationSound() {
   try {
-    const audio = new Audio("/sounds/notification.wav");
-    audio.volume = 0.5;
-    audio.play().catch(() => {});
+    notificationAudio.currentTime = 0;
+    notificationAudio.play().catch(() => {});
   } catch (e) {
-    // Audio API unavailable or blocked — silently ignore
+    // Audio API unavailable
   }
 }
 
