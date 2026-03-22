@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 
-const ACCEPT = ".txt,.md,.doc,.docx,.pdf,.xls,.xlsx";
-
 function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -15,6 +13,7 @@ function formatDate(dateStr) {
 
 export default function FileGallery({ projectId }) {
   const [files, setFiles] = useState([]);
+  const [formats, setFormats] = useState({ accept: "", label: "" });
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -33,6 +32,7 @@ export default function FileGallery({ projectId }) {
 
   useEffect(() => {
     loadFiles();
+    api.getAllowedFormats().then(setFormats).catch(() => {});
   }, [projectId]);
 
   const handleUpload = async (e) => {
@@ -78,13 +78,13 @@ export default function FileGallery({ projectId }) {
             ref={inputRef}
             type="file"
             multiple
-            accept={ACCEPT}
+            accept={formats.accept}
             onChange={handleUpload}
             disabled={uploading}
             className="hidden"
           />
         </label>
-        <span className="text-xs text-gray-400">TXT, DOC, DOCX, PDF, XLS, XLSX</span>
+        {formats.label && <span className="text-xs text-gray-400">{formats.label}</span>}
       </div>
 
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}

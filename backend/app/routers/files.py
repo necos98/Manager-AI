@@ -7,10 +7,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.rag import get_rag_service
 from app.schemas.project_file import ProjectFileResponse
-from app.services.file_service import FileService
+from app.services.file_service import ALLOWED_EXTENSIONS, FileService
 from app.services.project_service import ProjectService
 
+formats_router = APIRouter(prefix="/api/files", tags=["files"])
 router = APIRouter(prefix="/api/projects/{project_id}/files", tags=["files"])
+
+
+@formats_router.get("/allowed-formats")
+async def get_allowed_formats():
+    extensions = sorted(ALLOWED_EXTENSIONS)
+    return {
+        "accept": ",".join(f".{ext}" for ext in extensions),
+        "extensions": extensions,
+        "label": ", ".join(ext.upper() for ext in extensions),
+    }
 
 
 async def _check_project(project_id: str, db: AsyncSession):

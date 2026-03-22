@@ -92,6 +92,7 @@ export const api = {
     request(`/terminal-commands/${id}`, { method: "DELETE" }),
 
   // Project Files
+  getAllowedFormats: () => request("/files/allowed-formats"),
   listFiles: (projectId) => request(`/projects/${projectId}/files`),
   uploadFiles: async (projectId, formData) => {
     const res = await fetch(`${BASE}/projects/${projectId}/files`, {

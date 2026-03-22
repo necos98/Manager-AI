@@ -75,6 +75,7 @@ app.add_middleware(
 )
 
 app.include_router(projects.router)
+app.include_router(files.formats_router)
 app.include_router(files.router)
 app.include_router(issues.router)
 app.include_router(tasks.router)
