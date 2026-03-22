@@ -207,13 +207,6 @@ export default function IssueDetailPage() {
                 </div>
               </div>
             )}
-
-            {issue.decline_feedback && (
-              <div className="mb-4">
-                <h2 className="text-sm font-semibold text-gray-500 uppercase mb-2">Decline Feedback</h2>
-                <p className="text-red-700 bg-red-50 rounded p-3 text-sm">{issue.decline_feedback}</p>
-              </div>
-            )}
           </div>
         </div>
 
