@@ -1,6 +1,6 @@
 Start working on the issue with ID: $ARGUMENTS
 
-1. Call the "Manager_AI" MCP tool `get_issue_details` with the provided issue ID to fetch full issue information.
+1. Call the "Manager_AI" MCP tool `get_issue_details` with the provided issue ID and project_id that you can find in the file "manager.json" in the root of the project to fetch full issue information.
 2. Based on the issue's current status, continue the pipeline:
    - **New / Declined**: Analyze the issue, set a name if missing. **You MUST invoke the `superpowers:brainstorming` skill** before writing the specification, then save the result via `create_issue_spec`. **Do NOT create local `.md` files** for the spec — always use the Manager AI MCP tools.
    - **Reasoning**: Review the spec. **You MUST invoke the `superpowers:writing-plans` skill** before creating the implementation plan, then save the result via `create_issue_plan` with atomic tasks (`create_plan_tasks`). **Do NOT create local `.md` files** for the plan — always use the Manager AI MCP tools.
