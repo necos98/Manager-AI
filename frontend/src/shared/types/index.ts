@@ -29,12 +29,28 @@ export interface IssueCreate {
 }
 
 export interface IssueUpdate {
+  name?: string;
   description?: string;
   priority?: number;
 }
 
 export interface IssueStatusUpdate {
   status: IssueStatus;
+}
+
+export interface IssueCompleteBody {
+  recap: string;
+}
+
+export interface IssueFeedback {
+  id: string;
+  issue_id: string;
+  content: string;
+  created_at: string;
+}
+
+export interface IssueFeedbackCreate {
+  content: string;
 }
 
 // ── Task ──

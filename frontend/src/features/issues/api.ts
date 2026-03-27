@@ -1,5 +1,17 @@
 import { request } from "@/shared/api/client";
-import type { Issue, IssueCreate, IssueStatus, IssueStatusUpdate, IssueUpdate, Task, TaskCreate, TaskUpdate } from "@/shared/types";
+import type {
+  Issue,
+  IssueCreate,
+  IssueCompleteBody,
+  IssueFeedback,
+  IssueFeedbackCreate,
+  IssueStatus,
+  IssueStatusUpdate,
+  IssueUpdate,
+  Task,
+  TaskCreate,
+  TaskUpdate,
+} from "@/shared/types";
 
 export function fetchIssues(projectId: string, status?: IssueStatus): Promise<Issue[]> {
   const params = status ? `?status=${status}` : "";
@@ -44,4 +56,28 @@ export function updateTask(projectId: string, issueId: string, taskId: string, d
 
 export function deleteTask(projectId: string, issueId: string, taskId: string): Promise<null> {
   return request(`/projects/${projectId}/issues/${issueId}/tasks/${taskId}`, { method: "DELETE" });
+}
+
+export function startAnalysis(projectId: string, issueId: string): Promise<Issue> {
+  return request(`/projects/${projectId}/issues/${issueId}/start-analysis`, { method: "POST" });
+}
+
+export function acceptIssue(projectId: string, issueId: string): Promise<Issue> {
+  return request(`/projects/${projectId}/issues/${issueId}/accept`, { method: "POST" });
+}
+
+export function cancelIssue(projectId: string, issueId: string): Promise<Issue> {
+  return request(`/projects/${projectId}/issues/${issueId}/cancel`, { method: "POST" });
+}
+
+export function completeIssue(projectId: string, issueId: string, data: IssueCompleteBody): Promise<Issue> {
+  return request(`/projects/${projectId}/issues/${issueId}/complete`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function fetchFeedback(projectId: string, issueId: string): Promise<IssueFeedback[]> {
+  return request(`/projects/${projectId}/issues/${issueId}/feedback`);
+}
+
+export function addFeedback(projectId: string, issueId: string, data: IssueFeedbackCreate): Promise<IssueFeedback> {
+  return request(`/projects/${projectId}/issues/${issueId}/feedback`, { method: "POST", body: JSON.stringify(data) });
 }
