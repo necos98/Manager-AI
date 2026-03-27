@@ -50,6 +50,8 @@ async def test_embed_file_skipped(mock_pipeline, mock_event_service):
     )
     event = mock_event_service.emit.call_args[0][0]
     assert event["type"] == "embedding_skipped"
+    assert event["project_name"] == "My Project"
+    assert event["project_id"] == "p1"
 
 
 async def test_embed_issue_async(mock_pipeline, mock_event_service):
@@ -100,3 +102,5 @@ async def test_embed_file_failure_broadcasts_event(mock_pipeline, mock_event_ser
     event = mock_event_service.emit.call_args[0][0]
     assert event["type"] == "embedding_failed"
     assert "extraction failed" in event["error"]
+    assert event["project_name"] == "My Project"
+    assert event["project_id"] == "p1"
