@@ -111,6 +111,8 @@ class IssueService:
         # Fire hook with project context
         project_service = ProjectService(self.session)
         project = await project_service.get_by_id(project_id)
+        if project is None:
+            raise NotFoundError(f"Project {project_id} not found")
         await hook_registry.fire(
             HookEvent.ISSUE_COMPLETED,
             HookContext(
@@ -207,6 +209,8 @@ class IssueService:
             )
         project_service = ProjectService(self.session)
         project = await project_service.get_by_id(project_id)
+        if project is None:
+            raise NotFoundError(f"Project {project_id} not found")
         await hook_registry.fire(
             HookEvent.ISSUE_ANALYSIS_STARTED,
             HookContext(
