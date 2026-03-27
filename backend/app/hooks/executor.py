@@ -1,4 +1,5 @@
 """Claude Code executor: runs `claude` CLI as a subprocess for a given project."""
+from __future__ import annotations
 
 import asyncio
 import logging

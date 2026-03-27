@@ -20,7 +20,8 @@
       "Bash(echo:*)",
       "Bash(export:*)",
       "Bash(NVM_DIR=\"/home/jacob/.nvm\" && source \"/home/jacob/.nvm/nvm.sh\" && cd /home/jacob/manager_ai/frontend && npm install 2>&1 | tail -5)",
-      "Bash(source:*)"
+      "Bash(source:*)",
+      "Bash(npm --version)"
     ]
   }
 }
