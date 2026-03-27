@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from app.database import async_session
 from app.exceptions import AppError
+from app.models.issue import Issue
 from app.rag import get_rag_service
 from app.services.event_service import event_service
 from app.services.issue_service import IssueService
@@ -326,7 +327,15 @@ async def create_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
         task_service = TaskService(session)
         try:
             created = await task_service.create_bulk(issue_id, tasks)
+            issue = await session.get(Issue, issue_id)
             await session.commit()
+            if issue:
+                await event_service.emit({
+                    "type": "task_updated",
+                    "project_id": issue.project_id,
+                    "issue_id": issue_id,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                })
             return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
         except AppError as e:
             await session.rollback()
@@ -339,7 +348,15 @@ async def replace_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
         task_service = TaskService(session)
         try:
             created = await task_service.replace_all(issue_id, tasks)
+            issue = await session.get(Issue, issue_id)
             await session.commit()
+            if issue:
+                await event_service.emit({
+                    "type": "task_updated",
+                    "project_id": issue.project_id,
+                    "issue_id": issue_id,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                })
             return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
         except AppError as e:
             await session.rollback()
@@ -352,8 +369,21 @@ async def update_task_status(task_id: str, status: str) -> dict:
         task_service = TaskService(session)
         try:
             task = await task_service.update(task_id, status=status)
+            task_issue_id = task.issue_id
+            task_id_val = task.id
+            task_name = task.name
+            task_status = task.status.value
+            issue = await session.get(Issue, task_issue_id)
             await session.commit()
-            return {"id": task.id, "name": task.name, "status": task.status.value}
+            if issue:
+                await event_service.emit({
+                    "type": "task_updated",
+                    "project_id": issue.project_id,
+                    "issue_id": task_issue_id,
+                    "task_id": task_id_val,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                })
+            return {"id": task_id_val, "name": task_name, "status": task_status}
         except AppError as e:
             await session.rollback()
             return {"error": e.message}
@@ -365,8 +395,20 @@ async def update_task_name(task_id: str, name: str) -> dict:
         task_service = TaskService(session)
         try:
             task = await task_service.update(task_id, name=name)
+            task_issue_id = task.issue_id
+            task_id_val = task.id
+            task_name = task.name
+            issue = await session.get(Issue, task_issue_id)
             await session.commit()
-            return {"id": task.id, "name": task.name}
+            if issue:
+                await event_service.emit({
+                    "type": "task_updated",
+                    "project_id": issue.project_id,
+                    "issue_id": task_issue_id,
+                    "task_id": task_id_val,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                })
+            return {"id": task_id_val, "name": task_name}
         except AppError as e:
             await session.rollback()
             return {"error": e.message}
@@ -377,8 +419,20 @@ async def delete_task(task_id: str) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
         try:
-            await task_service.delete(task_id)
+            task = await task_service.get_by_id(task_id)
+            task_issue_id = task.issue_id
+            issue = await session.get(Issue, task_issue_id)
+            project_id = issue.project_id if issue else None
+            await session.delete(task)
+            await session.flush()
             await session.commit()
+            if project_id:
+                await event_service.emit({
+                    "type": "task_updated",
+                    "project_id": project_id,
+                    "issue_id": task_issue_id,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                })
             return {"deleted": True}
         except AppError as e:
             await session.rollback()

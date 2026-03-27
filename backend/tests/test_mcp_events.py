@@ -73,3 +73,49 @@ async def test_set_issue_name_emits_event(db_session, project, issue):
     event = emit_mock.call_args[0][0]
     assert event["type"] == "issue_content_updated"
     assert event["content_type"] == "name"
+
+
+@pytest_asyncio.fixture
+async def planned_issue(db_session, project):
+    """Issue with tasks, in Planned status"""
+    svc = IssueService(db_session)
+    issue = await svc.create(project_id=project.id, description="Task test issue", priority=1)
+    await svc.create_spec(issue.id, project.id, "# Spec")
+    await svc.create_plan(issue.id, project.id, "# Plan")
+    return issue
+
+
+@pytest.mark.asyncio
+async def test_create_plan_tasks_emits_event(db_session, project, planned_issue):
+    emit_mock = AsyncMock()
+    with patch("app.mcp.server.async_session", make_session_patcher(db_session)), \
+         patch.object(mcp_server.event_service, "emit", emit_mock):
+        result = await mcp_server.create_plan_tasks(
+            issue_id=planned_issue.id,
+            tasks=[{"name": "Task A"}, {"name": "Task B"}]
+        )
+    assert len(result["tasks"]) == 2
+    emit_mock.assert_called_once()
+    event = emit_mock.call_args[0][0]
+    assert event["type"] == "task_updated"
+    assert event["project_id"] == project.id
+    assert event["issue_id"] == planned_issue.id
+
+
+@pytest.mark.asyncio
+async def test_update_task_status_emits_event(db_session, project, planned_issue):
+    from app.services.task_service import TaskService
+    task_svc = TaskService(db_session)
+    tasks = await task_svc.create_bulk(planned_issue.id, [{"name": "Task X"}])
+    task = tasks[0]
+
+    emit_mock = AsyncMock()
+    with patch("app.mcp.server.async_session", make_session_patcher(db_session)), \
+         patch.object(mcp_server.event_service, "emit", emit_mock):
+        result = await mcp_server.update_task_status(task_id=task.id, status="In Progress")
+    assert result["status"] == "In Progress"
+    emit_mock.assert_called_once()
+    event = emit_mock.call_args[0][0]
+    assert event["type"] == "task_updated"
+    assert event["project_id"] == project.id
+    assert event["issue_id"] == planned_issue.id
