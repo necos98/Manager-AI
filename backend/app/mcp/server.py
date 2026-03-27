@@ -120,8 +120,11 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
                 "recap": issue.recap,
             }
             issue_id_val = issue.id
-            project = await ProjectService(session).get_by_id(project_id)
-            project_name = project.name
+            try:
+                project = await ProjectService(session).get_by_id(project_id)
+                project_name = project.name
+            except AppError:
+                project_name = ""
             await session.commit()
 
             # Trigger async embedding
