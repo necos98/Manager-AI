@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -23,9 +23,8 @@ import {
   useUpdateTask,
   useDeleteTask,
   useCreateTasks,
-  useReplaceTasks,
 } from "@/features/issues/hooks";
-import type { Task, TaskCreate } from "@/shared/types";
+import type { Task } from "@/shared/types";
 
 interface SortableTaskItemProps {
   task: Task;
@@ -112,11 +111,15 @@ export function EditableTaskList({ tasks, projectId, issueId }: EditableTaskList
   const [newTaskName, setNewTaskName] = useState("");
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
+
+  useEffect(() => {
+    setLocalTasks(tasks);
+  }, [tasks]);
 
   const updateTask = useUpdateTask(projectId, issueId);
   const deleteTask = useDeleteTask(projectId, issueId);
   const createTasks = useCreateTasks(projectId, issueId);
-  const replaceTasks = useReplaceTasks(projectId, issueId);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -156,10 +159,9 @@ export function EditableTaskList({ tasks, projectId, issueId }: EditableTaskList
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = tasks.findIndex((t) => t.id === active.id);
-    const newIndex = tasks.findIndex((t) => t.id === over.id);
-    const reordered = arrayMove(tasks, oldIndex, newIndex);
-    replaceTasks.mutate(reordered.map((t): TaskCreate => ({ name: t.name })));
+    const oldIndex = localTasks.findIndex((t) => t.id === active.id);
+    const newIndex = localTasks.findIndex((t) => t.id === over.id);
+    setLocalTasks((prev) => arrayMove(prev, oldIndex, newIndex));
   };
 
   return (
@@ -169,8 +171,8 @@ export function EditableTaskList({ tasks, projectId, issueId }: EditableTaskList
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-          {tasks.map((task) => (
+        <SortableContext items={localTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+          {localTasks.map((task) => (
             <SortableTaskItem
               key={task.id}
               task={task}
@@ -183,7 +185,7 @@ export function EditableTaskList({ tasks, projectId, issueId }: EditableTaskList
         </SortableContext>
       </DndContext>
 
-      {tasks.length === 0 && (
+      {localTasks.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-4">
           Nessun task. Aggiungine uno qui sotto.
         </p>

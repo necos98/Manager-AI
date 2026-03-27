@@ -35,7 +35,7 @@ export function InlineEditField({
       inputRef.current?.focus();
       inputRef.current?.select();
     }
-  }, [editing, value]);
+  }, [editing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = () => {
     const trimmed = draft.trim();
