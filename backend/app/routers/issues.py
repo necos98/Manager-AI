@@ -48,9 +48,13 @@ async def update_issue(
     project_id: str, issue_id: str, data: IssueUpdate, db: AsyncSession = Depends(get_db)
 ):
     service = IssueService(db)
-    issue = await service.update_fields(issue_id, project_id, **data.model_dump(exclude_unset=True))
+    payload = data.model_dump(exclude_unset=True)
+    if "name" in payload:
+        await service.set_name(issue_id, project_id, payload.pop("name"))
+    if payload:
+        await service.update_fields(issue_id, project_id, **payload)
     await db.commit()
-    return await _reload_with_tasks(db, issue.id)
+    return await _reload_with_tasks(db, issue_id)
 
 
 @router.patch("/{issue_id}/status", response_model=IssueResponse)

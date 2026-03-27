@@ -73,3 +73,23 @@ async def test_update_issue_name_too_long(db_session, issue, project):
     from app.exceptions import ValidationError
     with pytest.raises(ValidationError):
         await service.set_name(issue.id, project.id, "x" * 501)
+
+
+async def test_update_issue_name_via_router_logic(db_session, issue, project):
+    """name goes through set_name with 500-char validation."""
+    service = IssueService(db_session)
+    result = await service.set_name(issue.id, project.id, "My renamed issue")
+    assert result.name == "My renamed issue"
+
+
+async def test_update_issue_name_and_priority_together(db_session, issue, project):
+    """Both name and priority can be updated in one call."""
+    service = IssueService(db_session)
+    await service.set_name(issue.id, project.id, "Combined update")
+    await service.update_fields(issue.id, project.id, priority=1)
+    from sqlalchemy import select
+    from app.models.issue import Issue
+    result = await db_session.execute(select(Issue).where(Issue.id == issue.id))
+    updated = result.scalar_one()
+    assert updated.name == "Combined update"
+    assert updated.priority == 1

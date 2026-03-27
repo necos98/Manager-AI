@@ -12,6 +12,7 @@ class IssueCreate(BaseModel):
 
 
 class IssueUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=500)
     description: str | None = Field(None, min_length=1)
     priority: int | None = Field(None, ge=1, le=5)
 
