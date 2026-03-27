@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.exceptions import InvalidTransitionError, NotFoundError, ValidationError
 from app.hooks.registry import HookContext, HookEvent, hook_registry
 from app.models.issue import VALID_TRANSITIONS, Issue, IssueStatus
+from app.models.issue_feedback import IssueFeedback
 from app.models.task import TaskStatus
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
@@ -111,6 +112,8 @@ class IssueService:
         # Fire hook with project context
         project_service = ProjectService(self.session)
         project = await project_service.get_by_id(project_id)
+        if project is None:
+            raise NotFoundError(f"Project {project_id} not found")
         await hook_registry.fire(
             HookEvent.ISSUE_COMPLETED,
             HookContext(
@@ -199,8 +202,52 @@ class IssueService:
         )
         return issue
 
+    async def start_analysis(self, issue_id: str, project_id: str) -> Issue:
+        issue = await self.get_for_project(issue_id, project_id)
+        if issue.status != IssueStatus.NEW:
+            raise InvalidTransitionError(
+                f"Can only start analysis for issues in New status, got {issue.status.value}"
+            )
+        project_service = ProjectService(self.session)
+        project = await project_service.get_by_id(project_id)
+        if project is None:
+            raise NotFoundError(f"Project {project_id} not found")
+        await hook_registry.fire(
+            HookEvent.ISSUE_ANALYSIS_STARTED,
+            HookContext(
+                project_id=project_id,
+                issue_id=issue_id,
+                event=HookEvent.ISSUE_ANALYSIS_STARTED,
+                metadata={
+                    "issue_description": issue.description,
+                    "project_name": project.name if project else "",
+                    "project_path": project.path if project else "",
+                    "project_description": project.description if project else "",
+                    "tech_stack": project.tech_stack if project else "",
+                },
+            ),
+        )
+        return issue
+
     async def delete(self, issue_id: str, project_id: str) -> bool:
         issue = await self.get_for_project(issue_id, project_id)
         await self.session.delete(issue)
         await self.session.flush()
         return True
+
+    async def add_feedback(self, issue_id: str, project_id: str, content: str) -> IssueFeedback:
+        await self.get_for_project(issue_id, project_id)  # validates ownership
+        fb = IssueFeedback(issue_id=issue_id, content=content)
+        self.session.add(fb)
+        await self.session.flush()
+        await self.session.refresh(fb)
+        return fb
+
+    async def list_feedback(self, issue_id: str, project_id: str) -> list[IssueFeedback]:
+        await self.get_for_project(issue_id, project_id)  # validates ownership
+        result = await self.session.execute(
+            select(IssueFeedback)
+            .where(IssueFeedback.issue_id == issue_id)
+            .order_by(IssueFeedback.created_at.asc(), IssueFeedback.id.asc())
+        )
+        return list(result.scalars().all())

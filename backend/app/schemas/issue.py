@@ -12,12 +12,17 @@ class IssueCreate(BaseModel):
 
 
 class IssueUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=500)
     description: str | None = Field(None, min_length=1)
     priority: int | None = Field(None, ge=1, le=5)
 
 
 class IssueStatusUpdate(BaseModel):
     status: IssueStatus
+
+
+class IssueCompleteBody(BaseModel):
+    recap: str = Field(..., min_length=1)
 
 
 class IssueResponse(BaseModel):
@@ -33,5 +38,18 @@ class IssueResponse(BaseModel):
     tasks: list[TaskResponse] = []
     created_at: datetime
     updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class IssueFeedbackCreate(BaseModel):
+    content: str = Field(..., min_length=1)
+
+
+class IssueFeedbackResponse(BaseModel):
+    id: str
+    issue_id: str
+    content: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}

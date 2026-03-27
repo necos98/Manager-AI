@@ -43,3 +43,4 @@ class Issue(Base):
 
     project = relationship("Project", back_populates="issues")
     tasks = relationship("Task", back_populates="issue", cascade="all, delete-orphan", order_by="Task.order")
+    feedback = relationship("IssueFeedback", back_populates="issue", cascade="all, delete-orphan", order_by="IssueFeedback.created_at")

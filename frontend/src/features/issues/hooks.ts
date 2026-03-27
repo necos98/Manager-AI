@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "./api";
-import type { IssueCreate, IssueStatus, IssueStatusUpdate, IssueUpdate } from "@/shared/types";
+import type { IssueCompleteBody, IssueCreate, IssueFeedbackCreate, IssueStatus, IssueStatusUpdate, IssueUpdate, TaskCreate, TaskUpdate } from "@/shared/types";
 
 export const issueKeys = {
   all: (projectId: string) => ["projects", projectId, "issues"] as const,
@@ -60,6 +60,113 @@ export function useDeleteIssue(projectId: string) {
     mutationFn: (issueId: string) => api.deleteIssue(projectId, issueId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
+    },
+  });
+}
+
+export const feedbackKeys = {
+  all: (projectId: string, issueId: string) =>
+    ["projects", projectId, "issues", issueId, "feedback"] as const,
+};
+
+export function useStartAnalysis(projectId: string, issueId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.startAnalysis(projectId, issueId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
+    },
+  });
+}
+
+export function useAcceptIssue(projectId: string, issueId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.acceptIssue(projectId, issueId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
+    },
+  });
+}
+
+export function useCancelIssue(projectId: string, issueId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.cancelIssue(projectId, issueId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
+    },
+  });
+}
+
+export function useCompleteIssue(projectId: string, issueId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: IssueCompleteBody) => api.completeIssue(projectId, issueId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
+    },
+  });
+}
+
+export function useFeedback(projectId: string, issueId: string) {
+  return useQuery({
+    queryKey: feedbackKeys.all(projectId, issueId),
+    queryFn: () => api.fetchFeedback(projectId, issueId),
+  });
+}
+
+export function useAddFeedback(projectId: string, issueId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: IssueFeedbackCreate) => api.addFeedback(projectId, issueId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: feedbackKeys.all(projectId, issueId) });
+    },
+  });
+}
+
+export function useUpdateTask(projectId: string, issueId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, data }: { taskId: string; data: TaskUpdate }) =>
+      api.updateTask(projectId, issueId, taskId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
+    },
+  });
+}
+
+export function useDeleteTask(projectId: string, issueId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (taskId: string) => api.deleteTask(projectId, issueId, taskId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
+    },
+  });
+}
+
+export function useCreateTasks(projectId: string, issueId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (tasks: TaskCreate[]) => api.createTasks(projectId, issueId, tasks),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
+    },
+  });
+}
+
+export function useReplaceTasks(projectId: string, issueId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (tasks: TaskCreate[]) => api.replaceTasks(projectId, issueId, tasks),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
     },
   });
 }
