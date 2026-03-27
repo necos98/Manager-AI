@@ -8,157 +8,157 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as TerminalsRouteImport } from './routes/terminals'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProjectsNewRouteImport } from './routes/projects/new'
-import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
-import { Route as ProjectsProjectIdIssuesRouteImport } from './routes/projects/$projectId/issues'
-import { Route as ProjectsProjectIdFilesRouteImport } from './routes/projects/$projectId/files'
-import { Route as ProjectsProjectIdCommandsRouteImport } from './routes/projects/$projectId/commands'
-import { Route as ProjectsProjectIdIssuesIndexRouteImport } from './routes/projects/$projectId/issues/index'
-import { Route as ProjectsProjectIdIssuesNewRouteImport } from './routes/projects/$projectId/issues/new'
-import { Route as ProjectsProjectIdIssuesIssueIdRouteImport } from './routes/projects/$projectId/issues/$issueId'
+import { Route as rootRouteImport } from "./routes/__root"
+import { Route as TerminalsRouteImport } from "./routes/terminals"
+import { Route as SettingsRouteImport } from "./routes/settings"
+import { Route as IndexRouteImport } from "./routes/index"
+import { Route as ProjectsNewRouteImport } from "./routes/projects/new"
+import { Route as ProjectsProjectIdRouteImport } from "./routes/projects/$projectId"
+import { Route as ProjectsProjectIdIssuesRouteImport } from "./routes/projects/$projectId/issues"
+import { Route as ProjectsProjectIdFilesRouteImport } from "./routes/projects/$projectId/files"
+import { Route as ProjectsProjectIdCommandsRouteImport } from "./routes/projects/$projectId/commands"
+import { Route as ProjectsProjectIdIssuesIndexRouteImport } from "./routes/projects/$projectId/issues/index"
+import { Route as ProjectsProjectIdIssuesNewRouteImport } from "./routes/projects/$projectId/issues/new"
+import { Route as ProjectsProjectIdIssuesIssueIdRouteImport } from "./routes/projects/$projectId/issues/$issueId"
 
 const TerminalsRoute = TerminalsRouteImport.update({
-  id: '/terminals',
-  path: '/terminals',
+  id: "/terminals",
+  path: "/terminals",
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+  id: "/settings",
+  path: "/settings",
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
-  id: '/projects/new',
-  path: '/projects/new',
+  id: "/projects/new",
+  path: "/projects/new",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
-  id: '/projects/$projectId',
-  path: '/projects/$projectId',
+  id: "/projects/$projectId",
+  path: "/projects/$projectId",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsProjectIdIssuesRoute = ProjectsProjectIdIssuesRouteImport.update({
-  id: '/issues',
-  path: '/issues',
+  id: "/issues",
+  path: "/issues",
   getParentRoute: () => ProjectsProjectIdRoute,
 } as any)
 const ProjectsProjectIdFilesRoute = ProjectsProjectIdFilesRouteImport.update({
-  id: '/files',
-  path: '/files',
+  id: "/files",
+  path: "/files",
   getParentRoute: () => ProjectsProjectIdRoute,
 } as any)
 const ProjectsProjectIdCommandsRoute =
   ProjectsProjectIdCommandsRouteImport.update({
-    id: '/commands',
-    path: '/commands',
+    id: "/commands",
+    path: "/commands",
     getParentRoute: () => ProjectsProjectIdRoute,
   } as any)
 const ProjectsProjectIdIssuesIndexRoute =
   ProjectsProjectIdIssuesIndexRouteImport.update({
-    id: '/',
-    path: '/',
+    id: "/",
+    path: "/",
     getParentRoute: () => ProjectsProjectIdIssuesRoute,
   } as any)
 const ProjectsProjectIdIssuesNewRoute =
   ProjectsProjectIdIssuesNewRouteImport.update({
-    id: '/new',
-    path: '/new',
+    id: "/new",
+    path: "/new",
     getParentRoute: () => ProjectsProjectIdIssuesRoute,
   } as any)
 const ProjectsProjectIdIssuesIssueIdRoute =
   ProjectsProjectIdIssuesIssueIdRouteImport.update({
-    id: '/$issueId',
-    path: '/$issueId',
+    id: "/$issueId",
+    path: "/$issueId",
     getParentRoute: () => ProjectsProjectIdIssuesRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
-  '/terminals': typeof TerminalsRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
-  '/projects/new': typeof ProjectsNewRoute
-  '/projects/$projectId/commands': typeof ProjectsProjectIdCommandsRoute
-  '/projects/$projectId/files': typeof ProjectsProjectIdFilesRoute
-  '/projects/$projectId/issues': typeof ProjectsProjectIdIssuesRouteWithChildren
-  '/projects/$projectId/issues/$issueId': typeof ProjectsProjectIdIssuesIssueIdRoute
-  '/projects/$projectId/issues/new': typeof ProjectsProjectIdIssuesNewRoute
-  '/projects/$projectId/issues/': typeof ProjectsProjectIdIssuesIndexRoute
+  "/": typeof IndexRoute
+  "/settings": typeof SettingsRoute
+  "/terminals": typeof TerminalsRoute
+  "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
+  "/projects/new": typeof ProjectsNewRoute
+  "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
+  "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
+  "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
+  "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
+  "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
+  "/projects/$projectId/issues/": typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
-  '/terminals': typeof TerminalsRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
-  '/projects/new': typeof ProjectsNewRoute
-  '/projects/$projectId/commands': typeof ProjectsProjectIdCommandsRoute
-  '/projects/$projectId/files': typeof ProjectsProjectIdFilesRoute
-  '/projects/$projectId/issues/$issueId': typeof ProjectsProjectIdIssuesIssueIdRoute
-  '/projects/$projectId/issues/new': typeof ProjectsProjectIdIssuesNewRoute
-  '/projects/$projectId/issues': typeof ProjectsProjectIdIssuesIndexRoute
+  "/": typeof IndexRoute
+  "/settings": typeof SettingsRoute
+  "/terminals": typeof TerminalsRoute
+  "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
+  "/projects/new": typeof ProjectsNewRoute
+  "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
+  "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
+  "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
+  "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
+  "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
-  '/terminals': typeof TerminalsRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
-  '/projects/new': typeof ProjectsNewRoute
-  '/projects/$projectId/commands': typeof ProjectsProjectIdCommandsRoute
-  '/projects/$projectId/files': typeof ProjectsProjectIdFilesRoute
-  '/projects/$projectId/issues': typeof ProjectsProjectIdIssuesRouteWithChildren
-  '/projects/$projectId/issues/$issueId': typeof ProjectsProjectIdIssuesIssueIdRoute
-  '/projects/$projectId/issues/new': typeof ProjectsProjectIdIssuesNewRoute
-  '/projects/$projectId/issues/': typeof ProjectsProjectIdIssuesIndexRoute
+  "/": typeof IndexRoute
+  "/settings": typeof SettingsRoute
+  "/terminals": typeof TerminalsRoute
+  "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
+  "/projects/new": typeof ProjectsNewRoute
+  "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
+  "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
+  "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
+  "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
+  "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
+  "/projects/$projectId/issues/": typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/settings'
-    | '/terminals'
-    | '/projects/$projectId'
-    | '/projects/new'
-    | '/projects/$projectId/commands'
-    | '/projects/$projectId/files'
-    | '/projects/$projectId/issues'
-    | '/projects/$projectId/issues/$issueId'
-    | '/projects/$projectId/issues/new'
-    | '/projects/$projectId/issues/'
+    | "/"
+    | "/settings"
+    | "/terminals"
+    | "/projects/$projectId"
+    | "/projects/new"
+    | "/projects/$projectId/commands"
+    | "/projects/$projectId/files"
+    | "/projects/$projectId/issues"
+    | "/projects/$projectId/issues/$issueId"
+    | "/projects/$projectId/issues/new"
+    | "/projects/$projectId/issues/"
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
-    | '/settings'
-    | '/terminals'
-    | '/projects/$projectId'
-    | '/projects/new'
-    | '/projects/$projectId/commands'
-    | '/projects/$projectId/files'
-    | '/projects/$projectId/issues/$issueId'
-    | '/projects/$projectId/issues/new'
-    | '/projects/$projectId/issues'
+    | "/"
+    | "/settings"
+    | "/terminals"
+    | "/projects/$projectId"
+    | "/projects/new"
+    | "/projects/$projectId/commands"
+    | "/projects/$projectId/files"
+    | "/projects/$projectId/issues/$issueId"
+    | "/projects/$projectId/issues/new"
+    | "/projects/$projectId/issues"
   id:
-    | '__root__'
-    | '/'
-    | '/settings'
-    | '/terminals'
-    | '/projects/$projectId'
-    | '/projects/new'
-    | '/projects/$projectId/commands'
-    | '/projects/$projectId/files'
-    | '/projects/$projectId/issues'
-    | '/projects/$projectId/issues/$issueId'
-    | '/projects/$projectId/issues/new'
-    | '/projects/$projectId/issues/'
+    | "__root__"
+    | "/"
+    | "/settings"
+    | "/terminals"
+    | "/projects/$projectId"
+    | "/projects/new"
+    | "/projects/$projectId/commands"
+    | "/projects/$projectId/files"
+    | "/projects/$projectId/issues"
+    | "/projects/$projectId/issues/$issueId"
+    | "/projects/$projectId/issues/new"
+    | "/projects/$projectId/issues/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -169,82 +169,82 @@ export interface RootRouteChildren {
   ProjectsNewRoute: typeof ProjectsNewRoute
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/terminals': {
-      id: '/terminals'
-      path: '/terminals'
-      fullPath: '/terminals'
+    "/terminals": {
+      id: "/terminals"
+      path: "/terminals"
+      fullPath: "/terminals"
       preLoaderRoute: typeof TerminalsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
+    "/settings": {
+      id: "/settings"
+      path: "/settings"
+      fullPath: "/settings"
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
+    "/": {
+      id: "/"
+      path: "/"
+      fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/projects/new': {
-      id: '/projects/new'
-      path: '/projects/new'
-      fullPath: '/projects/new'
+    "/projects/new": {
+      id: "/projects/new"
+      path: "/projects/new"
+      fullPath: "/projects/new"
       preLoaderRoute: typeof ProjectsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/projects/$projectId': {
-      id: '/projects/$projectId'
-      path: '/projects/$projectId'
-      fullPath: '/projects/$projectId'
+    "/projects/$projectId": {
+      id: "/projects/$projectId"
+      path: "/projects/$projectId"
+      fullPath: "/projects/$projectId"
       preLoaderRoute: typeof ProjectsProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/projects/$projectId/issues': {
-      id: '/projects/$projectId/issues'
-      path: '/issues'
-      fullPath: '/projects/$projectId/issues'
+    "/projects/$projectId/issues": {
+      id: "/projects/$projectId/issues"
+      path: "/issues"
+      fullPath: "/projects/$projectId/issues"
       preLoaderRoute: typeof ProjectsProjectIdIssuesRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
-    '/projects/$projectId/files': {
-      id: '/projects/$projectId/files'
-      path: '/files'
-      fullPath: '/projects/$projectId/files'
+    "/projects/$projectId/files": {
+      id: "/projects/$projectId/files"
+      path: "/files"
+      fullPath: "/projects/$projectId/files"
       preLoaderRoute: typeof ProjectsProjectIdFilesRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
-    '/projects/$projectId/commands': {
-      id: '/projects/$projectId/commands'
-      path: '/commands'
-      fullPath: '/projects/$projectId/commands'
+    "/projects/$projectId/commands": {
+      id: "/projects/$projectId/commands"
+      path: "/commands"
+      fullPath: "/projects/$projectId/commands"
       preLoaderRoute: typeof ProjectsProjectIdCommandsRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
-    '/projects/$projectId/issues/': {
-      id: '/projects/$projectId/issues/'
-      path: '/'
-      fullPath: '/projects/$projectId/issues/'
+    "/projects/$projectId/issues/": {
+      id: "/projects/$projectId/issues/"
+      path: "/"
+      fullPath: "/projects/$projectId/issues/"
       preLoaderRoute: typeof ProjectsProjectIdIssuesIndexRouteImport
       parentRoute: typeof ProjectsProjectIdIssuesRoute
     }
-    '/projects/$projectId/issues/new': {
-      id: '/projects/$projectId/issues/new'
-      path: '/new'
-      fullPath: '/projects/$projectId/issues/new'
+    "/projects/$projectId/issues/new": {
+      id: "/projects/$projectId/issues/new"
+      path: "/new"
+      fullPath: "/projects/$projectId/issues/new"
       preLoaderRoute: typeof ProjectsProjectIdIssuesNewRouteImport
       parentRoute: typeof ProjectsProjectIdIssuesRoute
     }
-    '/projects/$projectId/issues/$issueId': {
-      id: '/projects/$projectId/issues/$issueId'
-      path: '/$issueId'
-      fullPath: '/projects/$projectId/issues/$issueId'
+    "/projects/$projectId/issues/$issueId": {
+      id: "/projects/$projectId/issues/$issueId"
+      path: "/$issueId"
+      fullPath: "/projects/$projectId/issues/$issueId"
       preLoaderRoute: typeof ProjectsProjectIdIssuesIssueIdRouteImport
       parentRoute: typeof ProjectsProjectIdIssuesRoute
     }

@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Card, CardContent } from "@/shared/components/ui/card";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/shared/components/ui/collapsible";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/shared/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -29,11 +30,28 @@ interface IssueDetailProps {
   terminalId: string | null;
 }
 
+interface TabDef {
+  value: string;
+  label: string;
+  available: boolean;
+}
+
 export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) {
   const navigate = useNavigate();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteIssue = useDeleteIssue(projectId);
   const killTerminal = useKillTerminal();
+
+  const tabs = useMemo<TabDef[]>(() => [
+    { value: "description", label: "Description", available: true },
+    { value: "specification", label: "Specification", available: !!issue.specification },
+    { value: "plan", label: "Plan", available: !!issue.plan },
+    { value: "tasks", label: "Tasks", available: !!(issue.tasks && issue.tasks.length > 0) },
+    { value: "recap", label: "Recap", available: !!issue.recap },
+  ], [issue.specification, issue.plan, issue.tasks, issue.recap]);
+
+  const availableTabs = tabs.filter((t) => t.available);
+  const defaultTab = availableTabs[0]?.value ?? "description";
 
   const handleDelete = async () => {
     if (terminalId) {
@@ -75,91 +93,64 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
         </Button>
       </div>
 
-      {/* Description */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold uppercase text-muted-foreground">
-            Description
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm">{issue.description}</p>
-        </CardContent>
-      </Card>
+      {/* Tabbed content */}
+      <Tabs defaultValue={defaultTab} className="w-full">
+        <TabsList>
+          {availableTabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {/* Specification */}
-      {issue.specification && (
-        <Collapsible defaultOpen>
+        <TabsContent value="description" className="mt-4">
           <Card>
-            <CardHeader>
-              <CollapsibleTrigger asChild>
-                <CardTitle className="text-sm font-semibold uppercase text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-                  Specification
-                </CardTitle>
-              </CollapsibleTrigger>
-            </CardHeader>
-            <CollapsibleContent>
-              <CardContent>
+            <CardContent className="pt-6">
+              <p className="text-sm">{issue.description}</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {issue.specification && (
+          <TabsContent value="specification" className="mt-4">
+            <Card>
+              <CardContent className="pt-6">
                 <MarkdownViewer content={issue.specification} />
               </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-      )}
+            </Card>
+          </TabsContent>
+        )}
 
-      {/* Plan */}
-      {issue.plan && (
-        <Collapsible defaultOpen>
-          <Card>
-            <CardHeader>
-              <CollapsibleTrigger asChild>
-                <CardTitle className="text-sm font-semibold uppercase text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-                  Plan
-                </CardTitle>
-              </CollapsibleTrigger>
-            </CardHeader>
-            <CollapsibleContent>
-              <CardContent>
+        {issue.plan && (
+          <TabsContent value="plan" className="mt-4">
+            <Card>
+              <CardContent className="pt-6">
                 <MarkdownViewer content={issue.plan} />
               </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-      )}
+            </Card>
+          </TabsContent>
+        )}
 
-      {/* Tasks */}
-      {issue.tasks && issue.tasks.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold uppercase text-muted-foreground">
-              Tasks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TaskList tasks={issue.tasks} />
-          </CardContent>
-        </Card>
-      )}
+        {issue.tasks && issue.tasks.length > 0 && (
+          <TabsContent value="tasks" className="mt-4">
+            <Card>
+              <CardContent className="pt-6">
+                <TaskList tasks={issue.tasks} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
-      {/* Recap */}
-      {issue.recap && (
-        <Collapsible defaultOpen>
-          <Card>
-            <CardHeader>
-              <CollapsibleTrigger asChild>
-                <CardTitle className="text-sm font-semibold uppercase text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-                  Recap
-                </CardTitle>
-              </CollapsibleTrigger>
-            </CardHeader>
-            <CollapsibleContent>
-              <CardContent>
+        {issue.recap && (
+          <TabsContent value="recap" className="mt-4">
+            <Card>
+              <CardContent className="pt-6">
                 <MarkdownViewer content={issue.recap} />
               </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-      )}
+            </Card>
+          </TabsContent>
+        )}
+      </Tabs>
 
       {/* Delete confirmation */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
