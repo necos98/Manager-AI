@@ -8,7 +8,20 @@
 
 ### 1. Avvia l'applicazione
 
-Fai doppio clic su **`start.bat`** e attendi il completamento dell'installazione automatica delle dipendenze.
+**Windows** — fai doppio clic su **`start.bat`**, oppure da terminale:
+
+```bat
+start.bat
+```
+
+**Linux/macOS** — da terminale:
+
+```bash
+chmod +x start.sh   # solo la prima volta
+./start.sh
+```
+
+Attendi il completamento dell'installazione automatica delle dipendenze.
 
 ---
 
@@ -56,7 +69,7 @@ Aprì la **CLI del tuo progetto**, incolla il comando e premi invio.
 
 | # | Step | Dove |
 |---|------|------|
-| 1 | Avvia `start.bat` | Root del progetto |
+| 1 | Avvia `start.bat` (Win) / `start.sh` (Linux) | Root del progetto |
 | 2 | Aggiungi comando al terminale | `Settings` → `Terminal` |
 | 3 | Crea il progetto | Interfaccia principale |
 | 4 | Install `manager.json` | `Summary` |
@@ -67,7 +80,7 @@ Aprì la **CLI del tuo progetto**, incolla il comando e premi invio.
 
 ## 🛠️ Requisiti
 
-- Windows (per `start.bat`)
+- Windows (per `start.bat`) o Linux/macOS (per `start.sh`)
 - [Claude CLI](https://docs.anthropic.com/en/docs/claude-code/overview) installato e configurato
 - Connessione internet per il download delle dipendenze
 

@@ -1,4 +1,4 @@
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+import { createRootRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { queryClient } from "@/shared/lib/query-client";
@@ -19,25 +19,21 @@ function RootComponent() {
 }
 
 function RootLayout() {
-  const projectId = extractProjectIdFromUrl();
+  const { pathname } = useLocation();
+  const projectId = pathname.match(/\/projects\/([^/]+)/)?.[1] ?? null;
   const projectQuery = useProject(projectId ?? "");
   const activeProject = projectId ? (projectQuery.data ?? null) : null;
 
   return (
     <SidebarProvider>
       <AppSidebar activeProject={activeProject} />
-      <SidebarInset>
-        <main className="flex-1 overflow-auto">
+      <SidebarInset className="min-w-0">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
           <Outlet />
         </main>
       </SidebarInset>
     </SidebarProvider>
   );
-}
-
-function extractProjectIdFromUrl(): string | null {
-  const match = window.location.pathname.match(/\/projects\/([^/]+)/);
-  return match?.[1] ?? null;
 }
 
 export const Route = createRootRoute({
