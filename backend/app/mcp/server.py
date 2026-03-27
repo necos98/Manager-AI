@@ -120,6 +120,8 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
                 "recap": issue.recap,
             }
             issue_id_val = issue.id
+            project = await ProjectService(session).get_by_id(project_id)
+            project_name = project.name if project else ""
             await session.commit()
 
             # Trigger async embedding
@@ -128,6 +130,7 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
                 project_id=project_id,
                 source_id=issue_id_val,
                 issue_data=issue_data,
+                project_name=project_name,
             ))
 
             return {"id": issue_id_val, "status": issue.status.value, "recap": issue.recap}
