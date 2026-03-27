@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.exceptions import InvalidTransitionError
 from app.models.issue import Issue, IssueStatus
-from app.schemas.issue import IssueCreate, IssueCompleteBody, IssueResponse, IssueStatusUpdate, IssueUpdate
+from app.schemas.issue import IssueCreate, IssueCompleteBody, IssueFeedbackCreate, IssueFeedbackResponse, IssueResponse, IssueStatusUpdate, IssueUpdate
 from app.services.issue_service import IssueService
 
 router = APIRouter(prefix="/api/projects/{project_id}/issues", tags=["issues"])
@@ -111,3 +111,22 @@ async def complete_issue(
     issue = await service.complete_issue(issue_id, project_id, recap=data.recap)
     await db.commit()
     return await _reload_with_tasks(db, issue.id)
+
+
+@router.get("/{issue_id}/feedback", response_model=list[IssueFeedbackResponse])
+async def list_feedback(
+    project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    return await service.list_feedback(issue_id, project_id)
+
+
+@router.post("/{issue_id}/feedback", response_model=IssueFeedbackResponse, status_code=201)
+async def add_feedback(
+    project_id: str, issue_id: str, data: IssueFeedbackCreate, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    fb = await service.add_feedback(issue_id, project_id, data.content)
+    await db.commit()
+    await db.refresh(fb)
+    return fb

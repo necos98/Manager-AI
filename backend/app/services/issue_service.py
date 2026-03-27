@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.exceptions import InvalidTransitionError, NotFoundError, ValidationError
 from app.hooks.registry import HookContext, HookEvent, hook_registry
 from app.models.issue import VALID_TRANSITIONS, Issue, IssueStatus
+from app.models.issue_feedback import IssueFeedback
 from app.services.project_service import ProjectService
 
 
@@ -233,3 +234,19 @@ class IssueService:
         await self.session.delete(issue)
         await self.session.flush()
         return True
+
+    async def add_feedback(self, issue_id: str, project_id: str, content: str) -> IssueFeedback:
+        await self.get_for_project(issue_id, project_id)  # validates ownership
+        fb = IssueFeedback(issue_id=issue_id, content=content)
+        self.session.add(fb)
+        await self.session.flush()
+        return fb
+
+    async def list_feedback(self, issue_id: str, project_id: str) -> list[IssueFeedback]:
+        await self.get_for_project(issue_id, project_id)  # validates ownership
+        result = await self.session.execute(
+            select(IssueFeedback)
+            .where(IssueFeedback.issue_id == issue_id)
+            .order_by(IssueFeedback.created_at.asc())
+        )
+        return list(result.scalars().all())

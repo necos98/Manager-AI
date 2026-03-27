@@ -39,3 +39,16 @@ class IssueResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class IssueFeedbackCreate(BaseModel):
+    content: str = Field(..., min_length=1)
+
+
+class IssueFeedbackResponse(BaseModel):
+    id: str
+    issue_id: str
+    content: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
