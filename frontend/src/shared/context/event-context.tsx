@@ -3,9 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { queryClient } from "@/shared/lib/query-client";
 
-interface EventContextValue {
-  // Extensible if needed
-}
+interface EventContextValue {}
 
 const EventContext = createContext<EventContextValue | null>(null);
 
@@ -26,7 +24,12 @@ function unlockAudio() {
 document.addEventListener("click", unlockAudio);
 document.addEventListener("keydown", unlockAudio);
 
+function isSoundEnabled(): boolean {
+  return localStorage.getItem("manager_ai_sound") !== "false";
+}
+
 function playNotificationSound() {
+  if (!isSoundEnabled()) return;
   try {
     notificationAudio.currentTime = 0;
     notificationAudio.play().catch(() => {});
@@ -35,58 +38,23 @@ function playNotificationSound() {
   }
 }
 
-function buildToast(data: Record<string, unknown>): { title: string; description: string } {
-  const type = data.type as string;
-  const issueName = (data.issue_name as string) || "";
-  const projectName = (data.project_name as string) || "";
-  const title = (data.title as string) || "";
-  const message = (data.message as string) || "";
-  const hookName = (data.hook_name as string) || "";
-  const error = (data.error as string) || "";
-
-  const prefix = projectName ? `${projectName} • ` : "";
-
-  switch (type) {
-    case "notification":
-      return {
-        title: issueName || "Notifica",
-        description: `${prefix}${message}`,
-      };
-    case "hook_started":
-      return {
-        title: issueName || "Hook avviato",
-        description: `${prefix}${hookName} in esecuzione…`,
-      };
-    case "hook_completed":
-      return {
-        title: issueName || "Hook completato",
-        description: `${prefix}${hookName} completato`,
-      };
-    case "hook_failed":
-      return {
-        title: issueName || "Hook fallito",
-        description: `${prefix}${error || "Errore sconosciuto"}`,
-      };
-    case "embedding_completed":
-      return {
-        title: title || "Embedding",
-        description: `${prefix}Embedding completato`,
-      };
-    case "embedding_failed":
-      return {
-        title: title || "Embedding",
-        description: `${prefix}Embedding fallito: ${error}`,
-      };
-    case "embedding_skipped":
-      return {
-        title: title || "Embedding",
-        description: `${prefix}Embedding saltato`,
-      };
-    default:
-      return {
-        title: issueName || title || "Evento",
-        description: `${prefix}${message || "Nuovo evento"}`,
-      };
+function showTypedToast(
+  eventType: string | undefined,
+  title: string,
+  description: string,
+  action?: { label: string; onClick: () => void }
+) {
+  const opts = { description, action };
+  if (eventType === "hook_failed") {
+    toast.error(title, opts);
+  } else if (eventType === "hook_completed") {
+    toast.success(title, opts);
+  } else if (eventType === "notification") {
+    toast.info(title, opts);
+  } else if (eventType === "hook_started") {
+    toast(title, { ...opts, duration: 2000 });
+  } else {
+    toast(title, opts);
   }
 }
 
@@ -121,25 +89,26 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         const data = JSON.parse(event.data) as Record<string, unknown>;
         const projectId = data.project_id as string | undefined;
         const issueId = data.issue_id as string | undefined;
+        const issueName = data.issue_name as string | undefined;
+        const eventType = data.type as string | undefined;
+        const message =
+          (data.message as string) || (data.status as string) || "New event";
+        const title = issueName || eventType || "Event";
 
-        const { title, description } = buildToast(data);
+        const action =
+          projectId && issueId
+            ? {
+                label: "View",
+                onClick: () => {
+                  navigate({
+                    to: "/projects/$projectId/issues/$issueId",
+                    params: { projectId, issueId },
+                  });
+                },
+              }
+            : undefined;
 
-        toast(title, {
-          description,
-          action:
-            projectId && issueId
-              ? {
-                  label: "View",
-                  onClick: () => {
-                    navigate({
-                      to: "/projects/$projectId/issues/$issueId",
-                      params: { projectId, issueId },
-                    });
-                  },
-                }
-              : undefined,
-        });
-
+        showTypedToast(eventType, title, message, action);
         playNotificationSound();
 
         // Invalidate relevant queries for real-time updates

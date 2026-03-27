@@ -99,6 +99,9 @@ class HookRegistry:
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             )
+            await self._log_activity(context.project_id, context.issue_id, "hook_failed", {
+                "hook_name": hook.name, "error": str(exc)
+            })
             return
 
         if result.success:
@@ -114,6 +117,9 @@ class HookRegistry:
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             )
+            await self._log_activity(context.project_id, context.issue_id, "hook_completed", {
+                "hook_name": hook.name
+            })
         else:
             logger.warning("Hook %s returned error: %s", hook.name, result.error)
             await event_service.emit(
@@ -128,6 +134,27 @@ class HookRegistry:
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             )
+            await self._log_activity(context.project_id, context.issue_id, "hook_failed", {
+                "hook_name": hook.name, "error": result.error
+            })
+
+    async def _log_activity(
+        self, project_id: str, issue_id: str, event_type: str, details: dict
+    ) -> None:
+        try:
+            from app.database import async_session
+            from app.services.activity_service import ActivityService
+            async with async_session() as session:
+                svc = ActivityService(session)
+                await svc.log(
+                    project_id=project_id,
+                    issue_id=issue_id,
+                    event_type=event_type,
+                    details=details,
+                )
+                await session.commit()
+        except Exception as exc:
+            logger.warning("Failed to log activity for hook event: %s", exc)
 
 
 # Global singleton

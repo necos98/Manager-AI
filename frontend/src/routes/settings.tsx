@@ -16,7 +16,7 @@ import {
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import type { Setting } from "@/shared/types";
 
-const TABS = ["Server", "Tool Descriptions", "Response Messages", "Terminal"] as const;
+const TABS = ["Server", "Tool Descriptions", "Response Messages", "Terminal", "Preferences"] as const;
 type SettingsTab = (typeof TABS)[number];
 
 function getCategory(key: string): string {
@@ -29,6 +29,44 @@ function getCategory(key: string): string {
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
+
+function PreferencesPanel() {
+  const [soundEnabled, setSoundEnabled] = useState(
+    () => localStorage.getItem("manager_ai_sound") !== "false"
+  );
+
+  function handleToggleSound(enabled: boolean) {
+    setSoundEnabled(enabled);
+    localStorage.setItem("manager_ai_sound", enabled ? "true" : "false");
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="border rounded-lg p-4 flex items-center justify-between">
+        <div>
+          <p className="font-medium text-sm">Sound Notifications</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Play a sound when events arrive
+          </p>
+        </div>
+        <button
+          role="switch"
+          aria-checked={soundEnabled}
+          onClick={() => handleToggleSound(!soundEnabled)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+            soundEnabled ? "bg-primary" : "bg-input"
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              soundEnabled ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function SettingsPage() {
   const { data: settings, isLoading, error } = useSettings();
@@ -98,11 +136,13 @@ function SettingsPage() {
           </div>
           <TerminalCommandsEditor projectId={null} />
         </div>
+      ) : activeTab === "Preferences" ? (
+        <PreferencesPanel />
       ) : (
         <SettingsForm settings={filteredSettings} />
       )}
 
-      {activeTab !== "Terminal" && (
+      {activeTab !== "Terminal" && activeTab !== "Preferences" && (
         <div className="mt-8 pt-6 border-t">
           <Button
             variant="ghost"
