@@ -35,6 +35,61 @@ function playNotificationSound() {
   }
 }
 
+function buildToast(data: Record<string, unknown>): { title: string; description: string } {
+  const type = data.type as string;
+  const issueName = (data.issue_name as string) || "";
+  const projectName = (data.project_name as string) || "";
+  const title = (data.title as string) || "";
+  const message = (data.message as string) || "";
+  const hookName = (data.hook_name as string) || "";
+  const error = (data.error as string) || "";
+
+  const prefix = projectName ? `${projectName} • ` : "";
+
+  switch (type) {
+    case "notification":
+      return {
+        title: issueName || "Notifica",
+        description: `${prefix}${message}`,
+      };
+    case "hook_started":
+      return {
+        title: issueName || "Hook avviato",
+        description: `${prefix}${hookName} in esecuzione…`,
+      };
+    case "hook_completed":
+      return {
+        title: issueName || "Hook completato",
+        description: `${prefix}${hookName} completato`,
+      };
+    case "hook_failed":
+      return {
+        title: issueName || "Hook fallito",
+        description: `${prefix}${error || "Errore sconosciuto"}`,
+      };
+    case "embedding_completed":
+      return {
+        title: title || "Embedding",
+        description: `${prefix}Embedding completato`,
+      };
+    case "embedding_failed":
+      return {
+        title: title || "Embedding",
+        description: `${prefix}Embedding fallito: ${error}`,
+      };
+    case "embedding_skipped":
+      return {
+        title: title || "Embedding",
+        description: `${prefix}Embedding saltato`,
+      };
+    default:
+      return {
+        title: issueName || title || "Evento",
+        description: `${prefix}${message || "New event"}`,
+      };
+  }
+}
+
 export function EventProvider({ children }: { children: React.ReactNode }) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -66,23 +121,23 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         const data = JSON.parse(event.data) as Record<string, unknown>;
         const projectId = data.project_id as string | undefined;
         const issueId = data.issue_id as string | undefined;
-        const issueName = data.issue_name as string | undefined;
-        const message =
-          (data.message as string) || (data.status as string) || "New event";
 
-        toast(issueName || "Event", {
-          description: message,
-          action: projectId && issueId
-            ? {
-                label: "View",
-                onClick: () => {
-                  navigate({
-                    to: "/projects/$projectId/issues/$issueId",
-                    params: { projectId, issueId },
-                  });
-                },
-              }
-            : undefined,
+        const { title, description } = buildToast(data);
+
+        toast(title, {
+          description,
+          action:
+            projectId && issueId
+              ? {
+                  label: "View",
+                  onClick: () => {
+                    navigate({
+                      to: "/projects/$projectId/issues/$issueId",
+                      params: { projectId, issueId },
+                    });
+                  },
+                }
+              : undefined,
         });
 
         playNotificationSound();
