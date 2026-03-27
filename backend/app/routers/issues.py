@@ -4,8 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.exceptions import InvalidTransitionError
 from app.models.issue import Issue, IssueStatus
-from app.schemas.issue import IssueCreate, IssueResponse, IssueStatusUpdate, IssueUpdate
+from app.schemas.issue import IssueCreate, IssueCompleteBody, IssueResponse, IssueStatusUpdate, IssueUpdate
 from app.services.issue_service import IssueService
 
 router = APIRouter(prefix="/api/projects/{project_id}/issues", tags=["issues"])
@@ -70,3 +71,43 @@ async def delete_issue(project_id: str, issue_id: str, db: AsyncSession = Depend
     service = IssueService(db)
     await service.delete(issue_id, project_id)
     await db.commit()
+
+
+@router.post("/{issue_id}/start-analysis", response_model=IssueResponse)
+async def start_analysis(
+    project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    issue = await service.start_analysis(issue_id, project_id)
+    await db.commit()
+    return await _reload_with_tasks(db, issue.id)
+
+
+@router.post("/{issue_id}/accept", response_model=IssueResponse)
+async def accept_issue(
+    project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    issue = await service.accept_issue(issue_id, project_id)
+    await db.commit()
+    return await _reload_with_tasks(db, issue.id)
+
+
+@router.post("/{issue_id}/cancel", response_model=IssueResponse)
+async def cancel_issue_endpoint(
+    project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    issue = await service.cancel_issue(issue_id, project_id)
+    await db.commit()
+    return await _reload_with_tasks(db, issue.id)
+
+
+@router.post("/{issue_id}/complete", response_model=IssueResponse)
+async def complete_issue(
+    project_id: str, issue_id: str, data: IssueCompleteBody, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    issue = await service.complete_issue(issue_id, project_id, recap=data.recap)
+    await db.commit()
+    return await _reload_with_tasks(db, issue.id)

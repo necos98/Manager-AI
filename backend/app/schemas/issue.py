@@ -20,6 +20,10 @@ class IssueStatusUpdate(BaseModel):
     status: IssueStatus
 
 
+class IssueCompleteBody(BaseModel):
+    recap: str = Field(..., min_length=1)
+
+
 class IssueResponse(BaseModel):
     id: str
     project_id: str
