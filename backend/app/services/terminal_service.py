@@ -1,11 +1,95 @@
+from __future__ import annotations
+
 import os
+import platform
 import threading
 import uuid
 from datetime import datetime, timezone
 
-from winpty import PTY
+IS_WINDOWS = platform.system() == "Windows"
 
-DEFAULT_SHELL = os.environ.get("MANAGER_AI_SHELL", r"C:\Windows\System32\cmd.exe")
+if IS_WINDOWS:
+    from winpty import PTY
+
+    DEFAULT_SHELL = os.environ.get("MANAGER_AI_SHELL", r"C:\Windows\System32\cmd.exe")
+else:
+    import fcntl
+    import pty as pty_mod
+    import select
+    import struct
+    import subprocess
+    import termios
+
+    DEFAULT_SHELL = os.environ.get("MANAGER_AI_SHELL", "/bin/bash")
+
+    class PTY:
+        """Linux PTY wrapper matching the winpty API."""
+
+        def __init__(self, cols: int = 120, rows: int = 30):
+            self._master_fd: int | None = None
+            self._process: subprocess.Popen | None = None
+            self._cols = cols
+            self._rows = rows
+
+        def spawn(self, shell: str, cwd: str | None = None) -> None:
+            master_fd, slave_fd = pty_mod.openpty()
+            # Set initial size
+            winsize = struct.pack("HHHH", self._rows, self._cols, 0, 0)
+            fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, winsize)
+            self._master_fd = master_fd
+            self._process = subprocess.Popen(
+                [shell],
+                stdin=slave_fd,
+                stdout=slave_fd,
+                stderr=slave_fd,
+                cwd=cwd,
+                preexec_fn=os.setsid,
+            )
+            os.close(slave_fd)
+
+        def read(self, blocking: bool = True) -> str:
+            if self._master_fd is None:
+                return ""
+            if not blocking:
+                ready, _, _ = select.select([self._master_fd], [], [], 0)
+                if not ready:
+                    return ""
+            try:
+                data = os.read(self._master_fd, 4096)
+                if not data:
+                    return ""
+                return data.decode("utf-8", errors="replace")
+            except OSError:
+                return ""
+
+        def write(self, data: str) -> None:
+            if self._master_fd is not None:
+                os.write(self._master_fd, data.encode("utf-8"))
+
+        def set_size(self, cols: int, rows: int) -> None:
+            self._cols = cols
+            self._rows = rows
+            if self._master_fd is not None:
+                winsize = struct.pack("HHHH", rows, cols, 0, 0)
+                fcntl.ioctl(self._master_fd, termios.TIOCSWINSZ, winsize)
+
+        def close(self) -> None:
+            if self._master_fd is not None:
+                try:
+                    os.close(self._master_fd)
+                except OSError:
+                    pass
+                self._master_fd = None
+            if self._process is not None:
+                try:
+                    self._process.terminate()
+                    self._process.wait(timeout=3)
+                except Exception:
+                    try:
+                        self._process.kill()
+                    except Exception:
+                        pass
+                self._process = None
 
 # Maximum size of the output buffer per terminal (in bytes).
 # When exceeded, oldest output is trimmed from the front.

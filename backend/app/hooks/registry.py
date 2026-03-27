@@ -1,4 +1,5 @@
 """Hook registry: defines events, hook base class, and the registry that fires hooks."""
+from __future__ import annotations
 
 import asyncio
 import logging
