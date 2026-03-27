@@ -45,3 +45,48 @@ async def test_hook_error_result_emits_hook_failed_event(mock_event_service):
     failed_call = mock_event_service.emit.call_args_list[1][0][0]
     assert failed_call["type"] == "hook_failed"
     assert "CLI not found" in failed_call["error"]
+
+
+class SuccessHook(BaseHook):
+    name = "success_hook"
+    description = "A hook that succeeds"
+
+    async def execute(self, context: HookContext) -> HookResult:
+        return HookResult(success=True, output="done")
+
+
+@patch("app.hooks.registry.event_service")
+async def test_hook_events_include_issue_and_project_name(mock_event_service):
+    mock_event_service.emit = AsyncMock()
+    registry = HookRegistry()
+    ctx = HookContext(
+        project_id="p1",
+        issue_id="i1",
+        event=HookEvent.ISSUE_COMPLETED,
+        metadata={"issue_name": "Fix login bug", "project_name": "My Project"},
+    )
+    await registry._run_hook(SuccessHook, ctx)
+    # hook_started event
+    started = mock_event_service.emit.call_args_list[0][0][0]
+    assert started["issue_name"] == "Fix login bug"
+    assert started["project_name"] == "My Project"
+    # hook_completed event
+    completed = mock_event_service.emit.call_args_list[1][0][0]
+    assert completed["issue_name"] == "Fix login bug"
+    assert completed["project_name"] == "My Project"
+
+
+@patch("app.hooks.registry.event_service")
+async def test_hook_failed_event_includes_names(mock_event_service):
+    mock_event_service.emit = AsyncMock()
+    registry = HookRegistry()
+    ctx = HookContext(
+        project_id="p1",
+        issue_id="i1",
+        event=HookEvent.ISSUE_COMPLETED,
+        metadata={"issue_name": "Fix login bug", "project_name": "My Project"},
+    )
+    await registry._run_hook(FailingHook, ctx)
+    failed = mock_event_service.emit.call_args_list[1][0][0]
+    assert failed["issue_name"] == "Fix login bug"
+    assert failed["project_name"] == "My Project"

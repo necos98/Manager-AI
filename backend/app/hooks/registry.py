@@ -77,6 +77,8 @@ class HookRegistry:
                 "hook_description": hook.description,
                 "issue_id": context.issue_id,
                 "project_id": context.project_id,
+                "issue_name": context.metadata.get("issue_name", ""),
+                "project_name": context.metadata.get("project_name", ""),
                 "timestamp": now,
             }
         )
@@ -91,6 +93,8 @@ class HookRegistry:
                     "hook_name": hook.name,
                     "issue_id": context.issue_id,
                     "project_id": context.project_id,
+                    "issue_name": context.metadata.get("issue_name", ""),
+                    "project_name": context.metadata.get("project_name", ""),
                     "error": str(exc),
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
@@ -104,6 +108,8 @@ class HookRegistry:
                     "hook_name": hook.name,
                     "issue_id": context.issue_id,
                     "project_id": context.project_id,
+                    "issue_name": context.metadata.get("issue_name", ""),
+                    "project_name": context.metadata.get("project_name", ""),
                     "output": result.output,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
@@ -116,6 +122,8 @@ class HookRegistry:
                     "hook_name": hook.name,
                     "issue_id": context.issue_id,
                     "project_id": context.project_id,
+                    "issue_name": context.metadata.get("issue_name", ""),
+                    "project_name": context.metadata.get("project_name", ""),
                     "error": result.error,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
