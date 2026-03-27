@@ -1,4 +1,4 @@
-import { ChevronsUpDown, FolderKanban, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, FolderKanban, Plus } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   DropdownMenu,
@@ -47,21 +47,25 @@ export function ProjectSwitcher({ activeProject }: ProjectSwitcherProps) {
         align="start"
         sideOffset={4}
       >
-        {projects?.map((project) => (
-          <DropdownMenuItem
-            key={project.id}
-            onClick={() =>
-              navigate({
-                to: "/projects/$projectId/issues",
-                params: { projectId: project.id },
-              })
-            }
-            className="gap-2"
-          >
-            <FolderKanban className="size-4" />
-            <span className="truncate">{project.name}</span>
-          </DropdownMenuItem>
-        ))}
+        {projects?.map((project) => {
+          const isActive = activeProject?.id === project.id;
+          return (
+            <DropdownMenuItem
+              key={project.id}
+              onClick={() =>
+                navigate({
+                  to: "/projects/$projectId/issues",
+                  params: { projectId: project.id },
+                })
+              }
+              className="gap-2"
+            >
+              <FolderKanban className="size-4" />
+              <span className="truncate flex-1">{project.name}</span>
+              {isActive && <Check className="size-4 text-primary" />}
+            </DropdownMenuItem>
+          );
+        })}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => navigate({ to: "/projects/new" })}

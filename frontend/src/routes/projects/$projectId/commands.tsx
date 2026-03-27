@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useProject } from "@/features/projects/hooks";
 import { TerminalCommandsEditor } from "@/features/terminals/components/terminal-commands-editor";
 
 export const Route = createFileRoute("/projects/$projectId/commands")({
@@ -7,9 +8,13 @@ export const Route = createFileRoute("/projects/$projectId/commands")({
 
 function CommandsPage() {
   const { projectId } = Route.useParams();
+  const { data: project } = useProject(projectId);
 
   return (
     <div className="p-6">
+      {project && (
+        <p className="text-sm text-muted-foreground mb-0.5">{project.name}</p>
+      )}
       <h1 className="text-xl font-semibold mb-2">Terminal Commands</h1>
       <p className="text-sm text-muted-foreground mb-6">
         These commands run when opening a terminal for this project. When set, they override the global terminal commands.

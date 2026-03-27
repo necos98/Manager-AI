@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useIssues } from "@/features/issues/hooks";
+import { useProject } from "@/features/projects/hooks";
 import { useTerminals } from "@/features/terminals/hooks";
 import { IssueList } from "@/features/issues/components/issue-list";
 import { Button } from "@/shared/components/ui/button";
@@ -26,6 +27,7 @@ function IssuesPage() {
   const { projectId } = Route.useParams();
   const [filter, setFilter] = useState<IssueStatus | "All">("All");
 
+  const { data: project } = useProject(projectId);
   const { data: issues, isLoading } = useIssues(
     projectId,
     filter === "All" ? undefined : filter,
@@ -47,7 +49,12 @@ function IssuesPage() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-semibold">Issues</h1>
+        <div>
+          {project && (
+            <p className="text-sm text-muted-foreground mb-0.5">{project.name}</p>
+          )}
+          <h1 className="text-xl font-semibold">Issues</h1>
+        </div>
         <Button asChild size="sm">
           <Link
             to="/projects/$projectId/issues/new"
