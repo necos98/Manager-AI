@@ -43,34 +43,34 @@ Completare il pattern stabilito in Fase 0 su tutto il codebase.
 
 ---
 
-## Fase 2 — UI Interattiva
+## Fase 2 — UI Interattiva (Completata)
 
-Oggi la UI è read-only per lo stato delle issue. L'utente non può interagire con il workflow dal browser.
+La UI è ora completamente interattiva. L'utente può controllare il workflow delle issue dal browser.
 
 ### 2.1 Controllo stato issue dal frontend
-- [ ] Bottoni di transizione stato in IssueDetailPage basati sullo stato corrente:
+- [x] Bottoni di transizione stato in IssueDetailPage basati sullo stato corrente:
   - NEW: "Avvia Analisi" (→ triggera Claude per spec)
   - PLANNED: "Accetta Piano" / "Richiedi Modifiche"
   - ACCEPTED: "Segna come Completata" (con validazione task)
   - Qualsiasi stato: "Cancella Issue"
-- [ ] Modale di conferma per ogni transizione
+- [x] Modale di conferma per ogni transizione
 - [ ] StatusBadge cliccabile con dropdown delle transizioni valide
 
 ### 2.2 Feedback inline sul piano
-- [ ] Campo di testo in IssueDetailPage quando lo stato è PLANNED: "Dai feedback a Claude"
-- [ ] Il feedback viene salvato e Claude lo riceve come contesto per `edit_issue_plan`
-- [ ] Storico dei feedback visibile nella timeline dell'issue
+- [x] Campo di testo in IssueDetailPage quando lo stato è PLANNED: "Dai feedback a Claude"
+- [x] Il feedback viene salvato e Claude lo riceve come contesto per `edit_issue_plan`
+- [x] Storico dei feedback visibile nella timeline dell'issue
 
 ### 2.3 Task management dalla UI
-- [ ] Lista task editabile in IssueDetailPage (non solo read-only badges)
-- [ ] Checkbox per marcare task come completati
-- [ ] Aggiunta/rimozione task manuali
-- [ ] Drag-and-drop per riordinare
+- [x] Lista task editabile in IssueDetailPage (non solo read-only badges)
+- [x] Checkbox per marcare task come completati
+- [x] Aggiunta/rimozione task manuali
+- [x] Drag-and-drop per riordinare
 
 ### 2.4 Editing inline
-- [ ] Modifica priorità issue dal detail page
-- [ ] Modifica descrizione issue
-- [ ] Modifica nome issue
+- [x] Modifica priorità issue dal detail page
+- [x] Modifica descrizione issue
+- [x] Modifica nome issue
 
 ---
 
