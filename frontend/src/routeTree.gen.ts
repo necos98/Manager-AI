@@ -10,33 +10,99 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
+import { Route as ProjectsProjectIdIssuesRouteImport } from './routes/projects/$projectId/issues'
+import { Route as ProjectsProjectIdIssuesIndexRouteImport } from './routes/projects/$projectId/issues/index'
+import { Route as ProjectsProjectIdIssuesNewRouteImport } from './routes/projects/$projectId/issues/new'
+import { Route as ProjectsProjectIdIssuesIssueIdRouteImport } from './routes/projects/$projectId/issues/$issueId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsProjectIdIssuesRoute = ProjectsProjectIdIssuesRouteImport.update({
+  id: '/issues',
+  path: '/issues',
+  getParentRoute: () => ProjectsProjectIdRoute,
+} as any)
+const ProjectsProjectIdIssuesIndexRoute =
+  ProjectsProjectIdIssuesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ProjectsProjectIdIssuesRoute,
+  } as any)
+const ProjectsProjectIdIssuesNewRoute =
+  ProjectsProjectIdIssuesNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => ProjectsProjectIdIssuesRoute,
+  } as any)
+const ProjectsProjectIdIssuesIssueIdRoute =
+  ProjectsProjectIdIssuesIssueIdRouteImport.update({
+    id: '/$issueId',
+    path: '/$issueId',
+    getParentRoute: () => ProjectsProjectIdIssuesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
+  '/projects/$projectId/issues': typeof ProjectsProjectIdIssuesRouteWithChildren
+  '/projects/$projectId/issues/$issueId': typeof ProjectsProjectIdIssuesIssueIdRoute
+  '/projects/$projectId/issues/new': typeof ProjectsProjectIdIssuesNewRoute
+  '/projects/$projectId/issues/': typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
+  '/projects/$projectId/issues/$issueId': typeof ProjectsProjectIdIssuesIssueIdRoute
+  '/projects/$projectId/issues/new': typeof ProjectsProjectIdIssuesNewRoute
+  '/projects/$projectId/issues': typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
+  '/projects/$projectId/issues': typeof ProjectsProjectIdIssuesRouteWithChildren
+  '/projects/$projectId/issues/$issueId': typeof ProjectsProjectIdIssuesIssueIdRoute
+  '/projects/$projectId/issues/new': typeof ProjectsProjectIdIssuesNewRoute
+  '/projects/$projectId/issues/': typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/projects/$projectId'
+    | '/projects/$projectId/issues'
+    | '/projects/$projectId/issues/$issueId'
+    | '/projects/$projectId/issues/new'
+    | '/projects/$projectId/issues/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/projects/$projectId'
+    | '/projects/$projectId/issues/$issueId'
+    | '/projects/$projectId/issues/new'
+    | '/projects/$projectId/issues'
+  id:
+    | '__root__'
+    | '/'
+    | '/projects/$projectId'
+    | '/projects/$projectId/issues'
+    | '/projects/$projectId/issues/$issueId'
+    | '/projects/$projectId/issues/new'
+    | '/projects/$projectId/issues/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +114,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/$projectId': {
+      id: '/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof ProjectsProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$projectId/issues': {
+      id: '/projects/$projectId/issues'
+      path: '/issues'
+      fullPath: '/projects/$projectId/issues'
+      preLoaderRoute: typeof ProjectsProjectIdIssuesRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
+    '/projects/$projectId/issues/': {
+      id: '/projects/$projectId/issues/'
+      path: '/'
+      fullPath: '/projects/$projectId/issues/'
+      preLoaderRoute: typeof ProjectsProjectIdIssuesIndexRouteImport
+      parentRoute: typeof ProjectsProjectIdIssuesRoute
+    }
+    '/projects/$projectId/issues/new': {
+      id: '/projects/$projectId/issues/new'
+      path: '/new'
+      fullPath: '/projects/$projectId/issues/new'
+      preLoaderRoute: typeof ProjectsProjectIdIssuesNewRouteImport
+      parentRoute: typeof ProjectsProjectIdIssuesRoute
+    }
+    '/projects/$projectId/issues/$issueId': {
+      id: '/projects/$projectId/issues/$issueId'
+      path: '/$issueId'
+      fullPath: '/projects/$projectId/issues/$issueId'
+      preLoaderRoute: typeof ProjectsProjectIdIssuesIssueIdRouteImport
+      parentRoute: typeof ProjectsProjectIdIssuesRoute
+    }
   }
 }
 
+interface ProjectsProjectIdIssuesRouteChildren {
+  ProjectsProjectIdIssuesIssueIdRoute: typeof ProjectsProjectIdIssuesIssueIdRoute
+  ProjectsProjectIdIssuesNewRoute: typeof ProjectsProjectIdIssuesNewRoute
+  ProjectsProjectIdIssuesIndexRoute: typeof ProjectsProjectIdIssuesIndexRoute
+}
+
+const ProjectsProjectIdIssuesRouteChildren: ProjectsProjectIdIssuesRouteChildren =
+  {
+    ProjectsProjectIdIssuesIssueIdRoute: ProjectsProjectIdIssuesIssueIdRoute,
+    ProjectsProjectIdIssuesNewRoute: ProjectsProjectIdIssuesNewRoute,
+    ProjectsProjectIdIssuesIndexRoute: ProjectsProjectIdIssuesIndexRoute,
+  }
+
+const ProjectsProjectIdIssuesRouteWithChildren =
+  ProjectsProjectIdIssuesRoute._addFileChildren(
+    ProjectsProjectIdIssuesRouteChildren,
+  )
+
+interface ProjectsProjectIdRouteChildren {
+  ProjectsProjectIdIssuesRoute: typeof ProjectsProjectIdIssuesRouteWithChildren
+}
+
+const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
+  ProjectsProjectIdIssuesRoute: ProjectsProjectIdIssuesRouteWithChildren,
+}
+
+const ProjectsProjectIdRouteWithChildren =
+  ProjectsProjectIdRoute._addFileChildren(ProjectsProjectIdRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
