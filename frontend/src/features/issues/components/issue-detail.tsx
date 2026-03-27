@@ -19,8 +19,11 @@ import {
 } from "@/shared/components/ui/dialog";
 import { MarkdownViewer } from "@/shared/components/markdown-viewer";
 import { StatusBadge } from "./status-badge";
-import { TaskList } from "./task-list";
-import { useDeleteIssue } from "@/features/issues/hooks";
+import { IssueActions } from "./issue-actions";
+import { PlanFeedback } from "./plan-feedback";
+import { EditableTaskList } from "./editable-task-list";
+import { InlineEditField } from "./inline-edit-field";
+import { useDeleteIssue, useUpdateIssue } from "@/features/issues/hooks";
 import { useKillTerminal } from "@/features/terminals/hooks";
 import type { Issue } from "@/shared/types";
 
@@ -41,14 +44,15 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteIssue = useDeleteIssue(projectId);
   const killTerminal = useKillTerminal();
+  const updateIssue = useUpdateIssue(projectId, issue.id);
 
   const tabs = useMemo<TabDef[]>(() => [
     { value: "description", label: "Description", available: true },
     { value: "specification", label: "Specification", available: !!issue.specification },
     { value: "plan", label: "Plan", available: !!issue.plan },
-    { value: "tasks", label: "Tasks", available: !!(issue.tasks && issue.tasks.length > 0) },
+    { value: "tasks", label: "Tasks", available: true },
     { value: "recap", label: "Recap", available: !!issue.recap },
-  ], [issue.specification, issue.plan, issue.tasks, issue.recap]);
+  ], [issue.specification, issue.plan, issue.recap]);
 
   const availableTabs = tabs.filter((t) => t.available);
   const defaultTab = availableTabs[0]?.value ?? "description";
@@ -71,21 +75,45 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
     });
   };
 
+  const isTerminalState = issue.status === "Finished" || issue.status === "Canceled";
+
+  const completedTaskCount = issue.tasks.filter((t) => t.status === "Completed").length;
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-xl font-bold">{issue.name || "Untitled Issue"}</h1>
+      <div className="flex justify-between items-start gap-4">
+        <div className="flex-1 min-w-0">
+          <InlineEditField
+            value={issue.name || "Untitled Issue"}
+            onSave={(name) => updateIssue.mutate({ name })}
+            disabled={isTerminalState}
+            validate={(v) => v.length > 500 ? "Max 500 caratteri" : null}
+            renderView={(v) => <h1 className="text-xl font-bold">{v}</h1>}
+          />
           <div className="flex items-center gap-3 mt-1">
-            <span className="text-sm text-muted-foreground">Priority: {issue.priority}</span>
+            <InlineEditField
+              value={String(issue.priority)}
+              onSave={(v) => {
+                const n = parseInt(v, 10);
+                if (n >= 1 && n <= 5) updateIssue.mutate({ priority: n });
+              }}
+              disabled={isTerminalState}
+              validate={(v) => {
+                const n = parseInt(v, 10);
+                return isNaN(n) || n < 1 || n > 5 ? "Priorità deve essere 1-5" : null;
+              }}
+              renderView={(v) => (
+                <span className="text-sm text-muted-foreground">Priority: {v}</span>
+              )}
+            />
             <StatusBadge status={issue.status} />
           </div>
         </div>
         <Button
           variant="outline"
           size="sm"
-          className="text-destructive hover:text-destructive"
+          className="text-destructive hover:text-destructive shrink-0"
           onClick={() => setShowDeleteConfirm(true)}
         >
           <Trash2 className="size-4 mr-1" />
@@ -93,12 +121,20 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
         </Button>
       </div>
 
+      {/* Action buttons */}
+      <IssueActions issue={issue} projectId={projectId} />
+
       {/* Tabbed content */}
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList>
           {availableTabs.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
               {tab.label}
+              {tab.value === "tasks" && issue.tasks.length > 0 && (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({completedTaskCount}/{issue.tasks.length})
+                </span>
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -106,7 +142,13 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
         <TabsContent value="description" className="mt-4">
           <Card>
             <CardContent className="pt-6">
-              <p className="text-sm">{issue.description}</p>
+              <InlineEditField
+                value={issue.description}
+                onSave={(description) => updateIssue.mutate({ description })}
+                disabled={isTerminalState}
+                multiline
+                renderView={(v) => <p className="text-sm whitespace-pre-wrap">{v}</p>}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -126,20 +168,25 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
             <Card>
               <CardContent className="pt-6">
                 <MarkdownViewer content={issue.plan} />
+                {issue.status === "Planned" && (
+                  <PlanFeedback projectId={projectId} issueId={issue.id} />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
         )}
 
-        {issue.tasks && issue.tasks.length > 0 && (
-          <TabsContent value="tasks" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                <TaskList tasks={issue.tasks} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
+        <TabsContent value="tasks" className="mt-4">
+          <Card>
+            <CardContent className="pt-6">
+              <EditableTaskList
+                tasks={issue.tasks}
+                projectId={projectId}
+                issueId={issue.id}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {issue.recap && (
           <TabsContent value="recap" className="mt-4">
