@@ -75,6 +75,7 @@ export function useStartAnalysis(projectId: string, issueId: string) {
     mutationFn: () => api.startAnalysis(projectId, issueId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
     },
   });
 }
