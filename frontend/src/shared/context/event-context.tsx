@@ -85,7 +85,7 @@ function buildToast(data: Record<string, unknown>): { title: string; description
     default:
       return {
         title: issueName || title || "Evento",
-        description: `${prefix}${message || "New event"}`,
+        description: `${prefix}${message || "Nuovo evento"}`,
       };
   }
 }
