@@ -220,6 +220,8 @@ async def send_notification(project_id: str, issue_id: str, title: str, message:
         except AppError as e:
             return {"error": e.message}
         issue_name = issue.name or (issue.description or "")[:50] or "Untitled issue"
+        project = await ProjectService(session).get_by_id(project_id)
+        project_name = project.name if project else ""
         await event_service.emit({
             "type": "notification",
             "title": title,
@@ -227,6 +229,7 @@ async def send_notification(project_id: str, issue_id: str, title: str, message:
             "project_id": project_id,
             "issue_id": issue_id,
             "issue_name": issue_name,
+            "project_name": project_name,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         return {"success": True}
