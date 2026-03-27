@@ -55,6 +55,7 @@ async def test_create_issue_plan_emits_event(db_session, project, issue):
             project_id=project.id, issue_id=issue.id, plan="# Plan"
         )
     assert result["status"] == "Planned"
+    emit_mock.assert_called_once()
     event = emit_mock.call_args[0][0]
     assert event["type"] == "issue_status_changed"
 
@@ -68,6 +69,7 @@ async def test_set_issue_name_emits_event(db_session, project, issue):
             project_id=project.id, issue_id=issue.id, name="My Issue Name"
         )
     assert result["name"] == "My Issue Name"
+    emit_mock.assert_called_once()
     event = emit_mock.call_args[0][0]
     assert event["type"] == "issue_content_updated"
     assert event["content_type"] == "name"
