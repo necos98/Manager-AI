@@ -201,3 +201,14 @@ export interface ServerEvent {
   issue_name?: string;
   timestamp?: string;
 }
+
+// ── Activity ──
+
+export interface ActivityLog {
+  id: string;
+  project_id: string;
+  issue_id: string | null;
+  event_type: string;
+  details: Record<string, unknown>;
+  created_at: string;
+}

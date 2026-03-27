@@ -1,4 +1,5 @@
 import {
+  Activity,
   CircleDot,
   Download,
   FileText,
@@ -77,6 +78,12 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
           to: "/projects/$projectId/commands" as const,
           params: { projectId },
           icon: SquareTerminal,
+        },
+        {
+          label: "Activity",
+          to: "/projects/$projectId/activity" as const,
+          params: { projectId },
+          icon: Activity,
         },
       ]
     : [];
