@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 MERGE_THRESHOLD = 100  # paragraphs under this word count get merged

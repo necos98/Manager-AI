@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
@@ -67,7 +69,9 @@ async def create_terminal(
             "MANAGER_AI_PROJECT_ID": data.project_id,
             "MANAGER_AI_BASE_URL": f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}",
         }
-        env_commands = " && ".join(f"set {k}={v}" for k, v in env_vars.items())
+        import platform
+        set_cmd = "set" if platform.system() == "Windows" else "export"
+        env_commands = " && ".join(f"{set_cmd} {k}={v}" for k, v in env_vars.items())
         pty.write(env_commands + "\r\n")
     except Exception:
         logger.warning("Failed to inject env vars for terminal %s", terminal["id"], exc_info=True)
