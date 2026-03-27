@@ -186,9 +186,18 @@ class IssueService:
             )
         issue.status = IssueStatus.ACCEPTED
         await self.session.flush()
+        project = await ProjectService(self.session).get_by_id(project_id)
         await hook_registry.fire(
             HookEvent.ISSUE_ACCEPTED,
-            HookContext(project_id=project_id, issue_id=issue_id, event=HookEvent.ISSUE_ACCEPTED),
+            HookContext(
+                project_id=project_id,
+                issue_id=issue_id,
+                event=HookEvent.ISSUE_ACCEPTED,
+                metadata={
+                    "issue_name": issue.name or (issue.description or "")[:50] or "Untitled",
+                    "project_name": project.name if project else "",
+                },
+            ),
         )
         return issue
 
@@ -196,9 +205,18 @@ class IssueService:
         issue = await self.get_for_project(issue_id, project_id)
         issue.status = IssueStatus.CANCELED
         await self.session.flush()
+        project = await ProjectService(self.session).get_by_id(project_id)
         await hook_registry.fire(
             HookEvent.ISSUE_CANCELLED,
-            HookContext(project_id=project_id, issue_id=issue_id, event=HookEvent.ISSUE_CANCELLED),
+            HookContext(
+                project_id=project_id,
+                issue_id=issue_id,
+                event=HookEvent.ISSUE_CANCELLED,
+                metadata={
+                    "issue_name": issue.name or (issue.description or "")[:50] or "Untitled",
+                    "project_name": project.name if project else "",
+                },
+            ),
         )
         return issue
 

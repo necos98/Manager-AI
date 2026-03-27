@@ -33,7 +33,7 @@ async def test_complete_issue_fires_hook(mock_registry, db_session, project):
 
 
 @patch("app.services.issue_service.hook_registry")
-async def test_accept_issue_fires_hook(mock_registry, db_session, project):
+async def test_accept_issue_fires_hook_with_metadata(mock_registry, db_session, project):
     mock_registry.fire = AsyncMock()
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Accept me", priority=1)
@@ -43,10 +43,13 @@ async def test_accept_issue_fires_hook(mock_registry, db_session, project):
     mock_registry.fire.assert_called_once()
     args = mock_registry.fire.call_args
     assert args[0][0] == HookEvent.ISSUE_ACCEPTED
+    ctx = args[0][1]
+    assert ctx.metadata.get("issue_name") == "Accept me"
+    assert ctx.metadata.get("project_name") == "Test"
 
 
 @patch("app.services.issue_service.hook_registry")
-async def test_cancel_issue_fires_hook(mock_registry, db_session, project):
+async def test_cancel_issue_fires_hook_with_metadata(mock_registry, db_session, project):
     mock_registry.fire = AsyncMock()
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Cancel me", priority=1)
@@ -54,3 +57,6 @@ async def test_cancel_issue_fires_hook(mock_registry, db_session, project):
     mock_registry.fire.assert_called_once()
     args = mock_registry.fire.call_args
     assert args[0][0] == HookEvent.ISSUE_CANCELLED
+    ctx = args[0][1]
+    assert ctx.metadata.get("issue_name") == "Cancel me"
+    assert ctx.metadata.get("project_name") == "Test"
