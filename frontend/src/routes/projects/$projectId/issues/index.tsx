@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useIssues } from "@/features/issues/hooks";
@@ -28,6 +28,11 @@ function IssuesPage() {
   const [filter, setFilter] = useState<IssueStatus | "All">("All");
 
   const { data: project } = useProject(projectId);
+
+  useEffect(() => {
+    document.title = project ? `Issues - ${project.name}` : "Issues";
+  }, [project]);
+
   const { data: issues, isLoading } = useIssues(
     projectId,
     filter === "All" ? undefined : filter,

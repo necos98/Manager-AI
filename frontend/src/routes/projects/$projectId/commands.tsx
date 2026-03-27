@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useProject } from "@/features/projects/hooks";
 import { TerminalCommandsEditor } from "@/features/terminals/components/terminal-commands-editor";
@@ -9,6 +10,10 @@ export const Route = createFileRoute("/projects/$projectId/commands")({
 function CommandsPage() {
   const { projectId } = Route.useParams();
   const { data: project } = useProject(projectId);
+
+  useEffect(() => {
+    document.title = project ? `Commands - ${project.name}` : "Commands";
+  }, [project]);
 
   return (
     <div className="p-6">

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Play, Square } from "lucide-react";
 import { toast } from "sonner";
 import { useIssue } from "@/features/issues/hooks";
+import { useProject } from "@/features/projects/hooks";
 import { useTerminals, useCreateTerminal, useKillTerminal, useTerminalCount, useTerminalConfig } from "@/features/terminals/hooks";
 import { IssueDetail } from "@/features/issues/components/issue-detail";
 import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
@@ -29,7 +30,17 @@ export const Route = createFileRoute("/projects/$projectId/issues/$issueId")({
 
 function IssueDetailPage() {
   const { projectId, issueId } = Route.useParams();
+  const { data: project } = useProject(projectId);
   const { data: issue, isLoading } = useIssue(projectId, issueId);
+
+  useEffect(() => {
+    const issueName = issue?.name || issue?.description;
+    if (issueName && project) {
+      document.title = `${issueName} - ${project.name}`;
+    } else if (issueName) {
+      document.title = issueName;
+    }
+  }, [issue, project]);
   const { data: terminals } = useTerminals(undefined, issueId);
   const createTerminal = useCreateTerminal();
   const killTerminal = useKillTerminal();
