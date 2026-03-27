@@ -7,7 +7,9 @@ from sqlalchemy.orm import selectinload
 from app.exceptions import InvalidTransitionError, NotFoundError, ValidationError
 from app.hooks.registry import HookContext, HookEvent, hook_registry
 from app.models.issue import VALID_TRANSITIONS, Issue, IssueStatus
+from app.models.task import TaskStatus
 from app.services.project_service import ProjectService
+from app.services.task_service import TaskService
 
 
 class IssueService:
@@ -94,8 +96,6 @@ class IssueService:
         if issue.status != IssueStatus.ACCEPTED:
             raise InvalidTransitionError(f"Can only complete issues in Accepted status, got {issue.status.value}")
         # Enforce task completion
-        from app.services.task_service import TaskService
-        from app.models.task import TaskStatus
         task_service = TaskService(self.session)
         tasks = await task_service.list_by_issue(issue.id)
         if tasks:

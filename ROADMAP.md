@@ -27,19 +27,19 @@ Workflow hardening: state machine corretta, service layer unificato, hook firing
 Completare il pattern stabilito in Fase 0 su tutto il codebase.
 
 ### 1.1 ProjectService allineato al pattern
-- [ ] `get_by_id()` lancia `NotFoundError` invece di ritornare `None`
-- [ ] Router projects senza try/except manuali (usa global handler)
-- [ ] `update_project_context` MCP tool passa per il service layer
-- [ ] Fix dei 3 test pre-esistenti (`test_get_project_not_found`, `test_settings_service`, `test_routers_settings`)
+- [x] `get_by_id()` lancia `NotFoundError` invece di ritornare `None`
+- [x] Router projects senza try/except manuali (usa global handler)
+- [x] `update_project_context` MCP tool passa per il service layer
+- [x] Fix dei 3 test pre-esistenti (`test_get_project_not_found`, `test_settings_service`, `test_routers_settings`)
 
 ### 1.2 Pulizia MCP tool descriptions
-- [ ] Aggiungere descrizione della state machine (NEW → REASONING → PLANNED → ACCEPTED → FINISHED) nelle tool descriptions
-- [ ] Documentare l'ordine d'uso dei tool (`create_issue_spec` → `create_issue_plan` → `accept_issue` → `complete_issue`)
-- [ ] Chiarire quando usare `send_notification` vs completare silenziosamente
+- [x] Aggiungere descrizione della state machine (NEW → REASONING → PLANNED → ACCEPTED → FINISHED) nelle tool descriptions
+- [x] Documentare l'ordine d'uso dei tool (`create_issue_spec` → `create_issue_plan` → `accept_issue` → `complete_issue`)
+- [x] Chiarire quando usare `send_notification` vs completare silenziosamente
 
 ### 1.3 Import cleanup
-- [ ] Spostare import lazy di `TaskService`/`TaskStatus` in `complete_issue()` a livello di modulo (risolvere circular dependency)
-- [ ] Standardizzare `except Exception` in MCP task tools a `except AppError`
+- [x] Spostare import lazy di `TaskService`/`TaskStatus` in `complete_issue()` a livello di modulo (risolvere circular dependency)
+- [x] Standardizzare `except Exception` in MCP task tools a `except AppError`
 
 ---
 

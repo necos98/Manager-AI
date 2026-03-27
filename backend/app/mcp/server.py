@@ -62,37 +62,35 @@ async def get_issue_status(project_id: str, issue_id: str) -> dict:
 async def get_project_context(project_id: str) -> dict:
     async with async_session() as session:
         project_service = ProjectService(session)
-        project = await project_service.get_by_id(project_id)
-        if project is None:
-            return {"error": "Project not found"}
-        return {
-            "id": project.id,
-            "name": project.name,
-            "path": project.path,
-            "description": project.description,
-            "tech_stack": project.tech_stack,
-        }
+        try:
+            project = await project_service.get_by_id(project_id)
+            return {
+                "id": project.id,
+                "name": project.name,
+                "path": project.path,
+                "description": project.description,
+                "tech_stack": project.tech_stack,
+            }
+        except AppError as e:
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.update_project_context.description"])
 async def update_project_context(project_id: str, description: str | None = None, tech_stack: str | None = None) -> dict:
     async with async_session() as session:
         project_service = ProjectService(session)
-        project = await project_service.get_by_id(project_id)
-        if project is None:
-            return {"error": "Project not found"}
-        if description is not None:
-            project.description = description
-        if tech_stack is not None:
-            project.tech_stack = tech_stack
-        await session.commit()
-        return {
-            "id": project.id,
-            "name": project.name,
-            "path": project.path,
-            "description": project.description,
-            "tech_stack": project.tech_stack,
-        }
+        try:
+            project = await project_service.update(project_id, description=description, tech_stack=tech_stack)
+            await session.commit()
+            return {
+                "id": project.id,
+                "name": project.name,
+                "path": project.path,
+                "description": project.description,
+                "tech_stack": project.tech_stack,
+            }
+        except AppError as e:
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.set_issue_name.description"])
@@ -245,9 +243,9 @@ async def create_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
             created = await task_service.create_bulk(issue_id, tasks)
             await session.commit()
             return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
-        except Exception as e:
+        except AppError as e:
             await session.rollback()
-            return {"error": str(e)}
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.replace_plan_tasks.description"])
@@ -258,9 +256,9 @@ async def replace_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
             created = await task_service.replace_all(issue_id, tasks)
             await session.commit()
             return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
-        except Exception as e:
+        except AppError as e:
             await session.rollback()
-            return {"error": str(e)}
+            return {"error": e.message}
 
 
 @mcp.tool(description=_desc["tool.update_task_status.description"])
