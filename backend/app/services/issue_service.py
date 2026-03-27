@@ -240,6 +240,7 @@ class IssueService:
         fb = IssueFeedback(issue_id=issue_id, content=content)
         self.session.add(fb)
         await self.session.flush()
+        await self.session.refresh(fb)
         return fb
 
     async def list_feedback(self, issue_id: str, project_id: str) -> list[IssueFeedback]:
@@ -247,6 +248,6 @@ class IssueService:
         result = await self.session.execute(
             select(IssueFeedback)
             .where(IssueFeedback.issue_id == issue_id)
-            .order_by(IssueFeedback.created_at.asc())
+            .order_by(IssueFeedback.created_at.asc(), IssueFeedback.id.asc())
         )
         return list(result.scalars().all())

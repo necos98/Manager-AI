@@ -29,6 +29,7 @@ async def test_add_feedback(db_session, issue, project):
 async def test_list_feedback_ordered(db_session, issue, project):
     service = IssueService(db_session)
     await service.add_feedback(issue.id, project.id, "First comment")
+    await db_session.commit()
     await service.add_feedback(issue.id, project.id, "Second comment")
     feedbacks = await service.list_feedback(issue.id, project.id)
     assert len(feedbacks) == 2
