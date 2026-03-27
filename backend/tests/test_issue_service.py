@@ -304,3 +304,37 @@ async def test_cancel_issue_from_any_status(db_session, project):
         await db_session.flush()
         updated = await service.cancel_issue(issue.id, project.id)
         assert updated.status == IssueStatus.CANCELED
+
+
+from app.services.activity_service import ActivityService
+
+
+async def test_create_spec_logs_activity(db_session, project):
+    svc = IssueService(db_session)
+    activity_svc = ActivityService(db_session)
+    issue = await svc.create(project_id=project.id, description="Log test", priority=1)
+    await svc.create_spec(issue.id, project.id, "# Spec")
+    logs = await activity_svc.list_for_project(project.id, issue_id=issue.id)
+    assert any(log.event_type == "spec_created" for log in logs)
+
+
+async def test_create_plan_logs_activity(db_session, project):
+    svc = IssueService(db_session)
+    activity_svc = ActivityService(db_session)
+    issue = await svc.create(project_id=project.id, description="Plan log test", priority=1)
+    await svc.create_spec(issue.id, project.id, "# Spec")
+    await svc.create_plan(issue.id, project.id, "# Plan")
+    logs = await activity_svc.list_for_project(project.id, issue_id=issue.id)
+    assert any(log.event_type == "plan_created" for log in logs)
+
+
+async def test_complete_issue_logs_activity(db_session, project):
+    svc = IssueService(db_session)
+    activity_svc = ActivityService(db_session)
+    issue = await svc.create(project_id=project.id, description="Complete log test", priority=1)
+    await svc.create_spec(issue.id, project.id, "# Spec")
+    await svc.create_plan(issue.id, project.id, "# Plan")
+    await svc.accept_issue(issue.id, project.id)
+    await svc.complete_issue(issue.id, project.id, "Done")
+    logs = await activity_svc.list_for_project(project.id, issue_id=issue.id)
+    assert any(log.event_type == "issue_completed" for log in logs)

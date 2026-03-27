@@ -9,6 +9,7 @@ from app.hooks.registry import HookContext, HookEvent, hook_registry
 from app.models.issue import VALID_TRANSITIONS, Issue, IssueStatus
 from app.models.issue_feedback import IssueFeedback
 from app.models.task import TaskStatus
+from app.services.activity_service import ActivityService
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
 
@@ -109,6 +110,12 @@ class IssueService:
         issue.recap = recap
         issue.status = IssueStatus.FINISHED
         await self.session.flush()
+        await ActivityService(self.session).log(
+            project_id=project_id,
+            issue_id=issue_id,
+            event_type="issue_completed",
+            details={"issue_name": issue.name or "", "recap_preview": (recap or "")[:100]},
+        )
         # Fire hook with project context
         project_service = ProjectService(self.session)
         project = await project_service.get_by_id(project_id)
@@ -143,6 +150,12 @@ class IssueService:
         issue.specification = spec
         issue.status = IssueStatus.REASONING
         await self.session.flush()
+        await ActivityService(self.session).log(
+            project_id=project_id,
+            issue_id=issue_id,
+            event_type="spec_created",
+            details={"issue_name": issue.name or ""},
+        )
         return issue
 
     async def edit_spec(self, issue_id: str, project_id: str, spec: str) -> Issue:
@@ -166,6 +179,12 @@ class IssueService:
         issue.plan = plan
         issue.status = IssueStatus.PLANNED
         await self.session.flush()
+        await ActivityService(self.session).log(
+            project_id=project_id,
+            issue_id=issue_id,
+            event_type="plan_created",
+            details={"issue_name": issue.name or ""},
+        )
         return issue
 
     async def edit_plan(self, issue_id: str, project_id: str, plan: str) -> Issue:
@@ -186,6 +205,12 @@ class IssueService:
             )
         issue.status = IssueStatus.ACCEPTED
         await self.session.flush()
+        await ActivityService(self.session).log(
+            project_id=project_id,
+            issue_id=issue_id,
+            event_type="issue_accepted",
+            details={"issue_name": issue.name or ""},
+        )
         project = await ProjectService(self.session).get_by_id(project_id)
         await hook_registry.fire(
             HookEvent.ISSUE_ACCEPTED,
@@ -205,6 +230,12 @@ class IssueService:
         issue = await self.get_for_project(issue_id, project_id)
         issue.status = IssueStatus.CANCELED
         await self.session.flush()
+        await ActivityService(self.session).log(
+            project_id=project_id,
+            issue_id=issue_id,
+            event_type="issue_canceled",
+            details={"issue_name": issue.name or ""},
+        )
         project = await ProjectService(self.session).get_by_id(project_id)
         await hook_registry.fire(
             HookEvent.ISSUE_CANCELLED,
@@ -244,6 +275,12 @@ class IssueService:
                     "tech_stack": project.tech_stack if project else "",
                 },
             ),
+        )
+        await ActivityService(self.session).log(
+            project_id=project_id,
+            issue_id=issue_id,
+            event_type="analysis_started",
+            details={"issue_name": issue.name or ""},
         )
         return issue
 
