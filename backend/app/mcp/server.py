@@ -82,6 +82,11 @@ async def update_project_context(project_id: str, description: str | None = None
         try:
             project = await project_service.update(project_id, description=description, tech_stack=tech_stack)
             await session.commit()
+            await event_service.emit({
+                "type": "project_updated",
+                "project_id": project_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
             return {
                 "id": project.id,
                 "name": project.name,
@@ -100,6 +105,14 @@ async def set_issue_name(project_id: str, issue_id: str, name: str) -> dict:
         try:
             issue = await issue_service.set_name(issue_id, project_id, name)
             await session.commit()
+            await event_service.emit({
+                "type": "issue_content_updated",
+                "content_type": "name",
+                "project_id": project_id,
+                "issue_id": issue_id,
+                "issue_name": issue.name or "",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
             return {"id": issue.id, "name": issue.name}
         except AppError as e:
             await session.rollback()
@@ -120,6 +133,7 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
                 "recap": issue.recap,
             }
             issue_id_val = issue.id
+            issue_name = issue.name or (issue.description or "")[:50] or ""
             try:
                 project = await ProjectService(session).get_by_id(project_id)
                 project_name = project.name
@@ -136,6 +150,15 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
                 project_name=project_name,
             ))
 
+            await event_service.emit({
+                "type": "issue_status_changed",
+                "new_status": issue.status.value,
+                "project_id": project_id,
+                "issue_id": issue_id_val,
+                "issue_name": issue_name,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+
             return {"id": issue_id_val, "status": issue.status.value, "recap": issue.recap}
         except AppError as e:
             return {"error": e.message}
@@ -148,6 +171,14 @@ async def create_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
         try:
             issue = await issue_service.create_spec(issue_id, project_id, spec)
             await session.commit()
+            await event_service.emit({
+                "type": "issue_status_changed",
+                "new_status": issue.status.value,
+                "project_id": project_id,
+                "issue_id": issue_id,
+                "issue_name": issue.name or (issue.description or "")[:50] or "",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
             return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
         except AppError as e:
             await session.rollback()
@@ -161,6 +192,14 @@ async def edit_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
         try:
             issue = await issue_service.edit_spec(issue_id, project_id, spec)
             await session.commit()
+            await event_service.emit({
+                "type": "issue_content_updated",
+                "content_type": "spec",
+                "project_id": project_id,
+                "issue_id": issue_id,
+                "issue_name": issue.name or (issue.description or "")[:50] or "",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
             return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
         except AppError as e:
             await session.rollback()
@@ -174,6 +213,14 @@ async def create_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
         try:
             issue = await issue_service.create_plan(issue_id, project_id, plan)
             await session.commit()
+            await event_service.emit({
+                "type": "issue_status_changed",
+                "new_status": issue.status.value,
+                "project_id": project_id,
+                "issue_id": issue_id,
+                "issue_name": issue.name or (issue.description or "")[:50] or "",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
             return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
         except AppError as e:
             await session.rollback()
@@ -187,6 +234,14 @@ async def edit_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
         try:
             issue = await issue_service.edit_plan(issue_id, project_id, plan)
             await session.commit()
+            await event_service.emit({
+                "type": "issue_content_updated",
+                "content_type": "plan",
+                "project_id": project_id,
+                "issue_id": issue_id,
+                "issue_name": issue.name or (issue.description or "")[:50] or "",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
             return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
         except AppError as e:
             await session.rollback()
@@ -200,6 +255,14 @@ async def accept_issue(project_id: str, issue_id: str) -> dict:
         try:
             issue = await issue_service.accept_issue(issue_id, project_id)
             await session.commit()
+            await event_service.emit({
+                "type": "issue_status_changed",
+                "new_status": issue.status.value,
+                "project_id": project_id,
+                "issue_id": issue_id,
+                "issue_name": issue.name or (issue.description or "")[:50] or "",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
             return {"id": issue.id, "status": issue.status.value}
         except AppError as e:
             return {"error": e.message}
@@ -212,6 +275,14 @@ async def cancel_issue(project_id: str, issue_id: str) -> dict:
         try:
             issue = await issue_service.cancel_issue(issue_id, project_id)
             await session.commit()
+            await event_service.emit({
+                "type": "issue_status_changed",
+                "new_status": issue.status.value,
+                "project_id": project_id,
+                "issue_id": issue_id,
+                "issue_name": issue.name or (issue.description or "")[:50] or "",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
             return {"id": issue.id, "status": issue.status.value}
         except AppError as e:
             return {"error": e.message}
