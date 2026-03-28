@@ -19,6 +19,8 @@ class HookEvent(str, Enum):
     ISSUE_ACCEPTED = "issue_accepted"
     ISSUE_CANCELLED = "issue_cancelled"
     ISSUE_ANALYSIS_STARTED = "issue_analysis_started"
+    ISSUE_CREATED = "issue_created"
+    ALL_TASKS_COMPLETED = "all_tasks_completed"
 
 
 @dataclass

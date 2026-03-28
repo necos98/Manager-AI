@@ -22,6 +22,23 @@ class IssueService:
         issue = Issue(project_id=project_id, description=description, priority=priority)
         self.session.add(issue)
         await self.session.flush()
+        project_service = ProjectService(self.session)
+        project = await project_service.get_by_id(project_id)
+        await hook_registry.fire(
+            HookEvent.ISSUE_CREATED,
+            HookContext(
+                project_id=project_id,
+                issue_id=issue.id,
+                event=HookEvent.ISSUE_CREATED,
+                metadata={
+                    "issue_description": description,
+                    "project_name": project.name if project else "",
+                    "project_path": project.path if project else "",
+                    "project_description": project.description if project else "",
+                    "tech_stack": project.tech_stack if project else "",
+                },
+            ),
+        )
         return issue
 
     async def get_by_id(self, issue_id: str) -> Issue | None:
@@ -51,14 +68,26 @@ class IssueService:
         return list(result.unique().scalars().all())
 
     async def get_next_issue(self, project_id: str) -> Issue | None:
-        query = (
+        """Return next workable issue: ACCEPTED first (ready to implement), then NEW (needs planning)."""
+        accepted_query = (
+            select(Issue)
+            .where(Issue.project_id == project_id)
+            .where(Issue.status == IssueStatus.ACCEPTED)
+            .order_by(Issue.priority.asc(), Issue.created_at.asc())
+            .limit(1)
+        )
+        result = await self.session.execute(accepted_query)
+        issue = result.scalar_one_or_none()
+        if issue:
+            return issue
+        new_query = (
             select(Issue)
             .where(Issue.project_id == project_id)
             .where(Issue.status == IssueStatus.NEW)
             .order_by(Issue.priority.asc(), Issue.created_at.asc())
             .limit(1)
         )
-        result = await self.session.execute(query)
+        result = await self.session.execute(new_query)
         return result.scalar_one_or_none()
 
     async def update_status(
@@ -220,7 +249,13 @@ class IssueService:
                 event=HookEvent.ISSUE_ACCEPTED,
                 metadata={
                     "issue_name": issue.name or (issue.description or "")[:50] or "Untitled",
+                    "issue_description": issue.description or "",
+                    "specification": issue.specification or "",
+                    "plan": issue.plan or "",
                     "project_name": project.name if project else "",
+                    "project_path": project.path if project else "",
+                    "project_description": project.description if project else "",
+                    "tech_stack": project.tech_stack if project else "",
                 },
             ),
         )
