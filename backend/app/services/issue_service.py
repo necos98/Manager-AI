@@ -68,14 +68,26 @@ class IssueService:
         return list(result.unique().scalars().all())
 
     async def get_next_issue(self, project_id: str) -> Issue | None:
-        query = (
+        """Return next workable issue: ACCEPTED first (ready to implement), then NEW (needs planning)."""
+        accepted_query = (
+            select(Issue)
+            .where(Issue.project_id == project_id)
+            .where(Issue.status == IssueStatus.ACCEPTED)
+            .order_by(Issue.priority.asc(), Issue.created_at.asc())
+            .limit(1)
+        )
+        result = await self.session.execute(accepted_query)
+        issue = result.scalar_one_or_none()
+        if issue:
+            return issue
+        new_query = (
             select(Issue)
             .where(Issue.project_id == project_id)
             .where(Issue.status == IssueStatus.NEW)
             .order_by(Issue.priority.asc(), Issue.created_at.asc())
             .limit(1)
         )
-        result = await self.session.execute(query)
+        result = await self.session.execute(new_query)
         return result.scalar_one_or_none()
 
     async def update_status(

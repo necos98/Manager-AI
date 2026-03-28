@@ -15,7 +15,11 @@ async def project(db_session):
 
 @patch("app.hooks.handlers.auto_start_workflow.ClaudeCodeExecutor")
 @patch("app.hooks.handlers.auto_start_workflow.ProjectSettingService")
-async def test_auto_start_runs_claude_when_enabled(MockSettingService, MockExecutor, db_session, project):
+@patch("app.hooks.handlers.auto_start_workflow.SettingsService")
+async def test_auto_start_runs_claude_when_enabled(MockGlobalSettings, MockSettingService, MockExecutor, db_session, project):
+    mock_global_svc = AsyncMock()
+    mock_global_svc.get = AsyncMock(return_value="false")
+    MockGlobalSettings.return_value = mock_global_svc
     mock_svc = AsyncMock()
     mock_svc.get = AsyncMock(side_effect=lambda pid, key, default="": {
         "auto_workflow_enabled": "true",
@@ -75,7 +79,11 @@ async def test_auto_start_skips_when_disabled(MockSettingService, MockExecutor, 
 
 @patch("app.hooks.handlers.auto_start_workflow.ClaudeCodeExecutor")
 @patch("app.hooks.handlers.auto_start_workflow.ProjectSettingService")
-async def test_auto_start_uses_custom_prompt(MockSettingService, MockExecutor, db_session, project):
+@patch("app.hooks.handlers.auto_start_workflow.SettingsService")
+async def test_auto_start_uses_custom_prompt(MockGlobalSettings2, MockSettingService, MockExecutor, db_session, project):
+    mock_global_svc2 = AsyncMock()
+    mock_global_svc2.get = AsyncMock(return_value="false")
+    MockGlobalSettings2.return_value = mock_global_svc2
     custom = "Custom: {{issue_description}} per {{project_name}}"
     mock_svc = AsyncMock()
     mock_svc.get = AsyncMock(side_effect=lambda pid, key, default="": {

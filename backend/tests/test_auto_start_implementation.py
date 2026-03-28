@@ -15,7 +15,11 @@ async def project(db_session):
 
 @patch("app.hooks.handlers.auto_start_implementation.ClaudeCodeExecutor")
 @patch("app.hooks.handlers.auto_start_implementation.ProjectSettingService")
-async def test_auto_implementation_runs_when_enabled(MockSettingService, MockExecutor, db_session, project):
+@patch("app.hooks.handlers.auto_start_implementation.SettingsService")
+async def test_auto_implementation_runs_when_enabled(MockGlobalSettings, MockSettingService, MockExecutor, db_session, project):
+    mock_global_svc = AsyncMock()
+    mock_global_svc.get = AsyncMock(return_value="false")
+    MockGlobalSettings.return_value = mock_global_svc
     mock_svc = AsyncMock()
     mock_svc.get = AsyncMock(side_effect=lambda pid, key, default="": {
         "auto_implementation_enabled": "true",

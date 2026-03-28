@@ -5,6 +5,7 @@ from __future__ import annotations
 from app.hooks.executor import ClaudeCodeExecutor
 from app.hooks.registry import BaseHook, HookContext, HookEvent, HookResult, hook
 from app.services.project_setting_service import ProjectSettingService
+from app.services.settings_service import SettingsService
 
 
 @hook(event=HookEvent.ISSUE_CREATED)
@@ -22,6 +23,10 @@ class AutoStartWorkflow(BaseHook):
                 return HookResult(success=True, output="auto_workflow disabled for this project")
             custom_prompt = await svc.get(context.project_id, "auto_workflow_prompt", default="")
             timeout_str = await svc.get(context.project_id, "auto_workflow_timeout", default="600")
+            # Check global work queue pause
+            paused = await SettingsService(session).get("work_queue_paused")
+        if paused == "true":
+            return HookResult(success=True, output="work queue is paused")
 
         try:
             timeout = int(timeout_str)

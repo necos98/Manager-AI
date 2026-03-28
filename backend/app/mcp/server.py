@@ -495,3 +495,24 @@ async def get_context_chunk_details(project_id: str, chunk_id: str) -> dict:
     if chunk is None:
         return {"error": "Chunk not found or does not belong to this project"}
     return chunk
+
+
+@mcp.tool(description=_desc["tool.get_next_issue.description"])
+async def get_next_issue(project_id: str) -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.get_next_issue(project_id)
+            if issue is None:
+                return {"issue": None, "message": "No workable issues in queue"}
+            return {
+                "issue": {
+                    "id": issue.id,
+                    "name": issue.name,
+                    "description": issue.description,
+                    "status": issue.status.value,
+                    "priority": issue.priority,
+                }
+            }
+        except AppError as e:
+            return {"error": e.message}
