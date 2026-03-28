@@ -144,24 +144,24 @@ function CreateSkillDialog({ open, type, onOpenChange, onCreate, isPending }: Cr
 
 // ── LibraryPage ──────────────────────────────────────────────────────────────
 
-type CategoryFilter = "all" | "tech" | "domain" | "architecture";
-
 function LibraryPage() {
   const { data: skills = [], isLoading: loadingSkills } = useSkills();
   const { data: agents = [], isLoading: loadingAgents } = useAgents();
   const createSkill = useCreateSkill();
 
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [selected, setSelected] = useState<SkillMeta | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createType, setCreateType] = useState<string>("skill");
+
+  const allItems: SkillMeta[] = [...skills, ...agents];
+  const categories = ["all", ...Array.from(new Set(allItems.map((s) => s.category))).sort()];
 
   const { data: detail, isLoading: loadingDetail } = useSkillDetail(
     selected?.name ?? "",
     selected?.type ?? "skill",
   );
 
-  const allItems: SkillMeta[] = [...skills, ...agents];
   const filtered =
     categoryFilter === "all"
       ? allItems
@@ -201,7 +201,7 @@ function LibraryPage() {
 
       {/* Category filter */}
       <div className="flex gap-1.5 mb-4">
-        {(["all", "tech", "domain", "architecture"] as CategoryFilter[]).map((cat) => (
+        {categories.map((cat) => (
           <Button
             key={cat}
             size="sm"
@@ -268,6 +268,7 @@ function LibraryPage() {
       </div>
 
       <CreateSkillDialog
+        key={`${createType}-${String(dialogOpen)}`}
         open={dialogOpen}
         type={createType}
         onOpenChange={setDialogOpen}
