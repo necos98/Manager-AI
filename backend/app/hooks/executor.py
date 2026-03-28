@@ -27,16 +27,21 @@ class ClaudeCodeExecutor:
         project_path: str,
         env_vars: dict | None = None,
         timeout: int = 300,
+        tool_guidance: str = "",
     ) -> ExecutorResult:
         """
         Spawn `claude` with the given prompt (sent via stdin) and return the result.
 
         Args:
-            prompt:       The prompt text to pass to Claude Code via stdin.
-            project_path: Working directory for the subprocess.
-            env_vars:     Additional environment variables to inject.
-            timeout:      Maximum seconds to wait for the process (default 300).
+            prompt:        The prompt text to pass to Claude Code via stdin.
+            project_path:  Working directory for the subprocess.
+            env_vars:      Additional environment variables to inject.
+            timeout:       Maximum seconds to wait for the process (default 300).
+            tool_guidance: Optional [Tool guidance] block prepended to the prompt.
         """
+        if tool_guidance:
+            prompt = tool_guidance + "\n\n" + prompt
+
         env = os.environ.copy()
 
         # Default Manager AI env vars, sourced from the current environment

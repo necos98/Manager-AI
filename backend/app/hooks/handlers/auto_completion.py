@@ -51,6 +51,12 @@ class AutoCompletion(BaseHook):
                     "recap", context.project_id, variables
                 )
 
+            async with async_session() as session:
+                from app.services.mcp_tool_description_service import McpToolDescriptionService
+                tool_guidance = await McpToolDescriptionService(session).build_tool_guidance(
+                    context.project_id
+                )
+
             executor = ClaudeCodeExecutor()
             result = await executor.run(
                 prompt=prompt,
@@ -60,6 +66,7 @@ class AutoCompletion(BaseHook):
                     "MANAGER_AI_ISSUE_ID": context.issue_id,
                 },
                 timeout=120,
+                tool_guidance=tool_guidance,
             )
             return HookResult(success=result.success, output=result.output, error=result.error)
 
