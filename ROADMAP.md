@@ -79,25 +79,25 @@ La UI è ora completamente interattiva. L'utente può controllare il workflow de
 Il frontend carica i dati una volta e non si aggiorna. Quando Claude lavora via MCP, l'utente vede dati stale.
 
 ### 3.1 Event-driven data refresh
-- [ ] Emettere eventi WebSocket per ogni cambio stato issue (`issue_status_changed`)
-- [ ] Emettere eventi per aggiornamento task (`task_updated`)
-- [ ] Emettere eventi per nuova spec/piano/recap (`issue_content_updated`)
-- [ ] EventContext aggiorna i dati delle pagine oltre a mostrare toast:
+- [x] Emettere eventi WebSocket per ogni cambio stato issue (`issue_status_changed`)
+- [x] Emettere eventi per aggiornamento task (`task_updated`)
+- [x] Emettere eventi per nuova spec/piano/recap (`issue_content_updated`)
+- [x] EventContext aggiorna i dati delle pagine oltre a mostrare toast:
   - IssueDetailPage si refresha quando riceve eventi per quell'issue
   - ProjectDetailPage si refresha quando riceve eventi per quel progetto
 
 ### 3.2 Toast tipizzati
-- [ ] Tipi di toast: info (blu), success (verde), warning (giallo), error (rosso)
-- [ ] `hook_failed` → toast rosso
-- [ ] `hook_completed` → toast verde
-- [ ] `notification` → toast blu
-- [ ] Toggle suono nelle settings
+- [x] Tipi di toast: info (blu), success (verde), warning (giallo), error (rosso)
+- [x] `hook_failed` → toast rosso
+- [x] `hook_completed` → toast verde
+- [x] `notification` → toast blu
+- [x] Toggle suono nelle settings
 
 ### 3.3 Activity log persistente
-- [ ] Modello `ActivityLog` nel DB: timestamp, tipo evento, issue_id, project_id, dettagli
-- [ ] Ogni transizione di stato, hook, notifica viene loggata
-- [ ] Pagina o sezione "Activity" nel frontend con timeline scrollabile
-- [ ] Filtro per progetto/issue
+- [x] Modello `ActivityLog` nel DB: timestamp, tipo evento, issue_id, project_id, dettagli
+- [x] Ogni transizione di stato, hook, notifica viene loggata
+- [x] Pagina o sezione "Activity" nel frontend con timeline scrollabile
+- [x] Filtro per progetto/issue
 
 ---
 
@@ -106,35 +106,34 @@ Il frontend carica i dati una volta e non si aggiorna. Quando Claude lavora via 
 Il salto di qualità: da "issue tracker con terminale" a "AI project manager che lavora per te".
 
 ### 4.1 Auto-start workflow
-- [ ] Nuovo `HookEvent.ISSUE_CREATED`
-- [ ] Hook `AutoStartSpecification`: alla creazione di un'issue, spawna automaticamente Claude Code che:
+- [x] Nuovo `HookEvent.ISSUE_CREATED`
+- [x] Hook `AutoStartWorkflow`: alla creazione di un'issue, spawna automaticamente Claude Code che:
   1. Legge la descrizione dell'issue
   2. Scrive la specification (`create_issue_spec`)
   3. Scrive il piano (`create_issue_plan`)
   4. Crea i task atomici (`create_plan_tasks`)
   5. Notifica l'utente ("Piano pronto per review")
-- [ ] Configurabile per progetto: on/off, prompt template custom
-- [ ] Timeout e gestione errori (se Claude fallisce, issue resta in NEW con errore loggato)
+- [x] Configurabile per progetto: on/off, prompt template custom
+- [x] Timeout e gestione errori (se Claude fallisce, issue resta in NEW con errore loggato)
 
 ### 4.2 Auto-start implementazione
-- [ ] Quando l'utente accetta un piano (PLANNED → ACCEPTED), automaticamente:
-  1. Apre un terminale per l'issue
-  2. Lancia Claude Code con il piano come contesto
-  3. Claude implementa task per task, aggiornando lo stato
-  4. Al completamento, chiama `complete_issue` con recap
-- [ ] Monitoraggio progresso via task status in real-time
-- [ ] Possibilità di interrompere ("Fermati e aspetta istruzioni")
+- [x] Quando l'utente accetta un piano (PLANNED → ACCEPTED), automaticamente:
+  1. Lancia Claude Code con spec + piano come contesto
+  2. Claude implementa task per task, aggiornando lo stato
+  3. Al completamento, chiama `complete_issue` con recap
+- [x] Monitoraggio progresso via task status in real-time
+- [x] Possibilità di interrompere ("Fermati e aspetta istruzioni") via pausa coda
 
 ### 4.3 Auto-completion detection
-- [ ] Quando tutti i task di un'issue sono COMPLETED, suggerisci automaticamente il completamento
-- [ ] Opzione: auto-complete con recap generato da Claude
-- [ ] Opzione: notifica utente per review finale prima del complete
+- [x] Quando tutti i task di un'issue sono COMPLETED, suggerisci automaticamente il completamento
+- [x] Opzione: auto-complete con recap generato da Claude
+- [x] Opzione: notifica utente per review finale prima del complete
 
 ### 4.4 Coda di lavoro
-- [ ] `get_next_issue` usato per processare issue in ordine di priorità
-- [ ] Workflow continuo: finita un'issue, parte la prossima
-- [ ] Dashboard "Claude sta lavorando su..." con progresso in tempo reale
-- [ ] Pausa/resume della coda
+- [x] `get_next_issue` usato per processare issue in ordine di priorità
+- [x] Workflow continuo: finita un'issue, parte la prossima
+- [x] Dashboard "Claude sta lavorando su..." con progresso in tempo reale
+- [x] Pausa/resume della coda
 
 ---
 
