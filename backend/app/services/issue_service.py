@@ -22,6 +22,23 @@ class IssueService:
         issue = Issue(project_id=project_id, description=description, priority=priority)
         self.session.add(issue)
         await self.session.flush()
+        project_service = ProjectService(self.session)
+        project = await project_service.get_by_id(project_id)
+        await hook_registry.fire(
+            HookEvent.ISSUE_CREATED,
+            HookContext(
+                project_id=project_id,
+                issue_id=issue.id,
+                event=HookEvent.ISSUE_CREATED,
+                metadata={
+                    "issue_description": description,
+                    "project_name": project.name if project else "",
+                    "project_path": project.path if project else "",
+                    "project_description": project.description if project else "",
+                    "tech_stack": project.tech_stack if project else "",
+                },
+            ),
+        )
         return issue
 
     async def get_by_id(self, issue_id: str) -> Issue | None:
