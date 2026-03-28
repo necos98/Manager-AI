@@ -84,6 +84,7 @@ export interface Project {
   path: string;
   description: string;
   tech_stack: string;
+  shell?: string | null;
   created_at: string;
   updated_at: string;
   issue_counts?: Record<string, number>;
@@ -94,6 +95,7 @@ export interface ProjectCreate {
   path: string;
   description?: string;
   tech_stack?: string;
+  shell?: string | null;
 }
 
 export interface ProjectUpdate {
@@ -101,6 +103,7 @@ export interface ProjectUpdate {
   path?: string;
   description?: string | null;
   tech_stack?: string | null;
+  shell?: string | null;
 }
 
 // ── Setting ──
