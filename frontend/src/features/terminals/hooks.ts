@@ -110,3 +110,11 @@ export function useDeleteTerminalCommand(projectId?: string | null) {
     },
   });
 }
+
+export function useTerminalCommandTemplates() {
+  return useQuery({
+    queryKey: ["terminal-command-templates"],
+    queryFn: api.fetchTerminalCommandTemplates,
+    staleTime: Infinity,
+  });
+}

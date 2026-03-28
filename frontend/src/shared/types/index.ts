@@ -155,6 +155,7 @@ export interface TerminalCommand {
   command: string;
   sort_order: number;
   project_id: string | null;
+  condition?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -163,16 +164,23 @@ export interface TerminalCommandCreate {
   command: string;
   sort_order: number;
   project_id?: string | null;
+  condition?: string | null;
 }
 
 export interface TerminalCommandUpdate {
   command?: string;
   sort_order?: number;
+  condition?: string | null;
 }
 
 export interface TerminalCommandVariable {
   name: string;
   description: string;
+}
+
+export interface TerminalCommandTemplate {
+  name: string;
+  command: string;
 }
 
 // ── Project File ──

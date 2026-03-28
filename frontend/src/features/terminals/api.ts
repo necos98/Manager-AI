@@ -1,5 +1,5 @@
 import { request } from "@/shared/api/client";
-import type { Terminal, TerminalCommand, TerminalCommandCreate, TerminalCommandUpdate, TerminalCommandVariable, TerminalCreate, TerminalListItem } from "@/shared/types";
+import type { Terminal, TerminalCommand, TerminalCommandCreate, TerminalCommandTemplate, TerminalCommandUpdate, TerminalCommandVariable, TerminalCreate, TerminalListItem } from "@/shared/types";
 
 export function fetchTerminals(projectId?: string, issueId?: string): Promise<TerminalListItem[]> {
   const params = new URLSearchParams();
@@ -48,4 +48,8 @@ export function reorderTerminalCommands(commands: { id: number; sort_order: numb
 
 export function deleteTerminalCommand(id: number): Promise<null> {
   return request(`/terminal-commands/${id}`, { method: "DELETE" });
+}
+
+export function fetchTerminalCommandTemplates(): Promise<TerminalCommandTemplate[]> {
+  return request("/terminal-commands/templates");
 }
