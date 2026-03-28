@@ -3,7 +3,7 @@ import { Terminal } from "xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { SearchAddon } from "@xterm/addon-search";
-import { Search, X } from "lucide-react";
+import { Copy, Download, Search, X } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import "xterm/css/xterm.css";
@@ -11,14 +11,16 @@ import "xterm/css/xterm.css";
 interface TerminalPanelProps {
   terminalId: string;
   onSessionEnd?: () => void;
+  onDownloadRecording?: () => void;
 }
 
-export function TerminalPanel({ terminalId, onSessionEnd }: TerminalPanelProps) {
+export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }: TerminalPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const onSessionEndRef = useRef(onSessionEnd);
   const cleanedUpRef = useRef(false);
   const searchAddonRef = useRef<SearchAddon | null>(null);
+  const termRef = useRef<Terminal | null>(null);
   const [status, setStatus] = useState<"connecting" | "connected" | "disconnected" | "ended">("connecting");
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,6 +30,14 @@ export function TerminalPanel({ terminalId, onSessionEnd }: TerminalPanelProps) 
   useEffect(() => {
     onSessionEndRef.current = onSessionEnd;
   }, [onSessionEnd]);
+
+  const handleCopy = useCallback(() => {
+    if (!termRef.current) return;
+    const selection = termRef.current.getSelection();
+    if (selection) {
+      navigator.clipboard.writeText(selection).catch(() => {});
+    }
+  }, []);
 
   const handleSearch = useCallback((query: string, direction: "next" | "prev" = "next") => {
     if (!searchAddonRef.current || !query) return;
@@ -55,6 +65,8 @@ export function TerminalPanel({ terminalId, onSessionEnd }: TerminalPanelProps) 
         cursor: "#89b4fa",
       },
     });
+
+    termRef.current = term;
 
     const fitAddon = new FitAddon();
     const webLinksAddon = new WebLinksAddon();
@@ -162,6 +174,7 @@ export function TerminalPanel({ terminalId, onSessionEnd }: TerminalPanelProps) 
     return () => {
       cleanedUpRef.current = true;
       searchAddonRef.current = null;
+      termRef.current = null;
       resizeObserver.disconnect();
       if (wsRef.current) {
         wsRef.current.onclose = null;
@@ -178,6 +191,39 @@ export function TerminalPanel({ terminalId, onSessionEnd }: TerminalPanelProps) 
 
   return (
     <div className="flex flex-col h-full bg-[#0d0d0d]">
+      <div className="flex items-center justify-end gap-1 px-2 py-1 bg-zinc-900 border-b border-zinc-800">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
+          onClick={handleCopy}
+          title="Copy selection"
+        >
+          <Copy className="size-3 mr-1" />
+          Copy
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
+          onClick={() => setShowSearch((p) => !p)}
+          title="Search (Ctrl+F)"
+        >
+          <Search className="size-3" />
+        </Button>
+        {onDownloadRecording && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
+            onClick={onDownloadRecording}
+            title="Download session recording"
+          >
+            <Download className="size-3 mr-1" />
+            Log
+          </Button>
+        )}
+      </div>
       {status === "ended" && (
         <div className="px-3 py-2 bg-zinc-800 text-zinc-400 text-sm text-center">
           Terminal session ended
