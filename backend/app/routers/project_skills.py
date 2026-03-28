@@ -9,8 +9,17 @@ from app.services.skill_library_service import SkillLibraryService
 router = APIRouter(prefix="/api/projects/{project_id}/skills", tags=["project-skills"])
 
 
+def _skill_file_synced(project_path: str | None, name: str, type: str) -> bool:
+    if not project_path:
+        return False
+    from pathlib import Path
+    subdir = "skills" if type == "skill" else "agents"
+    return (Path(project_path) / ".claude" / subdir / f"{name}.md").exists()
+
+
 @router.get("", response_model=list[ProjectSkillOut])
 async def list_project_skills(project_id: str, db: AsyncSession = Depends(get_db)):
+    project = await ProjectService(db).get_by_id(project_id)
     svc = SkillLibraryService(db)
     skills = await svc.list_assigned(project_id)
     return [
@@ -20,6 +29,7 @@ async def list_project_skills(project_id: str, db: AsyncSession = Depends(get_db
             name=s.name,
             type=s.type,
             assigned_at=s.assigned_at.isoformat(),
+            file_synced=_skill_file_synced(project.path, s.name, s.type),
         )
         for s in skills
     ]
@@ -39,6 +49,7 @@ async def assign_skill(
         name=skill.name,
         type=skill.type,
         assigned_at=skill.assigned_at.isoformat(),
+        file_synced=_skill_file_synced(project.path, skill.name, skill.type),
     )
 
 

@@ -20,12 +20,17 @@ class SkillDetail(SkillMeta):
     content: str
 
 
+class SkillContentUpdate(BaseModel):
+    content: str
+
+
 class ProjectSkillOut(BaseModel):
     id: int
     project_id: str
     name: str
     type: str
     assigned_at: str
+    file_synced: bool = False
 
 
 class ProjectSkillAssign(BaseModel):

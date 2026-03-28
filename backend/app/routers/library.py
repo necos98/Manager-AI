@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas.library import SkillCreate, SkillDetail, SkillMeta
+from app.schemas.library import SkillContentUpdate, SkillCreate, SkillDetail, SkillMeta
 from app.services.skill_library_service import SkillLibraryService
 
 router = APIRouter(prefix="/api/library", tags=["library"])
@@ -39,10 +39,10 @@ async def create_agent(data: SkillCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.put("/skills/{name}", status_code=204)
-async def update_skill(name: str, data: SkillCreate, db: AsyncSession = Depends(get_db)):
+async def update_skill(name: str, data: SkillContentUpdate, db: AsyncSession = Depends(get_db)):
     SkillLibraryService(db).update_content(name, "skill", data.content)
 
 
 @router.put("/agents/{name}", status_code=204)
-async def update_agent(name: str, data: SkillCreate, db: AsyncSession = Depends(get_db)):
+async def update_agent(name: str, data: SkillContentUpdate, db: AsyncSession = Depends(get_db)):
     SkillLibraryService(db).update_content(name, "agent", data.content)
