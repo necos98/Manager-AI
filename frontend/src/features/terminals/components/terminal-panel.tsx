@@ -1,7 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Terminal } from "xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
+import { SearchAddon } from "@xterm/addon-search";
+import { Search, X } from "lucide-react";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import "xterm/css/xterm.css";
 
 interface TerminalPanelProps {
@@ -14,13 +18,25 @@ export function TerminalPanel({ terminalId, onSessionEnd }: TerminalPanelProps) 
   const wsRef = useRef<WebSocket | null>(null);
   const onSessionEndRef = useRef(onSessionEnd);
   const cleanedUpRef = useRef(false);
+  const searchAddonRef = useRef<SearchAddon | null>(null);
   const [status, setStatus] = useState<"connecting" | "connected" | "disconnected" | "ended">("connecting");
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const retryCountRef = useRef(0);
   const MAX_RETRIES = 5;
 
   useEffect(() => {
     onSessionEndRef.current = onSessionEnd;
   }, [onSessionEnd]);
+
+  const handleSearch = useCallback((query: string, direction: "next" | "prev" = "next") => {
+    if (!searchAddonRef.current || !query) return;
+    if (direction === "next") {
+      searchAddonRef.current.findNext(query, { incremental: false });
+    } else {
+      searchAddonRef.current.findPrevious(query);
+    }
+  }, []);
 
   useEffect(() => {
     if (!terminalId || !containerRef.current) return;
@@ -42,8 +58,11 @@ export function TerminalPanel({ terminalId, onSessionEnd }: TerminalPanelProps) 
 
     const fitAddon = new FitAddon();
     const webLinksAddon = new WebLinksAddon();
+    const searchAddon = new SearchAddon();
+    searchAddonRef.current = searchAddon;
     term.loadAddon(fitAddon);
     term.loadAddon(webLinksAddon);
+    term.loadAddon(searchAddon);
 
     let opened = false;
 
@@ -110,6 +129,15 @@ export function TerminalPanel({ terminalId, onSessionEnd }: TerminalPanelProps) 
       }
     });
 
+    term.attachCustomKeyEventHandler((e) => {
+      if (e.ctrlKey && e.key === "f") {
+        e.preventDefault();
+        setShowSearch((prev) => !prev);
+        return false;
+      }
+      return true;
+    });
+
     const resizeObserver = new ResizeObserver(() => {
       if (cleanedUpRef.current) return;
       if (!opened) {
@@ -133,6 +161,7 @@ export function TerminalPanel({ terminalId, onSessionEnd }: TerminalPanelProps) 
 
     return () => {
       cleanedUpRef.current = true;
+      searchAddonRef.current = null;
       resizeObserver.disconnect();
       if (wsRef.current) {
         wsRef.current.onclose = null;
@@ -157,6 +186,33 @@ export function TerminalPanel({ terminalId, onSessionEnd }: TerminalPanelProps) 
       {status === "disconnected" && (
         <div className="px-3 py-2 bg-yellow-900 text-yellow-300 text-sm text-center">
           Reconnecting...
+        </div>
+      )}
+      {showSearch && (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border-b border-zinc-700">
+          <Search className="size-3.5 text-zinc-400 flex-shrink-0" />
+          <Input
+            autoFocus
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              handleSearch(e.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearch(searchQuery, e.shiftKey ? "prev" : "next");
+              if (e.key === "Escape") setShowSearch(false);
+            }}
+            placeholder="Search… (Enter next, Shift+Enter prev)"
+            className="h-6 text-xs bg-zinc-900 border-zinc-600 text-zinc-200 flex-1"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 text-zinc-400"
+            onClick={() => setShowSearch(false)}
+          >
+            <X className="size-3" />
+          </Button>
         </div>
       )}
       <div ref={containerRef} className="flex-1 min-h-0" />
