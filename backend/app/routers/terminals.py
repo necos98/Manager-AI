@@ -19,6 +19,17 @@ from app.services.terminal_command_service import TerminalCommandService
 logger = logging.getLogger(__name__)
 
 
+def _evaluate_condition(condition: str | None, issue_status: str) -> bool:
+    """Evaluate a startup command condition. Returns True if the command should run."""
+    if not condition:
+        return True
+    parts = condition.strip().split()
+    if len(parts) == 3 and parts[0] == "$issue_status" and parts[1] == "==":
+        return issue_status == parts[2]
+    # Unknown condition syntax → always run (safe default)
+    return True
+
+
 def _save_recording(terminal_id: str, content: str) -> None:
     """Write terminal output buffer to a file in the recordings directory."""
     if not content:
@@ -112,6 +123,10 @@ async def create_terminal(
 
     # Inject startup commands into the PTY
     try:
+        from app.models.issue import Issue
+        issue = await db.get(Issue, data.issue_id)
+        issue_status = issue.status.value if issue else ""
+
         cmd_service = TerminalCommandService(db)
         commands = await cmd_service.resolve(data.project_id)
         if commands:
@@ -123,14 +138,17 @@ async def create_terminal(
                 "$project_id": data.project_id,
                 "$project_path": project_path,
             }
-            resolved = []
             for c in commands:
-                cmd = c.command
+                if not _evaluate_condition(c.condition, issue_status):
+                    continue
+                cmd_text = c.command
                 for var, val in variables.items():
-                    cmd = cmd.replace(var, val)
-                resolved.append(cmd)
-            cmd_string = " && ".join(resolved) + "\r\n"
-            pty.write(cmd_string)
+                    cmd_text = cmd_text.replace(var, val)
+                # Support multi-line: send each non-empty line as a separate command
+                for line in cmd_text.split("\n"):
+                    line = line.strip()
+                    if line:
+                        pty.write(line + "\r\n")
     except Exception:
         logger.warning("Failed to inject startup commands for terminal %s", terminal["id"], exc_info=True)
 

@@ -61,6 +61,36 @@ async def create_terminal_command(
     return cmd
 
 
+PREDEFINED_TEMPLATES = [
+    {
+        "name": "Python venv setup",
+        "command": "python -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt",
+    },
+    {
+        "name": "Node install + test",
+        "command": "npm install\nnpm test",
+    },
+    {
+        "name": "Run tests",
+        "command": "python -m pytest -v",
+    },
+    {
+        "name": "Git status",
+        "command": "git status && git log --oneline -10",
+    },
+    {
+        "name": "Docker build",
+        "command": "docker build -t app .\ndocker run --rm app",
+    },
+]
+
+
+@router.get("/templates")
+async def list_command_templates():
+    """Return predefined command templates for quick insertion."""
+    return PREDEFINED_TEMPLATES
+
+
 # NOTE: /reorder MUST be before /{cmd_id} to avoid "reorder" matching as an id
 @router.put("/reorder", response_model=list[TerminalCommandOut])
 async def reorder_terminal_commands(
