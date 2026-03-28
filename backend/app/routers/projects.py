@@ -25,7 +25,8 @@ async def _enrich_project(service: ProjectService, project) -> dict:
 async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.create(
-        name=data.name, path=data.path, description=data.description, tech_stack=data.tech_stack
+        name=data.name, path=data.path, description=data.description,
+        tech_stack=data.tech_stack, shell=data.shell
     )
     await db.commit()
     return await _enrich_project(service, project)
