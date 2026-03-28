@@ -17,8 +17,11 @@ async def project(db_session):
 
 @pytest_asyncio.fixture
 async def issue(db_session, project):
-    svc = IssueService(db_session)
-    return await svc.create(project_id=project.id, description="Test issue", priority=1)
+    with patch("app.services.issue_service.hook_registry") as mock_reg:
+        mock_reg.fire = AsyncMock()
+        svc = IssueService(db_session)
+        result = await svc.create(project_id=project.id, description="Test issue", priority=1)
+    return result
 
 
 def make_session_patcher(db_session):
@@ -78,10 +81,13 @@ async def test_set_issue_name_emits_event(db_session, project, issue):
 @pytest_asyncio.fixture
 async def planned_issue(db_session, project):
     """Issue with tasks, in Planned status"""
-    svc = IssueService(db_session)
-    issue = await svc.create(project_id=project.id, description="Task test issue", priority=1)
-    await svc.create_spec(issue.id, project.id, "# Spec")
-    await svc.create_plan(issue.id, project.id, "# Plan")
+    with patch("app.services.issue_service.hook_registry") as mock_reg:
+        mock_reg.fire = AsyncMock()
+        svc = IssueService(db_session)
+        issue = await svc.create(project_id=project.id, description="Task test issue", priority=1)
+    svc2 = IssueService(db_session)
+    await svc2.create_spec(issue.id, project.id, "# Spec")
+    await svc2.create_plan(issue.id, project.id, "# Plan")
     return issue
 
 
