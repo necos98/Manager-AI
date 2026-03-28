@@ -212,3 +212,49 @@ export interface ActivityLog {
   details: Record<string, unknown>;
   created_at: string;
 }
+
+// ── Library ──
+
+export interface SkillMeta {
+  name: string;
+  category: string;
+  description: string;
+  built_in: boolean;
+  type: "skill" | "agent";
+}
+
+export interface SkillDetail extends SkillMeta {
+  content: string;
+}
+
+export interface SkillCreate {
+  name: string;
+  category: string;
+  description: string;
+  content: string;
+}
+
+export interface ProjectSkill {
+  id: number;
+  project_id: string;
+  name: string;
+  type: "skill" | "agent";
+  assigned_at: string;
+}
+
+export interface ProjectSkillAssign {
+  name: string;
+  type: "skill" | "agent";
+}
+
+// ── Prompt Templates ──
+
+export interface TemplateInfo {
+  type: string;
+  content: string;
+  is_overridden: boolean;
+}
+
+export interface TemplateSave {
+  content: string;
+}
