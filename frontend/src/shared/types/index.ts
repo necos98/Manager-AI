@@ -252,6 +252,31 @@ export interface ProjectSkillAssign {
   type: "skill" | "agent";
 }
 
+// ── Project Variable ──
+
+export interface ProjectVariable {
+  id: number;
+  project_id: string;
+  name: string;
+  value: string;
+  is_secret: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectVariableCreate {
+  name: string;
+  value: string;
+  is_secret?: boolean;
+}
+
+export interface ProjectVariableUpdate {
+  name?: string;
+  value?: string;
+  is_secret?: boolean;
+}
+
 // ── Prompt Templates ──
 
 export interface TemplateInfo {
