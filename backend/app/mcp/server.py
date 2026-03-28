@@ -13,6 +13,7 @@ from app.rag import get_rag_service
 from app.services.event_service import event_service
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
+from app.models.task import TaskStatus
 from app.services.task_service import TaskService
 
 _defaults_path = Path(__file__).parent / "default_settings.json"
@@ -376,7 +377,7 @@ async def update_task_status(task_id: str, status: str) -> dict:
             issue = await session.get(Issue, task_issue_id)
             all_done = (
                 await task_service.all_completed(task_issue_id)
-                if task.status.value == "Completed"
+                if task.status == TaskStatus.COMPLETED
                 else False
             )
             await session.commit()

@@ -53,16 +53,18 @@ async def update_task(
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     all_done = False
-    if task.status.value == "Completed":
+    if task.status == TaskStatus.COMPLETED:
         all_done = await service.all_completed(issue_id)
     await db.commit()
     await db.refresh(task)
     if all_done:
         from app.database import async_session
         from app.hooks.registry import HookContext, HookEvent, hook_registry
+        from app.services.issue_service import IssueService as _IS
         from app.services.project_service import ProjectService
         async with async_session() as session:
             project = await ProjectService(session).get_by_id(project_id)
+            fetched_issue = await _IS(session).get_by_id(issue_id)
         await hook_registry.fire(
             HookEvent.ALL_TASKS_COMPLETED,
             HookContext(
@@ -70,6 +72,7 @@ async def update_task(
                 issue_id=issue_id,
                 event=HookEvent.ALL_TASKS_COMPLETED,
                 metadata={
+                    "issue_name": fetched_issue.name or "" if fetched_issue else "",
                     "project_name": project.name if project else "",
                     "project_path": project.path if project else "",
                 },
