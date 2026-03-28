@@ -45,6 +45,10 @@ function IssueDetailPage() {
   const hasAny = !!terminal1;
   const hasSplit = !!terminal2;
 
+  const handleDownload = (terminalId: string) => {
+    window.open(`/api/terminals/${terminalId}/recording`);
+  };
+
   const doOpenTerminal = async () => {
     setShowLimitWarning(false);
     try {
@@ -129,6 +133,7 @@ function IssueDetailPage() {
                 <TerminalPanel
                   terminalId={terminal1.id}
                   onSessionEnd={() => killTerminal.mutate(terminal1.id)}
+                  onDownloadRecording={() => handleDownload(terminal1.id)}
                 />
               )
             ) : (
@@ -138,6 +143,7 @@ function IssueDetailPage() {
                     <TerminalPanel
                       terminalId={terminal1.id}
                       onSessionEnd={() => killTerminal.mutate(terminal1.id)}
+                      onDownloadRecording={() => handleDownload(terminal1.id)}
                     />
                   )}
                 </ResizablePanel>
@@ -147,6 +153,7 @@ function IssueDetailPage() {
                     <TerminalPanel
                       terminalId={terminal2.id}
                       onSessionEnd={() => killTerminal.mutate(terminal2.id)}
+                      onDownloadRecording={() => handleDownload(terminal2.id)}
                     />
                   )}
                 </ResizablePanel>

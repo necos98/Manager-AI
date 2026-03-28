@@ -5,16 +5,30 @@ import json
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings as app_settings
 from app.database import get_db
 from app.schemas.terminal import TerminalCreate, TerminalListResponse, TerminalResponse
 from app.services.terminal_service import TerminalService, terminal_service
 from app.services.terminal_command_service import TerminalCommandService
 
 logger = logging.getLogger(__name__)
+
+
+def _save_recording(terminal_id: str, content: str) -> None:
+    """Write terminal output buffer to a file in the recordings directory."""
+    if not content:
+        return
+    try:
+        rec_dir = Path(app_settings.recordings_path)
+        rec_dir.mkdir(parents=True, exist_ok=True)
+        (rec_dir / f"{terminal_id}.txt").write_text(content, encoding="utf-8")
+    except Exception:
+        logger.warning("Failed to save recording for terminal %s", terminal_id, exc_info=True)
 
 router = APIRouter(prefix="/api/terminals", tags=["terminals"])
 
@@ -166,12 +180,43 @@ async def terminal_count(
     return {"count": service.active_count()}
 
 
+@router.get("/{terminal_id}/recording")
+async def get_terminal_recording(
+    terminal_id: str,
+    service: TerminalService = Depends(get_terminal_service),
+):
+    from fastapi.responses import PlainTextResponse
+
+    # Try live buffer first (terminal still active)
+    try:
+        live_buf = service.get_buffered_output(terminal_id)
+        if live_buf:
+            return PlainTextResponse(
+                live_buf,
+                headers={"Content-Disposition": f'attachment; filename="{terminal_id}.txt"'},
+            )
+    except KeyError:
+        pass
+
+    # Try saved recording file
+    rec_path = Path(app_settings.recordings_path) / f"{terminal_id}.txt"
+    if rec_path.exists():
+        return PlainTextResponse(
+            rec_path.read_text(encoding="utf-8"),
+            headers={"Content-Disposition": f'attachment; filename="{terminal_id}.txt"'},
+        )
+
+    raise HTTPException(status_code=404, detail="No recording found for this terminal")
+
+
 @router.delete("/{terminal_id}", status_code=204)
 async def delete_terminal(
     terminal_id: str,
     service: TerminalService = Depends(get_terminal_service),
 ):
     try:
+        buf = service.get_buffered_output(terminal_id)
+        _save_recording(terminal_id, buf)
         service.kill(terminal_id)
     except KeyError:
         raise HTTPException(status_code=404, detail="Terminal not found")
@@ -206,6 +251,8 @@ async def terminal_ws(
                     _pty_executor, lambda: pty.read(blocking=True)
                 )
                 if not data:
+                    buf = service.get_buffered_output(terminal_id)
+                    _save_recording(terminal_id, buf)
                     service.mark_closed(terminal_id)
                     await websocket.close(code=1000, reason="Terminal session ended")
                     break
