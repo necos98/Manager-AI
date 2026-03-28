@@ -185,18 +185,19 @@ async def get_terminal_recording(
     terminal_id: str,
     service: TerminalService = Depends(get_terminal_service),
 ):
+    import re
     from fastapi.responses import PlainTextResponse
 
+    if not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", terminal_id):
+        raise HTTPException(status_code=400, detail="Invalid terminal ID")
+
     # Try live buffer first (terminal still active)
-    try:
-        live_buf = service.get_buffered_output(terminal_id)
-        if live_buf:
-            return PlainTextResponse(
-                live_buf,
-                headers={"Content-Disposition": f'attachment; filename="{terminal_id}.txt"'},
-            )
-    except KeyError:
-        pass
+    live_buf = service.get_buffered_output(terminal_id)
+    if live_buf:
+        return PlainTextResponse(
+            live_buf,
+            headers={"Content-Disposition": f'attachment; filename="{terminal_id}.txt"'},
+        )
 
     # Try saved recording file
     rec_path = Path(app_settings.recordings_path) / f"{terminal_id}.txt"
