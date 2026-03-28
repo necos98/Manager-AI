@@ -173,7 +173,7 @@ export function TerminalCommandsEditor({ projectId = null }: TerminalCommandsEdi
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {templates.map((t) => (
-                    <DropdownMenuItem key={t.name} onClick={() => handleAdd(t.command)}>
+                    <DropdownMenuItem key={t.name} onClick={() => setNewCmd(t.command)}>
                       {t.name}
                     </DropdownMenuItem>
                   ))}
