@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useProjectSettings, useSetProjectSetting } from "@/features/projects/hooks-settings";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 
@@ -8,6 +9,15 @@ interface AutomationPanelProps {
 export function AutomationPanel({ projectId }: AutomationPanelProps) {
   const { data: settings, isLoading, error } = useProjectSettings(projectId);
   const setSetting = useSetProjectSetting(projectId);
+  const [promptDraft, setPromptDraft] = useState("");
+  const [timeoutDraft, setTimeoutDraft] = useState("600");
+
+  useEffect(() => {
+    if (settings) {
+      setPromptDraft(settings.auto_workflow_prompt ?? "");
+      setTimeoutDraft(settings.auto_workflow_timeout ?? "600");
+    }
+  }, [settings]);
 
   if (isLoading) {
     return (
@@ -75,8 +85,9 @@ export function AutomationPanel({ projectId }: AutomationPanelProps) {
               </label>
               <textarea
                 rows={4}
-                defaultValue={s.auto_workflow_prompt ?? ""}
-                onBlur={(e) => updateText("auto_workflow_prompt", e.target.value)}
+                value={promptDraft}
+                onChange={(e) => setPromptDraft(e.target.value)}
+                onBlur={() => updateText("auto_workflow_prompt", promptDraft)}
                 placeholder="{{issue_description}} {{project_name}} {{project_description}} {{tech_stack}}"
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-ring"
               />
@@ -87,8 +98,9 @@ export function AutomationPanel({ projectId }: AutomationPanelProps) {
               </label>
               <input
                 type="number"
-                defaultValue={s.auto_workflow_timeout ?? "600"}
-                onBlur={(e) => updateText("auto_workflow_timeout", e.target.value)}
+                value={timeoutDraft}
+                onChange={(e) => setTimeoutDraft(e.target.value)}
+                onBlur={() => updateText("auto_workflow_timeout", timeoutDraft)}
                 min={60}
                 max={3600}
                 className="w-32 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"

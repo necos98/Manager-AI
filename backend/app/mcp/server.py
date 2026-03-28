@@ -15,6 +15,7 @@ from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
 from app.models.task import TaskStatus
 from app.services.task_service import TaskService
+from app.services.settings_service import SettingsService
 
 _defaults_path = Path(__file__).parent / "default_settings.json"
 _desc = json.loads(_defaults_path.read_text(encoding="utf-8"))
@@ -500,6 +501,9 @@ async def get_context_chunk_details(project_id: str, chunk_id: str) -> dict:
 @mcp.tool(description=_desc["tool.get_next_issue.description"])
 async def get_next_issue(project_id: str) -> dict:
     async with async_session() as session:
+        paused = await SettingsService(session).get("work_queue_paused")
+        if paused == "true":
+            return {"issue": None, "message": "Work queue is paused"}
         issue_service = IssueService(session)
         try:
             issue = await issue_service.get_next_issue(project_id)
