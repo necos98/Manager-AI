@@ -1,9 +1,10 @@
 // frontend/src/features/projects/components/library-tab.tsx
 import { useState } from "react";
+import { toast } from "sonner";
 import { useSkills, useAgents } from "@/features/library/hooks";
 import { useProjectSkills, useAssignSkill, useUnassignSkill } from "@/features/projects/hooks-skills";
 import { useProjectTemplates, useSaveTemplate, useDeleteTemplate } from "@/features/projects/hooks-templates";
-import type { SkillMeta, TemplateInfo } from "@/shared/types";
+import type { TemplateInfo } from "@/shared/types";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -16,6 +17,9 @@ function SkillsSection({ projectId }: { projectId: string }) {
   const { data: assigned = [] } = useProjectSkills(projectId);
   const assign = useAssignSkill(projectId);
   const unassign = useUnassignSkill(projectId);
+
+  const [pendingAssign, setPendingAssign] = useState<string | null>(null);
+  const [pendingUnassign, setPendingUnassign] = useState<string | null>(null);
 
   const assignedNames = new Set(assigned.map(s => `${s.type}:${s.name}`));
 
@@ -52,8 +56,17 @@ function SkillsSection({ projectId }: { projectId: string }) {
                     size="sm"
                     variant={isAssigned ? "secondary" : "outline"}
                     className="text-xs shrink-0"
-                    disabled={isAssigned || assign.isPending}
-                    onClick={() => assign.mutate({ name: skill.name, type: skill.type })}
+                    disabled={isAssigned || pendingAssign === key}
+                    onClick={() => {
+                      setPendingAssign(key);
+                      assign.mutate(
+                        { name: skill.name, type: skill.type },
+                        {
+                          onSettled: () => setPendingAssign(null),
+                          onError: () => toast.error(`Failed to assign ${skill.name}`),
+                        },
+                      );
+                    }}
                   >
                     {isAssigned ? "Active" : "Add"}
                   </Button>
@@ -69,26 +82,38 @@ function SkillsSection({ projectId }: { projectId: string }) {
             <p className="text-xs text-muted-foreground italic">No skills assigned yet.</p>
           ) : (
             <div className="space-y-2">
-              {assignedItems.map(skill => (
-                <div key={`${skill.type}:${skill.name}`} className="flex items-start justify-between border rounded p-2 border-primary/30 bg-primary/5 gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs font-medium truncate">{skill.name}</span>
-                      <Badge variant="outline" className="text-xs shrink-0">{skill.category}</Badge>
+              {assignedItems.map(skill => {
+                const key = `${skill.type}:${skill.name}`;
+                return (
+                  <div key={key} className="flex items-start justify-between border rounded p-2 border-primary/30 bg-primary/5 gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-medium truncate">{skill.name}</span>
+                        <Badge variant="outline" className="text-xs shrink-0">{skill.category}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{skill.description}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{skill.description}</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs text-destructive shrink-0"
+                      disabled={pendingUnassign === key}
+                      onClick={() => {
+                        setPendingUnassign(key);
+                        unassign.mutate(
+                          { type: skill.type, name: skill.name },
+                          {
+                            onSettled: () => setPendingUnassign(null),
+                            onError: () => toast.error(`Failed to remove ${skill.name}`),
+                          },
+                        );
+                      }}
+                    >
+                      Remove
+                    </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-xs text-destructive shrink-0"
-                    disabled={unassign.isPending}
-                    onClick={() => unassign.mutate({ type: skill.type, name: skill.name })}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -132,7 +157,13 @@ function TemplateRow({ tpl, projectId }: { tpl: TemplateInfo; projectId: string 
             </Button>
           )}
           {tpl.is_overridden && !editing && (
-            <Button size="sm" variant="ghost" className="text-xs text-destructive" onClick={() => del.mutate(tpl.type)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-xs text-destructive"
+              disabled={del.isPending}
+              onClick={() => del.mutate(tpl.type, { onError: () => toast.error(`Failed to reset ${tpl.type} template`) })}
+            >
               Reset
             </Button>
           )}
@@ -149,8 +180,20 @@ function TemplateRow({ tpl, projectId }: { tpl: TemplateInfo; projectId: string 
           />
           <p className="text-xs text-muted-foreground">Variables: {TEMPLATE_VARS}</p>
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => { save.mutate({ type: tpl.type, content: draft }); setEditing(false); }}>
-              Save
+            <Button
+              size="sm"
+              disabled={save.isPending}
+              onClick={() =>
+                save.mutate(
+                  { type: tpl.type, content: draft },
+                  {
+                    onSuccess: () => setEditing(false),
+                    onError: () => toast.error(`Failed to save ${tpl.type} template`),
+                  },
+                )
+              }
+            >
+              {save.isPending ? "Saving…" : "Save"}
             </Button>
             <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
           </div>
