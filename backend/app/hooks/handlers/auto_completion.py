@@ -6,6 +6,8 @@ from app.hooks.executor import ClaudeCodeExecutor
 from app.hooks.registry import BaseHook, HookContext, HookEvent, HookResult, hook
 from app.services.event_service import event_service
 from app.services.project_setting_service import ProjectSettingService
+from app.services.prompt_template_service import PromptTemplateService
+from app.services.skill_library_service import SkillLibraryService
 
 
 @hook(event=HookEvent.ALL_TASKS_COMPLETED)
@@ -40,14 +42,14 @@ class AutoCompletion(BaseHook):
             return HookResult(success=True, output="notification sent")
 
         if mode == "auto":
-            prompt = f"""Tutti i task dell'issue "{issue_name}" sono stati completati.
-
-Il tuo compito:
-1. Usa `get_issue_details` per leggere il piano e i task completati
-2. Usa `complete_issue` con un recap dettagliato che descrive cosa è stato implementato
-
-L'issue_id è nel contesto MCP (env MANAGER_AI_ISSUE_ID).
-Il recap deve essere completo e basato sul piano effettivamente eseguito."""
+            variables = {
+                "issue_name": issue_name,
+                "skills_context": SkillLibraryService(None).get_skills_context(project_path),
+            }
+            async with async_session() as session:
+                prompt = await PromptTemplateService(session).resolve(
+                    "recap", context.project_id, variables
+                )
 
             executor = ClaudeCodeExecutor()
             result = await executor.run(

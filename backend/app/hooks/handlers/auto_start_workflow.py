@@ -1,11 +1,11 @@
-"""AutoStartWorkflow hook: when an issue is created and auto_workflow_enabled is true for
-   the project, spawns Claude Code to write spec, plan, and tasks automatically."""
 from __future__ import annotations
 
 from app.hooks.executor import ClaudeCodeExecutor
 from app.hooks.registry import BaseHook, HookContext, HookEvent, HookResult, hook
 from app.services.project_setting_service import ProjectSettingService
+from app.services.prompt_template_service import PromptTemplateService
 from app.services.settings_service import SettingsService
+from app.services.skill_library_service import SkillLibraryService
 
 
 @hook(event=HookEvent.ISSUE_CREATED)
@@ -21,10 +21,10 @@ class AutoStartWorkflow(BaseHook):
             enabled = await svc.get(context.project_id, "auto_workflow_enabled", default="false")
             if enabled != "true":
                 return HookResult(success=True, output="auto_workflow disabled for this project")
-            custom_prompt = await svc.get(context.project_id, "auto_workflow_prompt", default="")
+            legacy_prompt = await svc.get(context.project_id, "auto_workflow_prompt", default="")
             timeout_str = await svc.get(context.project_id, "auto_workflow_timeout", default="600")
-            # Check global work queue pause
             paused = await SettingsService(session).get("work_queue_paused")
+
         if paused == "true":
             return HookResult(success=True, output="work queue is paused")
 
@@ -33,38 +33,26 @@ class AutoStartWorkflow(BaseHook):
         except ValueError:
             timeout = 600
 
-        issue_description = context.metadata.get("issue_description", "")
-        project_name = context.metadata.get("project_name", "")
         project_path = context.metadata.get("project_path", "")
-        project_description = context.metadata.get("project_description", "")
-        tech_stack = context.metadata.get("tech_stack", "")
 
-        if custom_prompt:
-            prompt = (
-                custom_prompt
-                .replace("{{issue_description}}", issue_description)
-                .replace("{{project_name}}", project_name)
-                .replace("{{project_description}}", project_description)
-                .replace("{{tech_stack}}", tech_stack)
-            )
+        variables = {
+            "issue_description": context.metadata.get("issue_description", ""),
+            "project_name": context.metadata.get("project_name", ""),
+            "project_description": context.metadata.get("project_description", ""),
+            "tech_stack": context.metadata.get("tech_stack", ""),
+            "skills_context": SkillLibraryService(None).get_skills_context(project_path),
+        }
+
+        # Legacy override takes priority over DB templates for backwards compatibility
+        if legacy_prompt:
+            prompt = legacy_prompt
+            for key, value in variables.items():
+                prompt = prompt.replace(f"{{{{{key}}}}}", value)
         else:
-            prompt = f"""Sei il project manager di "{project_name}".
-
-È stata creata una nuova issue con questa descrizione:
-{issue_description}
-
-Contesto del progetto:
-{project_description}
-Tech stack: {tech_stack}
-
-Il tuo compito:
-1. Usa `create_issue_spec` per scrivere una specifica tecnica dettagliata
-2. Usa `create_issue_plan` per scrivere un piano di implementazione step-by-step
-3. Usa `create_plan_tasks` per creare i task atomici del piano
-4. Usa `send_notification` per notificare l'utente che il piano è pronto per la review
-
-L'issue_id è nel contesto MCP (env MANAGER_AI_ISSUE_ID).
-Lavora in sequenza, non saltare passi."""
+            async with async_session() as session:
+                prompt = await PromptTemplateService(session).resolve(
+                    "workflow", context.project_id, variables
+                )
 
         executor = ClaudeCodeExecutor()
         result = await executor.run(
