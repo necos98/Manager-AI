@@ -6,6 +6,8 @@ import { SearchAddon } from "@xterm/addon-search";
 import { Copy, Download, Search, X } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
+import { TERMINAL_THEMES } from "@/features/terminals/themes";
+import { useSettings } from "@/features/settings/hooks";
 import "xterm/css/xterm.css";
 
 interface TerminalPanelProps {
@@ -26,6 +28,10 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
   const [searchQuery, setSearchQuery] = useState("");
   const retryCountRef = useRef(0);
   const MAX_RETRIES = 5;
+
+  const { data: settingsList } = useSettings();
+  const themeName = settingsList?.find((s) => s.key === "terminal_theme")?.value ?? "catppuccin";
+  const termTheme = TERMINAL_THEMES[themeName] ?? TERMINAL_THEMES.catppuccin;
 
   useEffect(() => {
     onSessionEndRef.current = onSessionEnd;
@@ -59,11 +65,7 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
       cursorBlink: true,
       fontSize: 14,
       fontFamily: "'Cascadia Code', 'Consolas', monospace",
-      theme: {
-        background: "#0d0d0d",
-        foreground: "#cdd6f4",
-        cursor: "#89b4fa",
-      },
+      theme: termTheme,
     });
 
     termRef.current = term;
@@ -187,7 +189,13 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
         } catch {}
       }, 50);
     };
-  }, [terminalId]);
+  }, [terminalId, termTheme]);
+
+  useEffect(() => {
+    if (termRef.current) {
+      termRef.current.options.theme = termTheme;
+    }
+  }, [termTheme]);
 
   return (
     <div className="flex flex-col h-full bg-[#0d0d0d]">
