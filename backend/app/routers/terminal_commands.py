@@ -115,7 +115,10 @@ async def update_terminal_command(
 ):
     service = TerminalCommandService(db)
     try:
-        cmd = await service.update(cmd_id, command=data.command, sort_order=data.sort_order, condition=data.condition)
+        kwargs: dict = {"command": data.command, "sort_order": data.sort_order}
+        if "condition" in data.model_fields_set:
+            kwargs["condition"] = data.condition
+        cmd = await service.update(cmd_id, **kwargs)
         await db.commit()
         await db.refresh(cmd)
         return cmd
