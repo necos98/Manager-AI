@@ -142,46 +142,46 @@ Il salto di qualità: da "issue tracker con terminale" a "AI project manager che
 Rendere i prompt configurabili senza toccare codice.
 
 ### 5.1 Prompt template per progetto
-- [ ] Modello `PromptTemplate`: project_id, tipo (spec, plan, recap, enrich), contenuto
-- [ ] Template default globali, override per progetto
-- [ ] Variabili nei template: `{{issue_description}}`, `{{project_context}}`, `{{tech_stack}}`
-- [ ] UI per editing template nella pagina progetto
+- [x] Modello `PromptTemplate`: project_id, tipo (spec, plan, recap, enrich), contenuto
+- [x] Template default globali, override per progetto
+- [x] Variabili nei template: `{{issue_description}}`, `{{project_context}}`, `{{tech_stack}}`
+- [x] UI per editing template nella pagina progetto
 
 ### 5.2 System prompt per Claude Code
-- [ ] Configurazione del system prompt iniettato quando Claude lavora su un progetto
-- [ ] Include: regole di stile, pattern architetturali, convenzioni naming, istruzioni specifiche
-- [ ] Integrazione con `.claude/CLAUDE.md` del progetto target
+- [x] Configurazione del system prompt iniettato quando Claude lavora su un progetto
+- [x] Include: regole di stile, pattern architetturali, convenzioni naming, istruzioni specifiche
+- [x] Integrazione con `.claude/CLAUDE.md` del progetto target
 
 ### 5.3 MCP tool description configurabili
-- [ ] Le descrizioni dei tool MCP diventano template
-- [ ] Possibilità di personalizzare per progetto cosa Claude vede come istruzioni dei tool
-- [ ] Es: per un progetto Python, `create_issue_plan` include "usa pytest per i test"
+- [x] Le descrizioni dei tool MCP diventano template
+- [x] Possibilità di personalizzare per progetto cosa Claude vede come istruzioni dei tool
+- [x] Es: per un progetto Python, `create_issue_plan` include "usa pytest per i test"
 
 ---
 
-## Fase 6 — Terminale Avanzato
+## Fase 6 — Terminale Avanzato (Completata)
 
 ### 6.1 Shell configurabile
-- [ ] Supporto PowerShell, Git Bash, WSL oltre a cmd.exe
-- [ ] Configurazione shell per progetto
-- [ ] Variabile d'ambiente `MANAGER_AI_SHELL` già supportata, esporre nella UI
+- [x] Supporto PowerShell, Git Bash, WSL oltre a cmd.exe
+- [x] Configurazione shell per progetto
+- [x] Variabile d'ambiente `MANAGER_AI_SHELL` già supportata, esporre nella UI
 
 ### 6.2 Variabili template estese
-- [ ] Variabili custom definibili per progetto (es: `$db_url`, `$api_key`)
-- [ ] Secrets management: variabili sensibili non mostrate in chiaro nella UI
-- [ ] Variabili d'ambiente aggiuntive iniettabili nel terminale
+- [x] Variabili custom definibili per progetto (es: `$db_url`, `$api_key`)
+- [x] Secrets management: variabili sensibili non mostrate in chiaro nella UI
+- [x] Variabili d'ambiente aggiuntive iniettabili nel terminale
 
 ### 6.3 Terminal UX migliorata
-- [ ] Ricerca nel buffer di output (Ctrl+F)
-- [ ] Copia/incolla con bottoni
-- [ ] Temi terminale configurabili
-- [ ] Split pane: due terminali affiancati per la stessa issue
-- [ ] Session recording: salvare l'output di un terminale per review futura
+- [x] Ricerca nel buffer di output (Ctrl+F)
+- [x] Copia/incolla con bottoni
+- [x] Temi terminale configurabili
+- [x] Split pane: due terminali affiancati per la stessa issue
+- [x] Session recording: salvare l'output di un terminale per review futura
 
 ### 6.4 Terminal commands avanzati
-- [ ] Sintassi multi-linea per i comandi di startup
-- [ ] Condizioni: "esegui questo comando solo se $issue_status == ACCEPTED"
-- [ ] Template di comandi predefiniti: "Setup Python venv", "Install deps + run tests"
+- [x] Sintassi multi-linea per i comandi di startup
+- [x] Condizioni: "esegui questo comando solo se $issue_status == ACCEPTED"
+- [x] Template di comandi predefiniti: "Setup Python venv", "Install deps + run tests"
 - [ ] Validazione sintassi dei comandi prima del salvataggio
 
 ---
