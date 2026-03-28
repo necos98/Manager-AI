@@ -4,6 +4,13 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
 import { useUpdateSetting, useResetSetting } from "@/features/settings/hooks";
 import type { Setting } from "@/shared/types";
 
@@ -25,6 +32,33 @@ function SettingField({ setting }: SettingFieldProps) {
   const resetSetting = useResetSetting();
 
   const isDirty = value !== setting.value;
+
+  if (setting.key === "terminal_theme") {
+    return (
+      <div className="border rounded-lg p-4">
+        <div className="flex items-center justify-between mb-2">
+          <label className="font-medium text-sm">Terminal Theme</label>
+        </div>
+        <Select
+          value={value}
+          onValueChange={(v) => {
+            setValue(v);
+            updateSetting.mutate({ key: setting.key, value: v });
+          }}
+        >
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="catppuccin">Catppuccin</SelectItem>
+            <SelectItem value="dracula">Dracula</SelectItem>
+            <SelectItem value="one_dark">One Dark</SelectItem>
+            <SelectItem value="solarized_dark">Solarized Dark</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
 
   const handleSave = () => {
     updateSetting.mutate({ key: setting.key, value });

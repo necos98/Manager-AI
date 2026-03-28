@@ -111,15 +111,12 @@ class TerminalService:
         project_path: str,
         cols: int = 120,
         rows: int = 30,
+        shell: str | None = None,
     ) -> dict:
-        with self._lock:
-            # Return existing terminal for this issue (no duplicates)
-            for term in self._terminals.values():
-                if term["issue_id"] == issue_id and term["status"] == "active":
-                    return self._to_response(term)
+        shell_to_use = shell or DEFAULT_SHELL
 
         pty = PTY(cols, rows)
-        pty.spawn(DEFAULT_SHELL, cwd=project_path)
+        pty.spawn(shell_to_use, cwd=project_path)
 
         term_id = str(uuid.uuid4())
         entry = {

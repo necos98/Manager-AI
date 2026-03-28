@@ -5,6 +5,7 @@ import {
   Download,
   FileText,
   FolderSync,
+  Key,
   MoreHorizontal,
   Pencil,
   Plug,
@@ -80,6 +81,12 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
           to: "/projects/$projectId/commands" as const,
           params: { projectId },
           icon: SquareTerminal,
+        },
+        {
+          label: "Variables",
+          to: "/projects/$projectId/variables" as const,
+          params: { projectId },
+          icon: Key,
         },
         {
           label: "Activity",

@@ -84,6 +84,7 @@ export interface Project {
   path: string;
   description: string;
   tech_stack: string;
+  shell?: string | null;
   created_at: string;
   updated_at: string;
   issue_counts?: Record<string, number>;
@@ -94,6 +95,7 @@ export interface ProjectCreate {
   path: string;
   description?: string;
   tech_stack?: string;
+  shell?: string | null;
 }
 
 export interface ProjectUpdate {
@@ -101,6 +103,7 @@ export interface ProjectUpdate {
   path?: string;
   description?: string | null;
   tech_stack?: string | null;
+  shell?: string | null;
 }
 
 // ── Setting ──
@@ -152,6 +155,7 @@ export interface TerminalCommand {
   command: string;
   sort_order: number;
   project_id: string | null;
+  condition?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -160,16 +164,23 @@ export interface TerminalCommandCreate {
   command: string;
   sort_order: number;
   project_id?: string | null;
+  condition?: string | null;
 }
 
 export interface TerminalCommandUpdate {
   command?: string;
   sort_order?: number;
+  condition?: string | null;
 }
 
 export interface TerminalCommandVariable {
   name: string;
   description: string;
+}
+
+export interface TerminalCommandTemplate {
+  name: string;
+  command: string;
 }
 
 // ── Project File ──
@@ -247,6 +258,31 @@ export interface ProjectSkill {
 export interface ProjectSkillAssign {
   name: string;
   type: "skill" | "agent";
+}
+
+// ── Project Variable ──
+
+export interface ProjectVariable {
+  id: number;
+  project_id: string;
+  name: string;
+  value: string;
+  is_secret: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectVariableCreate {
+  name: string;
+  value: string;
+  is_secret?: boolean;
+}
+
+export interface ProjectVariableUpdate {
+  name?: string;
+  value?: string;
+  is_secret?: boolean;
 }
 
 // ── Prompt Templates ──

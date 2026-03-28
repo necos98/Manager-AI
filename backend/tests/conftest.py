@@ -7,6 +7,7 @@ from app.models import (  # noqa: F401
     ActivityLog, Issue, IssueFeedback, Project, ProjectSkill,
     PromptTemplate, Setting, Task, TerminalCommand,
 )
+from app.models.project_variable import ProjectVariable  # noqa: F401
 
 
 @pytest_asyncio.fixture

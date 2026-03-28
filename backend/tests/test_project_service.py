@@ -69,3 +69,20 @@ async def test_update_project_tech_stack(db_session):
     project = await service.create(name="Test", path="/tmp/test", tech_stack="Python")
     updated = await service.update(project.id, tech_stack="Python, FastAPI, React")
     assert updated.tech_stack == "Python, FastAPI, React"
+
+
+@pytest.mark.asyncio
+async def test_create_project_with_shell(db_session):
+    from app.services.project_service import ProjectService
+    svc = ProjectService(db_session)
+    p = await svc.create(name="Test", path="/tmp/x", shell="powershell.exe")
+    assert p.shell == "powershell.exe"
+
+@pytest.mark.asyncio
+async def test_update_project_shell(db_session):
+    from app.services.project_service import ProjectService
+    svc = ProjectService(db_session)
+    p = await svc.create(name="Test", path="/tmp/x")
+    assert p.shell is None
+    p2 = await svc.update(p.id, shell="powershell.exe")
+    assert p2.shell == "powershell.exe"

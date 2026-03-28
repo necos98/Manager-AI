@@ -116,3 +116,17 @@ async def test_cascade_delete_removes_commands(db_session, project, service):
     await db_session.flush()
     result = await service.list(project_id=project.id)
     assert result == []
+
+
+@pytest.mark.asyncio
+async def test_create_multiline_command(service):
+    cmd = await service.create("npm install\nnpm test", 0, project_id=None)
+    assert "\n" in cmd.command
+
+
+@pytest.mark.asyncio
+async def test_create_command_with_condition(service):
+    cmd = await service.create(
+        "npm run build", 0, project_id=None, condition="$issue_status == ACCEPTED"
+    )
+    assert cmd.condition == "$issue_status == ACCEPTED"

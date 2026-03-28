@@ -93,3 +93,20 @@ async def test_list_terminals_with_project_filter(client, mock_service):
     resp = await client.get("/api/terminals?project_id=proj-1")
     assert resp.status_code == 200
     mock_service.list_active.assert_called_with(project_id="proj-1", issue_id=None)
+
+
+def test_evaluate_condition_no_condition():
+    from app.routers.terminals import _evaluate_condition
+    assert _evaluate_condition(None, "NEW") is True
+
+def test_evaluate_condition_match():
+    from app.routers.terminals import _evaluate_condition
+    assert _evaluate_condition("$issue_status == ACCEPTED", "ACCEPTED") is True
+
+def test_evaluate_condition_no_match():
+    from app.routers.terminals import _evaluate_condition
+    assert _evaluate_condition("$issue_status == ACCEPTED", "NEW") is False
+
+def test_evaluate_condition_unknown_returns_true():
+    from app.routers.terminals import _evaluate_condition
+    assert _evaluate_condition("$something_unknown", "foo") is True

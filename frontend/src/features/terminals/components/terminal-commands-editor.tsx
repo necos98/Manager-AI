@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, Plus, X } from "lucide-react";
 import {
   useTerminalCommands,
   useTerminalCommandVariables,
+  useTerminalCommandTemplates,
   useCreateTerminalCommand,
   useUpdateTerminalCommand,
   useReorderTerminalCommands,
@@ -10,6 +11,13 @@ import {
 } from "@/features/terminals/hooks";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
+import { Textarea } from "@/shared/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 
 interface TerminalCommandsEditorProps {
@@ -19,28 +27,48 @@ interface TerminalCommandsEditorProps {
 export function TerminalCommandsEditor({ projectId = null }: TerminalCommandsEditorProps) {
   const { data: commands, isLoading } = useTerminalCommands(projectId);
   const { data: variables } = useTerminalCommandVariables();
+  const { data: templates } = useTerminalCommandTemplates();
   const createCommand = useCreateTerminalCommand(projectId);
   const updateCommand = useUpdateTerminalCommand(projectId);
   const reorderCommands = useReorderTerminalCommands(projectId);
   const deleteCommand = useDeleteTerminalCommand(projectId);
-  const [newCmd, setNewCmd] = useState("");
 
-  const handleAdd = () => {
-    const trimmed = newCmd.trim();
+  const [newCmd, setNewCmd] = useState("");
+  const [newCondition, setNewCondition] = useState("");
+
+  const handleAdd = (command?: string) => {
+    const trimmed = (command ?? newCmd).trim();
     if (!trimmed) return;
-    const sortOrder = commands && commands.length > 0
-      ? Math.max(...commands.map((c) => c.sort_order)) + 1
-      : 0;
+    const sortOrder =
+      commands && commands.length > 0
+        ? Math.max(...commands.map((c) => c.sort_order)) + 1
+        : 0;
     createCommand.mutate(
-      { command: trimmed, sort_order: sortOrder, project_id: projectId },
-      { onSuccess: () => setNewCmd("") },
+      {
+        command: trimmed,
+        sort_order: sortOrder,
+        project_id: projectId,
+        condition: newCondition.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          setNewCmd("");
+          setNewCondition("");
+        },
+      }
     );
   };
 
-  const handleBlur = (cmd: { id: number; command: string }, newValue: string) => {
-    const trimmed = newValue.trim();
-    if (!trimmed || trimmed === cmd.command) return;
-    updateCommand.mutate({ id: cmd.id, data: { command: trimmed } });
+  const handleBlurCommand = (cmd: { id: number; command: string }, newValue: string) => {
+    if (newValue === cmd.command) return;
+    if (!newValue.trim()) return;
+    updateCommand.mutate({ id: cmd.id, data: { command: newValue } });
+  };
+
+  const handleBlurCondition = (cmd: { id: number; condition?: string | null }, newValue: string) => {
+    const trimmed = newValue.trim() || null;
+    if (trimmed === (cmd.condition ?? null)) return;
+    updateCommand.mutate({ id: cmd.id, data: { condition: trimmed ?? undefined } });
   };
 
   const handleMove = (index: number, direction: number) => {
@@ -53,25 +81,16 @@ export function TerminalCommandsEditor({ projectId = null }: TerminalCommandsEdi
     ]);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAdd();
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="space-y-2">
-        {[1, 2].map((i) => (
-          <Skeleton key={i} className="h-10" />
-        ))}
+        {[1, 2].map((i) => <Skeleton key={i} className="h-10" />)}
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {commands?.length === 0 && projectId != null && (
         <p className="text-sm text-muted-foreground italic">
           No project commands configured. Global commands will be used.
@@ -79,8 +98,8 @@ export function TerminalCommandsEditor({ projectId = null }: TerminalCommandsEdi
       )}
 
       {commands?.map((cmd, index) => (
-        <div key={cmd.id} className="flex items-center gap-2">
-          <div className="flex flex-col gap-0.5">
+        <div key={cmd.id} className="flex gap-2 items-start">
+          <div className="flex flex-col gap-0.5 pt-1">
             <Button
               variant="ghost"
               size="icon"
@@ -100,53 +119,82 @@ export function TerminalCommandsEditor({ projectId = null }: TerminalCommandsEdi
               <ArrowDown className="size-3" />
             </Button>
           </div>
-          <Input
-            defaultValue={cmd.command}
-            onBlur={(e) => handleBlur(cmd, e.target.value)}
-            className="flex-1 font-mono text-sm"
-          />
+          <div className="flex-1 space-y-1">
+            <Textarea
+              defaultValue={cmd.command}
+              onBlur={(e) => handleBlurCommand(cmd, e.target.value)}
+              className="font-mono text-sm min-h-[60px] resize-y"
+              placeholder="Command (multi-line supported)"
+            />
+            <Input
+              defaultValue={cmd.condition ?? ""}
+              onBlur={(e) => handleBlurCondition(cmd, e.target.value)}
+              className="text-xs font-mono h-7"
+              placeholder="Condition (e.g. $issue_status == ACCEPTED)"
+            />
+          </div>
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:text-destructive"
+            className="h-7 w-7 text-destructive mt-1"
             onClick={() => deleteCommand.mutate(cmd.id)}
           >
-            <X className="size-4" />
+            <X className="size-3" />
           </Button>
         </div>
       ))}
 
-      <div className="flex gap-2 mt-3">
+      {/* Add new command */}
+      <div className="border-t pt-3 space-y-2">
+        <div className="flex gap-2 items-start">
+          <Textarea
+            value={newCmd}
+            onChange={(e) => setNewCmd(e.target.value)}
+            className="font-mono text-sm min-h-[60px] resize-y flex-1"
+            placeholder="New command (multi-line supported)"
+          />
+          <div className="flex flex-col gap-1">
+            <Button
+              size="sm"
+              onClick={() => handleAdd()}
+              disabled={!newCmd.trim() || createCommand.isPending}
+              className="h-7"
+            >
+              <Plus className="size-3 mr-1" />
+              Add
+            </Button>
+            {templates && templates.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7">
+                    <ChevronDown className="size-3 mr-1" />
+                    Templates
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {templates.map((t) => (
+                    <DropdownMenuItem key={t.name} onClick={() => setNewCmd(t.command)}>
+                      {t.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </div>
         <Input
-          value={newCmd}
-          onChange={(e) => setNewCmd(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Enter a command..."
-          className="flex-1 font-mono text-sm"
+          value={newCondition}
+          onChange={(e) => setNewCondition(e.target.value)}
+          className="text-xs font-mono h-7"
+          placeholder="Condition (optional, e.g. $issue_status == ACCEPTED)"
         />
-        <Button
-          onClick={handleAdd}
-          disabled={!newCmd.trim()}
-          size="sm"
-        >
-          <Plus className="size-4 mr-1" />
-          Add
-        </Button>
       </div>
 
+      {/* Variable reference */}
       {variables && variables.length > 0 && (
-        <div className="mt-4 p-3 bg-muted rounded-md text-sm">
-          <p className="font-medium mb-1">Available variables</p>
-          <div className="space-y-0.5">
-            {variables.map((v) => (
-              <p key={v.name} className="text-muted-foreground">
-                <code className="text-primary bg-primary/10 px-1 rounded font-mono">
-                  {v.name}
-                </code>{" "}
-                — {v.description}
-              </p>
-            ))}
-          </div>
+        <div className="text-xs text-muted-foreground">
+          <span className="font-medium">Variables:</span>{" "}
+          {variables.map((v) => v.name).join(", ")}
         </div>
       )}
     </div>

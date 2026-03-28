@@ -36,24 +36,31 @@ class TestTerminalServiceRegistry:
             assert term["status"] == "active"
             assert len(service.list_active()) == 1
 
-    def test_create_duplicate_issue_returns_existing(self, service):
+    def test_create_two_terminals_for_same_issue(self, service):
+        """Two terminals for the same issue are both allowed (split pane support)."""
         with patch("app.services.terminal_service.PTY") as MockPTY:
             mock_pty = MagicMock()
             mock_pty.spawn = MagicMock()
             MockPTY.return_value = mock_pty
 
-            term1 = service.create(
-                issue_id="task-1",
-                project_id="proj-1",
-                project_path="C:/fake/path",
+            term1 = service.create(issue_id="t1", project_id="p1", project_path="C:/a")
+            term2 = service.create(issue_id="t1", project_id="p1", project_path="C:/a")
+            assert term1["id"] != term2["id"]
+            assert len(service.list_active()) == 2
+
+    def test_create_uses_custom_shell(self, service):
+        with patch("app.services.terminal_service.PTY") as MockPTY:
+            mock_pty = MagicMock()
+            mock_pty.spawn = MagicMock()
+            MockPTY.return_value = mock_pty
+
+            service.create(
+                issue_id="t1",
+                project_id="p1",
+                project_path="C:/a",
+                shell="powershell.exe",
             )
-            term2 = service.create(
-                issue_id="task-1",
-                project_id="proj-1",
-                project_path="C:/fake/path",
-            )
-            assert term1["id"] == term2["id"]
-            assert len(service.list_active()) == 1
+            mock_pty.spawn.assert_called_once_with("powershell.exe", cwd="C:/a")
 
     def test_kill_removes_terminal(self, service):
         with patch("app.services.terminal_service.PTY") as MockPTY:

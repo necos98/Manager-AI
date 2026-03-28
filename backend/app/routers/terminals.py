@@ -5,16 +5,41 @@ import json
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings as app_settings
 from app.database import get_db
 from app.schemas.terminal import TerminalCreate, TerminalListResponse, TerminalResponse
 from app.services.terminal_service import TerminalService, terminal_service
 from app.services.terminal_command_service import TerminalCommandService
 
 logger = logging.getLogger(__name__)
+
+
+def _evaluate_condition(condition: str | None, issue_status: str) -> bool:
+    """Evaluate a startup command condition. Returns True if the command should run."""
+    if not condition:
+        return True
+    parts = condition.strip().split()
+    if len(parts) == 3 and parts[0] == "$issue_status" and parts[1] == "==":
+        return issue_status == parts[2]
+    # Unknown condition syntax → always run (safe default)
+    return True
+
+
+def _save_recording(terminal_id: str, content: str) -> None:
+    """Write terminal output buffer to a file in the recordings directory."""
+    if not content:
+        return
+    try:
+        rec_dir = Path(app_settings.recordings_path)
+        rec_dir.mkdir(parents=True, exist_ok=True)
+        (rec_dir / f"{terminal_id}.txt").write_text(content, encoding="utf-8")
+    except Exception:
+        logger.warning("Failed to save recording for terminal %s", terminal_id, exc_info=True)
 
 router = APIRouter(prefix="/api/terminals", tags=["terminals"])
 
@@ -51,11 +76,17 @@ async def create_terminal(
     if not os.path.isdir(project_path):
         raise HTTPException(status_code=400, detail=f"Project path does not exist: {project_path}")
 
+    # Fetch project shell config
+    from app.models.project import Project
+    project_obj = await db.get(Project, data.project_id)
+    project_shell = project_obj.shell if project_obj else None
+
     try:
         terminal = service.create(
             issue_id=data.issue_id,
             project_id=data.project_id,
             project_path=project_path,
+            shell=project_shell,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
@@ -76,8 +107,26 @@ async def create_terminal(
     except Exception:
         logger.warning("Failed to inject env vars for terminal %s", terminal["id"], exc_info=True)
 
+    # Inject project custom variables into the terminal
+    try:
+        from app.services.project_variable_service import ProjectVariableService
+        var_svc = ProjectVariableService(db)
+        custom_vars = await var_svc.list(data.project_id)
+        if custom_vars:
+            pty = service.get_pty(terminal["id"])
+            import platform
+            set_cmd = "set" if platform.system() == "Windows" else "export"
+            var_commands = " && ".join(f"{set_cmd} {v.name}={v.value}" for v in custom_vars)
+            pty.write(var_commands + "\r\n")
+    except Exception:
+        logger.warning("Failed to inject custom variables for terminal %s", terminal["id"], exc_info=True)
+
     # Inject startup commands into the PTY
     try:
+        from app.models.issue import Issue
+        issue = await db.get(Issue, data.issue_id)
+        issue_status = issue.status.value if issue else ""
+
         cmd_service = TerminalCommandService(db)
         commands = await cmd_service.resolve(data.project_id)
         if commands:
@@ -89,14 +138,17 @@ async def create_terminal(
                 "$project_id": data.project_id,
                 "$project_path": project_path,
             }
-            resolved = []
             for c in commands:
-                cmd = c.command
+                if not _evaluate_condition(c.condition, issue_status):
+                    continue
+                cmd_text = c.command
                 for var, val in variables.items():
-                    cmd = cmd.replace(var, val)
-                resolved.append(cmd)
-            cmd_string = " && ".join(resolved) + "\r\n"
-            pty.write(cmd_string)
+                    cmd_text = cmd_text.replace(var, val)
+                # Support multi-line: send each non-empty line as a separate command
+                for line in cmd_text.split("\n"):
+                    line = line.strip()
+                    if line:
+                        pty.write(line + "\r\n")
     except Exception:
         logger.warning("Failed to inject startup commands for terminal %s", terminal["id"], exc_info=True)
 
@@ -146,12 +198,44 @@ async def terminal_count(
     return {"count": service.active_count()}
 
 
+@router.get("/{terminal_id}/recording")
+async def get_terminal_recording(
+    terminal_id: str,
+    service: TerminalService = Depends(get_terminal_service),
+):
+    import re
+    from fastapi.responses import PlainTextResponse
+
+    if not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", terminal_id):
+        raise HTTPException(status_code=400, detail="Invalid terminal ID")
+
+    # Try live buffer first (terminal still active)
+    live_buf = service.get_buffered_output(terminal_id)
+    if live_buf:
+        return PlainTextResponse(
+            live_buf,
+            headers={"Content-Disposition": f'attachment; filename="{terminal_id}.txt"'},
+        )
+
+    # Try saved recording file
+    rec_path = Path(app_settings.recordings_path) / f"{terminal_id}.txt"
+    if rec_path.exists():
+        return PlainTextResponse(
+            rec_path.read_text(encoding="utf-8"),
+            headers={"Content-Disposition": f'attachment; filename="{terminal_id}.txt"'},
+        )
+
+    raise HTTPException(status_code=404, detail="No recording found for this terminal")
+
+
 @router.delete("/{terminal_id}", status_code=204)
 async def delete_terminal(
     terminal_id: str,
     service: TerminalService = Depends(get_terminal_service),
 ):
     try:
+        buf = service.get_buffered_output(terminal_id)
+        _save_recording(terminal_id, buf)
         service.kill(terminal_id)
     except KeyError:
         raise HTTPException(status_code=404, detail="Terminal not found")
@@ -186,6 +270,8 @@ async def terminal_ws(
                     _pty_executor, lambda: pty.read(blocking=True)
                 )
                 if not data:
+                    buf = service.get_buffered_output(terminal_id)
+                    _save_recording(terminal_id, buf)
                     service.mark_closed(terminal_id)
                     await websocket.close(code=1000, reason="Terminal session ended")
                     break

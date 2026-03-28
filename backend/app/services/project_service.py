@@ -11,8 +11,10 @@ class ProjectService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create(self, name: str, path: str, description: str = "", tech_stack: str = "") -> Project:
-        project = Project(name=name, path=path, description=description, tech_stack=tech_stack)
+    async def create(
+        self, name: str, path: str, description: str = "", tech_stack: str = "", shell: str | None = None
+    ) -> Project:
+        project = Project(name=name, path=path, description=description, tech_stack=tech_stack, shell=shell)
         self.session.add(project)
         await self.session.flush()
         return project

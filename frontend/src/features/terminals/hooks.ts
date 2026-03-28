@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "./api";
-import type { TerminalCreate } from "@/shared/types";
+import type { TerminalCreate, TerminalCommandUpdate } from "@/shared/types";
 
 export const terminalKeys = {
   all: ["terminals"] as const,
@@ -83,7 +83,7 @@ export function useCreateTerminalCommand(projectId?: string | null) {
 export function useUpdateTerminalCommand(projectId?: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { command?: string; sort_order?: number } }) =>
+    mutationFn: ({ id, data }: { id: number; data: TerminalCommandUpdate }) =>
       api.updateTerminalCommand(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: terminalKeys.commands(projectId) });
@@ -108,5 +108,13 @@ export function useDeleteTerminalCommand(projectId?: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: terminalKeys.commands(projectId) });
     },
+  });
+}
+
+export function useTerminalCommandTemplates() {
+  return useQuery({
+    queryKey: ["terminal-command-templates"],
+    queryFn: api.fetchTerminalCommandTemplates,
+    staleTime: Infinity,
   });
 }

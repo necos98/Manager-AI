@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.terminal_command import TerminalCommand
 
+_UNSET = object()
+
 
 class TerminalCommandService:
     def __init__(self, session: AsyncSession):
@@ -33,17 +35,19 @@ class TerminalCommandService:
         return await self.list(project_id=None)
 
     async def create(
-        self, command: str, sort_order: int, project_id: str | None = None
+        self, command: str, sort_order: int, project_id: str | None = None,
+        condition: str | None = None
     ) -> TerminalCommand:
         row = TerminalCommand(
-            command=command, sort_order=sort_order, project_id=project_id
+            command=command, sort_order=sort_order, project_id=project_id, condition=condition
         )
         self.session.add(row)
         await self.session.flush()
         return row
 
     async def update(
-        self, cmd_id: int, command: str | None = None, sort_order: int | None = None
+        self, cmd_id: int, command: str | None = None, sort_order: int | None = None,
+        condition: object = _UNSET
     ) -> TerminalCommand:
         row = await self.session.get(TerminalCommand, cmd_id)
         if row is None:
@@ -52,6 +56,8 @@ class TerminalCommandService:
             row.command = command
         if sort_order is not None:
             row.sort_order = sort_order
+        if condition is not _UNSET:
+            row.condition = condition  # type: ignore[assignment]
         await self.session.flush()
         return row
 
