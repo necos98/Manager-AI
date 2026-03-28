@@ -111,49 +111,50 @@ function IssueDetailPage() {
       </div>
 
       {/* Split view */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-        <ResizablePanel defaultSize={hasAny ? 55 : 100} minSize={30}>
-          <ScrollArea className="h-full">
-            <IssueDetail issue={issue} projectId={projectId} terminalId={terminal1?.id ?? null} />
-          </ScrollArea>
-        </ResizablePanel>
-
-        {hasAny && (
-          <>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={45} minSize={20}>
-              {!hasSplit ? (
-                terminal1 && (
-                  <TerminalPanel
-                    terminalId={terminal1.id}
-                    onSessionEnd={() => killTerminal.mutate(terminal1.id)}
-                  />
-                )
-              ) : (
-                <ResizablePanelGroup direction="vertical">
-                  <ResizablePanel defaultSize={50} minSize={20}>
-                    {terminal1 && (
-                      <TerminalPanel
-                        terminalId={terminal1.id}
-                        onSessionEnd={() => killTerminal.mutate(terminal1.id)}
-                      />
-                    )}
-                  </ResizablePanel>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={50} minSize={20}>
-                    {terminal2 && (
-                      <TerminalPanel
-                        terminalId={terminal2.id}
-                        onSessionEnd={() => killTerminal.mutate(terminal2.id)}
-                      />
-                    )}
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              )}
-            </ResizablePanel>
-          </>
-        )}
-      </ResizablePanelGroup>
+      {!hasAny ? (
+        <ScrollArea className="flex-1">
+          <IssueDetail issue={issue} projectId={projectId} terminalId={null} />
+        </ScrollArea>
+      ) : (
+        <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
+          <ResizablePanel defaultSize={55} minSize={30}>
+            <ScrollArea className="h-full">
+              <IssueDetail issue={issue} projectId={projectId} terminalId={terminal1?.id ?? null} />
+            </ScrollArea>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={45} minSize={20}>
+            {!hasSplit ? (
+              terminal1 && (
+                <TerminalPanel
+                  terminalId={terminal1.id}
+                  onSessionEnd={() => killTerminal.mutate(terminal1.id)}
+                />
+              )
+            ) : (
+              <ResizablePanelGroup direction="vertical">
+                <ResizablePanel defaultSize={50} minSize={20}>
+                  {terminal1 && (
+                    <TerminalPanel
+                      terminalId={terminal1.id}
+                      onSessionEnd={() => killTerminal.mutate(terminal1.id)}
+                    />
+                  )}
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={50} minSize={20}>
+                  {terminal2 && (
+                    <TerminalPanel
+                      terminalId={terminal2.id}
+                      onSessionEnd={() => killTerminal.mutate(terminal2.id)}
+                    />
+                  )}
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            )}
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      )}
 
       {/* Limit warning */}
       <Dialog open={showLimitWarning} onOpenChange={setShowLimitWarning}>
