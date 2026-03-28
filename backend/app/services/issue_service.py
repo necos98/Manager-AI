@@ -237,7 +237,13 @@ class IssueService:
                 event=HookEvent.ISSUE_ACCEPTED,
                 metadata={
                     "issue_name": issue.name or (issue.description or "")[:50] or "Untitled",
+                    "issue_description": issue.description or "",
+                    "specification": issue.specification or "",
+                    "plan": issue.plan or "",
                     "project_name": project.name if project else "",
+                    "project_path": project.path if project else "",
+                    "project_description": project.description if project else "",
+                    "tech_stack": project.tech_stack if project else "",
                 },
             ),
         )
