@@ -198,7 +198,7 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
   }, [termTheme]);
 
   return (
-    <div className="flex flex-col h-full bg-[#0d0d0d]">
+    <div className="flex flex-col h-full" style={{ background: termTheme.background }}>
       <div className="flex items-center justify-end gap-1 px-2 py-1 bg-zinc-900 border-b border-zinc-800">
         <Button
           variant="ghost"
