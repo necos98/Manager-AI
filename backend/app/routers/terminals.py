@@ -82,6 +82,20 @@ async def create_terminal(
     except Exception:
         logger.warning("Failed to inject env vars for terminal %s", terminal["id"], exc_info=True)
 
+    # Inject project custom variables into the terminal
+    try:
+        from app.services.project_variable_service import ProjectVariableService
+        var_svc = ProjectVariableService(db)
+        custom_vars = await var_svc.list(data.project_id)
+        if custom_vars:
+            pty = service.get_pty(terminal["id"])
+            import platform
+            set_cmd = "set" if platform.system() == "Windows" else "export"
+            var_commands = " && ".join(f"{set_cmd} {v.name}={v.value}" for v in custom_vars)
+            pty.write(var_commands + "\r\n")
+    except Exception:
+        logger.warning("Failed to inject custom variables for terminal %s", terminal["id"], exc_info=True)
+
     # Inject startup commands into the PTY
     try:
         cmd_service = TerminalCommandService(db)

@@ -23,8 +23,22 @@ TEMPLATE_VARIABLES = [
 
 
 @router.get("/variables")
-async def list_template_variables():
-    return TEMPLATE_VARIABLES
+async def list_template_variables(
+    project_id: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    vars_list = list(TEMPLATE_VARIABLES)
+    if project_id:
+        from app.services.project_variable_service import ProjectVariableService
+        svc = ProjectVariableService(db)
+        custom = await svc.list(project_id)
+        for v in custom:
+            display = "••••••••" if v.is_secret else v.value
+            vars_list.append({
+                "name": f"${v.name}",
+                "description": f"Custom variable (value: {display})",
+            })
+    return vars_list
 
 
 @router.get("", response_model=list[TerminalCommandOut])
