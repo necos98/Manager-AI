@@ -51,11 +51,17 @@ async def create_terminal(
     if not os.path.isdir(project_path):
         raise HTTPException(status_code=400, detail=f"Project path does not exist: {project_path}")
 
+    # Fetch project shell config
+    from app.models.project import Project
+    project_obj = await db.get(Project, data.project_id)
+    project_shell = project_obj.shell if project_obj else None
+
     try:
         terminal = service.create(
             issue_id=data.issue_id,
             project_id=data.project_id,
             project_path=project_path,
+            shell=project_shell,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
