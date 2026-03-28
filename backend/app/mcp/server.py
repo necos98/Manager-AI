@@ -374,6 +374,11 @@ async def update_task_status(task_id: str, status: str) -> dict:
             task_name = task.name
             task_status = task.status.value
             issue = await session.get(Issue, task_issue_id)
+            all_done = (
+                await task_service.all_completed(task_issue_id)
+                if task.status.value == "Completed"
+                else False
+            )
             await session.commit()
             if issue:
                 await event_service.emit({
@@ -383,6 +388,24 @@ async def update_task_status(task_id: str, status: str) -> dict:
                     "task_id": task_id_val,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
+            if all_done and issue:
+                from app.hooks.registry import HookContext, HookEvent, hook_registry
+                from app.services.project_service import ProjectService as _PS
+                async with async_session() as s2:
+                    project = await _PS(s2).get_by_id(issue.project_id)
+                await hook_registry.fire(
+                    HookEvent.ALL_TASKS_COMPLETED,
+                    HookContext(
+                        project_id=issue.project_id,
+                        issue_id=task_issue_id,
+                        event=HookEvent.ALL_TASKS_COMPLETED,
+                        metadata={
+                            "issue_name": issue.name or "",
+                            "project_name": project.name if project else "",
+                            "project_path": project.path if project else "",
+                        },
+                    ),
+                )
             return {"id": task_id_val, "name": task_name, "status": task_status}
         except AppError as e:
             await session.rollback()

@@ -57,3 +57,10 @@ class TaskService:
             select(Task).where(Task.issue_id == issue_id).order_by(Task.order.asc())
         )
         return list(result.scalars().all())
+
+    async def all_completed(self, issue_id: str) -> bool:
+        """Returns True only if the issue has at least one task and all are COMPLETED."""
+        tasks = await self.list_by_issue(issue_id)
+        if not tasks:
+            return False
+        return all(t.status == TaskStatus.COMPLETED for t in tasks)
