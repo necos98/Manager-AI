@@ -45,3 +45,86 @@ async def test_all_completed_false_when_no_tasks(db_session, project):
     await db_session.commit()
     result = await task_svc.all_completed(issue.id)
     assert result is False
+
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
+
+@patch("app.hooks.handlers.auto_completion.ClaudeCodeExecutor")
+@patch("app.hooks.handlers.auto_completion.ProjectSettingService")
+async def test_auto_completion_notifies_when_mode_notify(MockSettingService, MockExecutor, db_session):
+    from app.hooks.handlers.auto_completion import AutoCompletion
+    from app.hooks.registry import HookContext, HookEvent
+
+    mock_svc = AsyncMock()
+    mock_svc.get = AsyncMock(return_value="notify")
+    MockSettingService.return_value = mock_svc
+
+    with patch("app.hooks.handlers.auto_completion.event_service") as mock_events:
+        mock_events.emit = AsyncMock()
+        handler = AutoCompletion()
+        ctx = HookContext(
+            project_id="proj-1",
+            issue_id="issue-1",
+            event=HookEvent.ALL_TASKS_COMPLETED,
+            metadata={"issue_name": "Fix login", "project_path": "/tmp"},
+        )
+        result = await handler.execute(ctx)
+    assert result.success is True
+    mock_events.emit.assert_called_once()
+    emitted = mock_events.emit.call_args[0][0]
+    assert emitted["type"] == "notification"
+    assert "Fix login" in emitted.get("message", "")
+
+
+@patch("app.hooks.handlers.auto_completion.ClaudeCodeExecutor")
+@patch("app.hooks.handlers.auto_completion.ProjectSettingService")
+async def test_auto_completion_skips_when_off(MockSettingService, MockExecutor, db_session):
+    from app.hooks.handlers.auto_completion import AutoCompletion
+    from app.hooks.registry import HookContext, HookEvent
+
+    mock_svc = AsyncMock()
+    mock_svc.get = AsyncMock(return_value="off")
+    MockSettingService.return_value = mock_svc
+
+    mock_exec = AsyncMock()
+    MockExecutor.return_value = mock_exec
+
+    handler = AutoCompletion()
+    ctx = HookContext(
+        project_id="proj-1",
+        issue_id="issue-1",
+        event=HookEvent.ALL_TASKS_COMPLETED,
+        metadata={"issue_name": "Test", "project_path": "/tmp"},
+    )
+    result = await handler.execute(ctx)
+    assert result.success is True
+    mock_exec.run.assert_not_called()
+
+
+@patch("app.hooks.handlers.auto_completion.ClaudeCodeExecutor")
+@patch("app.hooks.handlers.auto_completion.ProjectSettingService")
+async def test_auto_completion_auto_mode_runs_claude(MockSettingService, MockExecutor, db_session):
+    from app.hooks.handlers.auto_completion import AutoCompletion
+    from app.hooks.registry import HookContext, HookEvent
+
+    mock_svc = AsyncMock()
+    mock_svc.get = AsyncMock(return_value="auto")
+    MockSettingService.return_value = mock_svc
+
+    mock_exec = AsyncMock()
+    mock_exec.run = AsyncMock(return_value=MagicMock(success=True, output="done", error=None))
+    MockExecutor.return_value = mock_exec
+
+    handler = AutoCompletion()
+    ctx = HookContext(
+        project_id="proj-1",
+        issue_id="issue-1",
+        event=HookEvent.ALL_TASKS_COMPLETED,
+        metadata={"issue_name": "Build API", "project_path": "/tmp/project"},
+    )
+    result = await handler.execute(ctx)
+    assert result.success is True
+    mock_exec.run.assert_called_once()
+    prompt_used = mock_exec.run.call_args.kwargs.get("prompt") or mock_exec.run.call_args.args[0]
+    assert "Build API" in prompt_used
