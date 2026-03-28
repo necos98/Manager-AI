@@ -1,5 +1,6 @@
 import {
   Activity,
+  BookOpen,
   CircleDot,
   Download,
   FileText,
@@ -91,6 +92,12 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
           to: "/projects/$projectId/automation" as const,
           params: { projectId },
           icon: Zap,
+        },
+        {
+          label: "Library",
+          to: "/projects/$projectId/library" as const,
+          params: { projectId },
+          icon: BookOpen,
         },
       ]
     : [];
@@ -203,6 +210,17 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
                   {terminalCount > 0 && (
                     <SidebarMenuBadge>{terminalCount}</SidebarMenuBadge>
                   )}
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={!!matchRoute({ to: "/library", fuzzy: true })}
+                  >
+                    <Link to="/library">
+                      <BookOpen />
+                      <span>Library</span>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
