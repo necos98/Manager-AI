@@ -189,7 +189,7 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
         } catch {}
       }, 50);
     };
-  }, [terminalId, termTheme]);
+  }, [terminalId]);
 
   useEffect(() => {
     if (termRef.current) {
