@@ -3,7 +3,19 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { queryClient } from "@/shared/lib/query-client";
 
-interface EventContextValue {}
+export type WsEventData = Record<string, unknown> & {
+  type?: string;
+  project_id?: string;
+  issue_id?: string;
+  issue_name?: string;
+  message?: string;
+};
+
+type EventSubscriber = (event: WsEventData) => void;
+
+interface EventContextValue {
+  subscribe: (fn: EventSubscriber) => () => void;
+}
 
 const EventContext = createContext<EventContextValue | null>(null);
 
@@ -64,6 +76,14 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
   const backoffRef = useRef(1000);
   const cleanedUpRef = useRef(false);
   const navigate = useNavigate();
+  const subscribersRef = useRef<Set<EventSubscriber>>(new Set());
+
+  const subscribe = useCallback((fn: EventSubscriber) => {
+    subscribersRef.current.add(fn);
+    return () => {
+      subscribersRef.current.delete(fn);
+    };
+  }, []);
 
   const connect = useCallback(() => {
     if (cleanedUpRef.current) return;
@@ -86,11 +106,14 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
     ws.onmessage = (event) => {
       if (cleanedUpRef.current) return;
       try {
-        const data = JSON.parse(event.data) as Record<string, unknown>;
-        const projectId = data.project_id as string | undefined;
-        const issueId = data.issue_id as string | undefined;
-        const issueName = data.issue_name as string | undefined;
-        const eventType = data.type as string | undefined;
+        const data = JSON.parse(event.data) as WsEventData;
+
+        // Notify all subscribers
+        subscribersRef.current.forEach((fn) => fn(data));
+        const projectId = data.project_id;
+        const issueId = data.issue_id;
+        const issueName = data.issue_name;
+        const eventType = data.type;
         const message =
           (data.message as string) || (data.status as string) || "New event";
         const title = issueName || eventType || "Event";
@@ -158,7 +181,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
   }, [connect]);
 
   return (
-    <EventContext.Provider value={{}}>
+    <EventContext.Provider value={{ subscribe }}>
       {children}
     </EventContext.Provider>
   );
