@@ -76,3 +76,6 @@ async def test_create_issue_fires_issue_created_hook(mock_registry, db_session, 
     assert ctx.project_id == project.id
     assert ctx.metadata["issue_description"] == "New issue"
     assert ctx.metadata["project_name"] == "Test"
+    assert "project_path" in ctx.metadata
+    assert "project_description" in ctx.metadata
+    assert "tech_stack" in ctx.metadata
