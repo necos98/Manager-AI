@@ -5,7 +5,7 @@ import type { SkillCreate } from "@/shared/types";
 export const libraryKeys = {
   skills: ["library", "skills"] as const,
   agents: ["library", "agents"] as const,
-  skill: (name: string) => ["library", "skills", name] as const,
+  skill: (name: string, type: string) => ["library", "skill", name, type] as const,
   agent: (name: string) => ["library", "agents", name] as const,
 };
 
@@ -17,10 +17,10 @@ export function useAgents() {
   return useQuery({ queryKey: libraryKeys.agents, queryFn: api.fetchAgents });
 }
 
-export function useSkillDetail(name: string) {
+export function useSkillDetail(name: string, type: string) {
   return useQuery({
-    queryKey: libraryKeys.skill(name),
-    queryFn: () => api.fetchSkill(name),
+    queryKey: libraryKeys.skill(name, type),
+    queryFn: () => api.fetchSkill(name, type),
     enabled: !!name,
   });
 }
@@ -37,7 +37,10 @@ export function useCreateSkill() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: SkillCreate) => api.createSkill(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: libraryKeys.skills }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: libraryKeys.skills });
+      qc.invalidateQueries({ queryKey: libraryKeys.agents });
+    },
   });
 }
 
@@ -46,5 +49,18 @@ export function useCreateAgent() {
   return useMutation({
     mutationFn: (data: SkillCreate) => api.createAgent(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: libraryKeys.agents }),
+  });
+}
+
+export function useUpdateSkill() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ name, type, content }: { name: string; type: string; content: string }) =>
+      api.updateSkill(name, type, content),
+    onSuccess: (_data, { name, type }) => {
+      qc.invalidateQueries({ queryKey: libraryKeys.skills });
+      qc.invalidateQueries({ queryKey: libraryKeys.agents });
+      qc.invalidateQueries({ queryKey: libraryKeys.skill(name, type) });
+    },
   });
 }

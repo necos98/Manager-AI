@@ -3,7 +3,7 @@ import * as api from "./api-skills";
 import type { ProjectSkillAssign } from "@/shared/types";
 
 export const skillKeys = {
-  project: (id: string) => ["projects", id, "skills"] as const,
+  project: (id: string) => ["project-skills", id] as const,
 };
 
 export function useProjectSkills(projectId: string) {

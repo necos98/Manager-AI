@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "./api-templates";
 
 export const templateKeys = {
-  project: (id: string) => ["projects", id, "templates"] as const,
+  project: (id: string) => ["project-templates", id] as const,
 };
 
 export function useProjectTemplates(projectId: string) {

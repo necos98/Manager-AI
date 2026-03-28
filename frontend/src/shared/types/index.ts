@@ -232,6 +232,7 @@ export interface SkillCreate {
   category: string;
   description: string;
   content: string;
+  type: string;
 }
 
 export interface ProjectSkill {
@@ -240,6 +241,7 @@ export interface ProjectSkill {
   name: string;
   type: "skill" | "agent";
   assigned_at: string;
+  file_synced: boolean;
 }
 
 export interface ProjectSkillAssign {
