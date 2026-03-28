@@ -56,7 +56,7 @@ async def create_terminal_command(
     db: AsyncSession = Depends(get_db),
 ):
     service = TerminalCommandService(db)
-    cmd = await service.create(data.command, data.sort_order, data.project_id)
+    cmd = await service.create(data.command, data.sort_order, data.project_id, condition=data.condition)
     await db.commit()
     return cmd
 
@@ -85,7 +85,7 @@ async def update_terminal_command(
 ):
     service = TerminalCommandService(db)
     try:
-        cmd = await service.update(cmd_id, command=data.command, sort_order=data.sort_order)
+        cmd = await service.update(cmd_id, command=data.command, sort_order=data.sort_order, condition=data.condition)
         await db.commit()
         await db.refresh(cmd)
         return cmd

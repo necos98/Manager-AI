@@ -1,31 +1,21 @@
 from datetime import datetime
+from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 
 class TerminalCommandCreate(BaseModel):
     command: str = Field(..., min_length=1)
     sort_order: int
     project_id: str | None = None
-
-    @field_validator("command")
-    @classmethod
-    def no_newlines(cls, v):
-        if "\n" in v or "\r" in v:
-            raise ValueError("Command must not contain newlines")
-        return v
+    condition: str | None = None
+    # Note: newlines are now allowed to support multi-line command blocks
 
 
 class TerminalCommandUpdate(BaseModel):
     command: str | None = Field(None, min_length=1)
     sort_order: int | None = None
-
-    @field_validator("command")
-    @classmethod
-    def no_newlines(cls, v):
-        if v is not None and ("\n" in v or "\r" in v):
-            raise ValueError("Command must not contain newlines")
-        return v
+    condition: Optional[str] = None
 
 
 class TerminalCommandOut(BaseModel):
@@ -33,6 +23,7 @@ class TerminalCommandOut(BaseModel):
     command: str
     sort_order: int
     project_id: str | None
+    condition: str | None
     created_at: datetime
     updated_at: datetime
 
