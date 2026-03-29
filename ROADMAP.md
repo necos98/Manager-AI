@@ -72,23 +72,23 @@ Completare l'allineamento architetturale avviato in Fase 0/1 nei file rimasti in
 Coprire i percorsi critici non ancora testati.
 
 ### R3.1 Test servizi core
-- [ ] `terminal_service.py`: test per close/resize concorrente, buffer overflow, cleanup su disconnect
-- [ ] `issue_service.py`: test per race condition su `complete_issue` (async concurrent calls)
-- [ ] `rag_service.py`: test per lock cleanup con N thread concorrenti
+- [x] `terminal_service.py`: test per close/resize concorrente, buffer overflow, cleanup su disconnect
+- [x] `issue_service.py`: test per race condition su `complete_issue` (async concurrent calls)
+- [x] `rag_service.py`: test per lock cleanup con N thread concorrenti
 
 ### R3.2 Test hook system
-- [ ] Hook che lancia eccezione: verificare che il flusso principale non si interrompa
-- [ ] Hook con timeout: verificare che venga cancellato e loggato
-- [ ] `ISSUE_CREATED` hook: test end-to-end del trigger
+- [x] Hook che lancia eccezione: verificare che il flusso principale non si interrompa
+- [x] Hook con timeout: verificare che venga cancellato e loggato
+- [x] `ISSUE_CREATED` hook: test end-to-end del trigger
 
 ### R3.3 Test router terminali
-- [ ] Creazione terminale: risposta corretta
-- [ ] WebSocket connect/disconnect: PTY cleanup verificato
-- [ ] Resize con terminale inesistente: 404 pulito
+- [x] Creazione terminale: risposta corretta
+- [x] WebSocket connect/disconnect: PTY cleanup verificato
+- [x] Resize con terminale inesistente: 404 pulito
 
 ### R3.4 Test MCP tools
-- [ ] Transazione atomica: errore nel tool non lascia DB in stato parziale
-- [ ] Tool call con project_id inesistente: `NotFoundError` propagato correttamente
+- [x] Transazione atomica: errore nel tool non lascia DB in stato parziale
+- [x] Tool call con project_id inesistente: `NotFoundError` propagato correttamente
 
 ---
 
