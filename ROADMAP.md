@@ -43,27 +43,27 @@ Correggere i punti dove il sistema può silenziare errori o lasciare stato incon
 Completare l'allineamento architetturale avviato in Fase 0/1 nei file rimasti indietro.
 
 ### R2.1 Gestione errori uniforme nel frontend
-- [ ] `issue-detail.tsx`: i blocchi `catch {}` vuoti devono loggare o mostrare toast
+- [x] `issue-detail.tsx`: i blocchi `catch {}` vuoti devono loggare o mostrare toast
   - File: `frontend/src/features/issues/components/issue-detail.tsx:62-78`
-- [ ] Tutti i `useMutation()` senza `onError` devono avere almeno un toast di fallback
+- [x] Tutti i `useMutation()` senza `onError` devono avere almeno un toast di fallback
   - Pattern: scansionare `hooks.ts` di ogni feature e aggiungere `onError: (e) => toast.error(...)`
-- [ ] `api/client.ts`: aggiungere timeout di default (30s) alle fetch
+- [x] `api/client.ts`: aggiungere timeout di default (30s) alle fetch
   - File: `frontend/src/shared/api/client.ts:13-24`
 
 ### R2.2 Validazione input coerente backend/frontend
-- [ ] Schema `IssueCreate.description`: aggiungere `max_length` (es. 50_000 chars)
-- [ ] Schema `IssueCompleteBody.recap`: aggiungere `max_length`
-- [ ] Schema `IssueUpdate.spec` / `.plan`: aggiungere `max_length`
-- [ ] Stessa logica nei form del frontend: disabilitare submit se campo supera limite
+- [x] Schema `IssueCreate.description`: aggiungere `max_length` (es. 50_000 chars)
+- [x] Schema `IssueCompleteBody.recap`: aggiungere `max_length`
+- [x] Schema `IssueUpdate.spec` / `.plan`: aggiungere `max_length`
+- [x] Stessa logica nei form del frontend: disabilitare submit se campo supera limite
 
 ### R2.3 Transazioni MCP consistenti
-- [ ] Alcuni MCP tool fanno `session.commit()` esplicitamente, altri no — uniformare il pattern
+- [x] Alcuni MCP tool fanno `session.commit()` esplicitamente, altri no — uniformare il pattern
   - File: `backend/app/mcp/server.py` (linee 87, 110, 146, 176)
-- [ ] Preferire un singolo commit al termine del tool, non commit parziali mid-function
+- [x] Preferire un singolo commit al termine del tool, non commit parziali mid-function
 
 ### R2.4 `.env.example` completo
-- [ ] Documentare tutte le variabili usate dall'app: `EMBEDDING_MODEL`, `CLAUDE_LIBRARY_PATH`, `RECORDINGS_PATH`, `BACKEND_PORT`
-- [ ] Aggiungere validazione in `config.py` (Pydantic validators) per i valori obbligatori
+- [x] Documentare tutte le variabili usate dall'app: `EMBEDDING_MODEL`, `CLAUDE_LIBRARY_PATH`, `RECORDINGS_PATH`, `BACKEND_PORT`
+- [x] Aggiungere validazione in `config.py` (Pydantic validators) per i valori obbligatori
 
 ---
 

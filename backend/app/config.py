@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -40,6 +40,15 @@ class Settings(BaseSettings):
         if v not in allowed:
             raise ValueError(f"embedding_driver must be one of {allowed}, got {v!r}")
         return v
+
+    @model_validator(mode="after")
+    def overlap_must_be_less_than_max(self) -> "Settings":
+        if self.chunk_overlap_tokens >= self.chunk_max_tokens:
+            raise ValueError(
+                f"chunk_overlap_tokens ({self.chunk_overlap_tokens}) must be "
+                f"less than chunk_max_tokens ({self.chunk_max_tokens})"
+            )
+        return self
 
 
 settings = Settings()

@@ -35,15 +35,22 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
 }
 
 export async function uploadRequest<T>(path: string, formData: FormData): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    method: "POST",
-    body: formData,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Unknown error" }));
-    throw new ApiError(err.detail || "Upload failed", res.status);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 300_000); // 5 minutes for uploads
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+      throw new ApiError(err.detail || "Upload failed", res.status);
+    }
+    return res.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return res.json();
 }
 
 export function buildUrl(path: string): string {
