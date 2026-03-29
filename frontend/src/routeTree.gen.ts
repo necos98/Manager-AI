@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./routes/__root"
+import { Route as DashboardRouteImport } from "./routes/dashboard"
 import { Route as TerminalsRouteImport } from "./routes/terminals"
 import { Route as SettingsRouteImport } from "./routes/settings"
 import { Route as IndexRouteImport } from "./routes/index"
@@ -23,6 +24,11 @@ import { Route as ProjectsProjectIdIssuesIndexRouteImport } from "./routes/proje
 import { Route as ProjectsProjectIdIssuesNewRouteImport } from "./routes/projects/$projectId/issues/new"
 import { Route as ProjectsProjectIdIssuesIssueIdRouteImport } from "./routes/projects/$projectId/issues/$issueId"
 
+const DashboardRoute = DashboardRouteImport.update({
+  id: "/dashboard",
+  path: "/dashboard",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TerminalsRoute = TerminalsRouteImport.update({
   id: "/terminals",
   path: "/terminals",
@@ -97,6 +103,7 @@ const ProjectsProjectIdIssuesIssueIdRoute =
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
+  "/dashboard": typeof DashboardRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -112,6 +119,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
+  "/dashboard": typeof DashboardRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -127,6 +135,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
+  "/dashboard": typeof DashboardRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | "/"
+    | "/dashboard"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | "/"
+    | "/dashboard"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
   id:
     | "__root__"
     | "/"
+    | "/dashboard"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -189,6 +201,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
   SettingsRoute: typeof SettingsRoute
   TerminalsRoute: typeof TerminalsRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
@@ -197,6 +210,13 @@ export interface RootRouteChildren {
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
+    "/dashboard": {
+      id: "/dashboard"
+      path: "/dashboard"
+      fullPath: "/dashboard"
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/terminals": {
       id: "/terminals"
       path: "/terminals"
@@ -330,6 +350,7 @@ const ProjectsProjectIdRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
   SettingsRoute: SettingsRoute,
   TerminalsRoute: TerminalsRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,

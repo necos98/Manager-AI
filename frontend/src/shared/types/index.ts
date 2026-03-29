@@ -297,6 +297,23 @@ export interface TemplateSave {
   content: string;
 }
 
+// ── Dashboard ──
+
+export interface DashboardIssue {
+  id: string;
+  name: string | null;
+  description: string;
+  status: IssueStatus;
+  priority: number;
+}
+
+export interface DashboardProject {
+  id: string;
+  name: string;
+  path: string;
+  active_issues: DashboardIssue[];
+}
+
 // ── Issue Relations ──
 
 export type RelationType = "blocks" | "related";

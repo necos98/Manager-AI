@@ -6,6 +6,7 @@ import {
   FileText,
   FolderSync,
   Key,
+  LayoutDashboard,
   MoreHorizontal,
   Pencil,
   Plug,
@@ -204,6 +205,17 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
             <SidebarGroupLabel>Global</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={!!matchRoute({ to: "/dashboard", fuzzy: true })}
+                  >
+                    <Link to="/dashboard">
+                      <LayoutDashboard />
+                      <span>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
