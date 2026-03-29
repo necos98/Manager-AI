@@ -104,3 +104,27 @@ async def test_embed_file_failure_broadcasts_event(mock_pipeline, mock_event_ser
     assert "extraction failed" in event["error"]
     assert event["project_name"] == "My Project"
     assert event["project_id"] == "p1"
+
+
+async def test_source_lock_serializes_concurrent_calls():
+    """N coroutine concorrenti sullo stesso source_id vengono serializzate e il lock viene pulito."""
+    import asyncio
+    from app.services.rag_service import _source_lock, _source_locks
+
+    _source_locks.clear()
+
+    active_count = 0
+    max_concurrent = 0
+
+    async def worker():
+        nonlocal active_count, max_concurrent
+        async with _source_lock("source-concurrent"):
+            active_count += 1
+            max_concurrent = max(max_concurrent, active_count)
+            await asyncio.sleep(0)  # cede il controllo per permettere interleaving
+            active_count -= 1
+
+    await asyncio.gather(*[worker() for _ in range(6)])
+
+    assert max_concurrent == 1, "Al massimo una coroutine alla volta deve essere dentro il lock"
+    assert "source-concurrent" not in _source_locks, "Il lock deve essere rimosso dopo l'ultimo uso"
