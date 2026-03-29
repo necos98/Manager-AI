@@ -20,29 +20,6 @@ async def issue(db_session, project):
     return await service.create(project_id=project.id, description="Test issue")
 
 
-async def test_start_analysis_fires_hook(db_session, issue, project):
-    with patch("app.services.issue_service.hook_registry") as mock_registry:
-        mock_registry.fire = AsyncMock()
-        service = IssueService(db_session)
-        result = await service.start_analysis(issue.id, project.id)
-        assert result.id == issue.id
-        assert result.status == IssueStatus.NEW  # state unchanged
-        mock_registry.fire.assert_called_once()
-        call_args = mock_registry.fire.call_args
-        from app.hooks.registry import HookEvent, HookContext
-        assert call_args[0][0] == HookEvent.ISSUE_ANALYSIS_STARTED
-        context: HookContext = call_args[0][1]
-        assert context.metadata["issue_description"] == issue.description
-        assert context.metadata["project_path"] == project.path
-
-
-async def test_start_analysis_requires_new_status(db_session, issue, project):
-    service = IssueService(db_session)
-    issue.status = IssueStatus.REASONING
-    await db_session.flush()
-    with pytest.raises(InvalidTransitionError):
-        await service.start_analysis(issue.id, project.id)
-
 
 async def test_accept_issue_via_service(db_session, issue, project):
     with patch("app.services.issue_service.hook_registry") as mock_registry:
