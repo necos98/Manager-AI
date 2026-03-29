@@ -24,5 +24,6 @@
   "tool.get_context_chunk_details.description": "Get full details of a specific context chunk found via search_project_context. Returns the complete text, metadata, and links to adjacent chunks for navigation.",
   "work_queue_paused": "false",
   "tool.get_next_issue.description": "Get the next workable issue for a project, ordered by priority. Returns an ACCEPTED issue (ready for implementation) first, then a NEW issue (needs planning). Returns null if no workable issues exist. Use this to implement a continuous work queue: after completing an issue, call get_next_issue to find the next one to start.",
-  "terminal_theme": "catppuccin"
+  "terminal_theme": "catppuccin",
+  "ask_brainstorm_command": "claude /ask-and-brainstorm $project_id"
 }
