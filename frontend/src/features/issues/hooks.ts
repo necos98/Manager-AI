@@ -8,10 +8,10 @@ export const issueKeys = {
   tasks: (projectId: string, issueId: string) => ["projects", projectId, "issues", issueId, "tasks"] as const,
 };
 
-export function useIssues(projectId: string, status?: IssueStatus) {
+export function useIssues(projectId: string, status?: IssueStatus, search?: string) {
   return useQuery({
-    queryKey: [...issueKeys.all(projectId), status] as const,
-    queryFn: () => api.fetchIssues(projectId, status),
+    queryKey: ["issues", projectId, status, search],
+    queryFn: () => api.fetchIssues(projectId, status, search),
   });
 }
 

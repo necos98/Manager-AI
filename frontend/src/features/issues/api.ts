@@ -13,9 +13,16 @@ import type {
   TaskUpdate,
 } from "@/shared/types";
 
-export function fetchIssues(projectId: string, status?: IssueStatus): Promise<Issue[]> {
-  const params = status ? `?status=${status}` : "";
-  return request(`/projects/${projectId}/issues${params}`);
+export function fetchIssues(
+  projectId: string,
+  status?: IssueStatus,
+  search?: string
+): Promise<Issue[]> {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (search) params.set("search", search);
+  const qs = params.toString();
+  return request(`/projects/${projectId}/issues${qs ? `?${qs}` : ""}`);
 }
 
 export function fetchIssue(projectId: string, issueId: string): Promise<Issue> {
