@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,6 +14,8 @@ from app.models.task import TaskStatus
 from app.services.activity_service import ActivityService
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
+
+_issue_completion_locks: dict[str, asyncio.Lock] = {}
 
 
 class IssueService:
@@ -131,50 +135,52 @@ class IssueService:
     async def complete_issue(self, issue_id: str, project_id: str, recap: str) -> Issue:
         if not recap or not recap.strip():
             raise ValidationError("Recap cannot be blank")
-        issue = await self.get_for_project(issue_id, project_id)
-        if issue.status != IssueStatus.ACCEPTED:
-            raise InvalidTransitionError(f"Can only complete issues in Accepted status, got {issue.status.value}")
-        # Enforce task completion
-        task_service = TaskService(self.session)
-        tasks = await task_service.list_by_issue(issue.id)
-        if tasks:
-            pending = [t for t in tasks if t.status != TaskStatus.COMPLETED]
-            if pending:
-                names = ", ".join(t.name for t in pending)
-                raise ValidationError(
-                    f"Cannot complete: {len(pending)} tasks not finished: {names}"
-                )
-        issue.recap = recap
-        issue.status = IssueStatus.FINISHED
-        await self.session.flush()
-        await ActivityService(self.session).log(
-            project_id=project_id,
-            issue_id=issue_id,
-            event_type="issue_completed",
-            details={"issue_name": issue.name or "", "recap_preview": (recap or "")[:100]},
-        )
-        # Fire hook with project context
-        project_service = ProjectService(self.session)
-        project = await project_service.get_by_id(project_id)
-        if project is None:
-            raise NotFoundError(f"Project {project_id} not found")
-        await hook_registry.fire(
-            HookEvent.ISSUE_COMPLETED,
-            HookContext(
+        lock = _issue_completion_locks.setdefault(issue_id, asyncio.Lock())
+        async with lock:
+            issue = await self.get_for_project(issue_id, project_id)
+            if issue.status != IssueStatus.ACCEPTED:
+                raise InvalidTransitionError(f"Can only complete issues in Accepted status, got {issue.status.value}")
+            # Enforce task completion
+            task_service = TaskService(self.session)
+            tasks = await task_service.list_by_issue(issue.id)
+            if tasks:
+                pending = [t for t in tasks if t.status != TaskStatus.COMPLETED]
+                if pending:
+                    names = ", ".join(t.name for t in pending)
+                    raise ValidationError(
+                        f"Cannot complete: {len(pending)} tasks not finished: {names}"
+                    )
+            issue.recap = recap
+            issue.status = IssueStatus.FINISHED
+            await self.session.flush()
+            await ActivityService(self.session).log(
                 project_id=project_id,
                 issue_id=issue_id,
-                event=HookEvent.ISSUE_COMPLETED,
-                metadata={
-                    "issue_name": issue.name or "",
-                    "recap": issue.recap or "",
-                    "project_name": project.name if project else "",
-                    "project_path": project.path if project else "",
-                    "project_description": project.description if project else "",
-                    "tech_stack": project.tech_stack if project else "",
-                },
-            ),
-        )
-        return issue
+                event_type="issue_completed",
+                details={"issue_name": issue.name or "", "recap_preview": (recap or "")[:100]},
+            )
+            # Fire hook with project context
+            project_service = ProjectService(self.session)
+            project = await project_service.get_by_id(project_id)
+            if project is None:
+                raise NotFoundError(f"Project {project_id} not found")
+            await hook_registry.fire(
+                HookEvent.ISSUE_COMPLETED,
+                HookContext(
+                    project_id=project_id,
+                    issue_id=issue_id,
+                    event=HookEvent.ISSUE_COMPLETED,
+                    metadata={
+                        "issue_name": issue.name or "",
+                        "recap": issue.recap or "",
+                        "project_name": project.name if project else "",
+                        "project_path": project.path if project else "",
+                        "project_description": project.description if project else "",
+                        "tech_stack": project.tech_stack if project else "",
+                    },
+                ),
+            )
+            return issue
 
     async def create_spec(self, issue_id: str, project_id: str, spec: str) -> Issue:
         if not spec or not spec.strip():

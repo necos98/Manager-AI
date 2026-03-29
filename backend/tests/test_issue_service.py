@@ -338,3 +338,35 @@ async def test_complete_issue_logs_activity(db_session, project):
     await svc.complete_issue(issue.id, project.id, "Done")
     logs = await activity_svc.list_for_project(project.id, issue_id=issue.id)
     assert any(log.event_type == "issue_completed" for log in logs)
+
+
+async def test_complete_issue_blocks_when_lock_held(db_session, project):
+    """complete_issue acquisisce un lock per-issue che blocca chiamate concorrenti."""
+    import asyncio
+    from app.services.issue_service import _issue_completion_locks
+
+    service = IssueService(db_session)
+    issue = await service.create(project_id=project.id, description="Concurrent test", priority=1)
+    await service.create_spec(issue.id, project.id, "# Spec")
+    await service.create_plan(issue.id, project.id, "# Plan")
+    await service.accept_issue(issue.id, project.id)
+
+    # Pre-acquisire il lock per simulare una chiamata già in corso
+    lock = asyncio.Lock()
+    _issue_completion_locks[issue.id] = lock
+    await lock.acquire()
+
+    # complete_issue deve bloccarsi finché il lock è held
+    task = asyncio.create_task(
+        service.complete_issue(issue.id, project.id, "Done")
+    )
+    await asyncio.sleep(0.02)
+    assert not task.done(), "complete_issue deve aspettare il lock"
+
+    # Rilascio lock → complete_issue deve completare
+    lock.release()
+    result = await asyncio.wait_for(task, timeout=2.0)
+    assert result.status == IssueStatus.FINISHED
+
+    # Pulizia
+    _issue_completion_locks.pop(issue.id, None)
