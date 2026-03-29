@@ -370,3 +370,31 @@ async def test_complete_issue_blocks_when_lock_held(db_session, project):
 
     # Pulizia
     _issue_completion_locks.pop(issue.id, None)
+
+
+async def test_complete_issue_concurrent_two_tasks(db_session, project):
+    """Due chiamate concorrenti: la prima completa, la seconda riceve InvalidTransitionError."""
+    import asyncio
+    from app.exceptions import InvalidTransitionError
+
+    service = IssueService(db_session)
+    issue = await service.create(project_id=project.id, description="Concurrent complete", priority=1)
+    await service.create_spec(issue.id, project.id, "# Spec")
+    await service.create_plan(issue.id, project.id, "# Plan")
+    await service.accept_issue(issue.id, project.id)
+
+    successes = []
+    failures = []
+
+    async def try_complete():
+        try:
+            result = await service.complete_issue(issue.id, project.id, "Done")
+            successes.append(result)
+        except InvalidTransitionError as e:
+            failures.append(e)
+
+    await asyncio.gather(try_complete(), try_complete())
+
+    assert len(successes) == 1, "Esattamente una chiamata deve completare con successo"
+    assert successes[0].status == IssueStatus.FINISHED
+    assert len(failures) == 1, "La seconda chiamata deve ricevere InvalidTransitionError"
