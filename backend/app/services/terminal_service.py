@@ -223,7 +223,8 @@ class TerminalService:
             entry = self._terminals[terminal_id]
             entry["cols"] = cols
             entry["rows"] = rows
-            entry["pty"].set_size(cols, rows)
+            pty = entry["pty"]
+        pty.set_size(cols, rows)
 
     def _to_response(self, entry: dict) -> dict:
         return {
