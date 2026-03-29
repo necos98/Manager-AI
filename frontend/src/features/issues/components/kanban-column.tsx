@@ -9,9 +9,10 @@ interface KanbanColumnProps {
   activeTerminalIssueIds: string[];
   blockedIssueIds: Set<string>;
   isValidTarget: boolean;
+  projectId: string;
 }
 
-export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIssueIds, isValidTarget }: KanbanColumnProps) {
+export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIssueIds, isValidTarget, projectId }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
@@ -34,6 +35,7 @@ export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIs
             issue={issue}
             hasTerminal={activeTerminalIssueIds.includes(issue.id)}
             isBlocked={blockedIssueIds.has(issue.id)}
+            projectId={projectId}
           />
         ))}
       </div>

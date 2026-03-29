@@ -9,26 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./routes/__root"
-import { Route as DashboardRouteImport } from "./routes/dashboard"
 import { Route as TerminalsRouteImport } from "./routes/terminals"
 import { Route as SettingsRouteImport } from "./routes/settings"
+import { Route as LibraryRouteImport } from "./routes/library"
+import { Route as DashboardRouteImport } from "./routes/dashboard"
 import { Route as IndexRouteImport } from "./routes/index"
 import { Route as ProjectsNewRouteImport } from "./routes/projects/new"
 import { Route as ProjectsProjectIdRouteImport } from "./routes/projects/$projectId"
+import { Route as ProjectsProjectIdVariablesRouteImport } from "./routes/projects/$projectId/variables"
+import { Route as ProjectsProjectIdLibraryRouteImport } from "./routes/projects/$projectId/library"
 import { Route as ProjectsProjectIdIssuesRouteImport } from "./routes/projects/$projectId/issues"
 import { Route as ProjectsProjectIdFilesRouteImport } from "./routes/projects/$projectId/files"
 import { Route as ProjectsProjectIdCommandsRouteImport } from "./routes/projects/$projectId/commands"
-import { Route as ProjectsProjectIdActivityRouteImport } from "./routes/projects/$projectId/activity"
 import { Route as ProjectsProjectIdAutomationRouteImport } from "./routes/projects/$projectId/automation"
+import { Route as ProjectsProjectIdActivityRouteImport } from "./routes/projects/$projectId/activity"
 import { Route as ProjectsProjectIdIssuesIndexRouteImport } from "./routes/projects/$projectId/issues/index"
 import { Route as ProjectsProjectIdIssuesNewRouteImport } from "./routes/projects/$projectId/issues/new"
 import { Route as ProjectsProjectIdIssuesIssueIdRouteImport } from "./routes/projects/$projectId/issues/$issueId"
 
-const DashboardRoute = DashboardRouteImport.update({
-  id: "/dashboard",
-  path: "/dashboard",
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TerminalsRoute = TerminalsRouteImport.update({
   id: "/terminals",
   path: "/terminals",
@@ -37,6 +35,16 @@ const TerminalsRoute = TerminalsRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: "/settings",
   path: "/settings",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: "/library",
+  path: "/library",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: "/dashboard",
+  path: "/dashboard",
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -54,6 +62,18 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
   path: "/projects/$projectId",
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsProjectIdVariablesRoute =
+  ProjectsProjectIdVariablesRouteImport.update({
+    id: "/variables",
+    path: "/variables",
+    getParentRoute: () => ProjectsProjectIdRoute,
+  } as any)
+const ProjectsProjectIdLibraryRoute =
+  ProjectsProjectIdLibraryRouteImport.update({
+    id: "/library",
+    path: "/library",
+    getParentRoute: () => ProjectsProjectIdRoute,
+  } as any)
 const ProjectsProjectIdIssuesRoute = ProjectsProjectIdIssuesRouteImport.update({
   id: "/issues",
   path: "/issues",
@@ -70,16 +90,16 @@ const ProjectsProjectIdCommandsRoute =
     path: "/commands",
     getParentRoute: () => ProjectsProjectIdRoute,
   } as any)
-const ProjectsProjectIdActivityRoute =
-  ProjectsProjectIdActivityRouteImport.update({
-    id: "/activity",
-    path: "/activity",
-    getParentRoute: () => ProjectsProjectIdRoute,
-  } as any)
 const ProjectsProjectIdAutomationRoute =
   ProjectsProjectIdAutomationRouteImport.update({
     id: "/automation",
     path: "/automation",
+    getParentRoute: () => ProjectsProjectIdRoute,
+  } as any)
+const ProjectsProjectIdActivityRoute =
+  ProjectsProjectIdActivityRouteImport.update({
+    id: "/activity",
+    path: "/activity",
     getParentRoute: () => ProjectsProjectIdRoute,
   } as any)
 const ProjectsProjectIdIssuesIndexRoute =
@@ -104,6 +124,7 @@ const ProjectsProjectIdIssuesIssueIdRoute =
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/dashboard": typeof DashboardRoute
+  "/library": typeof LibraryRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -113,6 +134,8 @@ export interface FileRoutesByFullPath {
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
+  "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
+  "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
   "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
   "/projects/$projectId/issues/": typeof ProjectsProjectIdIssuesIndexRoute
@@ -120,6 +143,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/dashboard": typeof DashboardRoute
+  "/library": typeof LibraryRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -128,6 +152,8 @@ export interface FileRoutesByTo {
   "/projects/$projectId/automation": typeof ProjectsProjectIdAutomationRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
+  "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
+  "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
   "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesIndexRoute
@@ -136,6 +162,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/dashboard": typeof DashboardRoute
+  "/library": typeof LibraryRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -145,6 +172,8 @@ export interface FileRoutesById {
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
+  "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
+  "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
   "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
   "/projects/$projectId/issues/": typeof ProjectsProjectIdIssuesIndexRoute
@@ -154,6 +183,7 @@ export interface FileRouteTypes {
   fullPaths:
     | "/"
     | "/dashboard"
+    | "/library"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -163,6 +193,8 @@ export interface FileRouteTypes {
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
     | "/projects/$projectId/issues"
+    | "/projects/$projectId/library"
+    | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
     | "/projects/$projectId/issues/new"
     | "/projects/$projectId/issues/"
@@ -170,6 +202,7 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/dashboard"
+    | "/library"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -178,6 +211,8 @@ export interface FileRouteTypes {
     | "/projects/$projectId/automation"
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
+    | "/projects/$projectId/library"
+    | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
     | "/projects/$projectId/issues/new"
     | "/projects/$projectId/issues"
@@ -185,6 +220,7 @@ export interface FileRouteTypes {
     | "__root__"
     | "/"
     | "/dashboard"
+    | "/library"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -194,6 +230,8 @@ export interface FileRouteTypes {
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
     | "/projects/$projectId/issues"
+    | "/projects/$projectId/library"
+    | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
     | "/projects/$projectId/issues/new"
     | "/projects/$projectId/issues/"
@@ -202,6 +240,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
+  LibraryRoute: typeof LibraryRoute
   SettingsRoute: typeof SettingsRoute
   TerminalsRoute: typeof TerminalsRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
@@ -210,13 +249,6 @@ export interface RootRouteChildren {
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    "/dashboard": {
-      id: "/dashboard"
-      path: "/dashboard"
-      fullPath: "/dashboard"
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     "/terminals": {
       id: "/terminals"
       path: "/terminals"
@@ -229,6 +261,20 @@ declare module "@tanstack/react-router" {
       path: "/settings"
       fullPath: "/settings"
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/library": {
+      id: "/library"
+      path: "/library"
+      fullPath: "/library"
+      preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/dashboard": {
+      id: "/dashboard"
+      path: "/dashboard"
+      fullPath: "/dashboard"
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/": {
@@ -252,6 +298,20 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ProjectsProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/projects/$projectId/variables": {
+      id: "/projects/$projectId/variables"
+      path: "/variables"
+      fullPath: "/projects/$projectId/variables"
+      preLoaderRoute: typeof ProjectsProjectIdVariablesRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
+    "/projects/$projectId/library": {
+      id: "/projects/$projectId/library"
+      path: "/library"
+      fullPath: "/projects/$projectId/library"
+      preLoaderRoute: typeof ProjectsProjectIdLibraryRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
     "/projects/$projectId/issues": {
       id: "/projects/$projectId/issues"
       path: "/issues"
@@ -273,18 +333,18 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ProjectsProjectIdCommandsRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
-    "/projects/$projectId/activity": {
-      id: "/projects/$projectId/activity"
-      path: "/activity"
-      fullPath: "/projects/$projectId/activity"
-      preLoaderRoute: typeof ProjectsProjectIdActivityRouteImport
-      parentRoute: typeof ProjectsProjectIdRoute
-    }
     "/projects/$projectId/automation": {
       id: "/projects/$projectId/automation"
       path: "/automation"
       fullPath: "/projects/$projectId/automation"
       preLoaderRoute: typeof ProjectsProjectIdAutomationRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
+    "/projects/$projectId/activity": {
+      id: "/projects/$projectId/activity"
+      path: "/activity"
+      fullPath: "/projects/$projectId/activity"
+      preLoaderRoute: typeof ProjectsProjectIdActivityRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
     "/projects/$projectId/issues/": {
@@ -335,6 +395,8 @@ interface ProjectsProjectIdRouteChildren {
   ProjectsProjectIdCommandsRoute: typeof ProjectsProjectIdCommandsRoute
   ProjectsProjectIdFilesRoute: typeof ProjectsProjectIdFilesRoute
   ProjectsProjectIdIssuesRoute: typeof ProjectsProjectIdIssuesRouteWithChildren
+  ProjectsProjectIdLibraryRoute: typeof ProjectsProjectIdLibraryRoute
+  ProjectsProjectIdVariablesRoute: typeof ProjectsProjectIdVariablesRoute
 }
 
 const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
@@ -343,6 +405,8 @@ const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
   ProjectsProjectIdCommandsRoute: ProjectsProjectIdCommandsRoute,
   ProjectsProjectIdFilesRoute: ProjectsProjectIdFilesRoute,
   ProjectsProjectIdIssuesRoute: ProjectsProjectIdIssuesRouteWithChildren,
+  ProjectsProjectIdLibraryRoute: ProjectsProjectIdLibraryRoute,
+  ProjectsProjectIdVariablesRoute: ProjectsProjectIdVariablesRoute,
 }
 
 const ProjectsProjectIdRouteWithChildren =
@@ -351,6 +415,7 @@ const ProjectsProjectIdRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
+  LibraryRoute: LibraryRoute,
   SettingsRoute: SettingsRoute,
   TerminalsRoute: TerminalsRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,

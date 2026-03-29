@@ -294,38 +294,6 @@ class IssueService:
         )
         return issue
 
-    async def start_analysis(self, issue_id: str, project_id: str) -> Issue:
-        issue = await self.get_for_project(issue_id, project_id)
-        if issue.status != IssueStatus.NEW:
-            raise InvalidTransitionError(
-                f"Can only start analysis for issues in New status, got {issue.status.value}"
-            )
-        project_service = ProjectService(self.session)
-        project = await project_service.get_by_id(project_id)
-        if project is None:
-            raise NotFoundError(f"Project {project_id} not found")
-        await hook_registry.fire(
-            HookEvent.ISSUE_ANALYSIS_STARTED,
-            HookContext(
-                project_id=project_id,
-                issue_id=issue_id,
-                event=HookEvent.ISSUE_ANALYSIS_STARTED,
-                metadata={
-                    "issue_description": issue.description,
-                    "project_name": project.name if project else "",
-                    "project_path": project.path if project else "",
-                    "project_description": project.description if project else "",
-                    "tech_stack": project.tech_stack if project else "",
-                },
-            ),
-        )
-        await ActivityService(self.session).log(
-            project_id=project_id,
-            issue_id=issue_id,
-            event_type="analysis_started",
-            details={"issue_name": issue.name or ""},
-        )
-        return issue
 
     async def delete(self, issue_id: str, project_id: str) -> bool:
         issue = await self.get_for_project(issue_id, project_id)

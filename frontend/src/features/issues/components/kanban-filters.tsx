@@ -19,7 +19,7 @@ export function KanbanFilters({ search, onSearchChange, priority, onPriorityChan
       <div className="relative flex-1 min-w-[180px]">
         <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
         <Input
-          placeholder="Cerca issue..."
+          placeholder="Search issues..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-8 h-8 text-sm"
@@ -27,10 +27,10 @@ export function KanbanFilters({ search, onSearchChange, priority, onPriorityChan
       </div>
       <Select value={priority} onValueChange={onPriorityChange}>
         <SelectTrigger className="w-[120px] h-8 text-sm">
-          <SelectValue placeholder="Priorità" />
+          <SelectValue placeholder="Priority" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Tutte</SelectItem>
+          <SelectItem value="all">All</SelectItem>
           <SelectItem value="1">P1</SelectItem>
           <SelectItem value="2">P2</SelectItem>
           <SelectItem value="3">P3</SelectItem>
@@ -43,9 +43,9 @@ export function KanbanFilters({ search, onSearchChange, priority, onPriorityChan
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="priority">Per priorità</SelectItem>
-          <SelectItem value="created_at">Per data creazione</SelectItem>
-          <SelectItem value="updated_at">Per ultimo aggiornamento</SelectItem>
+          <SelectItem value="priority">By priority</SelectItem>
+          <SelectItem value="created_at">By created date</SelectItem>
+          <SelectItem value="updated_at">By last updated</SelectItem>
         </SelectContent>
       </Select>
     </div>

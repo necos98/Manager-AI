@@ -26,7 +26,7 @@ export function PlanFeedback({ projectId, issueId }: PlanFeedbackProps) {
     <div className="space-y-4 mt-4 border-t pt-4">
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <MessageSquare className="size-4" />
-        Feedback per Claude
+        Feedback for Claude
       </div>
 
       {feedbacks.length > 0 && (
@@ -44,7 +44,7 @@ export function PlanFeedback({ projectId, issueId }: PlanFeedbackProps) {
 
       <div className="flex gap-2">
         <Textarea
-          placeholder="Dai feedback a Claude sul piano (es: aggiungi test per X, considera Y)..."
+          placeholder="Give Claude feedback on the plan (e.g. add tests for X, consider Y)..."
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={3}
@@ -66,7 +66,7 @@ export function PlanFeedback({ projectId, issueId }: PlanFeedbackProps) {
           )}
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">Ctrl+Enter per inviare</p>
+      <p className="text-xs text-muted-foreground">Ctrl+Enter to send</p>
     </div>
   );
 }

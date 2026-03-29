@@ -72,7 +72,7 @@ export function AutomationPanel({ projectId }: AutomationPanelProps) {
           <div>
             <p className="font-medium text-sm">Auto-start workflow</p>
             <p className="text-xs text-muted-foreground">
-              Avvia automaticamente spec + piano + task alla creazione dell'issue
+              Automatically starts spec + plan + tasks when an issue is created
             </p>
           </div>
         </label>
@@ -81,7 +81,7 @@ export function AutomationPanel({ projectId }: AutomationPanelProps) {
           <div className="space-y-3 pt-2 pl-14">
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1">
-                Prompt custom (vuoto = default)
+                Custom prompt (empty = default)
               </label>
               <textarea
                 rows={4}
@@ -94,7 +94,7 @@ export function AutomationPanel({ projectId }: AutomationPanelProps) {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1">
-                Timeout secondi (default 600)
+                Timeout seconds (default 600)
               </label>
               <input
                 type="number"
@@ -129,9 +129,9 @@ export function AutomationPanel({ projectId }: AutomationPanelProps) {
             />
           </button>
           <div>
-            <p className="font-medium text-sm">Auto-start implementazione</p>
+            <p className="font-medium text-sm">Auto-start implementation</p>
             <p className="text-xs text-muted-foreground">
-              Avvia automaticamente l'implementazione all'accettazione dell'issue
+              Automatically starts implementation when an issue is accepted
             </p>
           </div>
         </label>
@@ -139,24 +139,24 @@ export function AutomationPanel({ projectId }: AutomationPanelProps) {
 
       {/* Auto complete mode */}
       <div className="border rounded-lg p-4">
-        <label className="text-sm font-medium block mb-2">Completamento automatico</label>
+        <label className="text-sm font-medium block mb-2">Auto-completion</label>
         <select
           value={autoCompleteMode}
           onChange={(e) => updateText("auto_complete_mode", e.target.value)}
           disabled={saving}
           className="rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
-          <option value="off">Disabilitato</option>
-          <option value="notify">Notifica utente</option>
-          <option value="auto">Auto-completa con recap (Claude)</option>
+          <option value="off">Disabled</option>
+          <option value="notify">Notify user</option>
+          <option value="auto">Auto-complete with recap (Claude)</option>
         </select>
         <p className="text-xs text-muted-foreground mt-1.5">
-          Comportamento quando un'issue viene completata dall'automazione
+          Behavior when an issue is completed by automation
         </p>
       </div>
 
       {saving && (
-        <p className="text-xs text-muted-foreground">Salvataggio in corso...</p>
+        <p className="text-xs text-muted-foreground">Saving...</p>
       )}
     </div>
   );

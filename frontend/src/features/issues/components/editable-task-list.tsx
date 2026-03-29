@@ -77,7 +77,7 @@ function SortableTaskItem({
         onClick={() => onToggle(task)}
         disabled={isToggling || task.status === "Completed"}
         className="shrink-0 disabled:opacity-50"
-        title={task.status === "Completed" ? "Completato" : "Segna come completato"}
+        title={task.status === "Completed" ? "Completed" : "Mark as complete"}
       >
         {isToggling ? <Loader2 className="size-4 animate-spin" /> : statusIcon}
       </button>

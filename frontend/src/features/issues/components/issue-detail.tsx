@@ -90,7 +90,7 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
             value={issue.name || "Untitled Issue"}
             onSave={(name) => updateIssue.mutate({ name })}
             disabled={isTerminalState}
-            validate={(v) => v.length > 500 ? "Max 500 caratteri" : null}
+            validate={(v) => v.length > 500 ? "Max 500 characters" : null}
             renderView={(v) => <h1 className="text-xl font-bold">{v}</h1>}
           />
           <div className="flex items-center gap-3 mt-1">
@@ -103,7 +103,7 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
               disabled={isTerminalState}
               validate={(v) => {
                 const n = parseInt(v, 10);
-                return isNaN(n) || n < 1 || n > 5 ? "Priorità deve essere 1-5" : null;
+                return isNaN(n) || n < 1 || n > 5 ? "Priority must be 1-5" : null;
               }}
               renderView={(v) => (
                 <span className="text-sm text-muted-foreground">Priority: {v}</span>

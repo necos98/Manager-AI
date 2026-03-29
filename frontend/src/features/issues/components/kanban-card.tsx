@@ -1,6 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Terminal } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { Card } from "@/shared/components/ui/card";
 import { StatusBadge } from "./status-badge";
 import type { Issue } from "@/shared/types";
@@ -9,6 +10,7 @@ interface KanbanCardProps {
   issue: Issue;
   hasTerminal: boolean;
   isBlocked?: boolean;
+  projectId: string;
 }
 
 function TaskProgress({ tasks }: { tasks: Issue["tasks"] }) {
@@ -26,20 +28,27 @@ function TaskProgress({ tasks }: { tasks: Issue["tasks"] }) {
   );
 }
 
-export function KanbanCard({ issue, hasTerminal, isBlocked = false }: KanbanCardProps) {
+export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: issue.id,
     data: { issue },
   });
+  const navigate = useNavigate();
 
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.4 : 1,
   };
 
+  function handleClick() {
+    if (!isDragging) {
+      navigate({ to: "/projects/$projectId/issues/$issueId", params: { projectId, issueId: issue.id } });
+    }
+  }
+
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes} className="touch-none">
-      <Card className="px-3 py-2.5 cursor-grab active:cursor-grabbing hover:bg-accent/50 transition-colors">
+      <Card onClick={handleClick} className="px-3 py-2.5 cursor-pointer hover:bg-accent/50 transition-colors">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
@@ -48,7 +57,7 @@ export function KanbanCard({ issue, hasTerminal, isBlocked = false }: KanbanCard
               )}
               {isBlocked && (
                 <span className="text-xs bg-destructive/15 text-destructive px-1.5 py-0.5 rounded font-medium flex-shrink-0">
-                  Bloccata
+                  Blocked
                 </span>
               )}
             </div>

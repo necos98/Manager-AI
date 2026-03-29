@@ -108,6 +108,7 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
               activeTerminalIssueIds={activeTerminalIssueIds}
               blockedIssueIds={blockedIssueIds}
               isValidTarget={activeIssue ? isValidTransition(activeIssue.status, status) : false}
+              projectId={projectId}
             />
           ))}
         </div>
@@ -125,13 +126,13 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
       <Dialog open={!!pending} onOpenChange={(open) => !open && setPending(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cambia stato</DialogTitle>
+            <DialogTitle>Change status</DialogTitle>
             <DialogDescription>
-              Sposta "{pending?.issue.name || pending?.issue.description}" da {pending?.issue.status} a {pending?.to}?
+              Move "{pending?.issue.name || pending?.issue.description}" from {pending?.issue.status} to {pending?.to}?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPending(null)}>Annulla</Button>
+            <Button variant="outline" onClick={() => setPending(null)}>Cancel</Button>
             <Button onClick={confirmTransition} disabled={updateStatus.isPending}>
               {updateStatus.isPending ? "..." : "Conferma"}
             </Button>

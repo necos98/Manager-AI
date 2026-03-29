@@ -65,9 +65,6 @@ export function deleteTask(projectId: string, issueId: string, taskId: string): 
   return request(`/projects/${projectId}/issues/${issueId}/tasks/${taskId}`, { method: "DELETE" });
 }
 
-export function startAnalysis(projectId: string, issueId: string): Promise<Issue> {
-  return request(`/projects/${projectId}/issues/${issueId}/start-analysis`, { method: "POST" });
-}
 
 export function acceptIssue(projectId: string, issueId: string): Promise<Issue> {
   return request(`/projects/${projectId}/issues/${issueId}/accept`, { method: "POST" });

@@ -9,6 +9,13 @@ export type WsEventData = Record<string, unknown> & {
   issue_id?: string;
   issue_name?: string;
   message?: string;
+  error?: string;
+  hook_name?: string;
+  hook_description?: string;
+  new_status?: string;
+  content_type?: string;
+  title?: string;
+  source_type?: string;
 };
 
 type EventSubscriber = (event: WsEventData) => void;
@@ -50,24 +57,128 @@ function playNotificationSound() {
   }
 }
 
-function showTypedToast(
-  eventType: string | undefined,
-  title: string,
-  description: string,
-  action?: { label: string; onClick: () => void }
-) {
-  const opts = { description, action };
-  if (eventType === "hook_failed") {
-    toast.error(title, opts);
-  } else if (eventType === "hook_completed") {
-    toast.success(title, opts);
-  } else if (eventType === "notification") {
-    toast.info(title, opts);
-  } else if (eventType === "hook_started") {
-    toast(title, { ...opts, duration: 2000 });
-  } else {
-    toast(title, opts);
+const STATUS_LABELS: Record<string, string> = {
+  New: "New",
+  Reasoning: "Analyzing",
+  Planned: "Planned",
+  Accepted: "Accepted",
+  Finished: "Finished",
+  Canceled: "Canceled",
+};
+
+const CONTENT_TYPE_LABELS: Record<string, string> = {
+  specification: "Specification written",
+  plan: "Plan written",
+  name: "Name updated",
+  recap: "Recap written",
+};
+
+interface ToastContent {
+  title: string;
+  message: string;
+  variant: "default" | "success" | "error" | "info";
+  duration?: number;
+  silent?: boolean;
+}
+
+function buildToastContent(data: WsEventData): ToastContent {
+  const issueName = data.issue_name || "";
+  const hookLabel = data.hook_description || data.hook_name || "Operazione";
+
+  switch (data.type) {
+    case "hook_started":
+      return {
+        title: hookLabel,
+        message: issueName,
+        variant: "default",
+        duration: 3000,
+      };
+
+    case "hook_completed":
+      return {
+        title: hookLabel,
+        message: issueName || "Completed",
+        variant: "success",
+      };
+
+    case "hook_failed":
+      return {
+        title: hookLabel,
+        message: data.error || "Unknown error",
+        variant: "error",
+      };
+
+    case "issue_status_changed": {
+      const statusLabel = STATUS_LABELS[data.new_status as string] ?? data.new_status ?? "aggiornata";
+      return {
+        title: issueName || "Issue",
+        message: `Status → ${statusLabel}`,
+        variant: "default",
+      };
+    }
+
+    case "issue_content_updated": {
+      const contentLabel = CONTENT_TYPE_LABELS[data.content_type as string] ?? `${data.content_type} updated`;
+      return {
+        title: issueName || "Issue",
+        message: contentLabel,
+        variant: "default",
+      };
+    }
+
+    case "notification":
+      return {
+        title: (data.title as string) || "Notifica",
+        message: (data.message as string) || "",
+        variant: "info",
+      };
+
+    case "task_updated":
+      return { title: "", message: "", variant: "default", silent: true };
+
+    case "embedding_completed":
+      return {
+        title: "Indexing complete",
+        message: (data.title as string) || (data.source_type as string) || "",
+        variant: "default",
+        duration: 2500,
+      };
+
+    case "embedding_failed":
+      return {
+        title: "Indexing failed",
+        message: `${data.title ?? ""}: ${data.error ?? "unknown error"}`.replace(/^: /, ""),
+        variant: "error",
+      };
+
+    case "terminal_created":
+      return {
+        title: "Analysis started",
+        message: (data.issue_name as string) || "Terminal open",
+        variant: "default",
+        duration: 3000,
+      };
+
+    case "embedding_skipped":
+    case "project_updated":
+      return { title: "", message: "", variant: "default", silent: true };
+
+    default:
+      return {
+        title: (data.title as string) || data.type || "Evento",
+        message: (data.message as string) || "",
+        variant: "default",
+      };
   }
+}
+
+function showToast(content: ToastContent, action?: { label: string; onClick: () => void }) {
+  if (content.silent) return;
+  const opts = { description: content.message || undefined, action, duration: content.duration };
+  if (content.variant === "error") toast.error(content.title, opts);
+  else if (content.variant === "success") toast.success(content.title, opts);
+  else if (content.variant === "info") toast.info(content.title, opts);
+  else toast(content.title, opts);
 }
 
 export function EventProvider({ children }: { children: React.ReactNode }) {
@@ -112,11 +223,6 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         subscribersRef.current.forEach((fn) => fn(data));
         const projectId = data.project_id;
         const issueId = data.issue_id;
-        const issueName = data.issue_name;
-        const eventType = data.type;
-        const message =
-          (data.message as string) || (data.status as string) || "New event";
-        const title = issueName || eventType || "Event";
 
         const action =
           projectId && issueId
@@ -131,8 +237,14 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
               }
             : undefined;
 
-        showTypedToast(eventType, title, message, action);
-        playNotificationSound();
+        const toastContent = buildToastContent(data);
+        showToast(toastContent, action);
+        if (!toastContent.silent) playNotificationSound();
+
+        // Invalidate terminal queries when a new terminal is spawned
+        if (data.type === "terminal_created") {
+          queryClient.invalidateQueries({ queryKey: ["terminals"] });
+        }
 
         // Invalidate relevant queries for real-time updates
         if (projectId && issueId) {

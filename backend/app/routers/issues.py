@@ -78,15 +78,6 @@ async def delete_issue(project_id: str, issue_id: str, db: AsyncSession = Depend
     await db.commit()
 
 
-@router.post("/{issue_id}/start-analysis", response_model=IssueResponse)
-async def start_analysis(
-    project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
-):
-    service = IssueService(db)
-    issue = await service.start_analysis(issue_id, project_id)
-    await db.commit()
-    return await _reload_with_tasks(db, issue.id)
-
 
 @router.post("/{issue_id}/accept", response_model=IssueResponse)
 async def accept_issue(

@@ -19,7 +19,7 @@ import { useUpdateProject } from "@/features/projects/hooks";
 import type { Project } from "@/shared/types";
 
 const SHELL_OPTIONS = [
-  { value: "", label: "Default (MANAGER_AI_SHELL env or cmd.exe)" },
+  { value: "__default__", label: "Default (MANAGER_AI_SHELL env or cmd.exe)" },
   { value: "C:\\Windows\\System32\\cmd.exe", label: "cmd.exe" },
   { value: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", label: "PowerShell (Windows)" },
   { value: "C:\\Program Files\\PowerShell\\7\\pwsh.exe", label: "PowerShell 7 (pwsh)" },
@@ -45,7 +45,7 @@ export function ProjectSettingsDialog({
     path: project.path,
     description: project.description || "",
     tech_stack: project.tech_stack || "",
-    shell: project.shell || "",
+    shell: project.shell || "__default__",
   });
 
   const updateProject = useUpdateProject(project.id);
@@ -53,7 +53,7 @@ export function ProjectSettingsDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateProject.mutate(
-      { ...form, shell: form.shell || null },
+      { ...form, shell: form.shell === "__default__" ? null : form.shell },
       { onSuccess: () => onOpenChange(false) }
     );
   };

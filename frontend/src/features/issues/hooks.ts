@@ -69,16 +69,6 @@ export const feedbackKeys = {
     ["projects", projectId, "issues", issueId, "feedback"] as const,
 };
 
-export function useStartAnalysis(projectId: string, issueId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => api.startAnalysis(projectId, issueId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
-      queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
-    },
-  });
-}
 
 export function useAcceptIssue(projectId: string, issueId: string) {
   const queryClient = useQueryClient();

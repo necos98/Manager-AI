@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import subprocess
 import time
 from dataclasses import dataclass
 
@@ -32,6 +33,9 @@ class ClaudeCodeExecutor:
         """
         Spawn `claude` with the given prompt (sent via stdin) and return the result.
 
+        Uses asyncio.to_thread + subprocess.run to avoid asyncio event loop
+        compatibility issues (e.g. SelectorEventLoop on Windows).
+
         Args:
             prompt:        The prompt text to pass to Claude Code via stdin.
             project_path:  Working directory for the subprocess.
@@ -44,7 +48,6 @@ class ClaudeCodeExecutor:
 
         env = os.environ.copy()
 
-        # Default Manager AI env vars, sourced from the current environment
         env.setdefault(
             "MANAGER_AI_PROJECT_ID",
             os.environ.get("MANAGER_AI_PROJECT_ID", ""),
@@ -59,56 +62,48 @@ class ClaudeCodeExecutor:
 
         cmd = [
             "claude",
-            "-p",  # pipe/stdin mode — prompt is passed via stdin
+            "-p",
             "--allowedTools",
             "mcp__ManagerAi__*",
         ]
 
+        cwd = project_path or None
+        prompt_bytes = prompt.encode()
         start = time.monotonic()
 
-        try:
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=project_path,
+        def _run() -> subprocess.CompletedProcess:
+            return subprocess.run(
+                cmd,
+                input=prompt_bytes,
+                capture_output=True,
+                cwd=cwd,
                 env=env,
+                timeout=timeout,
             )
 
-            try:
-                stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                    process.communicate(input=prompt.encode()),
-                    timeout=timeout,
-                )
-            except asyncio.TimeoutError:
-                process.kill()
-                await process.communicate()
-                duration = time.monotonic() - start
-                return ExecutorResult(
-                    success=False,
-                    error=f"Claude Code process timed out after {timeout}s",
-                    duration=duration,
-                )
-
+        try:
+            result = await asyncio.to_thread(_run)
             duration = time.monotonic() - start
-            stdout = stdout_bytes.decode(errors="replace").strip()
-            stderr = stderr_bytes.decode(errors="replace").strip()
+            stdout = result.stdout.decode(errors="replace").strip()
+            stderr = result.stderr.decode(errors="replace").strip()
 
-            if process.returncode == 0:
-                return ExecutorResult(
-                    success=True,
-                    output=stdout or None,
-                    duration=duration,
-                )
+            if result.returncode == 0:
+                return ExecutorResult(success=True, output=stdout or None, duration=duration)
             else:
                 return ExecutorResult(
                     success=False,
                     output=stdout or None,
-                    error=stderr or f"Process exited with code {process.returncode}",
+                    error=stderr or f"Process exited with code {result.returncode}",
                     duration=duration,
                 )
 
+        except subprocess.TimeoutExpired:
+            duration = time.monotonic() - start
+            return ExecutorResult(
+                success=False,
+                error=f"Claude Code process timed out after {timeout}s",
+                duration=duration,
+            )
         except FileNotFoundError:
             duration = time.monotonic() - start
             logger.error("'claude' CLI not found on PATH")
@@ -119,9 +114,9 @@ class ClaudeCodeExecutor:
             )
         except Exception as exc:  # noqa: BLE001
             duration = time.monotonic() - start
-            logger.error("Claude Code executor failed: %s", exc)
+            logger.error("Claude Code executor failed: %s", exc, exc_info=True)
             return ExecutorResult(
                 success=False,
-                error=str(exc),
+                error=str(exc) or type(exc).__name__,
                 duration=duration,
             )
