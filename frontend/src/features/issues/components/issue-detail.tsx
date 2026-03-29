@@ -26,6 +26,7 @@ import { InlineEditField } from "./inline-edit-field";
 import { useDeleteIssue, useUpdateIssue } from "@/features/issues/hooks";
 import { useKillTerminal } from "@/features/terminals/hooks";
 import type { Issue } from "@/shared/types";
+import { IssueRelationsTab } from "./issue-relations-tab";
 
 interface IssueDetailProps {
   issue: Issue;
@@ -51,6 +52,7 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
     { value: "specification", label: "Specification", available: !!issue.specification },
     { value: "plan", label: "Plan", available: !!issue.plan },
     { value: "tasks", label: "Tasks", available: true },
+    { value: "relations", label: "Relations", available: true },
     { value: "recap", label: "Recap", available: !!issue.recap },
   ], [issue.specification, issue.plan, issue.recap]);
 
@@ -186,6 +188,10 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="relations">
+          <IssueRelationsTab issue={issue} projectId={projectId} />
         </TabsContent>
 
         {issue.recap && (

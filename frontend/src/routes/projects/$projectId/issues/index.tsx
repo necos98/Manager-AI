@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useIssues } from "@/features/issues/hooks";
+import { useBlockedIssueIds } from "@/features/issues/hooks-relations";
 import { useProject } from "@/features/projects/hooks";
 import { useTerminals } from "@/features/terminals/hooks";
 import { KanbanBoard } from "@/features/issues/components/kanban-board";
@@ -23,6 +24,7 @@ function IssuesPage() {
   const { data: issues, isLoading } = useIssues(projectId);
   const { data: terminals } = useTerminals(projectId);
   const activeTerminalIssueIds = terminals?.map((t) => t.issue_id) ?? [];
+  const blockedIssueIds = useBlockedIssueIds(issues ?? []);
 
   if (isLoading) {
     return (
@@ -50,6 +52,7 @@ function IssuesPage() {
         issues={issues ?? []}
         projectId={projectId}
         activeTerminalIssueIds={activeTerminalIssueIds}
+        blockedIssueIds={blockedIssueIds}
       />
     </div>
   );
