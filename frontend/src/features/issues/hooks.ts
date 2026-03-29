@@ -43,13 +43,13 @@ export function useUpdateIssue(projectId: string, issueId: string) {
   });
 }
 
-export function useUpdateIssueStatus(projectId: string, issueId: string) {
-  const queryClient = useQueryClient();
+export function useUpdateIssueStatus(projectId: string) {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: IssueStatusUpdate) => api.updateIssueStatus(projectId, issueId, data),
+    mutationFn: ({ issueId, status }: { issueId: string; status: IssueStatus }) =>
+      api.updateIssueStatus(projectId, issueId, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
-      queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
+      qc.invalidateQueries({ queryKey: ["issues", projectId] });
     },
   });
 }
