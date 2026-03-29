@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings as app_settings
 from app.database import get_db
-from app.schemas.terminal import TerminalCreate, TerminalListResponse, TerminalResponse
+from app.schemas.terminal import AskTerminalCreate, TerminalCreate, TerminalListResponse, TerminalResponse
 from app.services.terminal_service import TerminalService, terminal_service
 from app.services.terminal_command_service import TerminalCommandService
 
@@ -152,6 +152,83 @@ async def create_terminal(
                             pty.write(line + "\r\n")
         except Exception:
             logger.warning("Failed to inject startup commands for terminal %s", terminal["id"], exc_info=True)
+
+    return TerminalResponse(**terminal)
+
+
+@router.post("/ask", response_model=TerminalResponse, status_code=201)
+async def create_ask_terminal(
+    data: AskTerminalCreate,
+    db: AsyncSession = Depends(get_db),
+    service: TerminalService = Depends(get_terminal_service),
+):
+    try:
+        project_path = await get_project_path(data.project_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if not os.path.isdir(project_path):
+        raise HTTPException(status_code=400, detail=f"Project path does not exist: {project_path}")
+
+    # Fetch project shell config
+    from app.models.project import Project
+    project_obj = await db.get(Project, data.project_id)
+    project_shell = project_obj.shell if project_obj else None
+
+    try:
+        terminal = service.create(
+            issue_id="",
+            project_id=data.project_id,
+            project_path=project_path,
+            shell=project_shell,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
+
+    # Inject Manager AI environment variables
+    try:
+        pty = service.get_pty(terminal["id"])
+        env_vars = {
+            "MANAGER_AI_TERMINAL_ID": terminal["id"],
+            "MANAGER_AI_PROJECT_ID": data.project_id,
+            "MANAGER_AI_BASE_URL": f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}",
+        }
+        import platform
+        set_cmd = "set" if platform.system() == "Windows" else "export"
+        env_commands = " && ".join(f"{set_cmd} {k}={v}" for k, v in env_vars.items())
+        pty.write(env_commands + "\r\n")
+    except Exception:
+        logger.warning("Failed to inject env vars for ask terminal %s", terminal["id"], exc_info=True)
+
+    # Inject project custom variables
+    try:
+        from app.services.project_variable_service import ProjectVariableService
+        var_svc = ProjectVariableService(db)
+        custom_vars = await var_svc.list(data.project_id)
+        if custom_vars:
+            pty = service.get_pty(terminal["id"])
+            import platform
+            set_cmd = "set" if platform.system() == "Windows" else "export"
+            var_commands = " && ".join(f"{set_cmd} {v.name}={v.value}" for v in custom_vars)
+            pty.write(var_commands + "\r\n")
+    except Exception:
+        logger.warning("Failed to inject custom vars for ask terminal %s", terminal["id"], exc_info=True)
+
+    # Read and inject the ask_brainstorm_command from settings
+    try:
+        from app.services.settings_service import SettingsService
+        settings_svc = SettingsService(db)
+        cmd = await settings_svc.get("ask_brainstorm_command")
+        variables = {
+            "$project_id": data.project_id,
+            "$project_path": project_path,
+        }
+        for var, val in variables.items():
+            cmd = cmd.replace(var, val)
+        pty = service.get_pty(terminal["id"])
+        pty.write(cmd + "\r\n")
+    except Exception:
+        logger.warning("Failed to inject ask command for terminal %s", terminal["id"], exc_info=True)
 
     return TerminalResponse(**terminal)
 
