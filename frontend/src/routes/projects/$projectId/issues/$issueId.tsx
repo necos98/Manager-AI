@@ -52,7 +52,7 @@ function IssueDetailPage() {
   const doOpenTerminal = async () => {
     setShowLimitWarning(false);
     try {
-      await createTerminal.mutateAsync({ issue_id: issueId, project_id: projectId });
+      await createTerminal.mutateAsync({ issue_id: issueId, project_id: projectId, run_commands: false });
     } catch (err) {
       toast.error("Failed to open terminal: " + (err instanceof Error ? err.message : "Unknown error"));
     }
