@@ -1,3 +1,4 @@
+import asyncio
 import socket
 
 from fastapi import APIRouter
@@ -19,4 +20,4 @@ def _get_local_ip() -> str:
 
 @router.get("/network-info")
 async def get_network_info():
-    return {"local_ip": _get_local_ip()}
+    return {"local_ip": await asyncio.to_thread(_get_local_ip)}
