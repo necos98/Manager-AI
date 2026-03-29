@@ -296,3 +296,20 @@ export interface TemplateInfo {
 export interface TemplateSave {
   content: string;
 }
+
+// ── Issue Relations ──
+
+export type RelationType = "blocks" | "related";
+
+export interface IssueRelation {
+  id: number;
+  source_id: string;
+  target_id: string;
+  relation_type: RelationType;
+  created_at: string;
+}
+
+export interface IssueRelationCreate {
+  target_id: string;
+  relation_type: RelationType;
+}
