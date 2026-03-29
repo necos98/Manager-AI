@@ -1,260 +1,139 @@
-# Manager AI — Roadmap
+# Manager AI — Roadmap Robustezza
 
-Ultimo aggiornamento: 2026-03-22
+Ultimo aggiornamento: 2026-03-29
 
----
-
-## Fase 0 — Consolidamento (Completata)
-
-Workflow hardening: state machine corretta, service layer unificato, hook firing consistente.
-
-- [x] Custom exception hierarchy (`AppError`, `NotFoundError`, `InvalidTransitionError`, `ValidationError`)
-- [x] Global exception handler in FastAPI
-- [x] Rimozione stato DECLINED, aggiunta transizione NEW → REASONING
-- [x] Migrazione issue service a eccezioni custom
-- [x] Hook firing nel service layer (REST e MCP consistenti)
-- [x] MCP tools semplificati a thin wrappers
-- [x] Router senza business logic
-- [x] Enforcement completamento task prima di FINISHED
-- [x] Logging nel hook system
-- [x] Validazione input (recap non vuoto, nome max 500 char)
-- [x] Terminal cleanup alla cancellazione progetto
+Questa roadmap non aggiunge feature: consolida, rafforza e rende affidabile ciò che già esiste.
 
 ---
 
-## Fase 1 — Allineamento Architetturale
+## R1 — Affidabilità del Core
 
-Completare il pattern stabilito in Fase 0 su tutto il codebase.
+Correggere i punti dove il sistema può silenziare errori o lasciare stato inconsistente.
 
-### 1.1 ProjectService allineato al pattern
-- [x] `get_by_id()` lancia `NotFoundError` invece di ritornare `None`
-- [x] Router projects senza try/except manuali (usa global handler)
-- [x] `update_project_context` MCP tool passa per il service layer
-- [x] Fix dei 3 test pre-esistenti (`test_get_project_not_found`, `test_settings_service`, `test_routers_settings`)
+### R1.1 Race condition sul completamento issue
+- [ ] Aggiungere lock/serializzazione in `issue_service.complete_issue()` tra il check dei task pending e il flush
+  - File: `backend/app/services/issue_service.py:131-177`
+  - Rischio attuale: issue marcata FINISHED con task ancora pending se due richieste concorrenti
+- [ ] Test: verifica che due chiamate `complete_issue` concorrenti su stessa issue non causino stato inconsistente
 
-### 1.2 Pulizia MCP tool descriptions
-- [x] Aggiungere descrizione della state machine (NEW → REASONING → PLANNED → ACCEPTED → FINISHED) nelle tool descriptions
-- [x] Documentare l'ordine d'uso dei tool (`create_issue_spec` → `create_issue_plan` → `accept_issue` → `complete_issue`)
-- [x] Chiarire quando usare `send_notification` vs completare silenziosamente
+### R1.2 Propagazione errori negli hook
+- [ ] `hook_registry.fire()` attualmente crea `asyncio.create_task` senza tracking — aggiungere riferimento alla task e log strutturato del risultato
+  - File: `backend/app/hooks/registry.py:57-66`
+- [ ] Aggiungere timeout esplicito per ogni hook execution (default 300s, configurabile)
+- [ ] Emettere evento WebSocket `hook_failed` con dettagli anche quando l'eccezione viene swallowed
+- [ ] Test: hook che lancia eccezione non deve bloccare il flusso principale
 
-### 1.3 Import cleanup
-- [x] Spostare import lazy di `TaskService`/`TaskStatus` in `complete_issue()` a livello di modulo (risolvere circular dependency)
-- [x] Standardizzare `except Exception` in MCP task tools a `except AppError`
+### R1.3 Cleanup PTY garantito
+- [ ] Nel WebSocket handler dei terminali, assicurarsi che la chiusura PTY avvenga in `finally`, non solo su EOF
+  - File: `backend/app/routers/terminals.py:316-389`
+- [ ] `terminal_service.resize()` accede all'entry fuori dal lock — spostare dentro il lock
+  - File: `backend/app/services/terminal_service.py:205-211`
+- [ ] Test: disconnect brusco del WebSocket deve liberare la PTY
 
----
-
-## Fase 2 — UI Interattiva (Completata)
-
-La UI è ora completamente interattiva. L'utente può controllare il workflow delle issue dal browser.
-
-### 2.1 Controllo stato issue dal frontend
-- [x] Bottoni di transizione stato in IssueDetailPage basati sullo stato corrente:
-  - NEW: "Avvia Analisi" (→ triggera Claude per spec)
-  - PLANNED: "Accetta Piano" / "Richiedi Modifiche"
-  - ACCEPTED: "Segna come Completata" (con validazione task)
-  - Qualsiasi stato: "Cancella Issue"
-- [x] Modale di conferma per ogni transizione
-- [ ] StatusBadge cliccabile con dropdown delle transizioni valide
-
-### 2.2 Feedback inline sul piano
-- [x] Campo di testo in IssueDetailPage quando lo stato è PLANNED: "Dai feedback a Claude"
-- [x] Il feedback viene salvato e Claude lo riceve come contesto per `edit_issue_plan`
-- [x] Storico dei feedback visibile nella timeline dell'issue
-
-### 2.3 Task management dalla UI
-- [x] Lista task editabile in IssueDetailPage (non solo read-only badges)
-- [x] Checkbox per marcare task come completati
-- [x] Aggiunta/rimozione task manuali
-- [x] Drag-and-drop per riordinare
-
-### 2.4 Editing inline
-- [x] Modifica priorità issue dal detail page
-- [x] Modifica descrizione issue
-- [x] Modifica nome issue
+### R1.4 RAG embed non silenziato
+- [ ] `rag_service.py` ha `except Exception: pass` che swallowa fallimenti embedding
+- [ ] Loggare sempre al livello `warning` quando embed fallisce, includere issue_id
+- [ ] In MCP `complete_issue`, loggare il task id dell'embed in modo tracciabile
+  - File: `backend/app/mcp/server.py:148-155`
 
 ---
 
-## Fase 3 — Real-Time & Auto-Refresh
+## R2 — Consistenza dei Pattern
 
-Il frontend carica i dati una volta e non si aggiorna. Quando Claude lavora via MCP, l'utente vede dati stale.
+Completare l'allineamento architetturale avviato in Fase 0/1 nei file rimasti indietro.
 
-### 3.1 Event-driven data refresh
-- [x] Emettere eventi WebSocket per ogni cambio stato issue (`issue_status_changed`)
-- [x] Emettere eventi per aggiornamento task (`task_updated`)
-- [x] Emettere eventi per nuova spec/piano/recap (`issue_content_updated`)
-- [x] EventContext aggiorna i dati delle pagine oltre a mostrare toast:
-  - IssueDetailPage si refresha quando riceve eventi per quell'issue
-  - ProjectDetailPage si refresha quando riceve eventi per quel progetto
+### R2.1 Gestione errori uniforme nel frontend
+- [ ] `issue-detail.tsx`: i blocchi `catch {}` vuoti devono loggare o mostrare toast
+  - File: `frontend/src/features/issues/components/issue-detail.tsx:62-78`
+- [ ] Tutti i `useMutation()` senza `onError` devono avere almeno un toast di fallback
+  - Pattern: scansionare `hooks.ts` di ogni feature e aggiungere `onError: (e) => toast.error(...)`
+- [ ] `api/client.ts`: aggiungere timeout di default (30s) alle fetch
+  - File: `frontend/src/shared/api/client.ts:13-24`
 
-### 3.2 Toast tipizzati
-- [x] Tipi di toast: info (blu), success (verde), warning (giallo), error (rosso)
-- [x] `hook_failed` → toast rosso
-- [x] `hook_completed` → toast verde
-- [x] `notification` → toast blu
-- [x] Toggle suono nelle settings
+### R2.2 Validazione input coerente backend/frontend
+- [ ] Schema `IssueCreate.description`: aggiungere `max_length` (es. 50_000 chars)
+- [ ] Schema `IssueCompleteBody.recap`: aggiungere `max_length`
+- [ ] Schema `IssueUpdate.spec` / `.plan`: aggiungere `max_length`
+- [ ] Stessa logica nei form del frontend: disabilitare submit se campo supera limite
 
-### 3.3 Activity log persistente
-- [x] Modello `ActivityLog` nel DB: timestamp, tipo evento, issue_id, project_id, dettagli
-- [x] Ogni transizione di stato, hook, notifica viene loggata
-- [x] Pagina o sezione "Activity" nel frontend con timeline scrollabile
-- [x] Filtro per progetto/issue
+### R2.3 Transazioni MCP consistenti
+- [ ] Alcuni MCP tool fanno `session.commit()` esplicitamente, altri no — uniformare il pattern
+  - File: `backend/app/mcp/server.py` (linee 87, 110, 146, 176)
+- [ ] Preferire un singolo commit al termine del tool, non commit parziali mid-function
 
----
-
-## Fase 4 — Automazione del Workflow
-
-Il salto di qualità: da "issue tracker con terminale" a "AI project manager che lavora per te".
-
-### 4.1 Auto-start workflow
-- [x] Nuovo `HookEvent.ISSUE_CREATED`
-- [x] Hook `AutoStartWorkflow`: alla creazione di un'issue, spawna automaticamente Claude Code che:
-  1. Legge la descrizione dell'issue
-  2. Scrive la specification (`create_issue_spec`)
-  3. Scrive il piano (`create_issue_plan`)
-  4. Crea i task atomici (`create_plan_tasks`)
-  5. Notifica l'utente ("Piano pronto per review")
-- [x] Configurabile per progetto: on/off, prompt template custom
-- [x] Timeout e gestione errori (se Claude fallisce, issue resta in NEW con errore loggato)
-
-### 4.2 Auto-start implementazione
-- [x] Quando l'utente accetta un piano (PLANNED → ACCEPTED), automaticamente:
-  1. Lancia Claude Code con spec + piano come contesto
-  2. Claude implementa task per task, aggiornando lo stato
-  3. Al completamento, chiama `complete_issue` con recap
-- [x] Monitoraggio progresso via task status in real-time
-- [x] Possibilità di interrompere ("Fermati e aspetta istruzioni") via pausa coda
-
-### 4.3 Auto-completion detection
-- [x] Quando tutti i task di un'issue sono COMPLETED, suggerisci automaticamente il completamento
-- [x] Opzione: auto-complete con recap generato da Claude
-- [x] Opzione: notifica utente per review finale prima del complete
-
-### 4.4 Coda di lavoro
-- [x] `get_next_issue` usato per processare issue in ordine di priorità
-- [x] Workflow continuo: finita un'issue, parte la prossima
-- [x] Dashboard "Claude sta lavorando su..." con progresso in tempo reale
-- [x] Pausa/resume della coda
+### R2.4 `.env.example` completo
+- [ ] Documentare tutte le variabili usate dall'app: `EMBEDDING_MODEL`, `CLAUDE_LIBRARY_PATH`, `RECORDINGS_PATH`, `BACKEND_PORT`
+- [ ] Aggiungere validazione in `config.py` (Pydantic validators) per i valori obbligatori
 
 ---
 
-## Fase 5 — Prompt & Template System
+## R3 — Test Coverage
 
-Rendere i prompt configurabili senza toccare codice.
+Coprire i percorsi critici non ancora testati.
 
-### 5.1 Prompt template per progetto
-- [x] Modello `PromptTemplate`: project_id, tipo (spec, plan, recap, enrich), contenuto
-- [x] Template default globali, override per progetto
-- [x] Variabili nei template: `{{issue_description}}`, `{{project_context}}`, `{{tech_stack}}`
-- [x] UI per editing template nella pagina progetto
+### R3.1 Test servizi core
+- [ ] `terminal_service.py`: test per close/resize concorrente, buffer overflow, cleanup su disconnect
+- [ ] `issue_service.py`: test per race condition su `complete_issue` (async concurrent calls)
+- [ ] `rag_service.py`: test per lock cleanup con N thread concorrenti
 
-### 5.2 System prompt per Claude Code
-- [x] Configurazione del system prompt iniettato quando Claude lavora su un progetto
-- [x] Include: regole di stile, pattern architetturali, convenzioni naming, istruzioni specifiche
-- [x] Integrazione con `.claude/CLAUDE.md` del progetto target
+### R3.2 Test hook system
+- [ ] Hook che lancia eccezione: verificare che il flusso principale non si interrompa
+- [ ] Hook con timeout: verificare che venga cancellato e loggato
+- [ ] `ISSUE_CREATED` hook: test end-to-end del trigger
 
-### 5.3 MCP tool description configurabili
-- [x] Le descrizioni dei tool MCP diventano template
-- [x] Possibilità di personalizzare per progetto cosa Claude vede come istruzioni dei tool
-- [x] Es: per un progetto Python, `create_issue_plan` include "usa pytest per i test"
+### R3.3 Test router terminali
+- [ ] Creazione terminale: risposta corretta
+- [ ] WebSocket connect/disconnect: PTY cleanup verificato
+- [ ] Resize con terminale inesistente: 404 pulito
 
----
-
-## Fase 6 — Terminale Avanzato (Completata)
-
-### 6.1 Shell configurabile
-- [x] Supporto PowerShell, Git Bash, WSL oltre a cmd.exe
-- [x] Configurazione shell per progetto
-- [x] Variabile d'ambiente `MANAGER_AI_SHELL` già supportata, esporre nella UI
-
-### 6.2 Variabili template estese
-- [x] Variabili custom definibili per progetto (es: `$db_url`, `$api_key`)
-- [x] Secrets management: variabili sensibili non mostrate in chiaro nella UI
-- [x] Variabili d'ambiente aggiuntive iniettabili nel terminale
-
-### 6.3 Terminal UX migliorata
-- [x] Ricerca nel buffer di output (Ctrl+F)
-- [x] Copia/incolla con bottoni
-- [x] Temi terminale configurabili
-- [x] Split pane: due terminali affiancati per la stessa issue
-- [x] Session recording: salvare l'output di un terminale per review futura
-
-### 6.4 Terminal commands avanzati
-- [x] Sintassi multi-linea per i comandi di startup
-- [x] Condizioni: "esegui questo comando solo se $issue_status == ACCEPTED"
-- [x] Template di comandi predefiniti: "Setup Python venv", "Install deps + run tests"
-- [ ] Validazione sintassi dei comandi prima del salvataggio
+### R3.4 Test MCP tools
+- [ ] Transazione atomica: errore nel tool non lascia DB in stato parziale
+- [ ] Tool call con project_id inesistente: `NotFoundError` propagato correttamente
 
 ---
 
-## Fase 7 — Multi-Issue & Orchestrazione (Completata)
+## R4 — Pipeline di Sviluppo
 
-### 7.1 Dashboard avanzata
-- [x] Vista Kanban delle issue (colonne per stato)
-- [x] Drag-and-drop per cambiare stato
-- [x] Filtri: priorità, data creazione, nome
-- [x] Ricerca full-text nelle issue (descrizione, spec, piano)
+Rendere lo startup, le migrazioni e il ciclo di sviluppo più robusti.
 
-### 7.2 Issue collegate
-- [x] Relazioni tra issue: "blocca", "bloccata da", "correlata a"
-- [x] Visualizzazione grafo delle dipendenze
-- [x] Claude non può iniziare un'issue se le sue dipendenze non sono FINISHED
+### R4.1 start.py più resiliente
+- [ ] Se le migrazioni falliscono, stampare l'errore e uscire con exit code non-zero (ora silenzia)
+  - File: `start.py:94-103`
+- [ ] Timeout backend readiness: aumentare da 15s a 30s, con messaggi di progresso ogni 5s
+  - File: `start.py:137-150`
+- [ ] Health check backend: verificare `/api/health` invece di solo TCP connect
 
-### 7.3 Multi-project view
-- [x] Dashboard globale: tutte le issue attive cross-progetto
-- [ ] Statistiche: issue completate per settimana, tempo medio per issue
-- [ ] Timeline globale di attività
+### R4.2 Endpoint `/api/health`
+- [ ] Aggiungere route GET `/api/health` che verifica: DB connesso, RAG pipeline inizializzata
+- [ ] Risposta: `{ "status": "ok", "db": true, "rag": true }` — usato da start.py e monitoring
 
-### 7.4 Lavoro parallelo
-- [x] Supporto per più issue in lavorazione contemporaneamente
-- [x] Terminali multipli visibili in layout a griglia
-- [x] Context switching rapido tra issue
+### R4.3 Logging strutturato
+- [ ] Aggiungere middleware FastAPI che logga: method, path, status_code, duration_ms per ogni request
+- [ ] Standardizzare il formato log: usare `structlog` o formato JSON in produzione
+- [ ] Nessun `except Exception: pass` senza almeno `logger.warning`
 
----
-
-## Fase 8 — Verso il Framework (Direzione C)
-
-Per rendere Manager AI usabile da altri sviluppatori.
-
-### 8.1 Plugin architecture
-- [ ] Hook definibili come plugin (Python packages installabili)
-- [ ] Hook configurabili da UI senza scrivere codice
-- [ ] Marketplace di hook community: "auto-deploy", "run tests", "notify Slack"
-
-### 8.2 MCP tool personalizzati per progetto
-- [ ] Ogni progetto può esporre tool MCP aggiuntivi
-- [ ] Es: progetto backend espone "run_migrations", progetto frontend espone "build_storybook"
-- [ ] Tool definiti come script nella cartella del progetto
-
-### 8.3 Project templates
-- [ ] Template preconfigurati: "Python Backend", "React Frontend", "Full-Stack", "Data Pipeline"
-- [ ] Ogni template include: terminal commands, hook, prompt templates, settings
-- [ ] Creazione progetto da template con un click
-
-### 8.4 File system avanzato
-- [ ] Preview inline per PDF, immagini, markdown
-- [ ] Link file a issue specifiche (allegati per issue)
-- [ ] Supporto file immagine (PNG, JPG, SVG)
-- [ ] Versionamento dei file (storico upload)
-
-### 8.5 Documentazione e onboarding
-- [ ] Documentazione completa delle API
-- [ ] Guida "Getting Started" per nuovi utenti
-- [ ] Video walkthrough del workflow
-- [ ] Contribuire: guida per sviluppatori che vogliono estendere Manager AI
+### R4.4 Migrazioni verificabili
+- [ ] Aggiungere script `check_migrations.py` che verifica: `alembic current` == `alembic head`
+- [ ] Integrare in start.py come check pre-avvio (fallisce veloce se DB non allineato)
+- [ ] Test: migration upgrade + downgrade per le ultime 3 revisioni
 
 ---
 
 ## Priorità Raccomandata
 
-| Priorità | Fase | Impatto | Effort |
+| Priorità | Item | Impatto | Effort |
 |----------|------|---------|--------|
-| 1 | 1 — Allineamento architetturale | Medio | Basso |
-| 2 | 2.1 — Controllo stato dalla UI | Alto | Medio |
-| 3 | 3.1 — Event-driven refresh | Alto | Medio |
-| 4 | 4.1 — Auto-start workflow | Altissimo | Alto |
-| 5 | 2.3 — Task management dalla UI | Alto | Medio |
-| 6 | 4.2 — Auto-start implementazione | Altissimo | Alto |
-| 7 | 3.3 — Activity log | Medio | Medio |
-| 8 | 5.1 — Prompt templates | Alto | Medio |
-| 9 | 7.1 — Dashboard Kanban | Alto | Alto |
-| 10 | 6.1-6.4 — Terminale avanzato | Medio | Alto |
+| 1 | R1.2 — Hook error propagation | Alto | Basso |
+| 2 | R1.3 — PTY cleanup garantito | Alto | Basso |
+| 3 | R2.1 — Error handling frontend | Alto | Medio |
+| 4 | R1.1 — Race condition issue completion | Alto | Medio |
+| 5 | R4.2 — Health endpoint | Medio | Basso |
+| 6 | R4.1 — start.py resiliente | Medio | Basso |
+| 7 | R2.2 — Validazione input max_length | Medio | Basso |
+| 8 | R3.1 — Test servizi core | Alto | Alto |
+| 9 | R2.3 — Transazioni MCP | Medio | Basso |
+| 10 | R4.3 — Logging strutturato | Medio | Medio |
+| 11 | R1.4 — RAG embed logging | Basso | Basso |
+| 12 | R3.2-R3.4 — Test hook/router/MCP | Alto | Alto |
+| 13 | R4.4 — Migration check | Basso | Basso |
+| 14 | R2.4 — .env.example completo | Basso | Minimo |
