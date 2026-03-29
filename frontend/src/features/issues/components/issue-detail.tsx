@@ -63,8 +63,9 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
     if (terminalId) {
       try {
         await killTerminal.mutateAsync(terminalId);
-      } catch {
-        // Terminal may already be dead
+      } catch (e) {
+        // Terminal may already be dead — intentionally swallowed
+        console.warn("killTerminal during delete:", e);
       }
     }
     deleteIssue.mutate(issue.id, {
