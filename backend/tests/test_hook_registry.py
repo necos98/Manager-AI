@@ -1,4 +1,5 @@
 """Test hook registry error handling and observability."""
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 from app.hooks.registry import BaseHook, HookContext, HookEvent, HookRegistry, HookResult
@@ -90,3 +91,45 @@ async def test_hook_failed_event_includes_names(mock_event_service):
     failed = mock_event_service.emit.call_args_list[1][0][0]
     assert failed["issue_name"] == "Fix login bug"
     assert failed["project_name"] == "My Project"
+
+
+class SlowHook(BaseHook):
+    name = "slow_hook"
+    description = "A hook that never completes"
+
+    async def execute(self, context: HookContext) -> HookResult:
+        await asyncio.sleep(999)
+        return HookResult(success=True)
+
+
+@patch("app.hooks.registry.event_service")
+@patch("app.hooks.registry.HOOK_TIMEOUT", 0.05)
+async def test_hook_timeout_emits_hook_failed(mock_event_service):
+    """Hook che supera il timeout emette hook_failed."""
+    import asyncio
+    mock_event_service.emit = AsyncMock()
+    registry = HookRegistry()
+    ctx = HookContext(project_id="p1", issue_id="i1", event=HookEvent.ISSUE_COMPLETED)
+    await registry._run_hook(SlowHook, ctx)
+
+    emitted_types = [call[0][0]["type"] for call in mock_event_service.emit.call_args_list]
+    assert "hook_failed" in emitted_types
+    failed = next(c[0][0] for c in mock_event_service.emit.call_args_list if c[0][0]["type"] == "hook_failed")
+    assert "timed out" in failed["error"].lower()
+
+
+@patch("app.hooks.registry.event_service")
+async def test_fire_stores_task_in_background_set(mock_event_service):
+    """fire() salva la task in _background_tasks e la rimuove al completamento."""
+    import asyncio
+    mock_event_service.emit = AsyncMock()
+    registry = HookRegistry()
+    registry.register(HookEvent.ISSUE_COMPLETED, SuccessHook)
+    ctx = HookContext(project_id="p1", issue_id="i1", event=HookEvent.ISSUE_COMPLETED)
+
+    await registry.fire(HookEvent.ISSUE_COMPLETED, ctx)
+    assert len(registry._background_tasks) == 1
+
+    # Aspetta completamento
+    await asyncio.sleep(0.1)
+    assert len(registry._background_tasks) == 0
