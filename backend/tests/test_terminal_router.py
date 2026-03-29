@@ -131,7 +131,6 @@ def test_resize_nonexistent_terminal_raises_key_error():
 
 def test_websocket_disconnect_calls_cleanup():
     """Disconnessione brusca del WebSocket deve chiamare service.cleanup(terminal_id)."""
-    import time
     from starlette.testclient import TestClient
     from app.main import app
     from app.routers.terminals import get_terminal_service
