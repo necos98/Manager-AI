@@ -122,35 +122,36 @@ async def create_terminal(
         logger.warning("Failed to inject custom variables for terminal %s", terminal["id"], exc_info=True)
 
     # Inject startup commands into the PTY
-    try:
-        from app.models.issue import Issue
-        issue = await db.get(Issue, data.issue_id)
-        issue_status = issue.status.value if issue else ""
+    if data.run_commands:
+        try:
+            from app.models.issue import Issue
+            issue = await db.get(Issue, data.issue_id)
+            issue_status = issue.status.value if issue else ""
 
-        cmd_service = TerminalCommandService(db)
-        commands = await cmd_service.resolve(data.project_id)
-        if commands:
-            pty = service.get_pty(terminal["id"])
-            # Resolve dynamic variables in commands
-            # Variable names are defined in terminal_commands.TEMPLATE_VARIABLES
-            variables = {
-                "$issue_id": data.issue_id,
-                "$project_id": data.project_id,
-                "$project_path": project_path,
-            }
-            for c in commands:
-                if not _evaluate_condition(c.condition, issue_status):
-                    continue
-                cmd_text = c.command
-                for var, val in variables.items():
-                    cmd_text = cmd_text.replace(var, val)
-                # Support multi-line: send each non-empty line as a separate command
-                for line in cmd_text.split("\n"):
-                    line = line.strip()
-                    if line:
-                        pty.write(line + "\r\n")
-    except Exception:
-        logger.warning("Failed to inject startup commands for terminal %s", terminal["id"], exc_info=True)
+            cmd_service = TerminalCommandService(db)
+            commands = await cmd_service.resolve(data.project_id)
+            if commands:
+                pty = service.get_pty(terminal["id"])
+                # Resolve dynamic variables in commands
+                # Variable names are defined in terminal_commands.TEMPLATE_VARIABLES
+                variables = {
+                    "$issue_id": data.issue_id,
+                    "$project_id": data.project_id,
+                    "$project_path": project_path,
+                }
+                for c in commands:
+                    if not _evaluate_condition(c.condition, issue_status):
+                        continue
+                    cmd_text = c.command
+                    for var, val in variables.items():
+                        cmd_text = cmd_text.replace(var, val)
+                    # Support multi-line: send each non-empty line as a separate command
+                    for line in cmd_text.split("\n"):
+                        line = line.strip()
+                        if line:
+                            pty.write(line + "\r\n")
+        except Exception:
+            logger.warning("Failed to inject startup commands for terminal %s", terminal["id"], exc_info=True)
 
     return TerminalResponse(**terminal)
 
