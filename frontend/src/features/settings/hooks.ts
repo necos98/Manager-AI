@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import * as api from "./api";
+
+const onMutationError = (e: unknown) => {
+  toast.error(e instanceof Error ? e.message : "Operation failed");
+};
 
 export const settingKeys = {
   all: ["settings"] as const,
@@ -19,6 +24,7 @@ export function useUpdateSetting() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingKeys.all });
     },
+    onError: onMutationError,
   });
 }
 
@@ -29,6 +35,7 @@ export function useResetSetting() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingKeys.all });
     },
+    onError: onMutationError,
   });
 }
 
@@ -39,5 +46,6 @@ export function useResetAllSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingKeys.all });
     },
+    onError: onMutationError,
   });
 }

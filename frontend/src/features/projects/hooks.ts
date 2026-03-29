@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import * as api from "./api";
 import type { ProjectCreate, ProjectUpdate } from "@/shared/types";
+
+const onMutationError = (e: unknown) => {
+  toast.error(e instanceof Error ? e.message : "Operation failed");
+};
 
 export const projectKeys = {
   all: ["projects"] as const,
@@ -29,6 +34,7 @@ export function useCreateProject() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.all });
     },
+    onError: onMutationError,
   });
 }
 
@@ -40,6 +46,7 @@ export function useUpdateProject(projectId: string) {
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
       queryClient.invalidateQueries({ queryKey: projectKeys.all });
     },
+    onError: onMutationError,
   });
 }
 
@@ -50,17 +57,20 @@ export function useDeleteProject() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.all });
     },
+    onError: onMutationError,
   });
 }
 
 export function useInstallManagerJson(projectId: string) {
   return useMutation({
     mutationFn: () => api.installManagerJson(projectId),
+    onError: onMutationError,
   });
 }
 
 export function useInstallClaudeResources(projectId: string) {
   return useMutation({
     mutationFn: () => api.installClaudeResources(projectId),
+    onError: onMutationError,
   });
 }

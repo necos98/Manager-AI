@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import * as api from "./api";
 import type { AskTerminalCreate, TerminalCreate, TerminalCommandUpdate } from "@/shared/types";
+
+const onMutationError = (e: unknown) => {
+  toast.error(e instanceof Error ? e.message : "Operation failed");
+};
 
 export const terminalKeys = {
   all: ["terminals"] as const,
@@ -41,6 +46,7 @@ export function useCreateTerminal() {
       queryClient.invalidateQueries({ queryKey: terminalKeys.all });
       queryClient.invalidateQueries({ queryKey: terminalKeys.count });
     },
+    onError: onMutationError,
   });
 }
 
@@ -52,6 +58,7 @@ export function useCreateAskTerminal() {
       queryClient.invalidateQueries({ queryKey: terminalKeys.all });
       queryClient.invalidateQueries({ queryKey: terminalKeys.count });
     },
+    onError: onMutationError,
   });
 }
 
@@ -63,6 +70,7 @@ export function useKillTerminal() {
       queryClient.invalidateQueries({ queryKey: terminalKeys.all });
       queryClient.invalidateQueries({ queryKey: terminalKeys.count });
     },
+    onError: onMutationError,
   });
 }
 
@@ -88,6 +96,7 @@ export function useCreateTerminalCommand(projectId?: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: terminalKeys.commands(projectId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -99,6 +108,7 @@ export function useUpdateTerminalCommand(projectId?: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: terminalKeys.commands(projectId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -109,6 +119,7 @@ export function useReorderTerminalCommands(projectId?: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: terminalKeys.commands(projectId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -119,6 +130,7 @@ export function useDeleteTerminalCommand(projectId?: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: terminalKeys.commands(projectId) });
     },
+    onError: onMutationError,
   });
 }
 

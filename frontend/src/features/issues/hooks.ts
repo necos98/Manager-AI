@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import * as api from "./api";
 import type { IssueCompleteBody, IssueCreate, IssueFeedbackCreate, IssueStatus, IssueStatusUpdate, IssueUpdate, TaskCreate, TaskUpdate } from "@/shared/types";
+
+const onMutationError = (e: unknown) => {
+  toast.error(e instanceof Error ? e.message : "Operation failed");
+};
 
 export const issueKeys = {
   all: (projectId: string) => ["projects", projectId, "issues"] as const,
@@ -29,6 +34,7 @@ export function useCreateIssue(projectId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -40,6 +46,7 @@ export function useUpdateIssue(projectId: string, issueId: string) {
       queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
       queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -51,6 +58,7 @@ export function useUpdateIssueStatus(projectId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["issues", projectId] });
     },
+    onError: onMutationError,
   });
 }
 
@@ -61,6 +69,7 @@ export function useDeleteIssue(projectId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -78,6 +87,7 @@ export function useAcceptIssue(projectId: string, issueId: string) {
       queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
       queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -89,6 +99,7 @@ export function useCancelIssue(projectId: string, issueId: string) {
       queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
       queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -100,6 +111,7 @@ export function useCompleteIssue(projectId: string, issueId: string) {
       queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
       queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -117,6 +129,7 @@ export function useAddFeedback(projectId: string, issueId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: feedbackKeys.all(projectId, issueId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -128,6 +141,7 @@ export function useUpdateTask(projectId: string, issueId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -138,6 +152,7 @@ export function useDeleteTask(projectId: string, issueId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -148,6 +163,7 @@ export function useCreateTasks(projectId: string, issueId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -158,5 +174,6 @@ export function useReplaceTasks(projectId: string, issueId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
     },
+    onError: onMutationError,
   });
 }

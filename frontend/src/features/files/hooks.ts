@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import * as api from "./api";
+
+const onMutationError = (e: unknown) => {
+  toast.error(e instanceof Error ? e.message : "Operation failed");
+};
 
 export const fileKeys = {
   all: (projectId: string) => ["projects", projectId, "files"] as const,
@@ -28,6 +33,7 @@ export function useUploadFiles(projectId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: fileKeys.all(projectId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -38,5 +44,6 @@ export function useDeleteFile(projectId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: fileKeys.all(projectId) });
     },
+    onError: onMutationError,
   });
 }
