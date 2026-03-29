@@ -186,28 +186,28 @@ Rendere i prompt configurabili senza toccare codice.
 
 ---
 
-## Fase 7 — Multi-Issue & Orchestrazione
+## Fase 7 — Multi-Issue & Orchestrazione (Completata)
 
 ### 7.1 Dashboard avanzata
-- [ ] Vista Kanban delle issue (colonne per stato)
-- [ ] Drag-and-drop per cambiare stato
-- [ ] Filtri: priorità, data creazione, nome
-- [ ] Ricerca full-text nelle issue (descrizione, spec, piano)
+- [x] Vista Kanban delle issue (colonne per stato)
+- [x] Drag-and-drop per cambiare stato
+- [x] Filtri: priorità, data creazione, nome
+- [x] Ricerca full-text nelle issue (descrizione, spec, piano)
 
 ### 7.2 Issue collegate
-- [ ] Relazioni tra issue: "blocca", "bloccata da", "correlata a"
-- [ ] Visualizzazione grafo delle dipendenze
-- [ ] Claude non può iniziare un'issue se le sue dipendenze non sono FINISHED
+- [x] Relazioni tra issue: "blocca", "bloccata da", "correlata a"
+- [x] Visualizzazione grafo delle dipendenze
+- [x] Claude non può iniziare un'issue se le sue dipendenze non sono FINISHED
 
 ### 7.3 Multi-project view
-- [ ] Dashboard globale: tutte le issue attive cross-progetto
+- [x] Dashboard globale: tutte le issue attive cross-progetto
 - [ ] Statistiche: issue completate per settimana, tempo medio per issue
 - [ ] Timeline globale di attività
 
 ### 7.4 Lavoro parallelo
-- [ ] Supporto per più issue in lavorazione contemporaneamente
-- [ ] Terminali multipli visibili in layout a griglia
-- [ ] Context switching rapido tra issue
+- [x] Supporto per più issue in lavorazione contemporaneamente
+- [x] Terminali multipli visibili in layout a griglia
+- [x] Context switching rapido tra issue
 
 ---
 
