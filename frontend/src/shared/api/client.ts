@@ -19,7 +19,7 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     : controller.signal;
   try {
     const res = await fetch(`${BASE}${path}`, {
-      headers: { "Content-Type": "application/json", ...options.headers },
+      headers: { "Content-Type": "application/json", ...restOptions.headers },
       signal,
       ...restOptions,
     });
