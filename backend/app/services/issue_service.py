@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -60,7 +60,6 @@ class IssueService:
     async def list_by_project(
         self, project_id: str, status: IssueStatus | None = None, search: str | None = None
     ) -> list[Issue]:
-        from sqlalchemy import or_
         query = select(Issue).options(selectinload(Issue.tasks)).where(Issue.project_id == project_id)
         if status is not None:
             query = query.where(Issue.status == status)
