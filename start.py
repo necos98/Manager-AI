@@ -74,7 +74,13 @@ def setup_venv():
 def setup_frontend():
     """Install frontend dependencies and build for production."""
     npm_cmd = "npm.cmd" if IS_WINDOWS else "npm"
-    if not (FRONTEND_DIR / "node_modules").exists():
+    node_modules = FRONTEND_DIR / "node_modules"
+    package_json = FRONTEND_DIR / "package.json"
+    needs_install = (
+        not node_modules.exists()
+        or package_json.stat().st_mtime > node_modules.stat().st_mtime
+    )
+    if needs_install:
         print("[...] Installing frontend dependencies...")
         subprocess.run(
             [npm_cmd, "install", "--legacy-peer-deps"],
