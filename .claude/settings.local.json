@@ -21,7 +21,18 @@
       "Bash(export:*)",
       "Bash(NVM_DIR=\"/home/jacob/.nvm\" && source \"/home/jacob/.nvm/nvm.sh\" && cd /home/jacob/manager_ai/frontend && npm install 2>&1 | tail -5)",
       "Bash(source:*)",
-      "Bash(npm --version)"
+      "Bash(npm --version)",
+      "Bash(python:*)",
+      "Bash(ls /home/guido/projects/Manager-AI/backend/.venv/bin/python*)",
+      "Bash(ls /home/guido/projects/Manager-AI/.venv/bin/python*)",
+      "Bash(/home/guido/projects/Manager-AI/venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000)",
+      "Bash(npm run:*)",
+      "Bash(docker compose:*)",
+      "Bash(sqlite3:*)",
+      "Bash(docker exec:*)",
+      "Bash(ls ~/.claude/projects/*/settings.json)",
+      "Bash(find ~/.claude/projects -name *.json)",
+      "Bash(ping -c 1 manager-ai.docker)"
     ]
   }
 }

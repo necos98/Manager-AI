@@ -1,9 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.exceptions import AppError
@@ -11,16 +13,21 @@ from app.hooks import hook_registry
 import app.hooks.handlers  # noqa: F401 — triggers @hook decorator registration
 from app.mcp.server import mcp
 from app.rag import set_rag_service
-from app.rag.chunker import TextChunker
-from app.rag.drivers.sentence_transformer import SentenceTransformerDriver
-from app.rag.extractors.base import ExtractorRegistry
-from app.rag.extractors.txt_extractor import TxtExtractor
-from app.rag.extractors.pdf_extractor import PdfExtractor
-from app.rag.pipeline import EmbeddingPipeline
-from app.rag.store import VectorStore
 from app.routers import events, files, issues, projects, settings as settings_router, tasks, terminals, terminal_commands
 from app.services.event_service import event_service
-from app.services.rag_service import RagService
+
+try:
+    from app.rag.chunker import TextChunker
+    from app.rag.drivers.sentence_transformer import SentenceTransformerDriver
+    from app.rag.extractors.base import ExtractorRegistry
+    from app.rag.extractors.txt_extractor import TxtExtractor
+    from app.rag.extractors.pdf_extractor import PdfExtractor
+    from app.rag.pipeline import EmbeddingPipeline
+    from app.rag.store import VectorStore
+    from app.services.rag_service import RagService
+    _HAS_RAG = True
+except ImportError:
+    _HAS_RAG = False
 
 logger = logging.getLogger(__name__)
 
@@ -34,23 +41,26 @@ async def lifespan(app):
         for h in hooks:
             logger.info("  %s -> %s", event_type.value, h.name)
 
-    # Initialize RAG pipeline
-    registry = ExtractorRegistry()
-    registry.register(TxtExtractor())
-    registry.register(PdfExtractor())
+    # Initialize RAG pipeline (optional — requires sentence-transformers)
+    if _HAS_RAG:
+        registry = ExtractorRegistry()
+        registry.register(TxtExtractor())
+        registry.register(PdfExtractor())
 
-    driver = SentenceTransformerDriver(model_name=settings.embedding_model)
-    chunker = TextChunker(
-        max_tokens=settings.chunk_max_tokens,
-        overlap_tokens=settings.chunk_overlap_tokens,
-    )
-    store = VectorStore(db_path=settings.lancedb_path)
-    pipeline = EmbeddingPipeline(
-        registry=registry, chunker=chunker, driver=driver, store=store
-    )
-    rag_service = RagService(pipeline=pipeline, event_service=event_service)
-    set_rag_service(rag_service)
-    logger.info("RAG pipeline initialized (driver=%s, model=%s)", settings.embedding_driver, settings.embedding_model)
+        driver = SentenceTransformerDriver(model_name=settings.embedding_model)
+        chunker = TextChunker(
+            max_tokens=settings.chunk_max_tokens,
+            overlap_tokens=settings.chunk_overlap_tokens,
+        )
+        store = VectorStore(db_path=settings.lancedb_path)
+        pipeline = EmbeddingPipeline(
+            registry=registry, chunker=chunker, driver=driver, store=store
+        )
+        rag_service = RagService(pipeline=pipeline, event_service=event_service)
+        set_rag_service(rag_service)
+        logger.info("RAG pipeline initialized (driver=%s, model=%s)", settings.embedding_driver, settings.embedding_model)
+    else:
+        logger.warning("RAG dependencies not installed — semantic search disabled")
 
     async with mcp.session_manager.run():
         yield
@@ -90,3 +100,20 @@ app.mount("/mcp", mcp_app)
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+# Serve frontend static build if available (Docker production mode)
+_frontend_dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+if _frontend_dist.is_dir():
+    from starlette.responses import FileResponse
+
+    # Serve static assets (JS, CSS, images)
+    app.mount("/assets", StaticFiles(directory=_frontend_dist / "assets"), name="static-assets")
+
+    # Catch-all for SPA routing — must be last
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        file_path = _frontend_dist / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(_frontend_dist / "index.html")

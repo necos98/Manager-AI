@@ -67,7 +67,7 @@ async def create_terminal(
             "MANAGER_AI_TERMINAL_ID": terminal["id"],
             "MANAGER_AI_ISSUE_ID": data.issue_id,
             "MANAGER_AI_PROJECT_ID": data.project_id,
-            "MANAGER_AI_BASE_URL": f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}",
+            "MANAGER_AI_BASE_URL": os.environ.get("MANAGER_AI_BASE_URL", f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}"),
         }
         import platform
         set_cmd = "set" if platform.system() == "Windows" else "export"

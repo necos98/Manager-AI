@@ -1,0 +1,18 @@
+services:
+  manager-ai:
+    build: .
+    container_name: manager-ai
+    hostname: manager-ai.docker
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - /home/guido/projects:/home/guido/projects
+      - ~/.claude:/home/appuser/.claude
+      - ~/.claude.json:/home/appuser/.claude.json
+      - ./docker-mcp.json:/home/appuser/.mcp.json:ro
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/manager_ai.db
+      - BACKEND_PORT=8000
+      - MANAGER_AI_BASE_URL=http://manager-ai.docker:8000
+    restart: unless-stopped
