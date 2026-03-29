@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import * as api from "./api-settings";
+
+const onMutationError = (e: unknown) => {
+  toast.error(e instanceof Error ? e.message : "Operation failed");
+};
 
 export const projectSettingKeys = {
   all: (projectId: string) => ["project-settings", projectId] as const,
@@ -21,6 +26,7 @@ export function useSetProjectSetting(projectId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectSettingKeys.all(projectId) });
     },
+    onError: onMutationError,
   });
 }
 
@@ -31,5 +37,6 @@ export function useDeleteProjectSetting(projectId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectSettingKeys.all(projectId) });
     },
+    onError: onMutationError,
   });
 }

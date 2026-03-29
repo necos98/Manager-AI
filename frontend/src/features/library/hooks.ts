@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import * as api from "./api";
 import type { SkillCreate } from "@/shared/types";
+
+const onMutationError = (e: unknown) => {
+  toast.error(e instanceof Error ? e.message : "Operation failed");
+};
 
 export const libraryKeys = {
   skills: ["library", "skills"] as const,
@@ -41,6 +46,7 @@ export function useCreateSkill() {
       qc.invalidateQueries({ queryKey: libraryKeys.skills });
       qc.invalidateQueries({ queryKey: libraryKeys.agents });
     },
+    onError: onMutationError,
   });
 }
 
@@ -54,5 +60,6 @@ export function useUpdateSkill() {
       qc.invalidateQueries({ queryKey: libraryKeys.agents });
       qc.invalidateQueries({ queryKey: libraryKeys.skill(name, type) });
     },
+    onError: onMutationError,
   });
 }
