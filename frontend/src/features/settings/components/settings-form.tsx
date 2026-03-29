@@ -33,6 +33,60 @@ function SettingField({ setting }: SettingFieldProps) {
 
   const isDirty = value !== setting.value;
 
+  if (setting.default === "true" || setting.default === "false") {
+    const isEnabled = value === "true";
+    return (
+      <div className="border rounded-lg p-4 flex items-center justify-between">
+        <div>
+          <label className="font-medium text-sm">{formatLabel(setting.key)}</label>
+          {setting.is_customized && (
+            <div className="flex items-center gap-2 mt-0.5">
+              <Badge variant="secondary" className="text-xs">Customized</Badge>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={() => {
+                        resetSetting.mutate(setting.key, {
+                          onSuccess: () => setValue(setting.default),
+                        });
+                      }}
+                      disabled={resetSetting.isPending}
+                    >
+                      <RotateCcw className="size-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Reset to default</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
+        </div>
+        <button
+          role="switch"
+          aria-checked={isEnabled}
+          onClick={() => {
+            const next = isEnabled ? "false" : "true";
+            setValue(next);
+            updateSetting.mutate({ key: setting.key, value: next });
+          }}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+            isEnabled ? "bg-primary" : "bg-input"
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              isEnabled ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
+      </div>
+    );
+  }
+
   if (setting.key === "terminal_theme") {
     return (
       <div className="border rounded-lg p-4">

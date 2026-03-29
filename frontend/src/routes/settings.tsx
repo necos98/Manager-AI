@@ -16,13 +16,14 @@ import {
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import type { Setting } from "@/shared/types";
 
-const TABS = ["Server", "Tool Descriptions", "Response Messages", "Terminal", "Preferences"] as const;
+const TABS = ["Server", "Tool Descriptions", "Response Messages", "Terminal", "Claude", "Preferences"] as const;
 type SettingsTab = (typeof TABS)[number];
 
 function getCategory(key: string): string {
   if (key.startsWith("server.")) return "Server";
   if (key.endsWith(".description")) return "Tool Descriptions";
   if (key.endsWith(".response_message")) return "Response Messages";
+  if (key.startsWith("claude.") || key === "ask_brainstorm_command") return "Claude";
   return "Other";
 }
 

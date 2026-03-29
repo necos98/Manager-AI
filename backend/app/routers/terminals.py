@@ -213,6 +213,9 @@ async def create_ask_terminal(
         from app.services.settings_service import SettingsService
         settings_svc = SettingsService(db)
         cmd = await settings_svc.get("ask_brainstorm_command")
+        skip_perms = await settings_svc.get("claude.skip_permissions") == "true"
+        if skip_perms and cmd.startswith("claude "):
+            cmd = "claude --dangerously-skip-permissions " + cmd[len("claude "):]
         variables = {
             "$project_id": data.project_id,
             "$project_path": project_path,
