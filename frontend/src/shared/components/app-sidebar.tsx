@@ -12,6 +12,7 @@ import {
   Pencil,
   Plug,
   Settings,
+  Smartphone,
   SquareTerminal,
   Terminal,
 } from "lucide-react";
@@ -41,6 +42,7 @@ import {
 import { ProjectSwitcher } from "@/features/projects/components/project-switcher";
 import { ProjectSettingsDialog } from "@/features/projects/components/project-settings-dialog";
 import { McpSetupDialog } from "@/features/projects/components/mcp-setup-dialog";
+import { SmartphoneQrDialog } from "@/shared/components/smartphone-qr-dialog";
 import { useInstallManagerJson, useInstallClaudeResources } from "@/features/projects/hooks";
 import { useTerminalCount } from "@/features/terminals/hooks";
 import { toast } from "sonner";
@@ -57,6 +59,7 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
 
   const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
   const [mcpSetupOpen, setMcpSetupOpen] = useState(false);
+  const [smartphoneQrOpen, setSmartphoneQrOpen] = useState(false);
 
   const projectId = activeProject?.id;
 
@@ -260,8 +263,9 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild size="sm">
-                <span className="text-xs text-muted-foreground">Manager AI</span>
+              <SidebarMenuButton size="sm" onClick={() => setSmartphoneQrOpen(true)}>
+                <Smartphone className="h-4 w-4" />
+                <span className="text-xs">Show on Smartphone</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -283,6 +287,11 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
           onOpenChange={setMcpSetupOpen}
         />
       )}
+
+      <SmartphoneQrDialog
+        open={smartphoneQrOpen}
+        onOpenChange={setSmartphoneQrOpen}
+      />
     </>
   );
 }
