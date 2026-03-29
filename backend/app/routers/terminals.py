@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import os
+import platform
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings as app_settings
 from app.database import get_db
+from app.models.project import Project
 from app.schemas.terminal import AskTerminalCreate, TerminalCreate, TerminalListResponse, TerminalResponse
 from app.services.terminal_service import TerminalService, terminal_service
 from app.services.terminal_command_service import TerminalCommandService
@@ -54,8 +56,6 @@ def get_terminal_service() -> TerminalService:
 
 async def get_project_path(project_id: str, db: AsyncSession) -> str:
     """Look up project path from DB. Raises ValueError if not found."""
-    from app.models.project import Project
-
     project = await db.get(Project, project_id)
     if project is None:
         raise ValueError(f"Project {project_id} not found")
@@ -77,7 +77,6 @@ async def create_terminal(
         raise HTTPException(status_code=400, detail=f"Project path does not exist: {project_path}")
 
     # Fetch project shell config
-    from app.models.project import Project
     project_obj = await db.get(Project, data.project_id)
     project_shell = project_obj.shell if project_obj else None
 
@@ -100,7 +99,6 @@ async def create_terminal(
             "MANAGER_AI_PROJECT_ID": data.project_id,
             "MANAGER_AI_BASE_URL": f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}",
         }
-        import platform
         set_cmd = "set" if platform.system() == "Windows" else "export"
         env_commands = " && ".join(f"{set_cmd} {k}={v}" for k, v in env_vars.items())
         pty.write(env_commands + "\r\n")
@@ -114,7 +112,6 @@ async def create_terminal(
         custom_vars = await var_svc.list(data.project_id)
         if custom_vars:
             pty = service.get_pty(terminal["id"])
-            import platform
             set_cmd = "set" if platform.system() == "Windows" else "export"
             var_commands = " && ".join(f"{set_cmd} {v.name}={v.value}" for v in custom_vars)
             pty.write(var_commands + "\r\n")
@@ -171,7 +168,6 @@ async def create_ask_terminal(
         raise HTTPException(status_code=400, detail=f"Project path does not exist: {project_path}")
 
     # Fetch project shell config
-    from app.models.project import Project
     project_obj = await db.get(Project, data.project_id)
     project_shell = project_obj.shell if project_obj else None
 
@@ -193,7 +189,6 @@ async def create_ask_terminal(
             "MANAGER_AI_PROJECT_ID": data.project_id,
             "MANAGER_AI_BASE_URL": f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}",
         }
-        import platform
         set_cmd = "set" if platform.system() == "Windows" else "export"
         env_commands = " && ".join(f"{set_cmd} {k}={v}" for k, v in env_vars.items())
         pty.write(env_commands + "\r\n")
@@ -207,7 +202,6 @@ async def create_ask_terminal(
         custom_vars = await var_svc.list(data.project_id)
         if custom_vars:
             pty = service.get_pty(terminal["id"])
-            import platform
             set_cmd = "set" if platform.system() == "Windows" else "export"
             var_commands = " && ".join(f"{set_cmd} {v.name}={v.value}" for v in custom_vars)
             pty.write(var_commands + "\r\n")

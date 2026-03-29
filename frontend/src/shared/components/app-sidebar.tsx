@@ -13,7 +13,6 @@ import {
   Settings,
   SquareTerminal,
   Terminal,
-  Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useMatchRoute } from "@tanstack/react-router";
@@ -94,12 +93,6 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
           to: "/projects/$projectId/activity" as const,
           params: { projectId },
           icon: Activity,
-        },
-        {
-          label: "Automation",
-          to: "/projects/$projectId/automation" as const,
-          params: { projectId },
-          icon: Zap,
         },
         {
           label: "Library",

@@ -29,7 +29,6 @@ def client(mock_service):
     app.dependency_overrides.clear()
 
 
-@pytest.mark.asyncio
 async def test_create_ask_terminal(client, mock_service):
     with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path, \
          patch("app.routers.terminals.os.path.isdir", return_value=True):
@@ -41,7 +40,6 @@ async def test_create_ask_terminal(client, mock_service):
         assert data["project_id"] == "proj-1"
 
 
-@pytest.mark.asyncio
 async def test_create_ask_terminal_invalid_project(client, mock_service):
     with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path:
         mock_path.side_effect = ValueError("Project not found")
@@ -49,10 +47,21 @@ async def test_create_ask_terminal_invalid_project(client, mock_service):
         assert resp.status_code == 400
 
 
-@pytest.mark.asyncio
 async def test_create_ask_terminal_invalid_path(client, mock_service):
     with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path, \
          patch("app.routers.terminals.os.path.isdir", return_value=False):
         mock_path.return_value = "C:/does-not-exist"
         resp = await client.post("/api/terminals/ask", json={"project_id": "proj-1"})
         assert resp.status_code == 400
+
+
+async def test_create_ask_terminal_writes_command(client, mock_service):
+    with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path, \
+         patch("app.routers.terminals.os.path.isdir", return_value=True):
+        mock_path.return_value = "C:/fake"
+        resp = await client.post("/api/terminals/ask", json={"project_id": "proj-1"})
+        assert resp.status_code == 201
+        # Verify the brainstorm command was written to the PTY
+        pty_mock = mock_service.get_pty.return_value
+        written_calls = [call.args[0] for call in pty_mock.write.call_args_list]
+        assert any("ask-and-brainstorm" in call and "proj-1" in call for call in written_calls)
