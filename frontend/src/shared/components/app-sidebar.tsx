@@ -7,6 +7,7 @@ import {
   FolderSync,
   Key,
   LayoutDashboard,
+  MessageSquare,
   MoreHorizontal,
   Pencil,
   Plug,
@@ -93,6 +94,12 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
           to: "/projects/$projectId/activity" as const,
           params: { projectId },
           icon: Activity,
+        },
+        {
+          label: "Ask & Brainstorming",
+          to: "/projects/$projectId/ask" as const,
+          params: { projectId },
+          icon: MessageSquare,
         },
         {
           label: "Library",

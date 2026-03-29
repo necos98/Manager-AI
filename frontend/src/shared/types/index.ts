@@ -149,6 +149,10 @@ export interface TerminalCreate {
   run_commands?: boolean;
 }
 
+export interface AskTerminalCreate {
+  project_id: string;
+}
+
 // ── Terminal Command ──
 
 export interface TerminalCommand {
