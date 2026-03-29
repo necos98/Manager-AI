@@ -16,7 +16,6 @@ import {
   useCompleteIssue,
 } from "@/features/issues/hooks";
 import { useCreateTerminal } from "@/features/terminals/hooks";
-import { toast } from "sonner";
 import type { Issue } from "@/shared/types";
 
 interface IssueActionsProps {
@@ -59,12 +58,8 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
 
   const createTerminal = useCreateTerminal();
 
-  const handleRunIssue = async () => {
-    try {
-      await createTerminal.mutateAsync({ issue_id: issue.id, project_id: projectId });
-    } catch (err) {
-      toast.error("Failed to open terminal: " + (err instanceof Error ? err.message : "Unknown error"));
-    }
+  const handleRunIssue = () => {
+    createTerminal.mutate({ issue_id: issue.id, project_id: projectId });
   };
 
   const handleConfirm = () => {
