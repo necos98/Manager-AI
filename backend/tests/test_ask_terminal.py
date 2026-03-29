@@ -1,4 +1,5 @@
 import pytest
+import pytest_asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
 from httpx import AsyncClient, ASGITransport
 from app.main import app
@@ -22,10 +23,17 @@ def mock_service():
     return svc
 
 
-@pytest.fixture
-def client(mock_service):
+@pytest_asyncio.fixture
+async def client(mock_service, db_session):
+    from app.database import get_db
+
+    async def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_terminal_service] = lambda: mock_service
-    yield AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        yield c
     app.dependency_overrides.clear()
 
 
