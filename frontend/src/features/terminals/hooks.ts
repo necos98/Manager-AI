@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "./api";
-import type { AskTerminalCreate, TerminalCreate, TerminalCommandUpdate } from "@/shared/types";
+import type { TerminalCreate, TerminalCommandUpdate } from "@/shared/types";
 
 export const terminalKeys = {
   all: ["terminals"] as const,
@@ -37,17 +37,6 @@ export function useCreateTerminal() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: TerminalCreate) => api.createTerminal(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: terminalKeys.all });
-      queryClient.invalidateQueries({ queryKey: terminalKeys.count });
-    },
-  });
-}
-
-export function useCreateAskTerminal() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: AskTerminalCreate) => api.createAskTerminal(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: terminalKeys.all });
       queryClient.invalidateQueries({ queryKey: terminalKeys.count });

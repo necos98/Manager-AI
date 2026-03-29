@@ -22,7 +22,6 @@ import { Route as ProjectsProjectIdIssuesRouteImport } from "./routes/projects/$
 import { Route as ProjectsProjectIdFilesRouteImport } from "./routes/projects/$projectId/files"
 import { Route as ProjectsProjectIdCommandsRouteImport } from "./routes/projects/$projectId/commands"
 import { Route as ProjectsProjectIdActivityRouteImport } from "./routes/projects/$projectId/activity"
-import { Route as ProjectsProjectIdAskRouteImport } from "./routes/projects/$projectId/ask"
 import { Route as ProjectsProjectIdIssuesIndexRouteImport } from "./routes/projects/$projectId/issues/index"
 import { Route as ProjectsProjectIdIssuesNewRouteImport } from "./routes/projects/$projectId/issues/new"
 import { Route as ProjectsProjectIdIssuesIssueIdRouteImport } from "./routes/projects/$projectId/issues/$issueId"
@@ -96,11 +95,6 @@ const ProjectsProjectIdActivityRoute =
     path: "/activity",
     getParentRoute: () => ProjectsProjectIdRoute,
   } as any)
-const ProjectsProjectIdAskRoute = ProjectsProjectIdAskRouteImport.update({
-  id: "/ask",
-  path: "/ask",
-  getParentRoute: () => ProjectsProjectIdRoute,
-} as any)
 const ProjectsProjectIdIssuesIndexRoute =
   ProjectsProjectIdIssuesIndexRouteImport.update({
     id: "/",
@@ -129,7 +123,6 @@ export interface FileRoutesByFullPath {
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
-  "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
@@ -148,7 +141,6 @@ export interface FileRoutesByTo {
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
-  "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
@@ -167,7 +159,6 @@ export interface FileRoutesById {
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
-  "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
@@ -188,7 +179,6 @@ export interface FileRouteTypes {
     | "/projects/$projectId"
     | "/projects/new"
     | "/projects/$projectId/activity"
-    | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
     | "/projects/$projectId/issues"
@@ -207,7 +197,6 @@ export interface FileRouteTypes {
     | "/projects/$projectId"
     | "/projects/new"
     | "/projects/$projectId/activity"
-    | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
     | "/projects/$projectId/library"
@@ -225,7 +214,6 @@ export interface FileRouteTypes {
     | "/projects/$projectId"
     | "/projects/new"
     | "/projects/$projectId/activity"
-    | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
     | "/projects/$projectId/issues"
@@ -339,13 +327,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ProjectsProjectIdActivityRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
-    "/projects/$projectId/ask": {
-      id: "/projects/$projectId/ask"
-      path: "/ask"
-      fullPath: "/projects/$projectId/ask"
-      preLoaderRoute: typeof ProjectsProjectIdAskRouteImport
-      parentRoute: typeof ProjectsProjectIdRoute
-    }
     "/projects/$projectId/issues/": {
       id: "/projects/$projectId/issues/"
       path: "/"
@@ -390,7 +371,6 @@ const ProjectsProjectIdIssuesRouteWithChildren =
 
 interface ProjectsProjectIdRouteChildren {
   ProjectsProjectIdActivityRoute: typeof ProjectsProjectIdActivityRoute
-  ProjectsProjectIdAskRoute: typeof ProjectsProjectIdAskRoute
   ProjectsProjectIdCommandsRoute: typeof ProjectsProjectIdCommandsRoute
   ProjectsProjectIdFilesRoute: typeof ProjectsProjectIdFilesRoute
   ProjectsProjectIdIssuesRoute: typeof ProjectsProjectIdIssuesRouteWithChildren
@@ -400,7 +380,6 @@ interface ProjectsProjectIdRouteChildren {
 
 const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
   ProjectsProjectIdActivityRoute: ProjectsProjectIdActivityRoute,
-  ProjectsProjectIdAskRoute: ProjectsProjectIdAskRoute,
   ProjectsProjectIdCommandsRoute: ProjectsProjectIdCommandsRoute,
   ProjectsProjectIdFilesRoute: ProjectsProjectIdFilesRoute,
   ProjectsProjectIdIssuesRoute: ProjectsProjectIdIssuesRouteWithChildren,
