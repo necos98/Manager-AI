@@ -28,6 +28,26 @@ class AutoStartWorkflow(BaseHook):
         if paused == "true":
             return HookResult(success=True, output="work queue is paused")
 
+        # Check blockers: non avviare se ci sono dipendenze non finite
+        async with async_session() as session:
+            from app.services.issue_relation_service import IssueRelationService
+            from app.services.issue_service import IssueService
+            rel_svc = IssueRelationService(session)
+            blockers = await rel_svc.get_blockers(context.issue_id)
+            if blockers:
+                issue_svc = IssueService(session)
+                unfinished = []
+                for rel in blockers:
+                    blocker = await issue_svc.get_by_id(rel.source_id)
+                    if blocker and blocker.status.value != "Finished":
+                        unfinished.append(blocker.name or blocker.description[:40])
+                if unfinished:
+                    names = ", ".join(unfinished)
+                    return HookResult(
+                        success=True,
+                        output=f"Issue bloccata da: {names}. Completare prima le dipendenze."
+                    )
+
         try:
             timeout = int(timeout_str)
         except ValueError:
