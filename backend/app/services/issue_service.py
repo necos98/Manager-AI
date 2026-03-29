@@ -137,6 +137,13 @@ class IssueService:
         return await self.update_fields(issue_id, project_id, name=name)
 
     async def complete_issue(self, issue_id: str, project_id: str, recap: str) -> Issue:
+        """Mark an issue as FINISHED with the given recap.
+
+        NOTE: This method calls session.commit() internally (while holding the
+        per-issue lock) to ensure the FINISHED status is visible to concurrent
+        callers before the lock is released. Callers do not need to commit after
+        this method returns — a subsequent commit() will be a no-op.
+        """
         if not recap or not recap.strip():
             raise ValidationError("Recap cannot be blank")
         lock = _issue_completion_locks.setdefault(issue_id, asyncio.Lock())
