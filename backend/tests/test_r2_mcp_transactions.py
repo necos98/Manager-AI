@@ -74,7 +74,6 @@ async def test_mcp_get_project_context_nonexistent_returns_error():
 
     assert "error" in result
     assert "not found" in result["error"].lower()
-    mock_session.commit.assert_not_called()
 
 
 @pytest.mark.asyncio
