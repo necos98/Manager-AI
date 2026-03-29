@@ -114,8 +114,8 @@ def main():
     print()
     print("=" * 50)
     print("  Manager AI")
-    print("  Frontend: http://localhost:4173")
-    print(f"  Backend:  http://localhost:{backend_port}")
+    print("  Frontend: http://localhost:4173  (also accessible on LAN)")
+    print(f"  Backend:  http://localhost:{backend_port}  (also accessible on LAN)")
     print("  Press Ctrl+C to stop")
     print("=" * 50)
     print()
@@ -126,7 +126,7 @@ def main():
             str(VENV_PYTHON), "-m", "uvicorn",
             "app.main:app",
             "--reload",
-            "--host", "127.0.0.1",
+            "--host", "0.0.0.0",
             "--port", str(backend_port),
         ],
         cwd=str(BACKEND_DIR),
