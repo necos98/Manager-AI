@@ -215,3 +215,46 @@ class TestTerminalServiceRegistry:
             t2.join()
 
             assert errors == [], f"Unexpected exceptions: {errors}"
+
+
+# --- buffer tests -----------------------------------------------------------
+
+
+def test_append_output_overflow_trims_from_front(service):
+    """Buffer che supera MAX_BUFFER_SIZE viene trimmato dal fronte (dati vecchi persi)."""
+    from app.services.terminal_service import MAX_BUFFER_SIZE
+
+    with patch("app.services.terminal_service.PTY") as MockPTY:
+        mock_pty = MagicMock()
+        mock_pty.spawn = MagicMock()
+        MockPTY.return_value = mock_pty
+
+        term = service.create(issue_id="t1", project_id="p1", project_path="C:/a")
+        tid = term["id"]
+
+        # Riempi il buffer con 'A', poi appendi 'B' per sforare il limite
+        # Fill with A's taking up half the buffer, then add B's that double the size
+        service.append_output(tid, "A" * (MAX_BUFFER_SIZE // 2))
+        service.append_output(tid, "B" * MAX_BUFFER_SIZE)
+
+        result = service.get_buffered_output(tid)
+        assert len(result.encode("utf-8")) <= MAX_BUFFER_SIZE
+        assert result.endswith("B" * MAX_BUFFER_SIZE), "I dati più recenti devono essere preservati"
+        assert not result.startswith("A"), "I dati più vecchi devono essere eliminati dal fronte"
+
+
+def test_append_output_unknown_terminal_is_noop(service):
+    """append_output su terminal_id inesistente non deve sollevare eccezioni."""
+    service.append_output("nonexistent-id", "some data")  # must not raise
+
+
+def test_get_buffered_output_empty(service):
+    """Terminal appena creato: get_buffered_output ritorna stringa vuota."""
+    with patch("app.services.terminal_service.PTY") as MockPTY:
+        mock_pty = MagicMock()
+        mock_pty.spawn = MagicMock()
+        MockPTY.return_value = mock_pty
+
+        term = service.create(issue_id="t1", project_id="p1", project_path="C:/a")
+        result = service.get_buffered_output(term["id"])
+        assert result == ""
