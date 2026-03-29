@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import json
 from pathlib import Path
 
@@ -21,6 +22,9 @@ _defaults_path = Path(__file__).parent / "default_settings.json"
 _desc = json.loads(_defaults_path.read_text(encoding="utf-8"))
 
 mcp = FastMCP(_desc["server.name"], streamable_http_path="/")
+
+logger = logging.getLogger(__name__)
+_background_tasks: set[asyncio.Task] = set()
 
 
 @mcp.tool(description=_desc["tool.get_issue_details.description"])
@@ -147,12 +151,15 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
 
             # Trigger async embedding
             rag = get_rag_service()
-            asyncio.create_task(rag.embed_issue(
+            embed_task = asyncio.create_task(rag.embed_issue(
                 project_id=project_id,
                 source_id=issue_id_val,
                 issue_data=issue_data,
                 project_name=project_name,
             ))
+            _background_tasks.add(embed_task)
+            embed_task.add_done_callback(_background_tasks.discard)
+            logger.debug("embed_issue task started for issue %s", issue_id_val)
 
             await event_service.emit({
                 "type": "issue_status_changed",
