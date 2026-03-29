@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DndContext, DragEndEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragStartEvent, DragEndEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { Button } from "@/shared/components/ui/button";
 import { KanbanColumn } from "./kanban-column";
@@ -66,7 +66,7 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
     return map;
   }, [filtered]);
 
-  function handleDragStart(event: { active: { id: string; data: { current?: { issue: Issue } } } }) {
+  function handleDragStart(event: DragStartEvent) {
     setActiveIssue(event.active.data.current?.issue ?? null);
   }
 
@@ -98,7 +98,7 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
         onSortChange={setSort}
       />
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart as any} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex gap-3 overflow-x-auto pb-4">
           {COLUMNS.map((status) => (
             <KanbanColumn
