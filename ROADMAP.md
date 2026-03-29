@@ -11,29 +11,29 @@ Questa roadmap non aggiunge feature: consolida, rafforza e rende affidabile ciò
 Correggere i punti dove il sistema può silenziare errori o lasciare stato inconsistente.
 
 ### R1.1 Race condition sul completamento issue
-- [ ] Aggiungere lock/serializzazione in `issue_service.complete_issue()` tra il check dei task pending e il flush
+- [x] Aggiungere lock/serializzazione in `issue_service.complete_issue()` tra il check dei task pending e il flush
   - File: `backend/app/services/issue_service.py:131-177`
   - Rischio attuale: issue marcata FINISHED con task ancora pending se due richieste concorrenti
-- [ ] Test: verifica che due chiamate `complete_issue` concorrenti su stessa issue non causino stato inconsistente
+- [x] Test: verifica che due chiamate `complete_issue` concorrenti su stessa issue non causino stato inconsistente
 
 ### R1.2 Propagazione errori negli hook
-- [ ] `hook_registry.fire()` attualmente crea `asyncio.create_task` senza tracking — aggiungere riferimento alla task e log strutturato del risultato
+- [x] `hook_registry.fire()` attualmente crea `asyncio.create_task` senza tracking — aggiungere riferimento alla task e log strutturato del risultato
   - File: `backend/app/hooks/registry.py:57-66`
-- [ ] Aggiungere timeout esplicito per ogni hook execution (default 300s, configurabile)
-- [ ] Emettere evento WebSocket `hook_failed` con dettagli anche quando l'eccezione viene swallowed
-- [ ] Test: hook che lancia eccezione non deve bloccare il flusso principale
+- [x] Aggiungere timeout esplicito per ogni hook execution (default 300s, configurabile)
+- [x] Emettere evento WebSocket `hook_failed` con dettagli anche quando l'eccezione viene swallowed
+- [x] Test: hook che lancia eccezione non deve bloccare il flusso principale
 
 ### R1.3 Cleanup PTY garantito
-- [ ] Nel WebSocket handler dei terminali, assicurarsi che la chiusura PTY avvenga in `finally`, non solo su EOF
+- [x] Nel WebSocket handler dei terminali, assicurarsi che la chiusura PTY avvenga in `finally`, non solo su EOF
   - File: `backend/app/routers/terminals.py:316-389`
-- [ ] `terminal_service.resize()` accede all'entry fuori dal lock — spostare dentro il lock
+- [x] `terminal_service.resize()` accede all'entry fuori dal lock — spostare dentro il lock
   - File: `backend/app/services/terminal_service.py:205-211`
-- [ ] Test: disconnect brusco del WebSocket deve liberare la PTY
+- [x] Test: disconnect brusco del WebSocket deve liberare la PTY
 
 ### R1.4 RAG embed non silenziato
-- [ ] `rag_service.py` ha `except Exception: pass` che swallowa fallimenti embedding
-- [ ] Loggare sempre al livello `warning` quando embed fallisce, includere issue_id
-- [ ] In MCP `complete_issue`, loggare il task id dell'embed in modo tracciabile
+- [x] `rag_service.py` ha `except Exception: pass` che swallowa fallimenti embedding
+- [x] Loggare sempre al livello `warning` quando embed fallisce, includere issue_id
+- [x] In MCP `complete_issue`, loggare il task id dell'embed in modo tracciabile
   - File: `backend/app/mcp/server.py:148-155`
 
 ---
