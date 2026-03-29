@@ -146,6 +146,7 @@ export interface TerminalListItem {
 export interface TerminalCreate {
   issue_id: string;
   project_id: string;
+  run_commands?: boolean;
 }
 
 // ── Terminal Command ──
