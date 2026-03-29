@@ -122,7 +122,6 @@ async def set_issue_name(project_id: str, issue_id: str, name: str) -> dict:
             })
             return {"id": issue.id, "name": issue.name}
         except AppError as e:
-            await session.rollback()
             return {"error": e.message}
 
 
@@ -192,7 +191,6 @@ async def create_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
             })
             return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
         except AppError as e:
-            await session.rollback()
             return {"error": e.message}
 
 
@@ -213,7 +211,6 @@ async def edit_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
             })
             return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
         except AppError as e:
-            await session.rollback()
             return {"error": e.message}
 
 
@@ -234,7 +231,6 @@ async def create_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
             })
             return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
         except AppError as e:
-            await session.rollback()
             return {"error": e.message}
 
 
@@ -255,7 +251,6 @@ async def edit_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
             })
             return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
         except AppError as e:
-            await session.rollback()
             return {"error": e.message}
 
 
@@ -347,7 +342,6 @@ async def create_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
                 })
             return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
         except AppError as e:
-            await session.rollback()
             return {"error": e.message}
 
 
@@ -368,7 +362,6 @@ async def replace_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
                 })
             return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
         except AppError as e:
-            await session.rollback()
             return {"error": e.message}
 
 
@@ -417,7 +410,6 @@ async def update_task_status(task_id: str, status: str) -> dict:
                 )
             return {"id": task_id_val, "name": task_name, "status": task_status}
         except AppError as e:
-            await session.rollback()
             return {"error": e.message}
 
 
@@ -442,7 +434,6 @@ async def update_task_name(task_id: str, name: str) -> dict:
                 })
             return {"id": task_id_val, "name": task_name}
         except AppError as e:
-            await session.rollback()
             return {"error": e.message}
 
 
@@ -456,7 +447,6 @@ async def delete_task(task_id: str) -> dict:
             issue = await session.get(Issue, task_issue_id)
             project_id = issue.project_id if issue else None
             await session.delete(task)
-            await session.flush()
             await session.commit()
             if project_id:
                 await event_service.emit({
@@ -467,7 +457,6 @@ async def delete_task(task_id: str) -> dict:
                 })
             return {"deleted": True}
         except AppError as e:
-            await session.rollback()
             return {"error": e.message}
 
 
