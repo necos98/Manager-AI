@@ -124,13 +124,20 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
               <DialogDescription>{copy.description}</DialogDescription>
             </DialogHeader>
             {confirmAction === "complete" && (
-              <Textarea
-                placeholder="Describe what was implemented..."
-                value={recap}
-                onChange={(e) => setRecap(e.target.value)}
-                rows={4}
-                className="mt-2"
-              />
+              <>
+                <Textarea
+                  placeholder="Describe what was implemented..."
+                  value={recap}
+                  onChange={(e) => setRecap(e.target.value)}
+                  rows={4}
+                  className="mt-2"
+                />
+                {recap.length > 50_000 && (
+                  <p className="text-xs text-destructive mt-1">
+                    Max 50,000 characters ({recap.length.toLocaleString()} / 50,000)
+                  </p>
+                )}
+              </>
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setConfirmAction(null)}>
@@ -139,7 +146,7 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
               <Button
                 variant={confirmAction === "cancel" ? "destructive" : "default"}
                 onClick={handleConfirm}
-                disabled={isPending || (confirmAction === "complete" && !recap.trim())}
+                disabled={isPending || (confirmAction === "complete" && (!recap.trim() || recap.length > 50_000))}
               >
                 {isPending ? <Loader2 className="size-4 mr-1 animate-spin" /> : null}
                 {isPending ? "Working..." : copy.confirm}

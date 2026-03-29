@@ -150,6 +150,7 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
                 onSave={(description) => updateIssue.mutate({ description })}
                 disabled={isTerminalState}
                 multiline
+                validate={(v) => v.length > 50_000 ? "Max 50,000 characters" : null}
                 renderView={(v) => <p className="text-sm whitespace-pre-wrap">{v}</p>}
               />
             </CardContent>
