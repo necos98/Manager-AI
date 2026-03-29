@@ -31,10 +31,11 @@ async def create_issue(project_id: str, data: IssueCreate, db: AsyncSession = De
 async def list_issues(
     project_id: str,
     status: IssueStatus | None = Query(None),
+    search: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = IssueService(db)
-    return await service.list_by_project(project_id, status=status)
+    return await service.list_by_project(project_id, status=status, search=search)
 
 
 @router.get("/{issue_id}", response_model=IssueResponse)

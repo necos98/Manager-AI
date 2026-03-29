@@ -58,11 +58,20 @@ class IssueService:
         return issue
 
     async def list_by_project(
-        self, project_id: str, status: IssueStatus | None = None
+        self, project_id: str, status: IssueStatus | None = None, search: str | None = None
     ) -> list[Issue]:
+        from sqlalchemy import or_
         query = select(Issue).options(selectinload(Issue.tasks)).where(Issue.project_id == project_id)
         if status is not None:
             query = query.where(Issue.status == status)
+        if search:
+            term = f"%{search.lower()}%"
+            query = query.where(
+                or_(
+                    Issue.description.ilike(term),
+                    Issue.name.ilike(term),
+                )
+            )
         query = query.order_by(Issue.priority.asc(), Issue.created_at.asc())
         result = await self.session.execute(query)
         return list(result.unique().scalars().all())
