@@ -232,14 +232,15 @@ def test_append_output_overflow_trims_from_front(service):
         term = service.create(issue_id="t1", project_id="p1", project_path="C:/a")
         tid = term["id"]
 
-        # Fill buffer with A's to max, then append B's to trigger trim from front
+        # Riempi il buffer con 'A' fino al limite, poi appendi altri MAX_BUFFER_SIZE 'B'
+        # per provocare un overflow che elimina tutti gli 'A' dal fronte.
         service.append_output(tid, "A" * MAX_BUFFER_SIZE)
-        service.append_output(tid, "B" * 100)
+        service.append_output(tid, "B" * MAX_BUFFER_SIZE)
 
         result = service.get_buffered_output(tid)
         assert len(result.encode("utf-8")) <= MAX_BUFFER_SIZE
-        assert result.endswith("B" * 100), "I dati più recenti devono essere preservati"
-        assert not result.startswith("A"), "I dati più vecchi devono essere eliminati dal fronte"
+        assert "A" not in result, "I dati più vecchi (A) devono essere eliminati dal fronte"
+        assert result == "B" * MAX_BUFFER_SIZE, "Solo i dati più recenti (B) devono rimanere"
 
 
 def test_append_output_unknown_terminal_is_noop(service):
