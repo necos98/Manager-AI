@@ -42,6 +42,27 @@ class ProjectService:
         await self.session.delete(project)
         await self.session.flush()
 
+    async def get_dashboard_data(self) -> list[dict]:
+        from app.models.issue import Issue, IssueStatus
+        projects = await self.list_all()
+        result = []
+        for project in projects:
+            q = (
+                select(Issue)
+                .where(Issue.project_id == project.id)
+                .where(Issue.status.notin_([IssueStatus.FINISHED, IssueStatus.CANCELED]))
+                .order_by(Issue.priority.asc(), Issue.created_at.asc())
+            )
+            r = await self.session.execute(q)
+            active = list(r.scalars().all())
+            result.append({
+                "id": project.id,
+                "name": project.name,
+                "path": project.path,
+                "active_issues": active,
+            })
+        return result
+
     async def get_issue_counts(self, project_id: str) -> dict[str, int]:
         from sqlalchemy import func as sqlfunc, select as sqlselect
 

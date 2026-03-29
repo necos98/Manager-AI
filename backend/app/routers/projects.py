@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
+from app.schemas.project import DashboardProject, ProjectCreate, ProjectResponse, ProjectUpdate
 from app.services.project_service import ProjectService
 from app.services.terminal_service import terminal_service
 
@@ -105,3 +105,12 @@ async def install_claude_resources(project_id: str, db: AsyncSession = Depends(g
         copied.append(item)
 
     return {"path": dest, "copied": copied}
+
+
+dashboard_router = APIRouter(tags=["dashboard"])
+
+
+@dashboard_router.get("/api/dashboard", response_model=list[DashboardProject])
+async def get_dashboard(db: AsyncSession = Depends(get_db)):
+    svc = ProjectService(db)
+    return await svc.get_dashboard_data()

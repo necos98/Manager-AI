@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProjectCreate(BaseModel):
@@ -31,3 +31,20 @@ class ProjectResponse(BaseModel):
     issue_counts: dict[str, int] = {}
 
     model_config = {"from_attributes": True}
+
+
+class DashboardIssue(BaseModel):
+    id: str
+    name: str | None
+    description: str
+    status: str
+    priority: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DashboardProject(BaseModel):
+    id: str
+    name: str
+    path: str
+    active_issues: list[DashboardIssue]
+    model_config = ConfigDict(from_attributes=True)
