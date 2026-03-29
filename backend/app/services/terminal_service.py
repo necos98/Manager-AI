@@ -202,13 +202,28 @@ class TerminalService:
                 self._terminals.pop(terminal_id)
             self._buffers.pop(terminal_id, None)
 
+    def cleanup(self, terminal_id: str) -> None:
+        """Idempotent PTY cleanup — no-op if terminal already removed."""
+        with self._lock:
+            if terminal_id not in self._terminals:
+                return
+            entry = self._terminals.pop(terminal_id)
+            self._buffers.pop(terminal_id, None)
+        try:
+            pty = entry["pty"]
+            if hasattr(pty, "close"):
+                pty.close()
+        except Exception:
+            pass
+
     def resize(self, terminal_id: str, cols: int, rows: int) -> None:
-        if terminal_id not in self._terminals:
-            raise KeyError(f"Terminal {terminal_id} not found")
-        entry = self._terminals[terminal_id]
-        entry["cols"] = cols
-        entry["rows"] = rows
-        entry["pty"].set_size(cols, rows)
+        with self._lock:
+            if terminal_id not in self._terminals:
+                raise KeyError(f"Terminal {terminal_id} not found")
+            entry = self._terminals[terminal_id]
+            entry["cols"] = cols
+            entry["rows"] = rows
+            entry["pty"].set_size(cols, rows)
 
     def _to_response(self, entry: dict) -> dict:
         return {

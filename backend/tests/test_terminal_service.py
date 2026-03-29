@@ -149,3 +149,69 @@ class TestTerminalServiceRegistry:
             assert updated["cols"] == 200
             assert updated["rows"] == 50
             mock_pty.set_size.assert_called_with(200, 50)
+
+    def test_cleanup_removes_terminal_and_closes_pty(self, service):
+        """cleanup() removes terminal and closes the PTY."""
+        with patch("app.services.terminal_service.PTY") as MockPTY:
+            mock_pty = MagicMock()
+            mock_pty.spawn = MagicMock()
+            mock_pty.close = MagicMock()
+            MockPTY.return_value = mock_pty
+
+            term = service.create(issue_id="t1", project_id="p1", project_path="C:/a")
+            tid = term["id"]
+
+            service.cleanup(tid)
+
+            assert len(service.list_active()) == 0
+            mock_pty.close.assert_called_once()
+
+    def test_cleanup_is_idempotent(self, service):
+        """cleanup() called multiple times does not raise."""
+        with patch("app.services.terminal_service.PTY") as MockPTY:
+            mock_pty = MagicMock()
+            mock_pty.spawn = MagicMock()
+            mock_pty.close = MagicMock()
+            MockPTY.return_value = mock_pty
+
+            term = service.create(issue_id="t1", project_id="p1", project_path="C:/a")
+            tid = term["id"]
+
+            service.cleanup(tid)
+            service.cleanup(tid)  # second call — must not raise
+
+    def test_resize_concurrent_with_kill_does_not_crash(self, service):
+        """resize() inside lock prevents races with concurrent kill."""
+        import threading
+
+        with patch("app.services.terminal_service.PTY") as MockPTY:
+            mock_pty = MagicMock()
+            mock_pty.spawn = MagicMock()
+            mock_pty.set_size = MagicMock()
+            MockPTY.return_value = mock_pty
+
+            term = service.create(issue_id="t1", project_id="p1", project_path="C:/a")
+            errors = []
+
+            def do_resize():
+                try:
+                    service.resize(term["id"], 100, 25)
+                except KeyError:
+                    pass  # terminal may have been killed first — acceptable
+                except Exception as exc:
+                    errors.append(exc)
+
+            def do_kill():
+                try:
+                    service.kill(term["id"])
+                except KeyError:
+                    pass
+
+            t1 = threading.Thread(target=do_resize)
+            t2 = threading.Thread(target=do_kill)
+            t1.start()
+            t2.start()
+            t1.join()
+            t2.join()
+
+            assert errors == [], f"Unexpected exceptions: {errors}"

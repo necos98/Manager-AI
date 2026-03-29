@@ -386,3 +386,5 @@ async def terminal_ws(
     except Exception:
         pty_read_task.cancel()
         ws_read_task.cancel()
+    finally:
+        service.cleanup(terminal_id)
