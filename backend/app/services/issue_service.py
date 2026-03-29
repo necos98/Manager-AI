@@ -15,6 +15,10 @@ from app.services.activity_service import ActivityService
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
 
+# One lock per issue_id. Safe to use setdefault() without a separate mutex because
+# asyncio runs on a single OS thread — no concurrent dict access is possible.
+# The dict grows monotonically (one entry per issue ever completed), which is
+# acceptable for typical issue volumes (thousands, not millions).
 _issue_completion_locks: dict[str, asyncio.Lock] = {}
 
 
@@ -164,6 +168,10 @@ class IssueService:
             project = await project_service.get_by_id(project_id)
             if project is None:
                 raise NotFoundError(f"Project {project_id} not found")
+            # Commit while lock is still held so concurrent callers see FINISHED
+            # before acquiring the lock. The router's db.commit() after this call
+            # is a safe no-op.
+            await self.session.commit()
             await hook_registry.fire(
                 HookEvent.ISSUE_COMPLETED,
                 HookContext(
