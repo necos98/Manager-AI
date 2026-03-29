@@ -5,110 +5,110 @@ description: Use when you have an approved spec and need to write an implementat
 
 # MCP Writing Plans
 
-Variante MCP-native di `superpowers:writing-plans`. Stesso processo di pianificazione dettagliata, ma il piano e i task vengono salvati nel Manager AI MCP — **nessun file .md su disco**.
+MCP-native variant of `superpowers:writing-plans`. Same detailed planning process, but the plan and tasks are saved to Manager AI MCP — **no .md files on disk**.
 
-**Announce at start:** "Sto usando mcp-writing-plans per creare il piano di implementazione via Manager AI."
+**Announce at start:** "Using mcp-writing-plans to create the implementation plan via Manager AI."
 
-**Contesto:** Viene invocata dopo mcp-brainstorming, con spec già approvata e task_id della spec disponibile.
+**Context:** Invoked after mcp-brainstorming, with an already-approved spec and the spec's task_id available.
 
-## Prerequisito: project_id
+## Prerequisite: project_id
 
-Leggi `manager.json` nella root del progetto per il `project_id`.
+Read `manager.json` in the project root for the `project_id`.
 
-## Struttura del piano
+## Plan structure
 
-Prima di definire i task, mappa i file che verranno creati o modificati. Ogni file ha una responsabilità chiara.
+Before defining tasks, map out the files that will be created or modified. Each file has a clear responsibility.
 
-- Unità con interfacce ben definite, testabili in isolamento
-- File piccoli e focalizzati — se un file fa troppe cose, dividilo
-- File che cambiano insieme vivono insieme
-- In codebase esistenti, segui i pattern già presenti
+- Units with well-defined interfaces, testable in isolation
+- Small, focused files — if a file does too many things, split it
+- Files that change together live together
+- In existing codebases, follow patterns already present
 
-## Granularità dei task
+## Task granularity
 
-**Ogni step è un'azione (2-5 minuti):**
-- "Scrivi il test che fallisce" — step
-- "Esegui per verificare che fallisca" — step
-- "Scrivi il codice minimo per farlo passare" — step
-- "Verifica che passi" — step
+**Each step is an action (2-5 minutes):**
+- "Write the failing test" — step
+- "Run to verify it fails" — step
+- "Write the minimum code to make it pass" — step
+- "Verify it passes" — step
 - "Commit" — step
 
-## Processo
+## Process
 
-1. **Leggi project_id** da `manager.json`
-2. **Leggi la spec** — recupera da MCP con `mcp__ManagerAi__get_task_details` usando il task_id della spec
-3. **Verifica scope** — se la spec copre più sottosistemi indipendenti, suggerisci di dividere in piani separati
-4. **Mappa i file** — elenca tutti i file da creare/modificare con le loro responsabilità
-5. **Scrivi il piano completo** — task per task, step per step (vedi struttura sotto)
-6. **Salva piano via MCP** — `mcp__ManagerAi__create_task_plan`
-7. **Crea task MCP** — un `mcp__ManagerAi__create_task` per ogni task principale del piano
-8. **Loop revisione piano** — dispatcha subagent revisore; correggi e ri-dispatcha fino ad approvazione (max 3 iterazioni)
-9. **Handoff all'esecuzione** — presenta le opzioni di esecuzione all'utente
+1. **Read project_id** from `manager.json`
+2. **Read the spec** — fetch from MCP with `mcp__ManagerAi__get_task_details` using the spec's task_id
+3. **Verify scope** — if the spec covers multiple independent subsystems, suggest splitting into separate plans
+4. **Map files** — list all files to create/modify with their responsibilities
+5. **Write the full plan** — task by task, step by step (see structure below)
+6. **Save plan via MCP** — `mcp__ManagerAi__create_task_plan`
+7. **Create MCP tasks** — one `mcp__ManagerAi__create_task` for each main task in the plan
+8. **Plan review loop** — dispatch reviewer subagent; fix and re-dispatch until approved (max 3 iterations)
+9. **Execution handoff** — present execution options to the user
 
-## Struttura task nel piano
+## Task structure in the plan
 
 ```markdown
-### Task N: [Nome Componente]
+### Task N: [Component Name]
 
-**File:**
-- Crea: `percorso/esatto/file.php`
-- Modifica: `percorso/esatto/esistente.php:123-145`
-- Test: `tests/percorso/esatto/test.php`
+**Files:**
+- Create: `exact/path/file.py`
+- Modify: `exact/path/existing.py:123-145`
+- Test: `tests/exact/path/test.py`
 
-- [ ] **Step 1: Scrivi il test che fallisce**
-[codice completo del test]
+- [ ] **Step 1: Write the failing test**
+[complete test code]
 
-- [ ] **Step 2: Esegui per verificare che fallisca**
-Comando: `...`
-Atteso: FAIL con "..."
+- [ ] **Step 2: Run to verify it fails**
+Command: `...`
+Expected: FAIL with "..."
 
-- [ ] **Step 3: Implementazione minima**
-[codice completo]
+- [ ] **Step 3: Minimum implementation**
+[complete code]
 
-- [ ] **Step 4: Verifica che passi**
-Comando: `...`
-Atteso: PASS
+- [ ] **Step 4: Verify it passes**
+Command: `...`
+Expected: PASS
 
 - [ ] **Step 5: Commit**
 `git commit -m "feat: ..."`
 ```
 
-## Salvataggio Piano via MCP
+## Saving the Plan via MCP
 
 ```
 mcp__ManagerAi__create_task_plan
-  project_id: <da manager.json>
-  content: <piano completo in markdown>
+  project_id: <from manager.json>
+  content: <full plan in markdown>
 ```
 
-Poi crea un task MCP per ogni task principale:
+Then create one MCP task for each main task:
 
 ```
 mcp__ManagerAi__create_task
-  project_id: <da manager.json>
-  name: "Task N: [Nome]"
-  description: <descrizione del task>
+  project_id: <from manager.json>
+  name: "Task N: [Name]"
+  description: <task description>
 ```
 
-## Loop Revisione Piano
+## Plan Review Loop
 
-1. Dispatcha subagent con: percorso al piano MCP (task_id) + task_id della spec
-2. Se ❌ problemi: correggi con `mcp__ManagerAi__edit_task_plan`, ri-dispatcha
-3. Se ✅ approvato: procedi all'handoff
+1. Dispatch subagent with: path to the MCP plan (task_id) + spec task_id
+2. If ❌ issues found: fix with `mcp__ManagerAi__edit_task_plan`, re-dispatch
+3. If ✅ approved: proceed to handoff
 
-## Handoff Esecuzione
+## Execution Handoff
 
-> "Piano salvato nel Manager AI (task_id: `<id>`). Task creati: N. Come vuoi procedere?
+> "Plan saved in Manager AI (task_id: `<id>`). Tasks created: N. How do you want to proceed?
 >
-> **1. Subagent per task** (raccomandato) — un subagent fresco per ogni task, review tra i task
-> **2. Esecuzione inline** — eseguo i task in questa sessione con checkpoint"
+> **1. Subagent per task** (recommended) — a fresh subagent for each task, review between tasks
+> **2. Inline execution** — I execute the tasks in this session with checkpoints"
 
-- Se scelto **Subagent**: **REQUIRED SUB-SKILL:** `superpowers:subagent-driven-development`
-- Se scelto **Inline**: **REQUIRED SUB-SKILL:** `superpowers:executing-plans`
+- If **Subagent** chosen: **REQUIRED SUB-SKILL:** `superpowers:subagent-driven-development`
+- If **Inline** chosen: **REQUIRED SUB-SKILL:** `superpowers:executing-plans`
 
-## Regole
+## Rules
 
-- Percorsi file sempre esatti
-- Codice completo nel piano (non "aggiungi validazione")
-- Comandi esatti con output atteso
-- DRY, YAGNI, TDD, commit frequenti
+- File paths always exact
+- Complete code in the plan (not "add validation")
+- Exact commands with expected output
+- DRY, YAGNI, TDD, frequent commits

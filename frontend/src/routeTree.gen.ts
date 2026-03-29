@@ -21,8 +21,8 @@ import { Route as ProjectsProjectIdLibraryRouteImport } from "./routes/projects/
 import { Route as ProjectsProjectIdIssuesRouteImport } from "./routes/projects/$projectId/issues"
 import { Route as ProjectsProjectIdFilesRouteImport } from "./routes/projects/$projectId/files"
 import { Route as ProjectsProjectIdCommandsRouteImport } from "./routes/projects/$projectId/commands"
-import { Route as ProjectsProjectIdActivityRouteImport } from "./routes/projects/$projectId/activity"
 import { Route as ProjectsProjectIdAskRouteImport } from "./routes/projects/$projectId/ask"
+import { Route as ProjectsProjectIdActivityRouteImport } from "./routes/projects/$projectId/activity"
 import { Route as ProjectsProjectIdIssuesIndexRouteImport } from "./routes/projects/$projectId/issues/index"
 import { Route as ProjectsProjectIdIssuesNewRouteImport } from "./routes/projects/$projectId/issues/new"
 import { Route as ProjectsProjectIdIssuesIssueIdRouteImport } from "./routes/projects/$projectId/issues/$issueId"
@@ -90,17 +90,17 @@ const ProjectsProjectIdCommandsRoute =
     path: "/commands",
     getParentRoute: () => ProjectsProjectIdRoute,
   } as any)
+const ProjectsProjectIdAskRoute = ProjectsProjectIdAskRouteImport.update({
+  id: "/ask",
+  path: "/ask",
+  getParentRoute: () => ProjectsProjectIdRoute,
+} as any)
 const ProjectsProjectIdActivityRoute =
   ProjectsProjectIdActivityRouteImport.update({
     id: "/activity",
     path: "/activity",
     getParentRoute: () => ProjectsProjectIdRoute,
   } as any)
-const ProjectsProjectIdAskRoute = ProjectsProjectIdAskRouteImport.update({
-  id: "/ask",
-  path: "/ask",
-  getParentRoute: () => ProjectsProjectIdRoute,
-} as any)
 const ProjectsProjectIdIssuesIndexRoute =
   ProjectsProjectIdIssuesIndexRouteImport.update({
     id: "/",
@@ -332,18 +332,18 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ProjectsProjectIdCommandsRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
-    "/projects/$projectId/activity": {
-      id: "/projects/$projectId/activity"
-      path: "/activity"
-      fullPath: "/projects/$projectId/activity"
-      preLoaderRoute: typeof ProjectsProjectIdActivityRouteImport
-      parentRoute: typeof ProjectsProjectIdRoute
-    }
     "/projects/$projectId/ask": {
       id: "/projects/$projectId/ask"
       path: "/ask"
       fullPath: "/projects/$projectId/ask"
       preLoaderRoute: typeof ProjectsProjectIdAskRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
+    "/projects/$projectId/activity": {
+      id: "/projects/$projectId/activity"
+      path: "/activity"
+      fullPath: "/projects/$projectId/activity"
+      preLoaderRoute: typeof ProjectsProjectIdActivityRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
     "/projects/$projectId/issues/": {
