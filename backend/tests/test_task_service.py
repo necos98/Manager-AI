@@ -1,6 +1,7 @@
 import pytest
 import pytest_asyncio
 
+from app.exceptions import InvalidTransitionError, NotFoundError
 from app.models.task import TaskStatus
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
@@ -57,7 +58,7 @@ async def test_update_status_valid(db_session, issue):
 async def test_update_status_invalid(db_session, issue):
     service = TaskService(db_session)
     tasks = await service.create_bulk(issue.id, [{"name": "Do it"}])
-    with pytest.raises(ValueError, match="Invalid task transition"):
+    with pytest.raises(InvalidTransitionError, match="Invalid task transition"):
         await service.update(tasks[0].id, status=TaskStatus.COMPLETED)
 
 
@@ -78,5 +79,5 @@ async def test_delete_task(db_session, issue):
 
 async def test_delete_nonexistent(db_session):
     service = TaskService(db_session)
-    with pytest.raises(ValueError, match="Task not found"):
+    with pytest.raises(NotFoundError, match="Task not found"):
         await service.delete("nonexistent-id")

@@ -4,8 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.exceptions import InvalidTransitionError
 from app.models.issue import Issue, IssueStatus
-from app.schemas.issue import IssueCreate, IssueResponse, IssueStatusUpdate, IssueUpdate
+from app.schemas.issue import IssueCreate, IssueCompleteBody, IssueFeedbackCreate, IssueFeedbackResponse, IssueResponse, IssueStatusUpdate, IssueUpdate
 from app.services.issue_service import IssueService
 
 router = APIRouter(prefix="/api/projects/{project_id}/issues", tags=["issues"])
@@ -30,10 +31,11 @@ async def create_issue(project_id: str, data: IssueCreate, db: AsyncSession = De
 async def list_issues(
     project_id: str,
     status: IssueStatus | None = Query(None),
+    search: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = IssueService(db)
-    return await service.list_by_project(project_id, status=status)
+    return await service.list_by_project(project_id, status=status, search=search)
 
 
 @router.get("/{issue_id}", response_model=IssueResponse)
@@ -47,9 +49,13 @@ async def update_issue(
     project_id: str, issue_id: str, data: IssueUpdate, db: AsyncSession = Depends(get_db)
 ):
     service = IssueService(db)
-    issue = await service.update_fields(issue_id, project_id, **data.model_dump(exclude_unset=True))
+    payload = data.model_dump(exclude_unset=True)
+    if "name" in payload:
+        await service.set_name(issue_id, project_id, payload.pop("name"))
+    if payload:
+        await service.update_fields(issue_id, project_id, **payload)
     await db.commit()
-    return await _reload_with_tasks(db, issue.id)
+    return await _reload_with_tasks(db, issue_id)
 
 
 @router.patch("/{issue_id}/status", response_model=IssueResponse)
@@ -70,3 +76,53 @@ async def delete_issue(project_id: str, issue_id: str, db: AsyncSession = Depend
     service = IssueService(db)
     await service.delete(issue_id, project_id)
     await db.commit()
+
+
+
+@router.post("/{issue_id}/accept", response_model=IssueResponse)
+async def accept_issue(
+    project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    issue = await service.accept_issue(issue_id, project_id)
+    await db.commit()
+    return await _reload_with_tasks(db, issue.id)
+
+
+@router.post("/{issue_id}/cancel", response_model=IssueResponse)
+async def cancel_issue_endpoint(
+    project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    issue = await service.cancel_issue(issue_id, project_id)
+    await db.commit()
+    return await _reload_with_tasks(db, issue.id)
+
+
+@router.post("/{issue_id}/complete", response_model=IssueResponse)
+async def complete_issue(
+    project_id: str, issue_id: str, data: IssueCompleteBody, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    issue = await service.complete_issue(issue_id, project_id, recap=data.recap)
+    await db.commit()
+    return await _reload_with_tasks(db, issue.id)
+
+
+@router.get("/{issue_id}/feedback", response_model=list[IssueFeedbackResponse])
+async def list_feedback(
+    project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    return await service.list_feedback(issue_id, project_id)
+
+
+@router.post("/{issue_id}/feedback", response_model=IssueFeedbackResponse, status_code=201)
+async def add_feedback(
+    project_id: str, issue_id: str, data: IssueFeedbackCreate, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    fb = await service.add_feedback(issue_id, project_id, data.content)
+    await db.commit()
+    await db.refresh(fb)
+    return fb

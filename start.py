@@ -74,7 +74,13 @@ def setup_venv():
 def setup_frontend():
     """Install frontend dependencies and build for production."""
     npm_cmd = "npm.cmd" if IS_WINDOWS else "npm"
-    if not (FRONTEND_DIR / "node_modules").exists():
+    node_modules = FRONTEND_DIR / "node_modules"
+    package_json = FRONTEND_DIR / "package.json"
+    needs_install = (
+        not node_modules.exists()
+        or package_json.stat().st_mtime > node_modules.stat().st_mtime
+    )
+    if needs_install:
         print("[...] Installing frontend dependencies...")
         subprocess.run(
             [npm_cmd, "install", "--legacy-peer-deps"],
@@ -114,8 +120,8 @@ def main():
     print()
     print("=" * 50)
     print("  Manager AI")
-    print("  Frontend: http://localhost:4173")
-    print(f"  Backend:  http://localhost:{backend_port}")
+    print("  Frontend: http://localhost:4173  (also accessible on LAN)")
+    print(f"  Backend:  http://localhost:{backend_port}  (also accessible on LAN)")
     print("  Press Ctrl+C to stop")
     print("=" * 50)
     print()
@@ -126,7 +132,7 @@ def main():
             str(VENV_PYTHON), "-m", "uvicorn",
             "app.main:app",
             "--reload",
-            "--host", "127.0.0.1",
+            "--host", "0.0.0.0",
             "--port", str(backend_port),
         ],
         cwd=str(BACKEND_DIR),

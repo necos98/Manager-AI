@@ -124,3 +124,27 @@ async def test_delete_issue(client, project):
     issue_id = create_resp.json()["id"]
     resp = await client.delete(f"/api/projects/{project['id']}/issues/{issue_id}")
     assert resp.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_list_issues_search(client, project):
+    await client.post(f"/api/projects/{project['id']}/issues", json={"description": "fix login bug", "priority": 1})
+    await client.post(f"/api/projects/{project['id']}/issues", json={"description": "add dashboard", "priority": 2})
+    resp = await client.get(f"/api/projects/{project['id']}/issues?search=login")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert "login" in data[0]["description"]
+
+
+@pytest.mark.asyncio
+async def test_list_issues_search_by_name(client, project):
+    resp = await client.post(f"/api/projects/{project['id']}/issues", json={"description": "some desc", "priority": 1})
+    issue_id = resp.json()["id"]
+    await client.put(f"/api/projects/{project['id']}/issues/{issue_id}", json={"name": "My Special Issue"})
+    await client.post(f"/api/projects/{project['id']}/issues", json={"description": "other issue", "priority": 2})
+    resp = await client.get(f"/api/projects/{project['id']}/issues?search=special")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["id"] == issue_id

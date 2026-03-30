@@ -304,3 +304,97 @@ async def test_cancel_issue_from_any_status(db_session, project):
         await db_session.flush()
         updated = await service.cancel_issue(issue.id, project.id)
         assert updated.status == IssueStatus.CANCELED
+
+
+from app.services.activity_service import ActivityService
+
+
+async def test_create_spec_logs_activity(db_session, project):
+    svc = IssueService(db_session)
+    activity_svc = ActivityService(db_session)
+    issue = await svc.create(project_id=project.id, description="Log test", priority=1)
+    await svc.create_spec(issue.id, project.id, "# Spec")
+    logs = await activity_svc.list_for_project(project.id, issue_id=issue.id)
+    assert any(log.event_type == "spec_created" for log in logs)
+
+
+async def test_create_plan_logs_activity(db_session, project):
+    svc = IssueService(db_session)
+    activity_svc = ActivityService(db_session)
+    issue = await svc.create(project_id=project.id, description="Plan log test", priority=1)
+    await svc.create_spec(issue.id, project.id, "# Spec")
+    await svc.create_plan(issue.id, project.id, "# Plan")
+    logs = await activity_svc.list_for_project(project.id, issue_id=issue.id)
+    assert any(log.event_type == "plan_created" for log in logs)
+
+
+async def test_complete_issue_logs_activity(db_session, project):
+    svc = IssueService(db_session)
+    activity_svc = ActivityService(db_session)
+    issue = await svc.create(project_id=project.id, description="Complete log test", priority=1)
+    await svc.create_spec(issue.id, project.id, "# Spec")
+    await svc.create_plan(issue.id, project.id, "# Plan")
+    await svc.accept_issue(issue.id, project.id)
+    await svc.complete_issue(issue.id, project.id, "Done")
+    logs = await activity_svc.list_for_project(project.id, issue_id=issue.id)
+    assert any(log.event_type == "issue_completed" for log in logs)
+
+
+async def test_complete_issue_blocks_when_lock_held(db_session, project):
+    """complete_issue acquisisce un lock per-issue che blocca chiamate concorrenti."""
+    import asyncio
+    from app.services.issue_service import _issue_completion_locks
+
+    service = IssueService(db_session)
+    issue = await service.create(project_id=project.id, description="Concurrent test", priority=1)
+    await service.create_spec(issue.id, project.id, "# Spec")
+    await service.create_plan(issue.id, project.id, "# Plan")
+    await service.accept_issue(issue.id, project.id)
+
+    # Pre-acquisire il lock per simulare una chiamata già in corso
+    lock = asyncio.Lock()
+    _issue_completion_locks[issue.id] = lock
+    await lock.acquire()
+
+    # complete_issue deve bloccarsi finché il lock è held
+    task = asyncio.create_task(
+        service.complete_issue(issue.id, project.id, "Done")
+    )
+    await asyncio.sleep(0.02)
+    assert not task.done(), "complete_issue deve aspettare il lock"
+
+    # Rilascio lock → complete_issue deve completare
+    lock.release()
+    result = await asyncio.wait_for(task, timeout=2.0)
+    assert result.status == IssueStatus.FINISHED
+
+    # Pulizia
+    _issue_completion_locks.pop(issue.id, None)
+
+
+async def test_complete_issue_concurrent_two_tasks(db_session, project):
+    """Due chiamate concorrenti: la prima completa, la seconda riceve InvalidTransitionError."""
+    import asyncio
+    from app.exceptions import InvalidTransitionError
+
+    service = IssueService(db_session)
+    issue = await service.create(project_id=project.id, description="Concurrent complete", priority=1)
+    await service.create_spec(issue.id, project.id, "# Spec")
+    await service.create_plan(issue.id, project.id, "# Plan")
+    await service.accept_issue(issue.id, project.id)
+
+    successes = []
+    failures = []
+
+    async def try_complete():
+        try:
+            result = await service.complete_issue(issue.id, project.id, "Done")
+            successes.append(result)
+        except InvalidTransitionError as e:
+            failures.append(e)
+
+    await asyncio.gather(try_complete(), try_complete())
+
+    assert len(successes) == 1, "Esattamente una chiamata deve completare con successo"
+    assert successes[0].status == IssueStatus.FINISHED
+    assert len(failures) == 1, "La seconda chiamata deve ricevere InvalidTransitionError"

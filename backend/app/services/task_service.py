@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.exceptions import InvalidTransitionError, NotFoundError
 from app.models.task import VALID_TASK_TRANSITIONS, Task, TaskStatus
 
 
@@ -28,7 +29,7 @@ class TaskService:
     async def get_by_id(self, task_id: str) -> Task:
         task = await self.session.get(Task, task_id)
         if task is None:
-            raise ValueError("Task not found")
+            raise NotFoundError("Task not found")
         return task
 
     async def update(self, task_id: str, **kwargs) -> Task:
@@ -38,7 +39,7 @@ class TaskService:
             if isinstance(new_status, str):
                 new_status = TaskStatus(new_status)
             if (task.status, new_status) not in VALID_TASK_TRANSITIONS:
-                raise ValueError(f"Invalid task transition from {task.status.value} to {new_status.value}")
+                raise InvalidTransitionError(f"Invalid task transition from {task.status.value} to {new_status.value}")
             task.status = new_status
         if "name" in kwargs and kwargs["name"] is not None:
             task.name = kwargs["name"]
@@ -56,3 +57,10 @@ class TaskService:
             select(Task).where(Task.issue_id == issue_id).order_by(Task.order.asc())
         )
         return list(result.scalars().all())
+
+    async def all_completed(self, issue_id: str) -> bool:
+        """Returns True only if the issue has at least one task and all are COMPLETED."""
+        tasks = await self.list_by_issue(issue_id)
+        if not tasks:
+            return False
+        return all(t.status == TaskStatus.COMPLETED for t in tasks)

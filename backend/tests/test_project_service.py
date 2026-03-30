@@ -1,5 +1,8 @@
 import uuid
 
+import pytest
+
+from app.exceptions import NotFoundError
 from app.services.project_service import ProjectService
 
 
@@ -29,8 +32,8 @@ async def test_get_project(db_session):
 
 async def test_get_project_not_found(db_session):
     service = ProjectService(db_session)
-    result = await service.get_by_id(uuid.uuid4())
-    assert result is None
+    with pytest.raises(NotFoundError):
+        await service.get_by_id(str(uuid.uuid4()))
 
 
 async def test_update_project(db_session):
@@ -44,9 +47,9 @@ async def test_update_project(db_session):
 async def test_delete_project(db_session):
     service = ProjectService(db_session)
     project = await service.create(name="Del", path="/del", description="")
-    deleted = await service.delete(project.id)
-    assert deleted is True
-    assert await service.get_by_id(project.id) is None
+    await service.delete(project.id)
+    with pytest.raises(NotFoundError):
+        await service.get_by_id(project.id)
 
 
 async def test_create_project_with_tech_stack(db_session):
@@ -66,3 +69,20 @@ async def test_update_project_tech_stack(db_session):
     project = await service.create(name="Test", path="/tmp/test", tech_stack="Python")
     updated = await service.update(project.id, tech_stack="Python, FastAPI, React")
     assert updated.tech_stack == "Python, FastAPI, React"
+
+
+@pytest.mark.asyncio
+async def test_create_project_with_shell(db_session):
+    from app.services.project_service import ProjectService
+    svc = ProjectService(db_session)
+    p = await svc.create(name="Test", path="/tmp/x", shell="powershell.exe")
+    assert p.shell == "powershell.exe"
+
+@pytest.mark.asyncio
+async def test_update_project_shell(db_session):
+    from app.services.project_service import ProjectService
+    svc = ProjectService(db_session)
+    p = await svc.create(name="Test", path="/tmp/x")
+    assert p.shell is None
+    p2 = await svc.update(p.id, shell="powershell.exe")
+    assert p2.shell == "powershell.exe"

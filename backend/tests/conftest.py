@@ -3,7 +3,12 @@ from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.database import Base
-from app.models import Issue, Project, Setting, Task, TerminalCommand  # noqa: F401
+from app.models import (  # noqa: F401
+    ActivityLog, Issue, IssueFeedback, IssueRelation, Project, ProjectSkill,
+    PromptTemplate, Setting, Task, TerminalCommand,
+)
+from app.models.issue_relation import IssueRelation  # noqa: F401
+from app.models.project_variable import ProjectVariable  # noqa: F401
 
 
 @pytest_asyncio.fixture

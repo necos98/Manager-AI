@@ -13,7 +13,14 @@ from app.hooks import hook_registry
 import app.hooks.handlers  # noqa: F401 — triggers @hook decorator registration
 from app.mcp.server import mcp
 from app.rag import set_rag_service
-from app.routers import events, files, issues, projects, settings as settings_router, tasks, terminals, terminal_commands
+from app.rag.chunker import TextChunker
+from app.rag.drivers.sentence_transformer import SentenceTransformerDriver
+from app.rag.extractors.base import ExtractorRegistry
+from app.rag.extractors.txt_extractor import TxtExtractor
+from app.rag.extractors.pdf_extractor import PdfExtractor
+from app.rag.pipeline import EmbeddingPipeline
+from app.rag.store import VectorStore
+from app.routers import activity, events, files, issue_relations, issues, library, network, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, tasks, terminals, terminal_commands
 from app.services.event_service import event_service
 
 try:
@@ -85,14 +92,23 @@ app.add_middleware(
 )
 
 app.include_router(projects.router)
+app.include_router(projects.dashboard_router)
+app.include_router(project_settings.router)
+app.include_router(project_templates.router)
 app.include_router(files.formats_router)
 app.include_router(files.router)
 app.include_router(issues.router)
+app.include_router(issue_relations.router)
 app.include_router(tasks.router)
 app.include_router(settings_router.router)
 app.include_router(terminals.router)
 app.include_router(terminal_commands.router)
+app.include_router(project_variables.router)
 app.include_router(events.router)
+app.include_router(activity.router)
+app.include_router(library.router)
+app.include_router(project_skills.router)
+app.include_router(network.router)
 
 app.mount("/mcp", mcp_app)
 

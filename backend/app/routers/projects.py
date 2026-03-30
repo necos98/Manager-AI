@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
+from app.schemas.project import DashboardProject, ProjectCreate, ProjectResponse, ProjectUpdate
 from app.services.project_service import ProjectService
 from app.services.terminal_service import terminal_service
 
@@ -25,7 +25,8 @@ async def _enrich_project(service: ProjectService, project) -> dict:
 async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.create(
-        name=data.name, path=data.path, description=data.description, tech_stack=data.tech_stack
+        name=data.name, path=data.path, description=data.description,
+        tech_stack=data.tech_stack, shell=data.shell
     )
     await db.commit()
     return await _enrich_project(service, project)
@@ -42,8 +43,6 @@ async def list_projects(db: AsyncSession = Depends(get_db)):
 async def get_project(project_id: str, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
-    if project is None:
-        raise HTTPException(status_code=404, detail="Resource not found")
     return await _enrich_project(service, project)
 
 
@@ -51,8 +50,6 @@ async def get_project(project_id: str, db: AsyncSession = Depends(get_db)):
 async def update_project(project_id: str, data: ProjectUpdate, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.update(project_id, **data.model_dump(exclude_unset=True))
-    if project is None:
-        raise HTTPException(status_code=404, detail="Resource not found")
     await db.commit()
     await db.refresh(project)
     return await _enrich_project(service, project)
@@ -61,9 +58,8 @@ async def update_project(project_id: str, data: ProjectUpdate, db: AsyncSession 
 @router.delete("/{project_id}", status_code=204)
 async def delete_project(project_id: str, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
-    project = await service.get_by_id(project_id)
-    if project is None:
-        raise HTTPException(status_code=404, detail="Resource not found")
+    # Validate project exists (raises NotFoundError if not)
+    await service.get_by_id(project_id)
     # Kill active terminals for this project
     for term in terminal_service.list_active(project_id=project_id):
         try:
@@ -78,8 +74,6 @@ async def delete_project(project_id: str, db: AsyncSession = Depends(get_db)):
 async def install_manager_json(project_id: str, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
-    if project is None:
-        raise HTTPException(status_code=404, detail="Resource not found")
     dest = os.path.join(project.path, "manager.json")
     with open(dest, "w", encoding="utf-8") as f:
         json.dump({"project_id": project.id}, f, indent=2)
@@ -90,8 +84,6 @@ async def install_manager_json(project_id: str, db: AsyncSession = Depends(get_d
 async def install_claude_resources(project_id: str, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
-    if project is None:
-        raise HTTPException(status_code=404, detail="Resource not found")
 
     src = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "claude_resources")
     if not os.path.isdir(src):
@@ -113,3 +105,12 @@ async def install_claude_resources(project_id: str, db: AsyncSession = Depends(g
         copied.append(item)
 
     return {"path": dest, "copied": copied}
+
+
+dashboard_router = APIRouter(tags=["dashboard"])
+
+
+@dashboard_router.get("/api/dashboard", response_model=list[DashboardProject])
+async def get_dashboard(db: AsyncSession = Depends(get_db)):
+    svc = ProjectService(db)
+    return await svc.get_dashboard_data()

@@ -143,9 +143,9 @@ async def test_delete_nonexistent_returns_404(client):
 
 
 @pytest.mark.asyncio
-async def test_create_command_with_newlines_rejected(client):
+async def test_create_command_with_newlines_allowed(client):
     resp = await client.post(
         "/api/terminal-commands",
         json={"command": "echo\nhello", "sort_order": 0},
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 201

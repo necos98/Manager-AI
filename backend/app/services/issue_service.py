@@ -1,13 +1,25 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+import asyncio
+
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.exceptions import InvalidTransitionError, NotFoundError, ValidationError
 from app.hooks.registry import HookContext, HookEvent, hook_registry
 from app.models.issue import VALID_TRANSITIONS, Issue, IssueStatus
+from app.models.issue_feedback import IssueFeedback
+from app.models.task import TaskStatus
+from app.services.activity_service import ActivityService
 from app.services.project_service import ProjectService
+from app.services.task_service import TaskService
+
+# One lock per issue_id. Safe to use setdefault() without a separate mutex because
+# asyncio runs on a single OS thread — no concurrent dict access is possible.
+# The dict grows monotonically (one entry per issue ever completed), which is
+# acceptable for typical issue volumes (thousands, not millions).
+_issue_completion_locks: dict[str, asyncio.Lock] = {}
 
 
 class IssueService:
@@ -18,6 +30,23 @@ class IssueService:
         issue = Issue(project_id=project_id, description=description, priority=priority)
         self.session.add(issue)
         await self.session.flush()
+        project_service = ProjectService(self.session)
+        project = await project_service.get_by_id(project_id)
+        await hook_registry.fire(
+            HookEvent.ISSUE_CREATED,
+            HookContext(
+                project_id=project_id,
+                issue_id=issue.id,
+                event=HookEvent.ISSUE_CREATED,
+                metadata={
+                    "issue_description": description,
+                    "project_name": project.name if project else "",
+                    "project_path": project.path if project else "",
+                    "project_description": project.description if project else "",
+                    "tech_stack": project.tech_stack if project else "",
+                },
+            ),
+        )
         return issue
 
     async def get_by_id(self, issue_id: str) -> Issue | None:
@@ -37,24 +66,44 @@ class IssueService:
         return issue
 
     async def list_by_project(
-        self, project_id: str, status: IssueStatus | None = None
+        self, project_id: str, status: IssueStatus | None = None, search: str | None = None
     ) -> list[Issue]:
         query = select(Issue).options(selectinload(Issue.tasks)).where(Issue.project_id == project_id)
         if status is not None:
             query = query.where(Issue.status == status)
+        if search:
+            term = f"%{search.lower()}%"
+            query = query.where(
+                or_(
+                    Issue.description.ilike(term),
+                    Issue.name.ilike(term),
+                )
+            )
         query = query.order_by(Issue.priority.asc(), Issue.created_at.asc())
         result = await self.session.execute(query)
         return list(result.unique().scalars().all())
 
     async def get_next_issue(self, project_id: str) -> Issue | None:
-        query = (
+        """Return next workable issue: ACCEPTED first (ready to implement), then NEW (needs planning)."""
+        accepted_query = (
+            select(Issue)
+            .where(Issue.project_id == project_id)
+            .where(Issue.status == IssueStatus.ACCEPTED)
+            .order_by(Issue.priority.asc(), Issue.created_at.asc())
+            .limit(1)
+        )
+        result = await self.session.execute(accepted_query)
+        issue = result.scalar_one_or_none()
+        if issue:
+            return issue
+        new_query = (
             select(Issue)
             .where(Issue.project_id == project_id)
             .where(Issue.status == IssueStatus.NEW)
             .order_by(Issue.priority.asc(), Issue.created_at.asc())
             .limit(1)
         )
-        result = await self.session.execute(query)
+        result = await self.session.execute(new_query)
         return result.scalar_one_or_none()
 
     async def update_status(
@@ -88,46 +137,65 @@ class IssueService:
         return await self.update_fields(issue_id, project_id, name=name)
 
     async def complete_issue(self, issue_id: str, project_id: str, recap: str) -> Issue:
+        """Mark an issue as FINISHED with the given recap.
+
+        NOTE: This method calls session.commit() internally (while holding the
+        per-issue lock) to ensure the FINISHED status is visible to concurrent
+        callers before the lock is released. Callers do not need to commit after
+        this method returns — a subsequent commit() will be a no-op.
+        """
         if not recap or not recap.strip():
             raise ValidationError("Recap cannot be blank")
-        issue = await self.get_for_project(issue_id, project_id)
-        if issue.status != IssueStatus.ACCEPTED:
-            raise InvalidTransitionError(f"Can only complete issues in Accepted status, got {issue.status.value}")
-        # Enforce task completion
-        from app.services.task_service import TaskService
-        from app.models.task import TaskStatus
-        task_service = TaskService(self.session)
-        tasks = await task_service.list_by_issue(issue.id)
-        if tasks:
-            pending = [t for t in tasks if t.status != TaskStatus.COMPLETED]
-            if pending:
-                names = ", ".join(t.name for t in pending)
-                raise ValidationError(
-                    f"Cannot complete: {len(pending)} tasks not finished: {names}"
-                )
-        issue.recap = recap
-        issue.status = IssueStatus.FINISHED
-        await self.session.flush()
-        # Fire hook with project context
-        project_service = ProjectService(self.session)
-        project = await project_service.get_by_id(project_id)
-        await hook_registry.fire(
-            HookEvent.ISSUE_COMPLETED,
-            HookContext(
+        lock = _issue_completion_locks.setdefault(issue_id, asyncio.Lock())
+        async with lock:
+            issue = await self.get_for_project(issue_id, project_id)
+            if issue.status != IssueStatus.ACCEPTED:
+                raise InvalidTransitionError(f"Can only complete issues in Accepted status, got {issue.status.value}")
+            # Enforce task completion
+            task_service = TaskService(self.session)
+            tasks = await task_service.list_by_issue(issue.id)
+            if tasks:
+                pending = [t for t in tasks if t.status != TaskStatus.COMPLETED]
+                if pending:
+                    names = ", ".join(t.name for t in pending)
+                    raise ValidationError(
+                        f"Cannot complete: {len(pending)} tasks not finished: {names}"
+                    )
+            issue.recap = recap
+            issue.status = IssueStatus.FINISHED
+            await self.session.flush()
+            await ActivityService(self.session).log(
                 project_id=project_id,
                 issue_id=issue_id,
-                event=HookEvent.ISSUE_COMPLETED,
-                metadata={
-                    "issue_name": issue.name or "",
-                    "recap": issue.recap or "",
-                    "project_name": project.name if project else "",
-                    "project_path": project.path if project else "",
-                    "project_description": project.description if project else "",
-                    "tech_stack": project.tech_stack if project else "",
-                },
-            ),
-        )
-        return issue
+                event_type="issue_completed",
+                details={"issue_name": issue.name or "", "recap_preview": (recap or "")[:100]},
+            )
+            # Fire hook with project context
+            project_service = ProjectService(self.session)
+            project = await project_service.get_by_id(project_id)
+            if project is None:
+                raise NotFoundError(f"Project {project_id} not found")
+            # Commit while lock is still held so concurrent callers see FINISHED
+            # before acquiring the lock. The router's db.commit() after this call
+            # is a safe no-op.
+            await self.session.commit()
+            await hook_registry.fire(
+                HookEvent.ISSUE_COMPLETED,
+                HookContext(
+                    project_id=project_id,
+                    issue_id=issue_id,
+                    event=HookEvent.ISSUE_COMPLETED,
+                    metadata={
+                        "issue_name": issue.name or "",
+                        "recap": issue.recap or "",
+                        "project_name": project.name if project else "",
+                        "project_path": project.path if project else "",
+                        "project_description": project.description if project else "",
+                        "tech_stack": project.tech_stack if project else "",
+                    },
+                ),
+            )
+            return issue
 
     async def create_spec(self, issue_id: str, project_id: str, spec: str) -> Issue:
         if not spec or not spec.strip():
@@ -140,6 +208,12 @@ class IssueService:
         issue.specification = spec
         issue.status = IssueStatus.REASONING
         await self.session.flush()
+        await ActivityService(self.session).log(
+            project_id=project_id,
+            issue_id=issue_id,
+            event_type="spec_created",
+            details={"issue_name": issue.name or ""},
+        )
         return issue
 
     async def edit_spec(self, issue_id: str, project_id: str, spec: str) -> Issue:
@@ -163,6 +237,12 @@ class IssueService:
         issue.plan = plan
         issue.status = IssueStatus.PLANNED
         await self.session.flush()
+        await ActivityService(self.session).log(
+            project_id=project_id,
+            issue_id=issue_id,
+            event_type="plan_created",
+            details={"issue_name": issue.name or ""},
+        )
         return issue
 
     async def edit_plan(self, issue_id: str, project_id: str, plan: str) -> Issue:
@@ -183,9 +263,30 @@ class IssueService:
             )
         issue.status = IssueStatus.ACCEPTED
         await self.session.flush()
+        await ActivityService(self.session).log(
+            project_id=project_id,
+            issue_id=issue_id,
+            event_type="issue_accepted",
+            details={"issue_name": issue.name or ""},
+        )
+        project = await ProjectService(self.session).get_by_id(project_id)
         await hook_registry.fire(
             HookEvent.ISSUE_ACCEPTED,
-            HookContext(project_id=project_id, issue_id=issue_id, event=HookEvent.ISSUE_ACCEPTED),
+            HookContext(
+                project_id=project_id,
+                issue_id=issue_id,
+                event=HookEvent.ISSUE_ACCEPTED,
+                metadata={
+                    "issue_name": issue.name or (issue.description or "")[:50] or "Untitled",
+                    "issue_description": issue.description or "",
+                    "specification": issue.specification or "",
+                    "plan": issue.plan or "",
+                    "project_name": project.name if project else "",
+                    "project_path": project.path if project else "",
+                    "project_description": project.description if project else "",
+                    "tech_stack": project.tech_stack if project else "",
+                },
+            ),
         )
         return issue
 
@@ -193,14 +294,47 @@ class IssueService:
         issue = await self.get_for_project(issue_id, project_id)
         issue.status = IssueStatus.CANCELED
         await self.session.flush()
+        await ActivityService(self.session).log(
+            project_id=project_id,
+            issue_id=issue_id,
+            event_type="issue_canceled",
+            details={"issue_name": issue.name or ""},
+        )
+        project = await ProjectService(self.session).get_by_id(project_id)
         await hook_registry.fire(
             HookEvent.ISSUE_CANCELLED,
-            HookContext(project_id=project_id, issue_id=issue_id, event=HookEvent.ISSUE_CANCELLED),
+            HookContext(
+                project_id=project_id,
+                issue_id=issue_id,
+                event=HookEvent.ISSUE_CANCELLED,
+                metadata={
+                    "issue_name": issue.name or (issue.description or "")[:50] or "Untitled",
+                    "project_name": project.name if project else "",
+                },
+            ),
         )
         return issue
+
 
     async def delete(self, issue_id: str, project_id: str) -> bool:
         issue = await self.get_for_project(issue_id, project_id)
         await self.session.delete(issue)
         await self.session.flush()
         return True
+
+    async def add_feedback(self, issue_id: str, project_id: str, content: str) -> IssueFeedback:
+        await self.get_for_project(issue_id, project_id)  # validates ownership
+        fb = IssueFeedback(issue_id=issue_id, content=content)
+        self.session.add(fb)
+        await self.session.flush()
+        await self.session.refresh(fb)
+        return fb
+
+    async def list_feedback(self, issue_id: str, project_id: str) -> list[IssueFeedback]:
+        await self.get_for_project(issue_id, project_id)  # validates ownership
+        result = await self.session.execute(
+            select(IssueFeedback)
+            .where(IssueFeedback.issue_id == issue_id)
+            .order_by(IssueFeedback.created_at.asc(), IssueFeedback.id.asc())
+        )
+        return list(result.scalars().all())

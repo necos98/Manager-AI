@@ -35,7 +35,7 @@ async def _check_project(project_id: str, db: AsyncSession):
 
 @router.post("", response_model=list[ProjectFileResponse], status_code=201)
 async def upload_files(project_id: str, files: list[UploadFile], db: AsyncSession = Depends(get_db)):
-    await _check_project(project_id, db)
+    project = await _check_project(project_id, db)
     service = FileService(db)
     try:
         records = await service.upload_files(project_id, files)
@@ -52,6 +52,7 @@ async def upload_files(project_id: str, files: list[UploadFile], db: AsyncSessio
             file_path=file_path,
             mime_type=record.mime_type,
             original_name=record.original_name,
+            project_name=project.name,
         ))
     return [ProjectFileResponse.from_model(r) for r in records]
 

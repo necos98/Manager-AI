@@ -111,15 +111,12 @@ class TerminalService:
         project_path: str,
         cols: int = 120,
         rows: int = 30,
+        shell: str | None = None,
     ) -> dict:
-        with self._lock:
-            # Return existing terminal for this issue (no duplicates)
-            for term in self._terminals.values():
-                if term["issue_id"] == issue_id and term["status"] == "active":
-                    return self._to_response(term)
+        shell_to_use = shell or DEFAULT_SHELL
 
         pty = PTY(cols, rows)
-        pty.spawn(DEFAULT_SHELL, cwd=project_path)
+        pty.spawn(shell_to_use, cwd=project_path)
 
         term_id = str(uuid.uuid4())
         entry = {
@@ -205,13 +202,27 @@ class TerminalService:
                 self._terminals.pop(terminal_id)
             self._buffers.pop(terminal_id, None)
 
+    def cleanup(self, terminal_id: str) -> None:
+        """No-op: terminals now persist beyond WebSocket disconnections.
+
+        Actual cleanup happens via kill() (user action) or mark_closed() (PTY EOF).
+        """
+        pass
+
+    def is_alive(self, terminal_id: str) -> bool:
+        """Check whether a terminal is still in the registry."""
+        with self._lock:
+            return terminal_id in self._terminals
+
     def resize(self, terminal_id: str, cols: int, rows: int) -> None:
-        if terminal_id not in self._terminals:
-            raise KeyError(f"Terminal {terminal_id} not found")
-        entry = self._terminals[terminal_id]
-        entry["cols"] = cols
-        entry["rows"] = rows
-        entry["pty"].set_size(cols, rows)
+        with self._lock:
+            if terminal_id not in self._terminals:
+                raise KeyError(f"Terminal {terminal_id} not found")
+            entry = self._terminals[terminal_id]
+            entry["cols"] = cols
+            entry["rows"] = rows
+            pty = entry["pty"]
+        pty.set_size(cols, rows)
 
     def _to_response(self, entry: dict) -> dict:
         return {

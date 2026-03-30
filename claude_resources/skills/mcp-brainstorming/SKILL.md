@@ -5,79 +5,79 @@ description: Use when starting any new feature, component, or design work. MCP-n
 
 # MCP Brainstorming
 
-Variante MCP-native di `superpowers:brainstorming`. Stesso processo di esplorazione collaborativa, ma la spec viene salvata nel Manager AI MCP — **nessun file .md su disco**.
+MCP-native variant of `superpowers:brainstorming`. Same collaborative exploration process, but the spec is saved via Manager AI MCP — **no .md files on disk**.
 
-**Announce at start:** "Sto usando mcp-brainstorming per esplorare il design e creare la spec via Manager AI."
+**Announce at start:** "Using mcp-brainstorming to explore the design and create the spec via Manager AI."
 
 <HARD-GATE>
-NON scrivere codice, non fare scaffolding, non invocare skill di implementazione prima di aver presentato il design e ricevuto approvazione dall'utente.
+DO NOT write code, scaffold, or invoke implementation skills before presenting the design and receiving user approval.
 </HARD-GATE>
 
-## Prerequisito: project_id
+## Prerequisite: project_id
 
-Leggi `manager.json` nella root del progetto per il `project_id` richiesto da tutti i tool MCP.
+Read `manager.json` in the project root for the `project_id` required by all MCP tools.
 
 ## Checklist
 
-Crea un task per ogni voce e completale in ordine:
+Create a task for each item and complete them in order:
 
-1. **Leggi project_id** da `manager.json`
-2. **Esplora contesto progetto** — file, struttura, commit recenti; usa `mcp__ManagerAi__get_project_context`
-3. **Fai domande di chiarimento** — una alla volta; scopo, vincoli, criteri di successo
-4. **Proponi 2-3 approcci** — con trade-off e raccomandazione
-5. **Presenta il design** — sezione per sezione, chiedi approvazione dopo ogni sezione
-6. **Salva spec via MCP** — `mcp__ManagerAi__create_task_spec`
-7. **Loop revisione spec** — dispatcha subagent revisore; correggi e ri-dispatcha fino ad approvazione (max 3 iterazioni)
-8. **Chiedi revisione all'utente** — comunica il task_id della spec, attendi approvazione
-9. **Transizione a mcp-writing-plans** — invoca la skill per il piano
+1. **Read project_id** from `manager.json`
+2. **Explore project context** — files, structure, recent commits; use `mcp__ManagerAi__get_project_context`
+3. **Ask clarifying questions** — one at a time; scope, constraints, success criteria
+4. **Propose 2-3 approaches** — with trade-offs and a recommendation
+5. **Present the design** — section by section, ask for approval after each section
+6. **Save spec via MCP** — `mcp__ManagerAi__create_task_spec`
+7. **Spec review loop** — dispatch reviewer subagent; fix and re-dispatch until approved (max 3 iterations)
+8. **Request user review** — share the spec task_id, wait for approval
+9. **Transition to mcp-writing-plans** — invoke the skill for the plan
 
-## Flusso
+## Flow
 
 ```dot
 digraph mcp_brainstorming {
-    "Leggi project_id" [shape=box];
-    "Esplora contesto" [shape=box];
-    "Domande chiarimento" [shape=box];
-    "Proponi 2-3 approcci" [shape=box];
-    "Presenta design" [shape=box];
-    "Utente approva?" [shape=diamond];
-    "Salva spec via MCP" [shape=box];
-    "Loop revisione" [shape=box];
-    "Spec approvata?" [shape=diamond];
-    "Utente rivede?" [shape=diamond];
+    "Read project_id" [shape=box];
+    "Explore context" [shape=box];
+    "Clarifying questions" [shape=box];
+    "Propose 2-3 approaches" [shape=box];
+    "Present design" [shape=box];
+    "User approves?" [shape=diamond];
+    "Save spec via MCP" [shape=box];
+    "Review loop" [shape=box];
+    "Spec approved?" [shape=diamond];
+    "User revises?" [shape=diamond];
     "Invoke mcp-writing-plans" [shape=doublecircle];
 
-    "Leggi project_id" -> "Esplora contesto";
-    "Esplora contesto" -> "Domande chiarimento";
-    "Domande chiarimento" -> "Proponi 2-3 approcci";
-    "Proponi 2-3 approcci" -> "Presenta design";
-    "Presenta design" -> "Utente approva?";
-    "Utente approva?" -> "Presenta design" [label="no, rivedi"];
-    "Utente approva?" -> "Salva spec via MCP" [label="sì"];
-    "Salva spec via MCP" -> "Loop revisione";
-    "Loop revisione" -> "Spec approvata?";
-    "Spec approvata?" -> "Loop revisione" [label="problemi"];
-    "Spec approvata?" -> "Utente rivede?" [label="ok"];
-    "Utente rivede?" -> "Salva spec via MCP" [label="modifiche"];
-    "Utente rivede?" -> "Invoke mcp-writing-plans" [label="approvata"];
+    "Read project_id" -> "Explore context";
+    "Explore context" -> "Clarifying questions";
+    "Clarifying questions" -> "Propose 2-3 approaches";
+    "Propose 2-3 approaches" -> "Present design";
+    "Present design" -> "User approves?";
+    "User approves?" -> "Present design" [label="no, revise"];
+    "User approves?" -> "Save spec via MCP" [label="yes"];
+    "Save spec via MCP" -> "Review loop";
+    "Review loop" -> "Spec approved?";
+    "Spec approved?" -> "Review loop" [label="issues"];
+    "Spec approved?" -> "User revises?" [label="ok"];
+    "User revises?" -> "Save spec via MCP" [label="changes"];
+    "User revises?" -> "Invoke mcp-writing-plans" [label="approved"];
 }
 ```
 
-## Salvataggio Spec
+## Saving the Spec
 
 ```
 mcp__ManagerAi__create_task_spec
-  project_id: <da manager.json>
-  content: <spec completa in markdown>
+  project_id: <from manager.json>
+  content: <full spec in markdown>
 ```
 
-Dopo aver salvato:
-> "Spec salvata nel Manager AI (task_id: `<id>`). Controllala nell'interfaccia e dimmi se vuoi modifiche prima di passare al piano."
+After saving:
+> "Spec saved in Manager AI (task_id: `<id>`). Review it in the interface and let me know if you want changes before moving to the plan."
 
-## Principi
+## Principles
 
-- **Una domanda per volta**
-- **Preferisci scelta multipla**
-- **YAGNI** — rimuovi feature non necessarie
-- **Esplora sempre 2-3 approcci**
-- **Validazione incrementale** — presenta, ottieni approvazione, poi avanza
+- **One question at a time**
+- **Prefer multiple choice**
+- **YAGNI** — remove unnecessary features
+- **Always explore 2-3 approaches**
+- **Incremental validation** — present, get approval, then advance

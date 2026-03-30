@@ -29,12 +29,14 @@ async def test_embed_file_async(mock_pipeline, mock_event_service):
     await svc.embed_file(
         project_id="p1", source_id="f1",
         file_path="/fake/test.txt", mime_type="text/plain",
-        original_name="test.txt",
+        original_name="test.txt", project_name="My Project",
     )
     mock_pipeline.embed_file.assert_called_once()
     mock_event_service.emit.assert_called_once()
     event = mock_event_service.emit.call_args[0][0]
     assert event["type"] == "embedding_completed"
+    assert event["project_name"] == "My Project"
+    assert event["project_id"] == "p1"
 
 
 async def test_embed_file_skipped(mock_pipeline, mock_event_service):
@@ -44,10 +46,12 @@ async def test_embed_file_skipped(mock_pipeline, mock_event_service):
     await svc.embed_file(
         project_id="p1", source_id="f1",
         file_path="/fake/test.docx", mime_type="application/msword",
-        original_name="test.docx",
+        original_name="test.docx", project_name="My Project",
     )
     event = mock_event_service.emit.call_args[0][0]
     assert event["type"] == "embedding_skipped"
+    assert event["project_name"] == "My Project"
+    assert event["project_id"] == "p1"
 
 
 async def test_embed_issue_async(mock_pipeline, mock_event_service):
@@ -56,8 +60,12 @@ async def test_embed_issue_async(mock_pipeline, mock_event_service):
     await svc.embed_issue(
         project_id="p1", source_id="i1",
         issue_data={"name": "Test", "specification": "spec"},
+        project_name="My Project",
     )
     mock_pipeline.embed_issue.assert_called_once()
+    event = mock_event_service.emit.call_args[0][0]
+    assert event["project_name"] == "My Project"
+    assert event["project_id"] == "p1"
 
 
 async def test_search(mock_pipeline, mock_event_service):
@@ -89,8 +97,34 @@ async def test_embed_file_failure_broadcasts_event(mock_pipeline, mock_event_ser
     await svc.embed_file(
         project_id="p1", source_id="f1",
         file_path="/fake/test.txt", mime_type="text/plain",
-        original_name="test.txt",
+        original_name="test.txt", project_name="My Project",
     )
     event = mock_event_service.emit.call_args[0][0]
     assert event["type"] == "embedding_failed"
     assert "extraction failed" in event["error"]
+    assert event["project_name"] == "My Project"
+    assert event["project_id"] == "p1"
+
+
+async def test_source_lock_serializes_concurrent_calls():
+    """N coroutine concorrenti sullo stesso source_id vengono serializzate e il lock viene pulito."""
+    import asyncio
+    from app.services.rag_service import _source_lock, _source_locks
+
+    _source_locks.clear()
+
+    active_count = 0
+    max_concurrent = 0
+
+    async def worker():
+        nonlocal active_count, max_concurrent
+        async with _source_lock("source-concurrent"):
+            active_count += 1
+            max_concurrent = max(max_concurrent, active_count)
+            await asyncio.sleep(0)  # cede il controllo per permettere interleaving
+            active_count -= 1
+
+    await asyncio.gather(*[worker() for _ in range(6)])
+
+    assert max_concurrent == 1, "Al massimo una coroutine alla volta deve essere dentro il lock"
+    assert "source-concurrent" not in _source_locks, "Il lock deve essere rimosso dopo l'ultimo uso"

@@ -6,6 +6,11 @@ from pydantic import BaseModel
 class TerminalCreate(BaseModel):
     issue_id: str
     project_id: str
+    run_commands: bool = True
+
+
+class AskTerminalCreate(BaseModel):
+    project_id: str
 
 
 class TerminalResponse(BaseModel):

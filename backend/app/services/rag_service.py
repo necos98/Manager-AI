@@ -47,6 +47,7 @@ class RagService:
         file_path: str,
         mime_type: str,
         original_name: str,
+        project_name: str = "",
     ):
         """Embed a file asynchronously (runs CPU-bound work in thread)."""
         async with _source_lock(source_id):
@@ -66,6 +67,8 @@ class RagService:
                         "source_id": source_id,
                         "title": original_name,
                         "reason": f"No extractor for MIME type: {mime_type}",
+                        "project_id": project_id,
+                        "project_name": project_name,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     })
                 else:
@@ -74,6 +77,8 @@ class RagService:
                         "source_type": "file",
                         "source_id": source_id,
                         "title": original_name,
+                        "project_id": project_id,
+                        "project_name": project_name,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     })
             except Exception as e:
@@ -84,10 +89,12 @@ class RagService:
                     "source_id": source_id,
                     "title": original_name,
                     "error": str(e),
+                    "project_id": project_id,
+                    "project_name": project_name,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
 
-    async def embed_issue(self, project_id: str, source_id: str, issue_data: dict):
+    async def embed_issue(self, project_id: str, source_id: str, issue_data: dict, project_name: str = ""):
         """Embed a completed issue asynchronously."""
         title = issue_data.get("name") or "Untitled Issue"
         async with _source_lock(source_id):
@@ -103,6 +110,8 @@ class RagService:
                     "source_type": "issue",
                     "source_id": source_id,
                     "title": title,
+                    "project_id": project_id,
+                    "project_name": project_name,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
             except Exception as e:
@@ -113,6 +122,8 @@ class RagService:
                     "source_id": source_id,
                     "title": title,
                     "error": str(e),
+                    "project_id": project_id,
+                    "project_name": project_name,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
 

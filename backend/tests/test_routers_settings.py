@@ -22,7 +22,7 @@ async def test_list_settings_returns_all_defaults(client):
     response = await client.get("/api/settings")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 20
+    assert len(data) == 27
     keys = [s["key"] for s in data]
     assert "server.name" in keys
     assert all(not s["is_customized"] for s in data)
@@ -64,7 +64,7 @@ async def test_reset_setting(client):
 async def test_reset_all_settings(client):
     await client.put("/api/settings/server.name", json={"value": "Custom 1"})
     await client.put(
-        "/api/settings/tool.get_task_status.description",
+        "/api/settings/tool.get_issue_status.description",
         json={"value": "Custom 2"},
     )
     response = await client.delete("/api/settings")
