@@ -199,9 +199,8 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
   const connect = useCallback(() => {
     if (cleanedUpRef.current) return;
 
-    const backendPort = import.meta.env.VITE_BACKEND_PORT || "8000";
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.hostname}:${backendPort}/api/events/ws`;
+    const wsUrl = `${protocol}//${window.location.host}/api/events/ws`;
 
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;

@@ -135,20 +135,16 @@ def test_resize_nonexistent_terminal_raises_key_error():
         svc.resize("nonexistent-id", 100, 25)
 
 
-# --- WebSocket disconnect → PTY cleanup -------------------------------------
+# --- WebSocket disconnect → terminal persists ---------------------------------
 
-def test_websocket_disconnect_calls_cleanup():
-    """Disconnessione brusca del WebSocket deve chiamare service.cleanup(terminal_id)."""
+def test_websocket_disconnect_keeps_terminal_alive():
+    """WebSocket disconnect must NOT kill the terminal — it persists for reconnection."""
     from starlette.testclient import TestClient
     from app.main import app
     from app.routers.terminals import get_terminal_service
 
     mock_svc = MagicMock()
 
-    # pty.read(blocking=True) viene chiamato in run_in_executor.
-    # Restituire "output" mantiene pty_to_ws in loop (non tocca il path EOF).
-    # La disconnessione del client fa vincere ws_to_pty (WebSocketDisconnect),
-    # che cancella pty_to_ws e triggerà il finally → cleanup.
     mock_pty = MagicMock()
     mock_pty.read.return_value = "output"
 
@@ -164,6 +160,7 @@ def test_websocket_disconnect_calls_cleanup():
     }
     mock_svc.get_pty.return_value = mock_pty
     mock_svc.get_buffered_output.return_value = ""
+    mock_svc.is_alive.return_value = True
     mock_svc.cleanup = MagicMock()
     mock_svc.mark_closed = MagicMock()
     mock_svc.append_output = MagicMock()
@@ -177,4 +174,5 @@ def test_websocket_disconnect_calls_cleanup():
     finally:
         app.dependency_overrides.clear()
 
-    mock_svc.cleanup.assert_called_once_with("term-ws-1")
+    # kill() must NOT have been called — terminal survives WS disconnect
+    mock_svc.kill.assert_not_called()

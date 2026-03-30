@@ -150,8 +150,8 @@ class TestTerminalServiceRegistry:
             assert updated["rows"] == 50
             mock_pty.set_size.assert_called_with(200, 50)
 
-    def test_cleanup_removes_terminal_and_closes_pty(self, service):
-        """cleanup() removes terminal and closes the PTY."""
+    def test_cleanup_is_noop_terminal_persists(self, service):
+        """cleanup() is a no-op — terminal survives WebSocket disconnections."""
         with patch("app.services.terminal_service.PTY") as MockPTY:
             mock_pty = MagicMock()
             mock_pty.spawn = MagicMock()
@@ -163,8 +163,9 @@ class TestTerminalServiceRegistry:
 
             service.cleanup(tid)
 
-            assert len(service.list_active()) == 0
-            mock_pty.close.assert_called_once()
+            # Terminal must still be alive after cleanup
+            assert len(service.list_active()) == 1
+            mock_pty.close.assert_not_called()
 
     def test_cleanup_is_idempotent(self, service):
         """cleanup() called multiple times does not raise."""
@@ -179,6 +180,19 @@ class TestTerminalServiceRegistry:
 
             service.cleanup(tid)
             service.cleanup(tid)  # second call — must not raise
+
+    def test_is_alive(self, service):
+        """is_alive() returns True for existing terminals, False otherwise."""
+        with patch("app.services.terminal_service.PTY") as MockPTY:
+            mock_pty = MagicMock()
+            mock_pty.spawn = MagicMock()
+            MockPTY.return_value = mock_pty
+
+            term = service.create(issue_id="t1", project_id="p1", project_path="C:/a")
+            assert service.is_alive(term["id"]) is True
+            assert service.is_alive("nonexistent") is False
+            service.kill(term["id"])
+            assert service.is_alive(term["id"]) is False
 
     def test_resize_concurrent_with_kill_does_not_crash(self, service):
         """resize() inside lock prevents races with concurrent kill."""

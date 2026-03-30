@@ -49,6 +49,70 @@ router = APIRouter(prefix="/api/terminals", tags=["terminals"])
 # the default asyncio executor used by DB queries, HTTP, etc.
 _pty_executor = ThreadPoolExecutor(max_workers=20, thread_name_prefix="pty-read")
 
+# --- Persistent reader infrastructure ---
+# One reader task per terminal keeps reading PTY output and buffering it
+# regardless of whether a WebSocket client is connected.
+_terminal_readers: dict[str, asyncio.Task] = {}
+# Currently connected WebSocket per terminal (at most one)
+_terminal_ws: dict[str, WebSocket] = {}
+
+
+async def _terminal_reader(terminal_id: str, service: TerminalService) -> None:
+    """Persistent reader: buffers PTY output and forwards to a connected WebSocket."""
+    loop = asyncio.get_running_loop()
+    try:
+        pty = service.get_pty(terminal_id)
+    except KeyError:
+        return
+    try:
+        while True:
+            data = await loop.run_in_executor(
+                _pty_executor, lambda: pty.read(blocking=True)
+            )
+            if not data:
+                # PTY EOF — process exited
+                buf = service.get_buffered_output(terminal_id)
+                _save_recording(terminal_id, buf)
+                service.mark_closed(terminal_id)
+                ws = _terminal_ws.pop(terminal_id, None)
+                if ws:
+                    try:
+                        await ws.close(code=1000, reason="Terminal session ended")
+                    except Exception:
+                        pass
+                break
+            service.append_output(terminal_id, data)
+            ws = _terminal_ws.get(terminal_id)
+            if ws:
+                try:
+                    await ws.send_text(data)
+                except Exception:
+                    # WebSocket gone — stop forwarding, but keep buffering
+                    _terminal_ws.pop(terminal_id, None)
+    except asyncio.CancelledError:
+        pass
+    except Exception:
+        logger.warning("Terminal reader error for %s", terminal_id, exc_info=True)
+    finally:
+        _terminal_readers.pop(terminal_id, None)
+
+
+def _ensure_reader(terminal_id: str, service: TerminalService) -> None:
+    """Start the persistent reader if it's not already running."""
+    existing = _terminal_readers.get(terminal_id)
+    if existing and not existing.done():
+        return
+    _terminal_readers[terminal_id] = asyncio.create_task(
+        _terminal_reader(terminal_id, service)
+    )
+
+
+def _stop_reader(terminal_id: str) -> None:
+    """Cancel the persistent reader for a terminal."""
+    task = _terminal_readers.pop(terminal_id, None)
+    if task and not task.done():
+        task.cancel()
+
 
 def get_terminal_service() -> TerminalService:
     return terminal_service
@@ -311,6 +375,14 @@ async def delete_terminal(
     try:
         buf = service.get_buffered_output(terminal_id)
         _save_recording(terminal_id, buf)
+        # Stop background reader and disconnect WebSocket before killing
+        _stop_reader(terminal_id)
+        ws = _terminal_ws.pop(terminal_id, None)
+        if ws:
+            try:
+                await ws.close(code=1000, reason="Terminal killed")
+            except Exception:
+                pass
         service.kill(terminal_id)
     except KeyError:
         raise HTTPException(status_code=404, detail="Terminal not found")
@@ -336,58 +408,28 @@ async def terminal_ws(
     if buffered:
         await websocket.send_text(buffered)
 
-    async def pty_to_ws():
-        """Read from PTY, send to WebSocket."""
-        loop = asyncio.get_running_loop()
-        try:
-            while True:
-                data = await loop.run_in_executor(
-                    _pty_executor, lambda: pty.read(blocking=True)
-                )
-                if not data:
-                    buf = service.get_buffered_output(terminal_id)
-                    _save_recording(terminal_id, buf)
-                    service.mark_closed(terminal_id)
-                    await websocket.close(code=1000, reason="Terminal session ended")
-                    break
-                service.append_output(terminal_id, data)
-                await websocket.send_text(data)
-        except (WebSocketDisconnect, RuntimeError):
-            pass
-        except Exception:
-            logger.warning("pty_to_ws error for terminal %s", terminal_id, exc_info=True)
+    # Register this WS and ensure the persistent reader is running
+    _terminal_ws[terminal_id] = websocket
+    _ensure_reader(terminal_id, service)
 
-    async def ws_to_pty():
-        """Read from WebSocket, write to PTY."""
-        try:
-            while True:
-                message = await websocket.receive_text()
-                if message.startswith('{"type":"resize"'):
-                    try:
-                        msg = json.loads(message)
-                        if msg.get("type") == "resize":
-                            service.resize(terminal_id, msg["cols"], msg["rows"])
-                            continue
-                    except (json.JSONDecodeError, KeyError):
-                        pass
-                pty.write(message)
-        except (WebSocketDisconnect, RuntimeError):
-            pass
-        except Exception:
-            logger.warning("ws_to_pty error for terminal %s", terminal_id, exc_info=True)
-
-    pty_read_task = asyncio.create_task(pty_to_ws())
-    ws_read_task = asyncio.create_task(ws_to_pty())
-
+    # WebSocket → PTY input loop
     try:
-        done, pending = await asyncio.wait(
-            [pty_read_task, ws_read_task],
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-        for task in pending:
-            task.cancel()
+        while True:
+            message = await websocket.receive_text()
+            if message.startswith('{"type":"resize"'):
+                try:
+                    msg = json.loads(message)
+                    if msg.get("type") == "resize":
+                        service.resize(terminal_id, msg["cols"], msg["rows"])
+                        continue
+                except (json.JSONDecodeError, KeyError):
+                    pass
+            pty.write(message)
+    except (WebSocketDisconnect, RuntimeError):
+        pass
     except Exception:
-        pty_read_task.cancel()
-        ws_read_task.cancel()
+        logger.warning("ws_to_pty error for terminal %s", terminal_id, exc_info=True)
     finally:
-        service.cleanup(terminal_id)
+        # Unregister WS but keep the terminal and reader alive
+        if _terminal_ws.get(terminal_id) is websocket:
+            _terminal_ws.pop(terminal_id, None)

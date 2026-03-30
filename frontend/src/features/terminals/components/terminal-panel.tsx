@@ -96,9 +96,8 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
 
     function connectWs() {
       if (cleanedUpRef.current) return;
-      const backendPort = import.meta.env.VITE_BACKEND_PORT || "8000";
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.hostname}:${backendPort}/api/terminals/${terminalId}/ws`;
+      const wsUrl = `${protocol}//${window.location.host}/api/terminals/${terminalId}/ws`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 

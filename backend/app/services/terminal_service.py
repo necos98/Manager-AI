@@ -203,18 +203,16 @@ class TerminalService:
             self._buffers.pop(terminal_id, None)
 
     def cleanup(self, terminal_id: str) -> None:
-        """Idempotent PTY cleanup — no-op if terminal already removed."""
+        """No-op: terminals now persist beyond WebSocket disconnections.
+
+        Actual cleanup happens via kill() (user action) or mark_closed() (PTY EOF).
+        """
+        pass
+
+    def is_alive(self, terminal_id: str) -> bool:
+        """Check whether a terminal is still in the registry."""
         with self._lock:
-            if terminal_id not in self._terminals:
-                return
-            entry = self._terminals.pop(terminal_id)
-            self._buffers.pop(terminal_id, None)
-        try:
-            pty = entry["pty"]
-            if hasattr(pty, "close"):
-                pty.close()
-        except Exception:
-            pass
+            return terminal_id in self._terminals
 
     def resize(self, terminal_id: str, cols: int, rows: int) -> None:
         with self._lock:
