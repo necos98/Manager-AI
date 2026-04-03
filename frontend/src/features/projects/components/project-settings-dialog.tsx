@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { RefreshCw, Database } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -15,7 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { useUpdateProject } from "@/features/projects/hooks";
+import { useUpdateProject, useCodebaseIndexStatus, useTriggerCodebaseIndex } from "@/features/projects/hooks";
+import { useEvents } from "@/shared/context/event-context";
+import type { WsEventData } from "@/shared/context/event-context";
 import type { Project } from "@/shared/types";
 
 const SHELL_OPTIONS = [
@@ -49,6 +52,27 @@ export function ProjectSettingsDialog({
   });
 
   const updateProject = useUpdateProject(project.id);
+  const { data: indexStatus, refetch: refetchStatus } = useCodebaseIndexStatus(project.id);
+  const triggerIndex = useTriggerCodebaseIndex(project.id);
+  const [isIndexing, setIsIndexing] = useState(false);
+  const events = useEvents();
+
+  useEffect(() => {
+    if (!events) return;
+    return events.subscribe((event: WsEventData) => {
+      if (event.project_id !== project.id) return;
+      if (event.type === "embedding_started" && event.source_type === "codebase") {
+        setIsIndexing(true);
+      }
+      if (
+        (event.type === "embedding_completed" || event.type === "embedding_failed") &&
+        event.source_type === "codebase"
+      ) {
+        setIsIndexing(false);
+        refetchStatus();
+      }
+    });
+  }, [events, project.id, refetchStatus]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +142,34 @@ export function ProjectSettingsDialog({
             <p className="text-xs text-muted-foreground mt-1">
               Shell to use when opening terminals for this project.
             </p>
+          </div>
+          <div className="pt-2 border-t">
+            <label className="text-sm font-medium flex items-center gap-1.5 mb-2">
+              <Database className="size-3.5" />
+              Codebase Index
+            </label>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
+                {isIndexing
+                  ? "Indexing..."
+                  : indexStatus?.indexed
+                    ? `Indexed — ${indexStatus.file_count} file${indexStatus.file_count !== 1 ? "s" : ""}`
+                    : "Not indexed"}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isIndexing || triggerIndex.isPending}
+                onClick={() => {
+                  setIsIndexing(true);
+                  triggerIndex.mutate();
+                }}
+              >
+                <RefreshCw className={`size-3.5 mr-1.5 ${isIndexing ? "animate-spin" : ""}`} />
+                {isIndexing ? "Indexing..." : "Re-index"}
+              </Button>
+            </div>
           </div>
           {updateProject.error && (
             <p className="text-sm text-destructive">{updateProject.error.message}</p>

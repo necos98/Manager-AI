@@ -28,3 +28,16 @@ export function installManagerJson(projectId: string): Promise<{ path: string }>
 export function installClaudeResources(projectId: string): Promise<{ path: string; copied: string[] }> {
   return request(`/projects/${projectId}/install-claude-resources`, { method: "POST" });
 }
+
+export interface CodebaseIndexStatus {
+  indexed: boolean;
+  file_count: number;
+}
+
+export function fetchCodebaseIndexStatus(projectId: string): Promise<CodebaseIndexStatus> {
+  return request(`/projects/${projectId}/codebase-index-status`);
+}
+
+export function triggerCodebaseIndex(projectId: string): Promise<{ status: string }> {
+  return request(`/projects/${projectId}/index-codebase`, { method: "POST" });
+}

@@ -74,3 +74,22 @@ export function useInstallClaudeResources(projectId: string) {
     onError: onMutationError,
   });
 }
+
+export function useCodebaseIndexStatus(projectId: string) {
+  return useQuery({
+    queryKey: ["projects", projectId, "codebase-index-status"] as const,
+    queryFn: () => api.fetchCodebaseIndexStatus(projectId),
+    enabled: !!projectId,
+  });
+}
+
+export function useTriggerCodebaseIndex(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.triggerCodebaseIndex(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects", projectId, "codebase-index-status"] });
+    },
+    onError: onMutationError,
+  });
+}
