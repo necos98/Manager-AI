@@ -15,6 +15,7 @@ import { Route as LibraryRouteImport } from "./routes/library"
 import { Route as DashboardRouteImport } from "./routes/dashboard"
 import { Route as IndexRouteImport } from "./routes/index"
 import { Route as ProjectsNewRouteImport } from "./routes/projects/new"
+import { Route as ProjectsArchivedRouteImport } from "./routes/projects/archived"
 import { Route as ProjectsProjectIdRouteImport } from "./routes/projects/$projectId"
 import { Route as ProjectsProjectIdVariablesRouteImport } from "./routes/projects/$projectId/variables"
 import { Route as ProjectsProjectIdLibraryRouteImport } from "./routes/projects/$projectId/library"
@@ -54,6 +55,11 @@ const IndexRoute = IndexRouteImport.update({
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
   id: "/projects/new",
   path: "/projects/new",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsArchivedRoute = ProjectsArchivedRouteImport.update({
+  id: "/projects/archived",
+  path: "/projects/archived",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
+  "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
+  "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
+  "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
+    | "/projects/archived"
     | "/projects/new"
     | "/projects/$projectId/activity"
     | "/projects/$projectId/ask"
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
+    | "/projects/archived"
     | "/projects/new"
     | "/projects/$projectId/activity"
     | "/projects/$projectId/ask"
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
+    | "/projects/archived"
     | "/projects/new"
     | "/projects/$projectId/activity"
     | "/projects/$projectId/ask"
@@ -230,6 +242,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   TerminalsRoute: typeof TerminalsRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
+  ProjectsArchivedRoute: typeof ProjectsArchivedRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
 }
 
@@ -275,6 +288,13 @@ declare module "@tanstack/react-router" {
       path: "/projects/new"
       fullPath: "/projects/new"
       preLoaderRoute: typeof ProjectsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/projects/archived": {
+      id: "/projects/archived"
+      path: "/projects/archived"
+      fullPath: "/projects/archived"
+      preLoaderRoute: typeof ProjectsArchivedRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/projects/$projectId": {
@@ -396,6 +416,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   TerminalsRoute: TerminalsRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,
+  ProjectsArchivedRoute: ProjectsArchivedRoute,
   ProjectsNewRoute: ProjectsNewRoute,
 }
 export const routeTree = rootRouteImport
