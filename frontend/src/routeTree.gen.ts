@@ -24,7 +24,6 @@ import { Route as ProjectsProjectIdCommandsRouteImport } from "./routes/projects
 import { Route as ProjectsProjectIdAskRouteImport } from "./routes/projects/$projectId/ask"
 import { Route as ProjectsProjectIdActivityRouteImport } from "./routes/projects/$projectId/activity"
 import { Route as ProjectsProjectIdIssuesIndexRouteImport } from "./routes/projects/$projectId/issues/index"
-import { Route as ProjectsProjectIdIssuesNewRouteImport } from "./routes/projects/$projectId/issues/new"
 import { Route as ProjectsProjectIdIssuesIssueIdRouteImport } from "./routes/projects/$projectId/issues/$issueId"
 
 const TerminalsRoute = TerminalsRouteImport.update({
@@ -107,12 +106,6 @@ const ProjectsProjectIdIssuesIndexRoute =
     path: "/",
     getParentRoute: () => ProjectsProjectIdIssuesRoute,
   } as any)
-const ProjectsProjectIdIssuesNewRoute =
-  ProjectsProjectIdIssuesNewRouteImport.update({
-    id: "/new",
-    path: "/new",
-    getParentRoute: () => ProjectsProjectIdIssuesRoute,
-  } as any)
 const ProjectsProjectIdIssuesIssueIdRoute =
   ProjectsProjectIdIssuesIssueIdRouteImport.update({
     id: "/$issueId",
@@ -136,7 +129,6 @@ export interface FileRoutesByFullPath {
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
-  "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
   "/projects/$projectId/issues/": typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -154,7 +146,6 @@ export interface FileRoutesByTo {
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
-  "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRoutesById {
@@ -174,7 +165,6 @@ export interface FileRoutesById {
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
-  "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
   "/projects/$projectId/issues/": typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRouteTypes {
@@ -195,7 +185,6 @@ export interface FileRouteTypes {
     | "/projects/$projectId/library"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
-    | "/projects/$projectId/issues/new"
     | "/projects/$projectId/issues/"
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -213,7 +202,6 @@ export interface FileRouteTypes {
     | "/projects/$projectId/library"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
-    | "/projects/$projectId/issues/new"
     | "/projects/$projectId/issues"
   id:
     | "__root__"
@@ -232,7 +220,6 @@ export interface FileRouteTypes {
     | "/projects/$projectId/library"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
-    | "/projects/$projectId/issues/new"
     | "/projects/$projectId/issues/"
   fileRoutesById: FileRoutesById
 }
@@ -353,13 +340,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ProjectsProjectIdIssuesIndexRouteImport
       parentRoute: typeof ProjectsProjectIdIssuesRoute
     }
-    "/projects/$projectId/issues/new": {
-      id: "/projects/$projectId/issues/new"
-      path: "/new"
-      fullPath: "/projects/$projectId/issues/new"
-      preLoaderRoute: typeof ProjectsProjectIdIssuesNewRouteImport
-      parentRoute: typeof ProjectsProjectIdIssuesRoute
-    }
     "/projects/$projectId/issues/$issueId": {
       id: "/projects/$projectId/issues/$issueId"
       path: "/$issueId"
@@ -372,14 +352,12 @@ declare module "@tanstack/react-router" {
 
 interface ProjectsProjectIdIssuesRouteChildren {
   ProjectsProjectIdIssuesIssueIdRoute: typeof ProjectsProjectIdIssuesIssueIdRoute
-  ProjectsProjectIdIssuesNewRoute: typeof ProjectsProjectIdIssuesNewRoute
   ProjectsProjectIdIssuesIndexRoute: typeof ProjectsProjectIdIssuesIndexRoute
 }
 
 const ProjectsProjectIdIssuesRouteChildren: ProjectsProjectIdIssuesRouteChildren =
   {
     ProjectsProjectIdIssuesIssueIdRoute: ProjectsProjectIdIssuesIssueIdRoute,
-    ProjectsProjectIdIssuesNewRoute: ProjectsProjectIdIssuesNewRoute,
     ProjectsProjectIdIssuesIndexRoute: ProjectsProjectIdIssuesIndexRoute,
   }
 
