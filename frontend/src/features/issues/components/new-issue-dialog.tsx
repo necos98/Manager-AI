@@ -61,9 +61,12 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
     onOpenChange(next);
   };
 
+  const tooLong = description.length > DESCRIPTION_MAX;
+  const disabled = !description.trim() || tooLong || createIssue.isPending;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description.trim()) return;
+    if (disabled) return;
     createIssue.mutate(
       { description, priority },
       {
@@ -75,9 +78,6 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
       },
     );
   };
-
-  const tooLong = description.length > DESCRIPTION_MAX;
-  const disabled = !description.trim() || tooLong || createIssue.isPending;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
