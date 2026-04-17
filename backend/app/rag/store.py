@@ -12,6 +12,17 @@ logger = logging.getLogger(__name__)
 TABLE_NAME = "project_context_chunks"
 
 
+def _sql_literal(value: str) -> str:
+    """Quote a value as a SQL string literal, escaping embedded single quotes.
+
+    LanceDB 0.30 does not expose parameter binding on `.where()`, so all
+    user- or caller-supplied identifiers must be escaped before interpolation.
+    """
+    if not isinstance(value, str):
+        value = str(value)
+    return "'" + value.replace("'", "''") + "'"
+
+
 class VectorStore:
     """LanceDB wrapper for chunk storage, search, and retrieval."""
 
@@ -53,7 +64,7 @@ class VectorStore:
 
     def delete_by_source(self, source_id: str):
         table = self._get_table()
-        table.delete(f"source_id = '{source_id}'")
+        table.delete(f"source_id = {_sql_literal(source_id)}")
 
     VALID_SOURCE_TYPES = {"file", "issue"}
 
@@ -65,11 +76,11 @@ class VectorStore:
         limit: int = 5,
     ) -> list[dict]:
         table = self._get_table()
-        where = f"project_id = '{project_id}'"
+        where = f"project_id = {_sql_literal(project_id)}"
         if source_type:
             if source_type not in self.VALID_SOURCE_TYPES:
                 return []
-            where += f" AND source_type = '{source_type}'"
+            where += f" AND source_type = {_sql_literal(source_type)}"
 
         try:
             results = (
@@ -100,7 +111,10 @@ class VectorStore:
         try:
             results = (
                 table.search()
-                .where(f"id = '{chunk_id}' AND project_id = '{project_id}'")
+                .where(
+                    f"id = {_sql_literal(chunk_id)} "
+                    f"AND project_id = {_sql_literal(project_id)}"
+                )
                 .limit(1)
                 .to_list()
             )
@@ -129,7 +143,7 @@ class VectorStore:
         try:
             siblings = (
                 table.search()
-                .where(f"source_id = '{source_id}'")
+                .where(f"source_id = {_sql_literal(source_id)}")
                 .limit(1000)
                 .to_list()
             )

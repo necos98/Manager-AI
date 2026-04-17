@@ -131,3 +131,53 @@ def test_get_chunk_wrong_project_returns_none():
         ])
         result = store.get_chunk("c1", project_id="wrong-project")
         assert result is None
+
+
+def test_delete_by_source_handles_injection_shaped_id():
+    """Regression test: source_id containing SQL quote/comment must only
+    delete rows whose source_id literally matches, never execute as SQL."""
+    with tempfile.TemporaryDirectory() as tmp:
+        store = _make_store(tmp)
+        store.add([
+            {
+                "id": "c1", "project_id": "p1", "chunk_text": "safe",
+                "vector": [1.0, 0.0, 0.0, 0.0], "source_type": "file",
+                "source_id": "safe", "title": "a.txt", "chunk_index": 0,
+                "total_chunks": 1, "metadata": "{}", "created_at": "2026-01-01T00:00:00",
+            },
+            {
+                "id": "c2", "project_id": "p1", "chunk_text": "malicious",
+                "vector": [0.0, 1.0, 0.0, 0.0], "source_type": "file",
+                "source_id": "'; --", "title": "b.txt", "chunk_index": 0,
+                "total_chunks": 1, "metadata": "{}", "created_at": "2026-01-01T00:00:00",
+            },
+        ])
+        store.delete_by_source("'; --")
+        # Only c2 (the matching row) should be deleted; c1 must survive.
+        remaining = store.search([1.0, 0.0, 0.0, 0.0], project_id="p1", limit=10)
+        remaining_ids = {r["chunk_id"] for r in remaining}
+        assert "c1" in remaining_ids
+        assert "c2" not in remaining_ids
+
+
+def test_search_filters_literal_project_id():
+    """project_id must be treated as literal, not interpolated as SQL."""
+    with tempfile.TemporaryDirectory() as tmp:
+        store = _make_store(tmp)
+        store.add([
+            {
+                "id": "c1", "project_id": "project-a", "chunk_text": "a",
+                "vector": [1.0, 0.0, 0.0, 0.0], "source_type": "file",
+                "source_id": "s1", "title": "a.txt", "chunk_index": 0,
+                "total_chunks": 1, "metadata": "{}", "created_at": "2026-01-01T00:00:00",
+            },
+            {
+                "id": "c2", "project_id": "project-b", "chunk_text": "b",
+                "vector": [1.0, 0.0, 0.0, 0.0], "source_type": "file",
+                "source_id": "s2", "title": "b.txt", "chunk_index": 0,
+                "total_chunks": 1, "metadata": "{}", "created_at": "2026-01-01T00:00:00",
+            },
+        ])
+        results = store.search([1.0, 0.0, 0.0, 0.0], project_id="project-a", limit=10)
+        ids = {r["chunk_id"] for r in results}
+        assert ids == {"c1"}
