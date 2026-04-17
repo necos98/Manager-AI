@@ -1,32 +1,32 @@
-import { request } from "@/shared/api/client";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/api/client";
 import type { Project, ProjectCreate, ProjectUpdate } from "@/shared/types";
 
 export function fetchProjects(): Promise<Project[]> {
-  return request("/projects");
+  return apiGet<Project[]>("/projects");
 }
 
 export function fetchProject(projectId: string): Promise<Project> {
-  return request(`/projects/${projectId}`);
+  return apiGet<Project>(`/projects/${projectId}`);
 }
 
 export function createProject(data: ProjectCreate): Promise<Project> {
-  return request("/projects", { method: "POST", body: JSON.stringify(data) });
+  return apiPost<Project>("/projects", data);
 }
 
 export function updateProject(projectId: string, data: ProjectUpdate): Promise<Project> {
-  return request(`/projects/${projectId}`, { method: "PUT", body: JSON.stringify(data) });
+  return apiPut<Project>(`/projects/${projectId}`, data);
 }
 
 export function deleteProject(projectId: string): Promise<null> {
-  return request(`/projects/${projectId}`, { method: "DELETE" });
+  return apiDelete(`/projects/${projectId}`);
 }
 
 export function installManagerJson(projectId: string): Promise<{ path: string }> {
-  return request(`/projects/${projectId}/install-manager-json`, { method: "POST" });
+  return apiPost<{ path: string }>(`/projects/${projectId}/install-manager-json`);
 }
 
 export function installClaudeResources(projectId: string): Promise<{ path: string; copied: string[] }> {
-  return request(`/projects/${projectId}/install-claude-resources`, { method: "POST" });
+  return apiPost<{ path: string; copied: string[] }>(`/projects/${projectId}/install-claude-resources`);
 }
 
 export interface CodebaseIndexStatus {
@@ -35,9 +35,9 @@ export interface CodebaseIndexStatus {
 }
 
 export function fetchCodebaseIndexStatus(projectId: string): Promise<CodebaseIndexStatus> {
-  return request(`/projects/${projectId}/codebase-index-status`);
+  return apiGet<CodebaseIndexStatus>(`/projects/${projectId}/codebase-index-status`);
 }
 
 export function triggerCodebaseIndex(projectId: string): Promise<{ status: string }> {
-  return request(`/projects/${projectId}/index-codebase`, { method: "POST" });
+  return apiPost<{ status: string }>(`/projects/${projectId}/index-codebase`);
 }

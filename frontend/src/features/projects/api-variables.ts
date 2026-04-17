@@ -1,34 +1,28 @@
-import { request } from "@/shared/api/client";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/api/client";
 import type { ProjectVariable, ProjectVariableCreate, ProjectVariableUpdate } from "@/shared/types";
 
 export function fetchProjectVariables(projectId: string): Promise<ProjectVariable[]> {
-  return request(`/project-variables?project_id=${projectId}`);
+  return apiGet<ProjectVariable[]>(`/project-variables?project_id=${projectId}`);
 }
 
 export function createProjectVariable(
   projectId: string,
   data: ProjectVariableCreate
 ): Promise<ProjectVariable> {
-  return request(`/project-variables?project_id=${projectId}`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  return apiPost<ProjectVariable>(`/project-variables?project_id=${projectId}`, data);
 }
 
 export function updateProjectVariable(
   varId: number,
   data: ProjectVariableUpdate
 ): Promise<ProjectVariable> {
-  return request(`/project-variables/${varId}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+  return apiPut<ProjectVariable>(`/project-variables/${varId}`, data);
 }
 
 export function deleteProjectVariable(varId: number): Promise<null> {
-  return request(`/project-variables/${varId}`, { method: "DELETE" });
+  return apiDelete(`/project-variables/${varId}`);
 }
 
 export function revealProjectVariable(varId: number): Promise<ProjectVariable> {
-  return request(`/project-variables/${varId}/reveal`);
+  return apiGet<ProjectVariable>(`/project-variables/${varId}/reveal`);
 }
