@@ -6,6 +6,8 @@ import threading
 import uuid
 from datetime import datetime, timezone
 
+from app.config import settings
+
 IS_WINDOWS = platform.system() == "Windows"
 
 if IS_WINDOWS:
@@ -91,11 +93,6 @@ else:
                         pass
                 self._process = None
 
-# Maximum size of the output buffer per terminal (in bytes).
-# When exceeded, oldest output is trimmed from the front.
-MAX_BUFFER_SIZE = 100_000  # ~100 KB
-
-
 class TerminalService:
     """In-memory registry of active terminal sessions with PTY lifecycle management."""
 
@@ -171,8 +168,9 @@ class TerminalService:
             if buf is None:
                 return
             buf.extend(data.encode("utf-8", errors="replace"))
-            if len(buf) > MAX_BUFFER_SIZE:
-                excess = len(buf) - MAX_BUFFER_SIZE
+            max_bytes = settings.terminal_max_buffer_bytes
+            if len(buf) > max_bytes:
+                excess = len(buf) - max_bytes
                 del buf[:excess]
 
     def get_buffered_output(self, terminal_id: str) -> str:

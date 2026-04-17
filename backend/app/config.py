@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     embedding_model: str = "all-MiniLM-L6-v2"
     chunk_max_tokens: int = 500
     chunk_overlap_tokens: int = 50
+    hook_timeout_seconds: int = 300
+    terminal_max_buffer_bytes: int = 100_000
 
     model_config = {"env_file": ".env"}
 

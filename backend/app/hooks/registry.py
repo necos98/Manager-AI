@@ -9,11 +9,10 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Callable
 
+from app.config import settings
 from app.services.event_service import event_service
 
 logger = logging.getLogger(__name__)
-
-HOOK_TIMEOUT = 300  # seconds; configurable via patch in tests
 
 
 class HookEvent(str, Enum):
@@ -90,10 +89,11 @@ class HookRegistry:
             }
         )
 
+        hook_timeout = settings.hook_timeout_seconds
         try:
-            result = await asyncio.wait_for(hook.execute(context), timeout=HOOK_TIMEOUT)
+            result = await asyncio.wait_for(hook.execute(context), timeout=hook_timeout)
         except asyncio.TimeoutError:
-            error_msg = f"Hook timed out after {HOOK_TIMEOUT}s"
+            error_msg = f"Hook timed out after {hook_timeout}s"
             logger.error("Hook %s %s", hook.name, error_msg)
             await event_service.emit(
                 {

@@ -103,10 +103,11 @@ class SlowHook(BaseHook):
 
 
 @patch("app.hooks.registry.event_service")
-@patch("app.hooks.registry.HOOK_TIMEOUT", 0.05)
-async def test_hook_timeout_emits_hook_failed(mock_event_service):
+async def test_hook_timeout_emits_hook_failed(mock_event_service, monkeypatch):
     """Hook che supera il timeout emette hook_failed."""
     import asyncio
+    from app.config import settings
+    monkeypatch.setattr(settings, "hook_timeout_seconds", 0.05)
     mock_event_service.emit = AsyncMock()
     registry = HookRegistry()
     ctx = HookContext(project_id="p1", issue_id="i1", event=HookEvent.ISSUE_COMPLETED)
