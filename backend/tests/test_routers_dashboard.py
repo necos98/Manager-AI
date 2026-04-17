@@ -45,3 +45,16 @@ async def test_dashboard_project_structure(client):
     assert data[0]["name"] == "My Project"
     assert "active_issues" in data[0]
     assert data[0]["active_issues"] == []
+
+
+@pytest.mark.asyncio
+async def test_dashboard_excludes_archived_projects(client):
+    active = await client.post("/api/projects", json={"name": "Active", "path": "/a"})
+    archived = await client.post("/api/projects", json={"name": "Archived", "path": "/b"})
+    await client.post(f"/api/projects/{archived.json()['id']}/archive")
+
+    response = await client.get("/api/dashboard")
+    ids = [p["id"] for p in response.json()]
+
+    assert active.json()["id"] in ids
+    assert archived.json()["id"] not in ids

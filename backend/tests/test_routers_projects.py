@@ -99,3 +99,82 @@ async def test_update_project_tech_stack(client):
     )
     assert response.status_code == 200
     assert response.json()["tech_stack"] == "Python, React"
+
+
+@pytest.mark.asyncio
+async def test_list_projects_excludes_archived_by_default(client):
+    active = await client.post("/api/projects", json={"name": "Active", "path": "/a"})
+    archived = await client.post("/api/projects", json={"name": "Archived", "path": "/b"})
+    await client.post(f"/api/projects/{archived.json()['id']}/archive")
+
+    response = await client.get("/api/projects")
+    ids = [p["id"] for p in response.json()]
+
+    assert active.json()["id"] in ids
+    assert archived.json()["id"] not in ids
+
+
+@pytest.mark.asyncio
+async def test_list_projects_archived_true_returns_archived_only(client):
+    await client.post("/api/projects", json={"name": "Active", "path": "/a"})
+    archived = await client.post("/api/projects", json={"name": "Archived", "path": "/b"})
+    await client.post(f"/api/projects/{archived.json()['id']}/archive")
+
+    response = await client.get("/api/projects?archived=true")
+    ids = [p["id"] for p in response.json()]
+
+    assert ids == [archived.json()["id"]]
+
+
+@pytest.mark.asyncio
+async def test_list_projects_alphabetical(client):
+    await client.post("/api/projects", json={"name": "banana", "path": "/b"})
+    await client.post("/api/projects", json={"name": "Apple", "path": "/a"})
+    await client.post("/api/projects", json={"name": "cherry", "path": "/c"})
+
+    response = await client.get("/api/projects")
+    names = [p["name"] for p in response.json()]
+
+    assert names == ["Apple", "banana", "cherry"]
+
+
+@pytest.mark.asyncio
+async def test_archive_project_sets_archived_at_and_returns_response(client):
+    created = await client.post("/api/projects", json={"name": "P", "path": "/p"})
+    project_id = created.json()["id"]
+
+    response = await client.post(f"/api/projects/{project_id}/archive")
+
+    assert response.status_code == 200
+    assert response.json()["archived_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_archive_project_not_found(client):
+    response = await client.post(f"/api/projects/{uuid.uuid4()}/archive")
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_unarchive_project_clears_archived_at(client):
+    created = await client.post("/api/projects", json={"name": "P", "path": "/p"})
+    project_id = created.json()["id"]
+    await client.post(f"/api/projects/{project_id}/archive")
+
+    response = await client.post(f"/api/projects/{project_id}/unarchive")
+
+    assert response.status_code == 200
+    assert response.json()["archived_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_archive_is_idempotent(client):
+    created = await client.post("/api/projects", json={"name": "P", "path": "/p"})
+    project_id = created.json()["id"]
+
+    first = await client.post(f"/api/projects/{project_id}/archive")
+    second = await client.post(f"/api/projects/{project_id}/archive")
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json()["archived_at"] == second.json()["archived_at"]

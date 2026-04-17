@@ -33,9 +33,9 @@ async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)
 
 
 @router.get("", response_model=list[ProjectResponse])
-async def list_projects(db: AsyncSession = Depends(get_db)):
+async def list_projects(archived: bool = False, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
-    projects = await service.list_all()
+    projects = await service.list_all(archived=archived)
     return [await _enrich_project(service, p) for p in projects]
 
 
@@ -50,6 +50,24 @@ async def get_project(project_id: str, db: AsyncSession = Depends(get_db)):
 async def update_project(project_id: str, data: ProjectUpdate, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.update(project_id, **data.model_dump(exclude_unset=True))
+    await db.commit()
+    await db.refresh(project)
+    return await _enrich_project(service, project)
+
+
+@router.post("/{project_id}/archive", response_model=ProjectResponse)
+async def archive_project(project_id: str, db: AsyncSession = Depends(get_db)):
+    service = ProjectService(db)
+    project = await service.archive(project_id)
+    await db.commit()
+    await db.refresh(project)
+    return await _enrich_project(service, project)
+
+
+@router.post("/{project_id}/unarchive", response_model=ProjectResponse)
+async def unarchive_project(project_id: str, db: AsyncSession = Depends(get_db)):
+    service = ProjectService(db)
+    project = await service.unarchive(project_id)
     await db.commit()
     await db.refresh(project)
     return await _enrich_project(service, project)
