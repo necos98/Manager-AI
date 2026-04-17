@@ -118,6 +118,7 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
           size="sm"
           className="text-destructive hover:text-destructive shrink-0"
           onClick={() => setShowDeleteConfirm(true)}
+          aria-label="Delete issue"
         >
           <Trash2 className="size-4 mr-1" />
           Delete

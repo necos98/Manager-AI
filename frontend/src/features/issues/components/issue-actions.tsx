@@ -84,13 +84,13 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
     <>
       <div className="flex items-center gap-2 flex-wrap">
         {issue.status === "Planned" && (
-          <Button size="sm" onClick={() => setConfirmAction("accept")} disabled={isPending}>
+          <Button size="sm" onClick={() => setConfirmAction("accept")} disabled={isPending} aria-label="Accept plan">
             <CheckCircle className="size-4 mr-1" />
             Accept Plan
           </Button>
         )}
         {issue.status === "Accepted" && (
-          <Button size="sm" onClick={() => setConfirmAction("complete")} disabled={isPending}>
+          <Button size="sm" onClick={() => setConfirmAction("complete")} disabled={isPending} aria-label="Mark issue as complete">
             <CheckCircle className="size-4 mr-1" />
             Mark as Complete
           </Button>
@@ -100,6 +100,7 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
           variant="outline"
           onClick={handleRunIssue}
           disabled={isPending || createTerminal.isPending}
+          aria-label="Run issue in terminal"
         >
           <Play className="size-4 mr-1" />
           {createTerminal.isPending ? "Opening..." : "Run Issue"}
@@ -110,6 +111,7 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
           className="text-destructive hover:text-destructive"
           onClick={() => setConfirmAction("cancel")}
           disabled={isPending}
+          aria-label="Cancel issue"
         >
           <XCircle className="size-4 mr-1" />
           Cancel Issue

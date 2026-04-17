@@ -23,6 +23,8 @@ export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIs
       </div>
       <div
         ref={setNodeRef}
+        role="region"
+        aria-label={`${status} column, ${issues.length} issue${issues.length === 1 ? "" : "s"}`}
         className={[
           "flex-1 rounded-lg p-2 min-h-[120px] space-y-2 transition-colors",
           isOver && isValidTarget ? "bg-primary/10 ring-1 ring-primary" : "bg-muted/30",

@@ -205,6 +205,7 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
           className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
           onClick={handleCopy}
           title="Copy selection"
+          aria-label="Copy terminal selection"
         >
           <Copy className="size-3 mr-1" />
           Copy
@@ -215,6 +216,7 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
           className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
           onClick={() => setShowSearch((p) => !p)}
           title="Search (Ctrl+F)"
+          aria-label="Search in terminal"
         >
           <Search className="size-3" />
         </Button>
@@ -225,6 +227,7 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
             className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
             onClick={onDownloadRecording}
             title="Download session recording"
+            aria-label="Download session recording"
           >
             <Download className="size-3 mr-1" />
             Log
@@ -263,6 +266,7 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
             size="icon"
             className="h-5 w-5 text-zinc-400"
             onClick={() => setShowSearch(false)}
+            aria-label="Close search"
           >
             <X className="size-3" />
           </Button>
