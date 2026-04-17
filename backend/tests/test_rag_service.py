@@ -106,6 +106,74 @@ async def test_embed_file_failure_broadcasts_event(mock_pipeline, mock_event_ser
     assert event["project_id"] == "p1"
 
 
+async def test_embed_file_retries_once_on_failure(mock_pipeline, mock_event_service, monkeypatch):
+    """First call fails → retry → second call succeeds → emit completed."""
+    from app.services.rag_service import RagService
+
+    monkeypatch.setattr("app.services.rag_service.RETRY_BACKOFF_SECONDS", 0)
+
+    calls = {"n": 0}
+
+    def flaky(*a, **kw):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("transient")
+        return "ok"
+
+    mock_pipeline.embed_file.side_effect = flaky
+    svc = RagService(pipeline=mock_pipeline, event_service=mock_event_service)
+    await svc.embed_file(
+        project_id="p1", source_id="f1",
+        file_path="/fake/t.txt", mime_type="text/plain",
+        original_name="t.txt",
+    )
+    assert calls["n"] == 2
+    # Last emit must be "completed", not "failed"
+    final_event = mock_event_service.emit.call_args[0][0]
+    assert final_event["type"] == "embedding_completed"
+
+
+async def test_embed_file_marks_failed_after_retries(mock_pipeline, mock_event_service, monkeypatch):
+    from app.services.rag_service import RagService
+
+    monkeypatch.setattr("app.services.rag_service.RETRY_BACKOFF_SECONDS", 0)
+    mock_pipeline.embed_file.side_effect = RuntimeError("always fails")
+    svc = RagService(pipeline=mock_pipeline, event_service=mock_event_service)
+    await svc.embed_file(
+        project_id="p1", source_id="f1",
+        file_path="/fake/t.txt", mime_type="text/plain",
+        original_name="t.txt",
+    )
+    assert mock_pipeline.embed_file.call_count == 2
+    final_event = mock_event_service.emit.call_args[0][0]
+    assert final_event["type"] == "embedding_failed"
+    assert "always fails" in final_event["error"]
+
+
+async def test_embed_issue_retries_once_on_failure(mock_pipeline, mock_event_service, monkeypatch):
+    from app.services.rag_service import RagService
+
+    monkeypatch.setattr("app.services.rag_service.RETRY_BACKOFF_SECONDS", 0)
+
+    calls = {"n": 0}
+
+    def flaky(*a, **kw):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("transient")
+        return "ok"
+
+    mock_pipeline.embed_issue.side_effect = flaky
+    svc = RagService(pipeline=mock_pipeline, event_service=mock_event_service)
+    await svc.embed_issue(
+        project_id="p1", source_id="i1",
+        issue_data={"name": "T"},
+    )
+    assert calls["n"] == 2
+    final_event = mock_event_service.emit.call_args[0][0]
+    assert final_event["type"] == "embedding_completed"
+
+
 async def test_source_lock_serializes_concurrent_calls():
     """N coroutine concorrenti sullo stesso source_id vengono serializzate e il lock viene pulito."""
     import asyncio

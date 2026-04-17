@@ -190,6 +190,8 @@ export interface TerminalCommandTemplate {
 
 // ── Project File ──
 
+export type EmbeddingStatus = "pending" | "running" | "completed" | "failed" | "skipped";
+
 export interface ProjectFile {
   id: string;
   project_id: string;
@@ -200,6 +202,9 @@ export interface ProjectFile {
   mime_type: string;
   metadata: Record<string, unknown> | null;
   created_at: string;
+  embedding_status: EmbeddingStatus;
+  embedding_error: string | null;
+  embedding_updated_at: string | null;
 }
 
 export interface AllowedFormats {

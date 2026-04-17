@@ -1,9 +1,23 @@
 import { useRef } from "react";
-import { Download, Trash2, Upload } from "lucide-react";
-import { useFiles, useAllowedFormats, useUploadFiles, useDeleteFile } from "@/features/files/hooks";
+import { Download, RefreshCw, Trash2, Upload } from "lucide-react";
+import { useFiles, useAllowedFormats, useUploadFiles, useDeleteFile, useReindexFile } from "@/features/files/hooks";
 import { getFileDownloadUrl } from "@/features/files/api";
 import { Button } from "@/shared/components/ui/button";
+import { Badge } from "@/shared/components/ui/badge";
 import { Skeleton } from "@/shared/components/ui/skeleton";
+import type { EmbeddingStatus } from "@/shared/types";
+
+function EmbeddingBadge({ status, error }: { status: EmbeddingStatus; error: string | null }) {
+  if (status === "completed") return <Badge variant="secondary" className="text-xs">Indexed</Badge>;
+  if (status === "running") return <Badge variant="secondary" className="text-xs">Indexing…</Badge>;
+  if (status === "pending") return <Badge variant="outline" className="text-xs">Pending</Badge>;
+  if (status === "skipped") return <Badge variant="outline" className="text-xs">Skipped</Badge>;
+  return (
+    <Badge variant="destructive" className="text-xs" title={error ?? undefined} aria-label={`Indexing failed${error ? `: ${error}` : ""}`}>
+      Indexing failed
+    </Badge>
+  );
+}
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -24,6 +38,7 @@ export function FileGallery({ projectId }: FileGalleryProps) {
   const { data: formats } = useAllowedFormats();
   const uploadFiles = useUploadFiles(projectId);
   const deleteFile = useDeleteFile(projectId);
+  const reindexFile = useReindexFile(projectId);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,6 +111,7 @@ export function FileGallery({ projectId }: FileGalleryProps) {
               <th className="py-2 pr-4 font-medium">Type</th>
               <th className="py-2 pr-4 font-medium">Size</th>
               <th className="py-2 pr-4 font-medium">Uploaded</th>
+              <th className="py-2 pr-4 font-medium">Index</th>
               <th className="py-2 font-medium">Actions</th>
             </tr>
           </thead>
@@ -108,6 +124,9 @@ export function FileGallery({ projectId }: FileGalleryProps) {
                 <td className="py-2 pr-4 text-muted-foreground uppercase">{f.file_type}</td>
                 <td className="py-2 pr-4 text-muted-foreground">{formatSize(f.file_size)}</td>
                 <td className="py-2 pr-4 text-muted-foreground">{formatDate(f.created_at)}</td>
+                <td className="py-2 pr-4">
+                  <EmbeddingBadge status={f.embedding_status} error={f.embedding_error} />
+                </td>
                 <td className="py-2 flex gap-2">
                   <Button variant="ghost" size="sm" asChild>
                     <a href={getFileDownloadUrl(projectId, f.id)} download>
@@ -115,11 +134,24 @@ export function FileGallery({ projectId }: FileGalleryProps) {
                       Download
                     </a>
                   </Button>
+                  {f.embedding_status === "failed" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => reindexFile.mutate(f.id)}
+                      disabled={reindexFile.isPending}
+                      aria-label={`Retry indexing ${f.original_name}`}
+                    >
+                      <RefreshCw className="size-3 mr-1" />
+                      Retry
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:text-destructive"
                     onClick={() => handleDelete(f.id, f.original_name)}
+                    aria-label={`Delete ${f.original_name}`}
                   >
                     <Trash2 className="size-3 mr-1" />
                     Delete

@@ -47,3 +47,14 @@ export function useDeleteFile(projectId: string) {
     onError: onMutationError,
   });
 }
+
+export function useReindexFile(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (fileId: string) => api.reindexFile(projectId, fileId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: fileKeys.all(projectId) });
+    },
+    onError: onMutationError,
+  });
+}

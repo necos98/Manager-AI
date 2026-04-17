@@ -92,3 +92,29 @@ async def delete_file(project_id: str, file_id: str, db: AsyncSession = Depends(
     # Remove embeddings for the deleted file
     rag = get_rag_service()
     asyncio.create_task(rag.delete_source(file_id))
+
+
+@router.post("/{file_id}/reindex", response_model=ProjectFileResponse)
+async def reindex_file(project_id: str, file_id: str, db: AsyncSession = Depends(get_db)):
+    project = await _check_project(project_id, db)
+    service = FileService(db)
+    record = await service.get_by_id(project_id, file_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    record.embedding_status = "pending"
+    record.embedding_error = None
+    await db.commit()
+    await db.refresh(record)
+
+    file_path = service.get_file_path(project_id, record.stored_name)
+    rag = get_rag_service()
+    asyncio.create_task(rag.embed_file(
+        project_id=project_id,
+        source_id=record.id,
+        file_path=file_path,
+        mime_type=record.mime_type,
+        original_name=record.original_name,
+        project_name=project.name,
+    ))
+    return ProjectFileResponse.from_model(record)

@@ -40,6 +40,9 @@ class Issue(Base):
     recap: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+    embedding_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    embedding_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    embedding_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     project = relationship("Project", back_populates="issues")
     tasks = relationship("Task", back_populates="issue", cascade="all, delete-orphan", order_by="Task.order")
