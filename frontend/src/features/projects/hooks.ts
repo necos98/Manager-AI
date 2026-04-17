@@ -9,13 +9,14 @@ const onMutationError = (e: unknown) => {
 
 export const projectKeys = {
   all: ["projects"] as const,
+  list: (archived: boolean) => ["projects", "list", { archived }] as const,
   detail: (id: string) => ["projects", id] as const,
 };
 
-export function useProjects() {
+export function useProjects(archived: boolean = false) {
   return useQuery({
-    queryKey: projectKeys.all,
-    queryFn: api.fetchProjects,
+    queryKey: projectKeys.list(archived),
+    queryFn: () => api.fetchProjects(archived),
   });
 }
 
@@ -89,6 +90,30 @@ export function useTriggerCodebaseIndex(projectId: string) {
     mutationFn: () => api.triggerCodebaseIndex(projectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects", projectId, "codebase-index-status"] });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useArchiveProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (projectId: string) => api.archiveProject(projectId),
+    onSuccess: (_data, projectId) => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useUnarchiveProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (projectId: string) => api.unarchiveProject(projectId),
+    onSuccess: (_data, projectId) => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
     },
     onError: onMutationError,
   });
