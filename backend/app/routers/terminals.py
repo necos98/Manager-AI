@@ -17,19 +17,9 @@ from app.models.project import Project
 from app.schemas.terminal import AskTerminalCreate, TerminalCreate, TerminalListResponse, TerminalResponse
 from app.services.terminal_service import TerminalService, terminal_service
 from app.services.terminal_command_service import TerminalCommandService
+from app.services.terminal_condition import UnknownConditionError, evaluate_condition
 
 logger = logging.getLogger(__name__)
-
-
-def _evaluate_condition(condition: str | None, issue_status: str) -> bool:
-    """Evaluate a startup command condition. Returns True if the command should run."""
-    if not condition:
-        return True
-    parts = condition.strip().split()
-    if len(parts) == 3 and parts[0] == "$issue_status" and parts[1] == "==":
-        return issue_status == parts[2]
-    # Unknown condition syntax → always run (safe default)
-    return True
 
 
 def _save_recording(terminal_id: str, content: str) -> None:
@@ -195,16 +185,28 @@ async def create_terminal(
                 pty = service.get_pty(terminal["id"])
                 # Resolve dynamic variables in commands
                 # Variable names are defined in terminal_commands.TEMPLATE_VARIABLES
-                variables = {
+                replacements = {
                     "$issue_id": data.issue_id,
                     "$project_id": data.project_id,
                     "$project_path": project_path,
                 }
+                condition_vars = {
+                    "issue_status": issue_status,
+                    "issue_id": data.issue_id,
+                    "project_id": data.project_id,
+                }
                 for c in commands:
-                    if not _evaluate_condition(c.condition, issue_status):
+                    try:
+                        passes = evaluate_condition(c.condition, condition_vars)
+                    except UnknownConditionError as exc:
+                        logger.warning(
+                            "Skipping terminal command %s: %s", c.id, exc
+                        )
+                        continue
+                    if not passes:
                         continue
                     cmd_text = c.command
-                    for var, val in variables.items():
+                    for var, val in replacements.items():
                         cmd_text = cmd_text.replace(var, val)
                     # Support multi-line: send each non-empty line as a separate command
                     for line in cmd_text.split("\n"):
