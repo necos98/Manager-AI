@@ -28,3 +28,7 @@ export function updateProjectVariable(
 export function deleteProjectVariable(varId: number): Promise<null> {
   return request(`/project-variables/${varId}`, { method: "DELETE" });
 }
+
+export function revealProjectVariable(varId: number): Promise<ProjectVariable> {
+  return request(`/project-variables/${varId}/reveal`);
+}

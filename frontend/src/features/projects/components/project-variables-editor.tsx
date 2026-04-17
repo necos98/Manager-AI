@@ -6,9 +6,11 @@ import {
   useUpdateProjectVariable,
   useDeleteProjectVariable,
 } from "@/features/projects/hooks-variables";
+import { revealProjectVariable } from "@/features/projects/api-variables";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Skeleton } from "@/shared/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface ProjectVariablesEditorProps {
   projectId: string;
@@ -23,7 +25,7 @@ export function ProjectVariablesEditor({ projectId }: ProjectVariablesEditorProp
   const [newName, setNewName] = useState("");
   const [newValue, setNewValue] = useState("");
   const [newIsSecret, setNewIsSecret] = useState(false);
-  const [revealed, setRevealed] = useState<Set<number>>(new Set());
+  const [revealedValues, setRevealedValues] = useState<Record<number, string>>({});
 
   const handleAdd = () => {
     if (!newName.trim() || !newValue.trim()) return;
@@ -39,13 +41,21 @@ export function ProjectVariablesEditor({ projectId }: ProjectVariablesEditorProp
     );
   };
 
-  const toggleReveal = (id: number) => {
-    setRevealed((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const toggleReveal = async (id: number) => {
+    if (id in revealedValues) {
+      setRevealedValues((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
+    try {
+      const fresh = await revealProjectVariable(id);
+      setRevealedValues((prev) => ({ ...prev, [id]: fresh.value }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to reveal secret");
+    }
   };
 
   if (isLoading) {
@@ -62,51 +72,63 @@ export function ProjectVariablesEditor({ projectId }: ProjectVariablesEditorProp
         <p className="text-sm text-muted-foreground italic">No custom variables defined.</p>
       )}
 
-      {vars?.map((v) => (
-        <div key={v.id} className="flex items-center gap-2">
-          <Input
-            defaultValue={v.name}
-            onBlur={(e) => {
-              const trimmed = e.target.value.trim();
-              if (trimmed && trimmed !== v.name)
-                updateVar.mutate({ id: v.id, data: { name: trimmed } });
-            }}
-            className="w-40 font-mono text-sm"
-            placeholder="NAME"
-          />
-          <div className="flex-1 flex gap-1">
+      {vars?.map((v) => {
+        const isRevealed = v.id in revealedValues;
+        const displayValue = isRevealed
+          ? revealedValues[v.id]
+          : v.is_secret
+            ? (v.has_value ? "••••••••" : "")
+            : v.value;
+        return (
+          <div key={v.id} className="flex items-center gap-2">
             <Input
-              defaultValue={v.value}
-              type={v.is_secret && !revealed.has(v.id) ? "password" : "text"}
+              defaultValue={v.name}
               onBlur={(e) => {
                 const trimmed = e.target.value.trim();
-                if (trimmed && trimmed !== v.value)
-                  updateVar.mutate({ id: v.id, data: { value: trimmed } });
+                if (trimmed && trimmed !== v.name)
+                  updateVar.mutate({ id: v.id, data: { name: trimmed } });
               }}
-              className="flex-1 font-mono text-sm"
-              placeholder="value"
+              className="w-40 font-mono text-sm"
+              placeholder="NAME"
             />
-            {v.is_secret && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => toggleReveal(v.id)}
-                title={revealed.has(v.id) ? "Hide value" : "Reveal value"}
-              >
-                {revealed.has(v.id) ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </Button>
-            )}
+            <div className="flex-1 flex gap-1">
+              <Input
+                key={`${v.id}-${isRevealed ? "revealed" : "masked"}`}
+                defaultValue={displayValue}
+                disabled={v.is_secret && !isRevealed}
+                onBlur={(e) => {
+                  const trimmed = e.target.value.trim();
+                  const baseline = isRevealed ? revealedValues[v.id] : v.value;
+                  if (trimmed && trimmed !== baseline)
+                    updateVar.mutate({ id: v.id, data: { value: trimmed } });
+                }}
+                className="flex-1 font-mono text-sm"
+                placeholder="value"
+              />
+              {v.is_secret && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => toggleReveal(v.id)}
+                  aria-label={isRevealed ? `Hide secret ${v.name}` : `Reveal secret ${v.name}`}
+                  title={isRevealed ? "Hide value" : "Reveal value"}
+                >
+                  {isRevealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </Button>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={`Delete variable ${v.name}`}
+              className="text-muted-foreground hover:text-destructive"
+              onClick={() => deleteVar.mutate(v.id)}
+            >
+              <X className="size-4" />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-destructive"
-            onClick={() => deleteVar.mutate(v.id)}
-          >
-            <X className="size-4" />
-          </Button>
-        </div>
-      ))}
+        );
+      })}
 
       <div className="flex gap-2 mt-4 pt-4 border-t">
         <Input

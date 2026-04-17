@@ -271,7 +271,10 @@ export interface ProjectVariable {
   id: number;
   project_id: string;
   name: string;
+  /** Empty string on list responses when `is_secret` is true. Fetch the
+   * real value via the `/reveal` endpoint. */
   value: string;
+  has_value: boolean;
   is_secret: boolean;
   sort_order: number;
   created_at: string;
