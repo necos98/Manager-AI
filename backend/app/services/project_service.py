@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from datetime import datetime, timezone
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import NotFoundError
@@ -19,8 +21,14 @@ class ProjectService:
         await self.session.flush()
         return project
 
-    async def list_all(self) -> list[Project]:
-        result = await self.session.execute(select(Project).order_by(Project.created_at.desc()))
+    async def list_all(self, archived: bool | None = False) -> list[Project]:
+        stmt = select(Project)
+        if archived is False:
+            stmt = stmt.where(Project.archived_at.is_(None))
+        elif archived is True:
+            stmt = stmt.where(Project.archived_at.is_not(None))
+        stmt = stmt.order_by(func.lower(Project.name).asc())
+        result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
     async def get_by_id(self, project_id: str) -> Project:
@@ -35,6 +43,20 @@ class ProjectService:
             if value is not None:
                 setattr(project, key, value)
         await self.session.flush()
+        return project
+
+    async def archive(self, project_id: str) -> Project:
+        project = await self.get_by_id(project_id)
+        if project.archived_at is None:
+            project.archived_at = datetime.now(timezone.utc)
+            await self.session.flush()
+        return project
+
+    async def unarchive(self, project_id: str) -> Project:
+        project = await self.get_by_id(project_id)
+        if project.archived_at is not None:
+            project.archived_at = None
+            await self.session.flush()
         return project
 
     async def delete(self, project_id: str) -> None:
