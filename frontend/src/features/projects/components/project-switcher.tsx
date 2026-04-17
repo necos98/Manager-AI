@@ -1,4 +1,4 @@
-import { Check, ChevronsUpDown, FolderKanban, Plus } from "lucide-react";
+import { Archive, Check, ChevronsUpDown, FolderKanban, Plus } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   DropdownMenu,
@@ -73,6 +73,13 @@ export function ProjectSwitcher({ activeProject }: ProjectSwitcherProps) {
         >
           <Plus className="size-4" />
           <span>New Project</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => navigate({ to: "/projects/archived" })}
+          className="gap-2"
+        >
+          <Archive className="size-4" />
+          <span>View archived</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
