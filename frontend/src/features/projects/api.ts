@@ -1,8 +1,17 @@
 import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/api/client";
 import type { Project, ProjectCreate, ProjectUpdate } from "@/shared/types";
 
-export function fetchProjects(): Promise<Project[]> {
-  return apiGet<Project[]>("/projects");
+export function fetchProjects(archived: boolean = false): Promise<Project[]> {
+  const query = archived ? "?archived=true" : "";
+  return apiGet<Project[]>(`/projects${query}`);
+}
+
+export function archiveProject(projectId: string): Promise<Project> {
+  return apiPost<Project>(`/projects/${projectId}/archive`);
+}
+
+export function unarchiveProject(projectId: string): Promise<Project> {
+  return apiPost<Project>(`/projects/${projectId}/unarchive`);
 }
 
 export function fetchProject(projectId: string): Promise<Project> {
