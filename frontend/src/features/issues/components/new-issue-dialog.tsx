@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { FilePlus } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  ChevronsDown,
+  ChevronsUp,
+  Equal,
+  FilePlus,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useCreateIssue } from "@/features/issues/hooks";
 import {
@@ -19,6 +27,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
+
+type PriorityLevel = 1 | 2 | 3 | 4 | 5;
+
+const PRIORITIES: { value: PriorityLevel; label: string; Icon: LucideIcon }[] = [
+  { value: 1, label: "1 (Highest)", Icon: ChevronsUp },
+  { value: 2, label: "2", Icon: ChevronUp },
+  { value: 3, label: "3", Icon: Equal },
+  { value: 4, label: "4", Icon: ChevronDown },
+  { value: 5, label: "5 (Lowest)", Icon: ChevronsDown },
+];
 
 const DESCRIPTION_MAX = 50_000;
 
@@ -113,11 +131,14 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">1 (Highest)</SelectItem>
-                <SelectItem value="2">2</SelectItem>
-                <SelectItem value="3">3</SelectItem>
-                <SelectItem value="4">4</SelectItem>
-                <SelectItem value="5">5 (Lowest)</SelectItem>
+                {PRIORITIES.map(({ value, label, Icon }) => (
+                  <SelectItem key={value} value={String(value)}>
+                    <span className="flex items-center gap-2">
+                      <Icon className="size-4 text-muted-foreground" />
+                      {label}
+                    </span>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
