@@ -102,6 +102,7 @@ export function useArchiveProject() {
     onSuccess: (_data, projectId) => {
       queryClient.invalidateQueries({ queryKey: projectKeys.all });
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: onMutationError,
   });
@@ -114,6 +115,7 @@ export function useUnarchiveProject() {
     onSuccess: (_data, projectId) => {
       queryClient.invalidateQueries({ queryKey: projectKeys.all });
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: onMutationError,
   });
