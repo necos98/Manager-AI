@@ -48,7 +48,7 @@ class ProjectService:
     async def archive(self, project_id: str) -> Project:
         project = await self.get_by_id(project_id)
         if project.archived_at is None:
-            project.archived_at = datetime.now(timezone.utc)
+            project.archived_at = datetime.now(timezone.utc).replace(tzinfo=None)
             await self.session.flush()
         return project
 
