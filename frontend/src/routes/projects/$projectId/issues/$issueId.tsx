@@ -7,6 +7,7 @@ import { useProject } from "@/features/projects/hooks";
 import { useTerminals, useCreateTerminal, useKillTerminal, useTerminalCount, useTerminalConfig } from "@/features/terminals/hooks";
 import { IssueDetail } from "@/features/issues/components/issue-detail";
 import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
+import { ErrorBoundary } from "@/shared/components/error-boundary";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -117,13 +118,17 @@ function IssueDetailPage() {
       {/* Split view */}
       {!hasAny ? (
         <ScrollArea className="flex-1">
-          <IssueDetail issue={issue} projectId={projectId} terminalId={null} />
+          <ErrorBoundary>
+            <IssueDetail issue={issue} projectId={projectId} terminalId={null} />
+          </ErrorBoundary>
         </ScrollArea>
       ) : (
         <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
           <ResizablePanel defaultSize={55} minSize={30}>
             <ScrollArea className="h-full">
-              <IssueDetail issue={issue} projectId={projectId} terminalId={terminal1?.id ?? null} />
+              <ErrorBoundary>
+                <IssueDetail issue={issue} projectId={projectId} terminalId={terminal1?.id ?? null} />
+              </ErrorBoundary>
             </ScrollArea>
           </ResizablePanel>
           <ResizableHandle withHandle />

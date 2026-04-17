@@ -8,6 +8,7 @@ import { useTerminals } from "@/features/terminals/hooks";
 import { KanbanBoard } from "@/features/issues/components/kanban-board";
 import { Button } from "@/shared/components/ui/button";
 import { Skeleton } from "@/shared/components/ui/skeleton";
+import { ErrorBoundary } from "@/shared/components/error-boundary";
 
 export const Route = createFileRoute("/projects/$projectId/issues/")({
   component: IssuesPage,
@@ -48,12 +49,14 @@ function IssuesPage() {
           </Link>
         </Button>
       </div>
-      <KanbanBoard
-        issues={issues ?? []}
-        projectId={projectId}
-        activeTerminalIssueIds={activeTerminalIssueIds}
-        blockedIssueIds={blockedIssueIds}
-      />
+      <ErrorBoundary>
+        <KanbanBoard
+          issues={issues ?? []}
+          projectId={projectId}
+          activeTerminalIssueIds={activeTerminalIssueIds}
+          blockedIssueIds={blockedIssueIds}
+        />
+      </ErrorBoundary>
     </div>
   );
 }
