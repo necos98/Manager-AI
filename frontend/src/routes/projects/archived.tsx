@@ -60,7 +60,7 @@ function ArchivedProjectsPage() {
                 {project.archived_at && (
                   <p className="text-xs text-muted-foreground mt-0.5">
                     archived{" "}
-                    {formatDistanceToNow(new Date(project.archived_at), {
+                    {formatDistanceToNow(new Date(project.archived_at + "Z"), {
                       addSuffix: true,
                     })}
                   </p>
