@@ -75,7 +75,7 @@ export function FileGalleryModal({ open, onClose, projectId, onSelect }: FileGal
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-4xl" onPaste={handlePaste} onDragOver={(e) => e.preventDefault()} onDrop={handleDrop}>
+      <DialogContent className="max-w-[90vw] w-[90vw] sm:max-w-[85vw] h-[85vh] flex flex-col" onPaste={handlePaste} onDragOver={(e) => e.preventDefault()} onDrop={handleDrop}>
         <DialogHeader>
           <DialogTitle>Project Files</DialogTitle>
         </DialogHeader>
@@ -125,7 +125,7 @@ export function FileGalleryModal({ open, onClose, projectId, onSelect }: FileGal
             No files {filter === "images" ? "(images only)" : ""}.
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto">
+          <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 flex-1 overflow-y-auto">
             {filtered.map((f) => (
               <button
                 key={f.id}
