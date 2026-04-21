@@ -75,5 +75,9 @@ async def db_session():
     async with session_factory() as session:
         yield session
     async with engine.begin() as conn:
+        await conn.exec_driver_sql("DROP TRIGGER IF EXISTS memories_ai")
+        await conn.exec_driver_sql("DROP TRIGGER IF EXISTS memories_au")
+        await conn.exec_driver_sql("DROP TRIGGER IF EXISTS memories_ad")
+        await conn.exec_driver_sql("DROP TABLE IF EXISTS memories_fts")
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()

@@ -10,7 +10,7 @@ from app.exceptions import AppError
 from app.hooks import hook_registry
 import app.hooks.handlers  # noqa: F401 — triggers @hook decorator registration
 from app.mcp.server import mcp
-from app.routers import activity, events, files, issue_relations, issues, library, network, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, tasks, terminals, terminal_commands
+from app.routers import activity, events, files, issue_relations, issues, library, memories, network, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, tasks, terminals, terminal_commands
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +60,8 @@ app.include_router(project_variables.router)
 app.include_router(events.router)
 app.include_router(activity.router)
 app.include_router(library.router)
+app.include_router(memories.project_scoped)
+app.include_router(memories.flat)
 app.include_router(project_skills.router)
 app.include_router(network.router)
 
