@@ -2,14 +2,24 @@ from __future__ import annotations
 
 import os
 import uuid
+from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import UploadFile
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.project_file import ProjectFile
+from app.services import file_reader
 
-ALLOWED_EXTENSIONS = {"txt", "md", "doc", "docx", "pdf", "xls", "xlsx"}
+ALLOWED_EXTENSIONS = {
+    "txt", "md", "doc", "docx", "pdf", "xls", "xlsx",
+    "png", "jpg", "jpeg", "gif", "webp",
+}
+
+IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
+
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 MIME_MAP = {
     "txt": "text/plain",
@@ -19,6 +29,11 @@ MIME_MAP = {
     "pdf": "application/pdf",
     "xls": "application/vnd.ms-excel",
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "gif": "image/gif",
+    "webp": "image/webp",
 }
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "project_resources")
@@ -48,25 +63,98 @@ class FileService:
             file_path = os.path.join(project_dir, stored_name)
 
             content = await file.read()
+            if len(content) > MAX_FILE_SIZE:
+                raise ValueError(f"File '{file.filename}' exceeds 5 MB limit")
+
             with open(file_path, "wb") as f:
                 f.write(content)
 
             mime_type = MIME_MAP.get(ext, "application/octet-stream")
 
-            record = ProjectFile(
-                id=file_id,
-                project_id=project_id,
-                original_name=file.filename,
-                stored_name=stored_name,
-                file_type=ext,
-                file_size=len(content),
-                mime_type=mime_type,
-            )
+            if ext in IMAGE_EXTENSIONS:
+                record = ProjectFile(
+                    id=file_id,
+                    project_id=project_id,
+                    original_name=file.filename,
+                    stored_name=stored_name,
+                    file_type=ext,
+                    file_size=len(content),
+                    mime_type=mime_type,
+                    file_metadata=None,
+                    extracted_text=None,
+                    extraction_status="skipped",
+                    extraction_error=None,
+                    extracted_at=None,
+                )
+            else:
+                result = file_reader.extract(file_path, ext)
+                meta: dict[str, Any] = {}
+                if result.status == "ok" and file_reader.file_is_low_text(result.text, len(content)):
+                    meta["low_text"] = True
+
+                record = ProjectFile(
+                    id=file_id,
+                    project_id=project_id,
+                    original_name=file.filename,
+                    stored_name=stored_name,
+                    file_type=ext,
+                    file_size=len(content),
+                    mime_type=mime_type,
+                    file_metadata=meta or None,
+                    extracted_text=result.text or None,
+                    extraction_status=result.status,
+                    extraction_error=result.error,
+                    extracted_at=datetime.now(timezone.utc) if result.status in ("ok", "failed", "unsupported") else None,
+                )
+
             self.session.add(record)
             results.append(record)
 
         await self.session.flush()
         return results
+
+    async def reextract(self, project_id: str, file_id: str) -> ProjectFile | None:
+        record = await self.get_by_id(project_id, file_id)
+        if record is None:
+            return None
+        file_path = os.path.join(BASE_DIR, project_id, record.stored_name)
+        if not os.path.exists(file_path):
+            record.extraction_status = "failed"
+            record.extraction_error = "File missing on disk"
+            record.extracted_at = datetime.now(timezone.utc)
+            await self.session.flush()
+            return record
+        result = file_reader.extract(file_path, record.file_type)
+        record.extracted_text = result.text or None
+        record.extraction_status = result.status
+        record.extraction_error = result.error
+        record.extracted_at = datetime.now(timezone.utc)
+        meta = dict(record.file_metadata or {})
+        if result.status == "ok" and file_reader.file_is_low_text(result.text, record.file_size):
+            meta["low_text"] = True
+        else:
+            meta.pop("low_text", None)
+        record.file_metadata = meta or None
+        await self.session.flush()
+        return record
+
+    async def search(self, project_id: str, query: str, limit: int = 20) -> list[dict[str, Any]]:
+        if not query.strip():
+            return []
+        sql = text(
+            "SELECT f.id AS fid, bm25(project_files_fts) AS rank, "
+            "snippet(project_files_fts, 1, '[', ']', '…', 12) AS snippet "
+            "FROM project_files_fts pf JOIN project_files f ON f.rowid = pf.rowid "
+            "WHERE project_files_fts MATCH :q AND f.project_id = :pid "
+            "ORDER BY rank LIMIT :lim"
+        )
+        rows = (await self.session.execute(sql, {"q": query, "pid": project_id, "lim": limit})).all()
+        hits: list[dict[str, Any]] = []
+        for row in rows:
+            record = await self.get_by_id(project_id, row.fid)
+            if record is not None:
+                hits.append({"file": record, "snippet": row.snippet or "", "rank": float(row.rank)})
+        return hits
 
     async def list_by_project(self, project_id: str) -> list[ProjectFile]:
         result = await self.session.execute(
