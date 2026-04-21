@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete, buildUrl, uploadRequest } from "@/shared/api/client";
+import { apiGet, apiDelete, buildUrl, uploadRequest } from "@/shared/api/client";
 import type { AllowedFormats, ProjectFile } from "@/shared/types";
 
 export function fetchAllowedFormats(): Promise<AllowedFormats> {
@@ -19,8 +19,4 @@ export function getFileDownloadUrl(projectId: string, fileId: string): string {
 
 export function deleteFile(projectId: string, fileId: string): Promise<null> {
   return apiDelete(`/projects/${projectId}/files/${fileId}`);
-}
-
-export function reindexFile(projectId: string, fileId: string): Promise<ProjectFile> {
-  return apiPost<ProjectFile>(`/projects/${projectId}/files/${fileId}/reindex`);
 }
