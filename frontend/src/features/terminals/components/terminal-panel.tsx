@@ -175,11 +175,35 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
     });
 
     term.attachCustomKeyEventHandler((e) => {
+      if (e.type !== "keydown") return true;
+
       if (e.ctrlKey && e.key === "f") {
         e.preventDefault();
         setShowSearch((prev) => !prev);
         return false;
       }
+
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "c") {
+        const selection = term.getSelection();
+        if (selection) {
+          e.preventDefault();
+          navigator.clipboard.writeText(selection).catch(() => {});
+          term.clearSelection();
+          return false;
+        }
+        return true;
+      }
+
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "v") {
+        e.preventDefault();
+        navigator.clipboard.readText().then((text) => {
+          if (text && wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(text);
+          }
+        }).catch(() => {});
+        return false;
+      }
+
       return true;
     });
 
