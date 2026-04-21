@@ -61,7 +61,7 @@ export function TerminalGrid({ terminals, onKill }: TerminalGridProps) {
           </div>
           {/* Terminal */}
           <div className="flex-1 min-h-0">
-            <TerminalPanel terminalId={term.id} />
+            <TerminalPanel terminalId={term.id} projectId={term.project_id} />
           </div>
         </div>
       ))}

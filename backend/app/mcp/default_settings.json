@@ -33,5 +33,8 @@
   "tool.memory_link.description": "Create a lateral link between two memories (same project). Optional relation label (e.g. 'see_also', 'contradicts').",
   "tool.memory_unlink.description": "Remove a lateral link (matches from_id + to_id + relation).",
   "tool.memory_get_related.description": "Get parent, children, and both directions of lateral links for a memory.",
-  "tool.memory_search.description": "Full-text search across a project's memory titles and descriptions (SQLite FTS5). Returns matches with snippet and rank."
+  "tool.memory_search.description": "Full-text search across a project's memory titles and descriptions (SQLite FTS5). Returns matches with snippet and rank.",
+  "tool.list_project_files.description": "List all files uploaded by the user to a project. Returns id, original_name, file_type, file_size, extraction_status (pending/ok/failed/unsupported), low_text flag, created_at. Use this first to discover attached materials (specs, PDFs, spreadsheets) before searching or reading them.",
+  "tool.read_project_file.description": "Read the extracted text content of an uploaded file. Supports pagination via offset/max_chars (default 50000, hard cap 500000). Returns {id, name, type, status, content, offset, total_chars, truncated, error}. Only files with extraction_status='ok' contain text. Legacy .doc/.xls are 'unsupported' — ask user to re-upload as .docx/.xlsx.",
+  "tool.search_project_files.description": "Full-text search (SQLite FTS5) across filenames and extracted content of uploaded project files. Returns matches with snippet and rank. Use this when you know keywords but not which file contains them. Pattern: list_project_files → search_project_files → read_project_file."
 }

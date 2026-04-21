@@ -7,14 +7,24 @@ import { AppSidebar } from "@/shared/components/app-sidebar";
 import { EventProvider } from "@/shared/context/event-context";
 import { ErrorBoundary } from "@/shared/components/error-boundary";
 import { useProject } from "@/features/projects/hooks";
+import { TerminalProvider } from "@/features/terminals/contexts/terminal-context";
+import { useGlobalImagePaste } from "@/features/terminals/hooks/use-global-image-paste";
+
+function GlobalPasteBridge() {
+  useGlobalImagePaste();
+  return null;
+}
 
 function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
-      <EventProvider>
-        <RootLayout />
-        <Toaster position="bottom-right" richColors closeButton />
-      </EventProvider>
+      <TerminalProvider>
+        <GlobalPasteBridge />
+        <EventProvider>
+          <RootLayout />
+          <Toaster position="bottom-right" richColors closeButton />
+        </EventProvider>
+      </TerminalProvider>
     </QueryClientProvider>
   );
 }

@@ -613,3 +613,75 @@ async def memory_search(project_id: str, query: str, limit: int = 20) -> dict:
                 "rank": h["rank"],
             })
         return {"results": results}
+
+
+# ── Project file tools ──────────────────────────────────────────────────────
+
+
+from app.services.file_service import FileService
+
+
+def _file_to_dict(f) -> dict:
+    meta = f.file_metadata or {}
+    return {
+        "id": f.id,
+        "project_id": f.project_id,
+        "original_name": f.original_name,
+        "file_type": f.file_type,
+        "file_size": f.file_size,
+        "mime_type": f.mime_type,
+        "extraction_status": f.extraction_status,
+        "extraction_error": f.extraction_error,
+        "low_text": bool(meta.get("low_text")),
+        "created_at": f.created_at.isoformat() if f.created_at else None,
+    }
+
+
+@mcp.tool(description=_desc["tool.list_project_files.description"])
+async def list_project_files(project_id: str) -> dict:
+    async with async_session() as session:
+        svc = FileService(session)
+        records = await svc.list_by_project(project_id)
+        return {"files": [_file_to_dict(r) for r in records]}
+
+
+@mcp.tool(description=_desc["tool.read_project_file.description"])
+async def read_project_file(project_id: str, file_id: str, offset: int = 0, max_chars: int = 50000) -> dict:
+    async with async_session() as session:
+        svc = FileService(session)
+        record = await svc.get_by_id(project_id, file_id)
+        if record is None:
+            return {"error": "File not found"}
+        text_full = record.extracted_text or ""
+        total = len(text_full)
+        offset = max(0, offset)
+        max_chars = max(1, min(max_chars, 500_000))
+        chunk = text_full[offset : offset + max_chars]
+        return {
+            "id": record.id,
+            "name": record.original_name,
+            "type": record.file_type,
+            "status": record.extraction_status,
+            "error": record.extraction_error,
+            "offset": offset,
+            "total_chars": total,
+            "truncated": offset + max_chars < total,
+            "content": chunk,
+        }
+
+
+@mcp.tool(description=_desc["tool.search_project_files.description"])
+async def search_project_files(project_id: str, query: str, limit: int = 20) -> dict:
+    async with async_session() as session:
+        svc = FileService(session)
+        hits = await svc.search(project_id, query, limit=limit)
+        return {
+            "results": [
+                {
+                    "file": _file_to_dict(h["file"]),
+                    "snippet": h["snippet"],
+                    "rank": h["rank"],
+                }
+                for h in hits
+            ]
+        }

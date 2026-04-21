@@ -13,6 +13,8 @@ class ProjectFileResponse(BaseModel):
     file_size: int
     mime_type: str
     metadata: dict[str, Any] | None = None
+    extraction_status: str = "pending"
+    extraction_error: str | None = None
     created_at: datetime
 
     @classmethod
@@ -26,6 +28,8 @@ class ProjectFileResponse(BaseModel):
             file_size=obj.file_size,
             mime_type=obj.mime_type,
             metadata=obj.file_metadata,
+            extraction_status=getattr(obj, "extraction_status", "pending") or "pending",
+            extraction_error=getattr(obj, "extraction_error", None),
             created_at=obj.created_at,
         )
 

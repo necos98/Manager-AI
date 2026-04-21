@@ -191,6 +191,13 @@ export interface TerminalCommandTemplate {
 
 // ── Project File ──
 
+export const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp"] as const;
+export type ImageExtension = (typeof IMAGE_EXTENSIONS)[number];
+
+export function isImageExtension(ext: string): ext is ImageExtension {
+  return (IMAGE_EXTENSIONS as readonly string[]).includes(ext.toLowerCase());
+}
+
 export interface ProjectFile {
   id: string;
   project_id: string;
@@ -201,6 +208,7 @@ export interface ProjectFile {
   mime_type: string;
   metadata: Record<string, unknown> | null;
   created_at: string;
+  extraction_status?: string | null;
 }
 
 export interface AllowedFormats {

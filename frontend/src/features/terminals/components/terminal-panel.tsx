@@ -3,20 +3,24 @@ import { Terminal } from "xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { SearchAddon } from "@xterm/addon-search";
-import { Copy, Download, Search, X } from "lucide-react";
+import { Copy, Download, Images, Search, X } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { TERMINAL_THEMES } from "@/features/terminals/themes";
 import { useSettings } from "@/features/settings/hooks";
+import { useTerminalContext } from "@/features/terminals/contexts/terminal-context";
+import { FileGalleryModal } from "@/features/files/components/file-gallery-modal";
+import type { ProjectFile } from "@/shared/types";
 import "xterm/css/xterm.css";
 
 interface TerminalPanelProps {
   terminalId: string;
+  projectId: string;
   onSessionEnd?: () => void;
   onDownloadRecording?: () => void;
 }
 
-export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }: TerminalPanelProps) {
+export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadRecording }: TerminalPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const onSessionEndRef = useRef(onSessionEnd);
@@ -26,6 +30,7 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
   const [status, setStatus] = useState<"connecting" | "connected" | "disconnected" | "ended">("connecting");
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const retryCountRef = useRef(0);
   const MAX_RETRIES = 5;
 
@@ -33,9 +38,25 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
   const themeName = settingsList?.find((s) => s.key === "terminal_theme")?.value ?? "catppuccin";
   const termTheme = TERMINAL_THEMES[themeName] ?? TERMINAL_THEMES.catppuccin;
 
+  const { setActive, clearActive, registerTerminal, unregisterTerminal } = useTerminalContext();
+
   useEffect(() => {
     onSessionEndRef.current = onSessionEnd;
   }, [onSessionEnd]);
+
+  const sendToWs = useCallback((text: string) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    ws.send(text);
+    return true;
+  }, []);
+
+  useEffect(() => {
+    registerTerminal(terminalId, { projectId, send: sendToWs });
+    return () => {
+      unregisterTerminal(terminalId);
+    };
+  }, [terminalId, projectId, registerTerminal, unregisterTerminal, sendToWs]);
 
   const handleCopy = useCallback(() => {
     if (!termRef.current) return;
@@ -53,6 +74,17 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
       searchAddonRef.current.findPrevious(query);
     }
   }, []);
+
+  const handleFileSelect = useCallback((file: ProjectFile) => {
+    const tag = `@.manager_ai/resources/${file.stored_name} `;
+    sendToWs(tag);
+    setGalleryOpen(false);
+    setTimeout(() => termRef.current?.focus(), 0);
+  }, [sendToWs]);
+
+  const markActive = useCallback(() => {
+    setActive(terminalId, projectId);
+  }, [setActive, terminalId, projectId]);
 
   useEffect(() => {
     if (!terminalId || !containerRef.current) return;
@@ -143,11 +175,35 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
     });
 
     term.attachCustomKeyEventHandler((e) => {
+      if (e.type !== "keydown") return true;
+
       if (e.ctrlKey && e.key === "f") {
         e.preventDefault();
         setShowSearch((prev) => !prev);
         return false;
       }
+
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "c") {
+        const selection = term.getSelection();
+        if (selection) {
+          e.preventDefault();
+          navigator.clipboard.writeText(selection).catch(() => {});
+          term.clearSelection();
+          return false;
+        }
+        return true;
+      }
+
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "v") {
+        e.preventDefault();
+        navigator.clipboard.readText().then((text) => {
+          if (text && wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(text);
+          }
+        }).catch(() => {});
+        return false;
+      }
+
       return true;
     });
 
@@ -181,6 +237,7 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
         wsRef.current.onclose = null;
         wsRef.current.close();
       }
+      clearActive(terminalId);
       const termToDispose = term;
       setTimeout(() => {
         try {
@@ -188,7 +245,7 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
         } catch {}
       }, 50);
     };
-  }, [terminalId]);
+  }, [terminalId, clearActive]);
 
   useEffect(() => {
     if (termRef.current) {
@@ -197,8 +254,24 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
   }, [termTheme]);
 
   return (
-    <div className="flex flex-col h-full" style={{ background: termTheme.background }}>
+    <div
+      className="flex flex-col h-full"
+      style={{ background: termTheme.background }}
+      onMouseDownCapture={markActive}
+      onFocusCapture={markActive}
+    >
       <div className="flex items-center justify-end gap-1 px-2 py-1 bg-zinc-900 border-b border-zinc-800">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
+          onClick={() => setGalleryOpen(true)}
+          title="Open file gallery"
+          aria-label="Open file gallery"
+        >
+          <Images className="size-3 mr-1" />
+          Files
+        </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -273,6 +346,12 @@ export function TerminalPanel({ terminalId, onSessionEnd, onDownloadRecording }:
         </div>
       )}
       <div ref={containerRef} className="flex-1 min-h-0" />
+      <FileGalleryModal
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        projectId={projectId}
+        onSelect={handleFileSelect}
+      />
     </div>
   );
 }

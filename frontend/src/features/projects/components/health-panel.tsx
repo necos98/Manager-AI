@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, XCircle, Loader2, Download } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { toast } from "sonner";
@@ -21,9 +21,10 @@ interface StatusRowProps {
   title: string;
   installed: boolean;
   detail?: string;
+  action?: React.ReactNode;
 }
 
-function StatusRow({ title, installed, detail }: StatusRowProps) {
+function StatusRow({ title, installed, detail, action }: StatusRowProps) {
   return (
     <div className="flex items-start gap-3 rounded-md border p-4">
       {installed ? (
@@ -38,6 +39,7 @@ function StatusRow({ title, installed, detail }: StatusRowProps) {
           {detail ? ` — ${detail}` : ""}
         </div>
       </div>
+      {action}
     </div>
   );
 }
@@ -50,8 +52,23 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
   const installClaudeResources = useInstallClaudeResources(projectId);
   const installMcp = useInstallMcp(projectId);
   const [running, setRunning] = useState(false);
+  const [reinstallingResources, setReinstallingResources] = useState(false);
 
   const health = healthQuery.data;
+
+  async function handleReinstallResources() {
+    if (reinstallingResources) return;
+    setReinstallingResources(true);
+    try {
+      await installClaudeResources.mutateAsync();
+      toast.success("Claude Resources reinstalled");
+      queryClient.invalidateQueries({ queryKey: ["projects", projectId, "health"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Reinstall failed");
+    } finally {
+      setReinstallingResources(false);
+    }
+  }
 
   async function handleInstallAll() {
     if (!health || running) return;
@@ -134,6 +151,23 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
           title="Claude Resources"
           installed={health.claude_resources.installed}
           detail={resourcesDetail}
+          action={
+            health.claude_resources.installed ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleReinstallResources}
+                disabled={reinstallingResources || running}
+              >
+                {reinstallingResources ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {reinstallingResources ? "Reinstalling..." : "Reinstall"}
+              </Button>
+            ) : undefined
+          }
         />
       </div>
     </div>
