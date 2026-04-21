@@ -3,7 +3,6 @@ uvicorn[standard]==0.34.2
 sqlalchemy[asyncio]>=2.0.40
 aiosqlite==0.21.0
 alembic==1.15.2
-lancedb>=0.20.0
 pydantic>=2.11.0
 pydantic-settings>=2.9.0
 mcp[cli]==1.9.2
@@ -12,5 +11,3 @@ httpx==0.28.1
 pytest==8.3.5
 pytest-asyncio==0.25.3
 pywinpty>=2.0.0; sys_platform == "win32"  # Windows-only; Linux uses built-in pty module
-sentence-transformers>=3.0.0
-pypdf>=4.0.0
