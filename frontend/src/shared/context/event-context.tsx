@@ -136,32 +136,6 @@ function buildToastContent(data: WsEventData): ToastContent {
     case "task_updated":
       return { title: "", message: "", variant: "default", silent: true };
 
-    case "embedding_started":
-      return { title: "", message: "", variant: "default", silent: true };
-
-    case "embedding_completed":
-      if (data.source_type === "codebase") {
-        return {
-          title: "Codebase indexed",
-          message: `${data.files_indexed ?? 0} files indexed`,
-          variant: "success",
-          duration: 3000,
-        };
-      }
-      return {
-        title: "Indexing complete",
-        message: (data.title as string) || (data.source_type as string) || "",
-        variant: "default",
-        duration: 2500,
-      };
-
-    case "embedding_failed":
-      return {
-        title: "Indexing failed",
-        message: `${data.title ?? ""}: ${data.error ?? "unknown error"}`.replace(/^: /, ""),
-        variant: "error",
-      };
-
     case "terminal_created":
       return {
         title: "Analysis started",
@@ -170,7 +144,6 @@ function buildToastContent(data: WsEventData): ToastContent {
         duration: 3000,
       };
 
-    case "embedding_skipped":
     case "project_updated":
       return { title: "", message: "", variant: "default", silent: true };
 
@@ -254,12 +227,6 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         // Invalidate terminal queries when a new terminal is spawned
         if (data.type === "terminal_created") {
           queryClient.invalidateQueries({ queryKey: ["terminals"] });
-        }
-
-        if (data.type === "embedding_completed" && data.source_type === "codebase" && data.project_id) {
-          queryClient.invalidateQueries({
-            queryKey: ["projects", data.project_id, "codebase-index-status"],
-          });
         }
 
         // Invalidate relevant queries for real-time updates
