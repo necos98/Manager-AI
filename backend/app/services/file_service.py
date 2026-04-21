@@ -64,7 +64,7 @@ class FileService:
 
             content = await file.read()
             if len(content) > MAX_FILE_SIZE:
-                raise ValueError(f"File '{file.filename}' exceeds 5 MB limit")
+                raise ValueError(f"File '{file.filename}' exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB limit")
 
             with open(file_path, "wb") as f:
                 f.write(content)
@@ -72,40 +72,36 @@ class FileService:
             mime_type = MIME_MAP.get(ext, "application/octet-stream")
 
             if ext in IMAGE_EXTENSIONS:
-                record = ProjectFile(
-                    id=file_id,
-                    project_id=project_id,
-                    original_name=file.filename,
-                    stored_name=stored_name,
-                    file_type=ext,
-                    file_size=len(content),
-                    mime_type=mime_type,
-                    file_metadata=None,
-                    extracted_text=None,
-                    extraction_status="skipped",
-                    extraction_error=None,
-                    extracted_at=None,
-                )
+                extract_text: str | None = None
+                extract_status = "skipped"
+                extract_error: str | None = None
+                extract_meta: dict[str, Any] | None = None
+                extract_at: datetime | None = None
             else:
                 result = file_reader.extract(file_path, ext)
                 meta: dict[str, Any] = {}
                 if result.status == "ok" and file_reader.file_is_low_text(result.text, len(content)):
                     meta["low_text"] = True
+                extract_text = result.text or None
+                extract_status = result.status
+                extract_error = result.error
+                extract_meta = meta or None
+                extract_at = datetime.now(timezone.utc) if result.status in ("ok", "failed", "unsupported") else None
 
-                record = ProjectFile(
-                    id=file_id,
-                    project_id=project_id,
-                    original_name=file.filename,
-                    stored_name=stored_name,
-                    file_type=ext,
-                    file_size=len(content),
-                    mime_type=mime_type,
-                    file_metadata=meta or None,
-                    extracted_text=result.text or None,
-                    extraction_status=result.status,
-                    extraction_error=result.error,
-                    extracted_at=datetime.now(timezone.utc) if result.status in ("ok", "failed", "unsupported") else None,
-                )
+            record = ProjectFile(
+                id=file_id,
+                project_id=project_id,
+                original_name=file.filename,
+                stored_name=stored_name,
+                file_type=ext,
+                file_size=len(content),
+                mime_type=mime_type,
+                file_metadata=extract_meta,
+                extracted_text=extract_text,
+                extraction_status=extract_status,
+                extraction_error=extract_error,
+                extracted_at=extract_at,
+            )
 
             self.session.add(record)
             results.append(record)

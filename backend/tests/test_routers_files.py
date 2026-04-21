@@ -125,7 +125,6 @@ async def test_upload_rejects_oversized_file(db_session, tmp_path, monkeypatch):
         files = [("files", ("big.png", oversized, "image/png"))]
         r = await client.post("/api/projects/p1/files", files=files)
         assert r.status_code == 400
-        detail = r.json()["detail"].lower()
-        assert "5" in detail or "size" in detail or "exceed" in detail or "mb" in detail
+        assert "exceeds 5 MB" in r.json()["detail"]
 
     app.dependency_overrides.clear()
