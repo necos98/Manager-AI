@@ -152,10 +152,21 @@ async def delete_project(project_id: str, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
+def _require_valid_project_dir(project) -> None:
+    if not os.path.isabs(project.path):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Project path is not absolute: {project.path!r}. Update project path.",
+        )
+    if not os.path.isdir(project.path):
+        raise HTTPException(status_code=400, detail=f"Project path does not exist: {project.path}")
+
+
 @router.post("/{project_id}/install-manager-json", status_code=200)
 async def install_manager_json(project_id: str, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
+    _require_valid_project_dir(project)
     dest = os.path.join(project.path, "manager.json")
     with open(dest, "w", encoding="utf-8") as f:
         json.dump({"project_id": project.id}, f, indent=2)
@@ -166,6 +177,7 @@ async def install_manager_json(project_id: str, db: AsyncSession = Depends(get_d
 async def install_claude_resources(project_id: str, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
+    _require_valid_project_dir(project)
 
     src = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "claude_resources")
     if not os.path.isdir(src):
