@@ -29,16 +29,10 @@ export function FileGallery({ projectId }: FileGalleryProps) {
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files;
     if (!selected || selected.length === 0) return;
-
     const formData = new FormData();
-    for (const file of selected) {
-      formData.append("files", file);
-    }
-
+    for (const file of selected) formData.append("files", file);
     uploadFiles.mutate(formData, {
-      onSettled: () => {
-        if (inputRef.current) inputRef.current.value = "";
-      },
+      onSettled: () => { if (inputRef.current) inputRef.current.value = ""; },
     });
   };
 
@@ -50,9 +44,7 @@ export function FileGallery({ projectId }: FileGalleryProps) {
   if (isLoading) {
     return (
       <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-12" />
-        ))}
+        {[1, 2, 3].map((i) => (<Skeleton key={i} className="h-12" />))}
       </div>
     );
   }
@@ -120,6 +112,7 @@ export function FileGallery({ projectId }: FileGalleryProps) {
                     size="sm"
                     className="text-destructive hover:text-destructive"
                     onClick={() => handleDelete(f.id, f.original_name)}
+                    aria-label={`Delete ${f.original_name}`}
                   >
                     <Trash2 className="size-3 mr-1" />
                     Delete

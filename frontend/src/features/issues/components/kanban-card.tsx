@@ -46,8 +46,19 @@ export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId }:
     }
   }
 
+  const label = `Issue ${issue.name || issue.description}, status ${issue.status}, priority ${issue.priority}`;
+
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes} className="touch-none">
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="touch-none"
+      role="article"
+      aria-label={label}
+      aria-grabbed={isDragging}
+    >
       <Card onClick={handleClick} className="px-3 py-2.5 cursor-pointer hover:bg-accent/50 transition-colors">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">

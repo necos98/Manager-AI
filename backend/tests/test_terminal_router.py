@@ -104,20 +104,29 @@ async def test_list_terminals_with_project_filter(client, mock_service):
 
 
 def test_evaluate_condition_no_condition():
-    from app.routers.terminals import _evaluate_condition
-    assert _evaluate_condition(None, "NEW") is True
+    from app.services.terminal_condition import evaluate_condition
+    assert evaluate_condition(None, {"issue_status": "NEW"}) is True
 
 def test_evaluate_condition_match():
-    from app.routers.terminals import _evaluate_condition
-    assert _evaluate_condition("$issue_status == ACCEPTED", "ACCEPTED") is True
+    from app.services.terminal_condition import evaluate_condition
+    assert evaluate_condition(
+        "$issue_status == ACCEPTED", {"issue_status": "ACCEPTED"}
+    ) is True
 
 def test_evaluate_condition_no_match():
-    from app.routers.terminals import _evaluate_condition
-    assert _evaluate_condition("$issue_status == ACCEPTED", "NEW") is False
+    from app.services.terminal_condition import evaluate_condition
+    assert evaluate_condition(
+        "$issue_status == ACCEPTED", {"issue_status": "NEW"}
+    ) is False
 
-def test_evaluate_condition_unknown_returns_true():
-    from app.routers.terminals import _evaluate_condition
-    assert _evaluate_condition("$something_unknown", "foo") is True
+def test_evaluate_condition_unknown_syntax_raises():
+    import pytest
+    from app.services.terminal_condition import (
+        UnknownConditionError,
+        evaluate_condition,
+    )
+    with pytest.raises(UnknownConditionError):
+        evaluate_condition("$something_unknown", {"something_unknown": "foo"})
 
 
 # --- resize su terminal inesistente -----------------------------------------

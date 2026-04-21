@@ -1,4 +1,4 @@
-import { request } from "@/shared/api/client";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/api/client";
 import type { AskTerminalCreate, Terminal, TerminalCommand, TerminalCommandCreate, TerminalCommandTemplate, TerminalCommandUpdate, TerminalCommandVariable, TerminalCreate, TerminalListItem } from "@/shared/types";
 
 export function fetchTerminals(projectId?: string, issueId?: string): Promise<TerminalListItem[]> {
@@ -6,54 +6,54 @@ export function fetchTerminals(projectId?: string, issueId?: string): Promise<Te
   if (projectId) params.set("project_id", projectId);
   if (issueId) params.set("issue_id", issueId);
   const qs = params.toString();
-  return request(`/terminals${qs ? `?${qs}` : ""}`);
+  return apiGet<TerminalListItem[]>(`/terminals${qs ? `?${qs}` : ""}`);
 }
 
 export function createTerminal(data: TerminalCreate): Promise<Terminal> {
-  return request("/terminals", { method: "POST", body: JSON.stringify(data) });
+  return apiPost<Terminal>("/terminals", data);
 }
 
 export function createAskTerminal(data: AskTerminalCreate): Promise<Terminal> {
-  return request("/terminals/ask", { method: "POST", body: JSON.stringify(data) });
+  return apiPost<Terminal>("/terminals/ask", data);
 }
 
 export function killTerminal(terminalId: string): Promise<null> {
-  return request(`/terminals/${terminalId}`, { method: "DELETE" });
+  return apiDelete(`/terminals/${terminalId}`);
 }
 
 export function fetchTerminalCount(): Promise<{ count: number }> {
-  return request("/terminals/count");
+  return apiGet<{ count: number }>("/terminals/count");
 }
 
 export function fetchTerminalConfig(): Promise<{ soft_limit: number }> {
-  return request("/terminals/config");
+  return apiGet<{ soft_limit: number }>("/terminals/config");
 }
 
 export function fetchTerminalCommandVariables(): Promise<TerminalCommandVariable[]> {
-  return request("/terminal-commands/variables");
+  return apiGet<TerminalCommandVariable[]>("/terminal-commands/variables");
 }
 
 export function fetchTerminalCommands(projectId?: string | null): Promise<TerminalCommand[]> {
   const params = projectId != null ? `?project_id=${projectId}` : "";
-  return request(`/terminal-commands${params}`);
+  return apiGet<TerminalCommand[]>(`/terminal-commands${params}`);
 }
 
 export function createTerminalCommand(data: TerminalCommandCreate): Promise<TerminalCommand> {
-  return request("/terminal-commands", { method: "POST", body: JSON.stringify(data) });
+  return apiPost<TerminalCommand>("/terminal-commands", data);
 }
 
 export function updateTerminalCommand(id: number, data: TerminalCommandUpdate): Promise<TerminalCommand> {
-  return request(`/terminal-commands/${id}`, { method: "PUT", body: JSON.stringify(data) });
+  return apiPut<TerminalCommand>(`/terminal-commands/${id}`, data);
 }
 
 export function reorderTerminalCommands(commands: { id: number; sort_order: number }[]): Promise<TerminalCommand[]> {
-  return request("/terminal-commands/reorder", { method: "PUT", body: JSON.stringify({ commands }) });
+  return apiPut<TerminalCommand[]>("/terminal-commands/reorder", { commands });
 }
 
 export function deleteTerminalCommand(id: number): Promise<null> {
-  return request(`/terminal-commands/${id}`, { method: "DELETE" });
+  return apiDelete(`/terminal-commands/${id}`);
 }
 
 export function fetchTerminalCommandTemplates(): Promise<TerminalCommandTemplate[]> {
-  return request("/terminal-commands/templates");
+  return apiGet<TerminalCommandTemplate[]>("/terminal-commands/templates");
 }

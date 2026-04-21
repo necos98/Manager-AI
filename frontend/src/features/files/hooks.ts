@@ -47,3 +47,4 @@ export function useDeleteFile(projectId: string) {
     onError: onMutationError,
   });
 }
+

@@ -56,3 +56,30 @@ export async function uploadRequest<T>(path: string, formData: FormData): Promis
 export function buildUrl(path: string): string {
   return `${BASE}${path}`;
 }
+
+export const apiGet = <T>(path: string, signal?: AbortSignal) =>
+  request<T>(path, { method: "GET", signal });
+
+export const apiPost = <T>(path: string, body?: unknown, signal?: AbortSignal) =>
+  request<T>(path, {
+    method: "POST",
+    signal,
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+
+export const apiPatch = <T>(path: string, body?: unknown, signal?: AbortSignal) =>
+  request<T>(path, {
+    method: "PATCH",
+    signal,
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+
+export const apiPut = <T>(path: string, body?: unknown, signal?: AbortSignal) =>
+  request<T>(path, {
+    method: "PUT",
+    signal,
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+
+export const apiDelete = (path: string, signal?: AbortSignal) =>
+  request<null>(path, { method: "DELETE", signal });

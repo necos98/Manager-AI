@@ -1,12 +1,12 @@
-import { buildUrl, request, uploadRequest } from "@/shared/api/client";
+import { apiGet, apiDelete, buildUrl, uploadRequest } from "@/shared/api/client";
 import type { AllowedFormats, ProjectFile } from "@/shared/types";
 
 export function fetchAllowedFormats(): Promise<AllowedFormats> {
-  return request("/files/allowed-formats");
+  return apiGet<AllowedFormats>("/files/allowed-formats");
 }
 
 export function fetchFiles(projectId: string): Promise<ProjectFile[]> {
-  return request(`/projects/${projectId}/files`);
+  return apiGet<ProjectFile[]>(`/projects/${projectId}/files`);
 }
 
 export function uploadFiles(projectId: string, formData: FormData): Promise<ProjectFile[]> {
@@ -18,5 +18,5 @@ export function getFileDownloadUrl(projectId: string, fileId: string): string {
 }
 
 export function deleteFile(projectId: string, fileId: string): Promise<null> {
-  return request(`/projects/${projectId}/files/${fileId}`, { method: "DELETE" });
+  return apiDelete(`/projects/${projectId}/files/${fileId}`);
 }

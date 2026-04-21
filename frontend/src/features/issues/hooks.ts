@@ -15,7 +15,7 @@ export const issueKeys = {
 
 export function useIssues(projectId: string, status?: IssueStatus, search?: string) {
   return useQuery({
-    queryKey: ["issues", projectId, status, search],
+    queryKey: [...issueKeys.all(projectId), "list", { status, search }],
     queryFn: () => api.fetchIssues(projectId, status, search),
   });
 }
@@ -56,7 +56,7 @@ export function useUpdateIssueStatus(projectId: string) {
     mutationFn: ({ issueId, status }: { issueId: string; status: IssueStatus }) =>
       api.updateIssueStatus(projectId, issueId, { status }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["issues", projectId] });
+      qc.invalidateQueries({ queryKey: issueKeys.all(projectId) });
     },
     onError: onMutationError,
   });

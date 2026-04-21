@@ -18,6 +18,9 @@ class ProjectVariableService:
         )
         return list(result.scalars().all())
 
+    async def get(self, var_id: int) -> ProjectVariable | None:
+        return await self.session.get(ProjectVariable, var_id)
+
     async def create(
         self, project_id: str, name: str, value: str, is_secret: bool = False
     ) -> ProjectVariable:

@@ -235,8 +235,9 @@ class TestTerminalServiceRegistry:
 
 
 def test_append_output_overflow_trims_from_front(service):
-    """Buffer che supera MAX_BUFFER_SIZE viene trimmato dal fronte (dati vecchi persi)."""
-    from app.services.terminal_service import MAX_BUFFER_SIZE
+    """Buffer che supera terminal_max_buffer_bytes viene trimmato dal fronte (dati vecchi persi)."""
+    from app.config import settings
+    max_bytes = settings.terminal_max_buffer_bytes
 
     with patch("app.services.terminal_service.PTY") as MockPTY:
         mock_pty = MagicMock()
@@ -246,15 +247,15 @@ def test_append_output_overflow_trims_from_front(service):
         term = service.create(issue_id="t1", project_id="p1", project_path="C:/a")
         tid = term["id"]
 
-        # Riempi il buffer con 'A' fino al limite, poi appendi altri MAX_BUFFER_SIZE 'B'
+        # Riempi il buffer con 'A' fino al limite, poi appendi altri max_bytes 'B'
         # per provocare un overflow che elimina tutti gli 'A' dal fronte.
-        service.append_output(tid, "A" * MAX_BUFFER_SIZE)
-        service.append_output(tid, "B" * MAX_BUFFER_SIZE)
+        service.append_output(tid, "A" * max_bytes)
+        service.append_output(tid, "B" * max_bytes)
 
         result = service.get_buffered_output(tid)
-        assert len(result.encode("utf-8")) <= MAX_BUFFER_SIZE
+        assert len(result.encode("utf-8")) <= max_bytes
         assert "A" not in result, "I dati più vecchi (A) devono essere eliminati dal fronte"
-        assert result == "B" * MAX_BUFFER_SIZE, "Solo i dati più recenti (B) devono rimanere"
+        assert result == "B" * max_bytes, "Solo i dati più recenti (B) devono rimanere"
 
 
 def test_append_output_unknown_terminal_is_noop(service):

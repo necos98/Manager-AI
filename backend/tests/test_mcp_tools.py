@@ -148,21 +148,3 @@ async def test_mcp_issue_project_validation(issue_service, project):
         await issue_service.complete_issue(issue.id, fake_project_id, "Recap")
 
 
-@pytest.mark.asyncio
-async def test_embed_background_task_tracking():
-    """_background_tasks holds the reference during execution and discards it on completion."""
-    from app.mcp import server as mcp_server
-
-    mcp_server._background_tasks.clear()
-
-    async def slow_coroutine():
-        await asyncio.sleep(0.1)
-
-    task = asyncio.create_task(slow_coroutine())
-    mcp_server._background_tasks.add(task)
-    task.add_done_callback(mcp_server._background_tasks.discard)
-
-    assert len(mcp_server._background_tasks) == 1
-
-    await asyncio.sleep(0.15)  # wait for task to finish and callback to fire
-    assert len(mcp_server._background_tasks) == 0

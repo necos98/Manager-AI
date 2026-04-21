@@ -20,8 +20,8 @@ export function McpSetupDialog({ projectId, open, onOpenChange }: McpSetupDialog
         <DialogHeader>
           <DialogTitle>MCP Server Setup</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div>
+        <div className="space-y-4 min-w-0">
+          <div className="min-w-0">
             <h3 className="font-medium text-sm mb-1">Endpoint URL</h3>
             <code className="block bg-muted rounded px-3 py-2 text-sm font-mono break-all">
               http://localhost:8000/mcp/
@@ -30,24 +30,24 @@ export function McpSetupDialog({ projectId, open, onOpenChange }: McpSetupDialog
 
           <Separator />
 
-          <div>
+          <div className="min-w-0">
             <h3 className="font-medium text-sm mb-2">Claude Code</h3>
             <p className="text-sm text-muted-foreground mb-2">
               Run this command in your terminal:
             </p>
-            <pre className="bg-muted rounded px-3 py-2 text-sm font-mono overflow-x-auto">
+            <pre className="bg-muted rounded px-3 py-2 text-sm font-mono whitespace-pre-wrap break-all">
               claude mcp add --transport http ManagerAi http://localhost:8000/mcp/
             </pre>
           </div>
 
           <Separator />
 
-          <div>
+          <div className="min-w-0">
             <h3 className="font-medium text-sm mb-2">Other MCP Clients</h3>
             <p className="text-sm text-muted-foreground mb-2">
               Add this to your client configuration (Streamable HTTP):
             </p>
-            <pre className="bg-muted rounded px-3 py-2 text-sm font-mono overflow-x-auto whitespace-pre">
+            <pre className="bg-muted rounded px-3 py-2 text-sm font-mono overflow-x-auto max-w-full">
               {JSON.stringify(
                 {
                   mcpServers: {
@@ -65,7 +65,7 @@ export function McpSetupDialog({ projectId, open, onOpenChange }: McpSetupDialog
 
           <Separator />
 
-          <div>
+          <div className="min-w-0">
             <h3 className="font-medium text-sm mb-1">Project ID</h3>
             <p className="text-sm text-muted-foreground mb-2">
               Most tools require the <code className="bg-muted px-1 rounded">project_id</code> parameter:

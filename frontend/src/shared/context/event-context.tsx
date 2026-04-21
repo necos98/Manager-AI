@@ -16,6 +16,10 @@ export type WsEventData = Record<string, unknown> & {
   content_type?: string;
   title?: string;
   source_type?: string;
+  memory_id?: string;
+  from_id?: string;
+  to_id?: string;
+  relation?: string;
 };
 
 type EventSubscriber = (event: WsEventData) => void;
@@ -136,21 +140,6 @@ function buildToastContent(data: WsEventData): ToastContent {
     case "task_updated":
       return { title: "", message: "", variant: "default", silent: true };
 
-    case "embedding_completed":
-      return {
-        title: "Indexing complete",
-        message: (data.title as string) || (data.source_type as string) || "",
-        variant: "default",
-        duration: 2500,
-      };
-
-    case "embedding_failed":
-      return {
-        title: "Indexing failed",
-        message: `${data.title ?? ""}: ${data.error ?? "unknown error"}`.replace(/^: /, ""),
-        variant: "error",
-      };
-
     case "terminal_created":
       return {
         title: "Analysis started",
@@ -159,8 +148,12 @@ function buildToastContent(data: WsEventData): ToastContent {
         duration: 3000,
       };
 
-    case "embedding_skipped":
     case "project_updated":
+    case "memory_created":
+    case "memory_updated":
+    case "memory_deleted":
+    case "memory_linked":
+    case "memory_unlinked":
       return { title: "", message: "", variant: "default", silent: true };
 
     default:
@@ -243,6 +236,21 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         // Invalidate terminal queries when a new terminal is spawned
         if (data.type === "terminal_created") {
           queryClient.invalidateQueries({ queryKey: ["terminals"] });
+        }
+
+        if (
+          data.type === "memory_created" ||
+          data.type === "memory_updated" ||
+          data.type === "memory_deleted" ||
+          data.type === "memory_linked" ||
+          data.type === "memory_unlinked"
+        ) {
+          if (data.project_id) {
+            queryClient.invalidateQueries({ queryKey: ["projects", data.project_id, "memories"] });
+          }
+          if (typeof data.memory_id === "string") {
+            queryClient.invalidateQueries({ queryKey: ["memories", data.memory_id, "detail"] });
+          }
         }
 
         // Invalidate relevant queries for real-time updates

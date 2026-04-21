@@ -15,16 +15,18 @@ import { Route as LibraryRouteImport } from "./routes/library"
 import { Route as DashboardRouteImport } from "./routes/dashboard"
 import { Route as IndexRouteImport } from "./routes/index"
 import { Route as ProjectsNewRouteImport } from "./routes/projects/new"
+import { Route as ProjectsArchivedRouteImport } from "./routes/projects/archived"
 import { Route as ProjectsProjectIdRouteImport } from "./routes/projects/$projectId"
 import { Route as ProjectsProjectIdVariablesRouteImport } from "./routes/projects/$projectId/variables"
+import { Route as ProjectsProjectIdMemoriesRouteImport } from "./routes/projects/$projectId/memories"
 import { Route as ProjectsProjectIdLibraryRouteImport } from "./routes/projects/$projectId/library"
 import { Route as ProjectsProjectIdIssuesRouteImport } from "./routes/projects/$projectId/issues"
+import { Route as ProjectsProjectIdHealthRouteImport } from "./routes/projects/$projectId/health"
 import { Route as ProjectsProjectIdFilesRouteImport } from "./routes/projects/$projectId/files"
 import { Route as ProjectsProjectIdCommandsRouteImport } from "./routes/projects/$projectId/commands"
 import { Route as ProjectsProjectIdAskRouteImport } from "./routes/projects/$projectId/ask"
 import { Route as ProjectsProjectIdActivityRouteImport } from "./routes/projects/$projectId/activity"
 import { Route as ProjectsProjectIdIssuesIndexRouteImport } from "./routes/projects/$projectId/issues/index"
-import { Route as ProjectsProjectIdIssuesNewRouteImport } from "./routes/projects/$projectId/issues/new"
 import { Route as ProjectsProjectIdIssuesIssueIdRouteImport } from "./routes/projects/$projectId/issues/$issueId"
 
 const TerminalsRoute = TerminalsRouteImport.update({
@@ -57,6 +59,11 @@ const ProjectsNewRoute = ProjectsNewRouteImport.update({
   path: "/projects/new",
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsArchivedRoute = ProjectsArchivedRouteImport.update({
+  id: "/projects/archived",
+  path: "/projects/archived",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
   id: "/projects/$projectId",
   path: "/projects/$projectId",
@@ -68,6 +75,12 @@ const ProjectsProjectIdVariablesRoute =
     path: "/variables",
     getParentRoute: () => ProjectsProjectIdRoute,
   } as any)
+const ProjectsProjectIdMemoriesRoute =
+  ProjectsProjectIdMemoriesRouteImport.update({
+    id: "/memories",
+    path: "/memories",
+    getParentRoute: () => ProjectsProjectIdRoute,
+  } as any)
 const ProjectsProjectIdLibraryRoute =
   ProjectsProjectIdLibraryRouteImport.update({
     id: "/library",
@@ -77,6 +90,11 @@ const ProjectsProjectIdLibraryRoute =
 const ProjectsProjectIdIssuesRoute = ProjectsProjectIdIssuesRouteImport.update({
   id: "/issues",
   path: "/issues",
+  getParentRoute: () => ProjectsProjectIdRoute,
+} as any)
+const ProjectsProjectIdHealthRoute = ProjectsProjectIdHealthRouteImport.update({
+  id: "/health",
+  path: "/health",
   getParentRoute: () => ProjectsProjectIdRoute,
 } as any)
 const ProjectsProjectIdFilesRoute = ProjectsProjectIdFilesRouteImport.update({
@@ -107,12 +125,6 @@ const ProjectsProjectIdIssuesIndexRoute =
     path: "/",
     getParentRoute: () => ProjectsProjectIdIssuesRoute,
   } as any)
-const ProjectsProjectIdIssuesNewRoute =
-  ProjectsProjectIdIssuesNewRouteImport.update({
-    id: "/new",
-    path: "/new",
-    getParentRoute: () => ProjectsProjectIdIssuesRoute,
-  } as any)
 const ProjectsProjectIdIssuesIssueIdRoute =
   ProjectsProjectIdIssuesIssueIdRouteImport.update({
     id: "/$issueId",
@@ -127,16 +139,18 @@ export interface FileRoutesByFullPath {
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
+  "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
+  "/projects/$projectId/health": typeof ProjectsProjectIdHealthRoute
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
+  "/projects/$projectId/memories": typeof ProjectsProjectIdMemoriesRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
-  "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
   "/projects/$projectId/issues/": typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -146,15 +160,17 @@ export interface FileRoutesByTo {
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
+  "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
+  "/projects/$projectId/health": typeof ProjectsProjectIdHealthRoute
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
+  "/projects/$projectId/memories": typeof ProjectsProjectIdMemoriesRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
-  "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRoutesById {
@@ -165,16 +181,18 @@ export interface FileRoutesById {
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
+  "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
+  "/projects/$projectId/health": typeof ProjectsProjectIdHealthRoute
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
+  "/projects/$projectId/memories": typeof ProjectsProjectIdMemoriesRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
-  "/projects/$projectId/issues/new": typeof ProjectsProjectIdIssuesNewRoute
   "/projects/$projectId/issues/": typeof ProjectsProjectIdIssuesIndexRoute
 }
 export interface FileRouteTypes {
@@ -186,16 +204,18 @@ export interface FileRouteTypes {
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
+    | "/projects/archived"
     | "/projects/new"
     | "/projects/$projectId/activity"
     | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
+    | "/projects/$projectId/health"
     | "/projects/$projectId/issues"
     | "/projects/$projectId/library"
+    | "/projects/$projectId/memories"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
-    | "/projects/$projectId/issues/new"
     | "/projects/$projectId/issues/"
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -205,15 +225,17 @@ export interface FileRouteTypes {
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
+    | "/projects/archived"
     | "/projects/new"
     | "/projects/$projectId/activity"
     | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
+    | "/projects/$projectId/health"
     | "/projects/$projectId/library"
+    | "/projects/$projectId/memories"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
-    | "/projects/$projectId/issues/new"
     | "/projects/$projectId/issues"
   id:
     | "__root__"
@@ -223,16 +245,18 @@ export interface FileRouteTypes {
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
+    | "/projects/archived"
     | "/projects/new"
     | "/projects/$projectId/activity"
     | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
+    | "/projects/$projectId/health"
     | "/projects/$projectId/issues"
     | "/projects/$projectId/library"
+    | "/projects/$projectId/memories"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
-    | "/projects/$projectId/issues/new"
     | "/projects/$projectId/issues/"
   fileRoutesById: FileRoutesById
 }
@@ -243,6 +267,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   TerminalsRoute: typeof TerminalsRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
+  ProjectsArchivedRoute: typeof ProjectsArchivedRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
 }
 
@@ -290,6 +315,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ProjectsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/projects/archived": {
+      id: "/projects/archived"
+      path: "/projects/archived"
+      fullPath: "/projects/archived"
+      preLoaderRoute: typeof ProjectsArchivedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/projects/$projectId": {
       id: "/projects/$projectId"
       path: "/projects/$projectId"
@@ -304,6 +336,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ProjectsProjectIdVariablesRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
+    "/projects/$projectId/memories": {
+      id: "/projects/$projectId/memories"
+      path: "/memories"
+      fullPath: "/projects/$projectId/memories"
+      preLoaderRoute: typeof ProjectsProjectIdMemoriesRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
     "/projects/$projectId/library": {
       id: "/projects/$projectId/library"
       path: "/library"
@@ -316,6 +355,13 @@ declare module "@tanstack/react-router" {
       path: "/issues"
       fullPath: "/projects/$projectId/issues"
       preLoaderRoute: typeof ProjectsProjectIdIssuesRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
+    "/projects/$projectId/health": {
+      id: "/projects/$projectId/health"
+      path: "/health"
+      fullPath: "/projects/$projectId/health"
+      preLoaderRoute: typeof ProjectsProjectIdHealthRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
     "/projects/$projectId/files": {
@@ -353,13 +399,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ProjectsProjectIdIssuesIndexRouteImport
       parentRoute: typeof ProjectsProjectIdIssuesRoute
     }
-    "/projects/$projectId/issues/new": {
-      id: "/projects/$projectId/issues/new"
-      path: "/new"
-      fullPath: "/projects/$projectId/issues/new"
-      preLoaderRoute: typeof ProjectsProjectIdIssuesNewRouteImport
-      parentRoute: typeof ProjectsProjectIdIssuesRoute
-    }
     "/projects/$projectId/issues/$issueId": {
       id: "/projects/$projectId/issues/$issueId"
       path: "/$issueId"
@@ -372,14 +411,12 @@ declare module "@tanstack/react-router" {
 
 interface ProjectsProjectIdIssuesRouteChildren {
   ProjectsProjectIdIssuesIssueIdRoute: typeof ProjectsProjectIdIssuesIssueIdRoute
-  ProjectsProjectIdIssuesNewRoute: typeof ProjectsProjectIdIssuesNewRoute
   ProjectsProjectIdIssuesIndexRoute: typeof ProjectsProjectIdIssuesIndexRoute
 }
 
 const ProjectsProjectIdIssuesRouteChildren: ProjectsProjectIdIssuesRouteChildren =
   {
     ProjectsProjectIdIssuesIssueIdRoute: ProjectsProjectIdIssuesIssueIdRoute,
-    ProjectsProjectIdIssuesNewRoute: ProjectsProjectIdIssuesNewRoute,
     ProjectsProjectIdIssuesIndexRoute: ProjectsProjectIdIssuesIndexRoute,
   }
 
@@ -393,8 +430,10 @@ interface ProjectsProjectIdRouteChildren {
   ProjectsProjectIdAskRoute: typeof ProjectsProjectIdAskRoute
   ProjectsProjectIdCommandsRoute: typeof ProjectsProjectIdCommandsRoute
   ProjectsProjectIdFilesRoute: typeof ProjectsProjectIdFilesRoute
+  ProjectsProjectIdHealthRoute: typeof ProjectsProjectIdHealthRoute
   ProjectsProjectIdIssuesRoute: typeof ProjectsProjectIdIssuesRouteWithChildren
   ProjectsProjectIdLibraryRoute: typeof ProjectsProjectIdLibraryRoute
+  ProjectsProjectIdMemoriesRoute: typeof ProjectsProjectIdMemoriesRoute
   ProjectsProjectIdVariablesRoute: typeof ProjectsProjectIdVariablesRoute
 }
 
@@ -403,8 +442,10 @@ const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
   ProjectsProjectIdAskRoute: ProjectsProjectIdAskRoute,
   ProjectsProjectIdCommandsRoute: ProjectsProjectIdCommandsRoute,
   ProjectsProjectIdFilesRoute: ProjectsProjectIdFilesRoute,
+  ProjectsProjectIdHealthRoute: ProjectsProjectIdHealthRoute,
   ProjectsProjectIdIssuesRoute: ProjectsProjectIdIssuesRouteWithChildren,
   ProjectsProjectIdLibraryRoute: ProjectsProjectIdLibraryRoute,
+  ProjectsProjectIdMemoriesRoute: ProjectsProjectIdMemoriesRoute,
   ProjectsProjectIdVariablesRoute: ProjectsProjectIdVariablesRoute,
 }
 
@@ -418,6 +459,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   TerminalsRoute: TerminalsRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,
+  ProjectsArchivedRoute: ProjectsArchivedRoute,
   ProjectsNewRoute: ProjectsNewRoute,
 }
 export const routeTree = rootRouteImport

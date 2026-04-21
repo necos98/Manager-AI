@@ -1,4 +1,4 @@
-import { request } from "@/shared/api/client";
+import { apiGet } from "@/shared/api/client";
 import type { ActivityLog } from "@/shared/types";
 
 export function fetchActivity(
@@ -10,5 +10,5 @@ export function fetchActivity(
   if (params?.limit !== undefined) query.set("limit", String(params.limit));
   if (params?.offset !== undefined) query.set("offset", String(params.offset));
   const qs = query.toString();
-  return request(`/projects/${projectId}/activity${qs ? `?${qs}` : ""}`);
+  return apiGet<ActivityLog[]>(`/projects/${projectId}/activity${qs ? `?${qs}` : ""}`);
 }

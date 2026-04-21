@@ -4,11 +4,36 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import signal
 import subprocess
+import sys
 import time
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
+
+
+def _terminate_tree(proc: subprocess.Popen) -> None:
+    """Kill `proc` and its process tree. SIGTERM first, SIGKILL after 5s."""
+    if proc.poll() is not None:
+        return
+    try:
+        if sys.platform == "win32":
+            proc.send_signal(signal.CTRL_BREAK_EVENT)
+        else:
+            os.killpg(proc.pid, signal.SIGTERM)
+    except (ProcessLookupError, OSError):
+        return
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        try:
+            if sys.platform == "win32":
+                proc.kill()
+            else:
+                os.killpg(proc.pid, signal.SIGKILL)
+        except (ProcessLookupError, OSError):
+            pass
 
 
 @dataclass
@@ -71,29 +96,48 @@ class ClaudeCodeExecutor:
         prompt_bytes = prompt.encode()
         start = time.monotonic()
 
-        def _run() -> subprocess.CompletedProcess:
-            return subprocess.run(
-                cmd,
-                input=prompt_bytes,
-                capture_output=True,
-                cwd=cwd,
-                env=env,
-                timeout=timeout,
-            )
+        def _run() -> tuple[int, bytes, bytes]:
+            popen_kwargs: dict = {
+                "stdin": subprocess.PIPE,
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.PIPE,
+                "cwd": cwd,
+                "env": env,
+            }
+            if sys.platform == "win32":
+                # New process group lets us send CTRL_BREAK_EVENT to the tree.
+                popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+            else:
+                popen_kwargs["start_new_session"] = True
+
+            proc = subprocess.Popen(cmd, **popen_kwargs)
+            try:
+                stdout_b, stderr_b = proc.communicate(
+                    input=prompt_bytes, timeout=timeout
+                )
+                return proc.returncode, stdout_b, stderr_b
+            except subprocess.TimeoutExpired:
+                _terminate_tree(proc)
+                try:
+                    proc.communicate(timeout=5)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.communicate()
+                raise
 
         try:
-            result = await asyncio.to_thread(_run)
+            returncode, stdout_b, stderr_b = await asyncio.to_thread(_run)
             duration = time.monotonic() - start
-            stdout = result.stdout.decode(errors="replace").strip()
-            stderr = result.stderr.decode(errors="replace").strip()
+            stdout = stdout_b.decode(errors="replace").strip()
+            stderr = stderr_b.decode(errors="replace").strip()
 
-            if result.returncode == 0:
+            if returncode == 0:
                 return ExecutorResult(success=True, output=stdout or None, duration=duration)
             else:
                 return ExecutorResult(
                     success=False,
                     output=stdout or None,
-                    error=stderr or f"Process exited with code {result.returncode}",
+                    error=stderr or f"Process exited with code {returncode}",
                     duration=duration,
                 )
 

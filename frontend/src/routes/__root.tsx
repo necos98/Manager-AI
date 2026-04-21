@@ -5,6 +5,7 @@ import { queryClient } from "@/shared/lib/query-client";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { AppSidebar } from "@/shared/components/app-sidebar";
 import { EventProvider } from "@/shared/context/event-context";
+import { ErrorBoundary } from "@/shared/components/error-boundary";
 import { useProject } from "@/features/projects/hooks";
 
 function RootComponent() {
@@ -32,7 +33,9 @@ function RootLayout() {
           <SidebarTrigger />
         </header>
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </SidebarInset>
     </SidebarProvider>

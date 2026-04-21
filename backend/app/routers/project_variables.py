@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas.project_variable import ProjectVariableCreate, ProjectVariableOut, ProjectVariableUpdate
+from app.schemas.project_variable import (
+    ProjectVariableCreate,
+    ProjectVariableOut,
+    ProjectVariableUpdate,
+    variable_to_out,
+)
 from app.services.project_variable_service import ProjectVariableService
 
 router = APIRouter(prefix="/api/project-variables", tags=["project-variables"])
@@ -16,7 +21,8 @@ async def list_project_variables(
     db: AsyncSession = Depends(get_db),
 ):
     svc = ProjectVariableService(db)
-    return await svc.list(project_id)
+    rows = await svc.list(project_id)
+    return [variable_to_out(row) for row in rows]
 
 
 @router.post("", response_model=ProjectVariableOut, status_code=201)
@@ -29,7 +35,7 @@ async def create_project_variable(
     try:
         var = await svc.create(project_id, name=data.name, value=data.value, is_secret=data.is_secret)
         await db.commit()
-        return var
+        return variable_to_out(var)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
@@ -45,9 +51,24 @@ async def update_project_variable(
         var = await svc.update(var_id, **data.model_dump(exclude_unset=True))
         await db.commit()
         await db.refresh(var)
-        return var
+        return variable_to_out(var)
     except KeyError:
         raise HTTPException(status_code=404, detail="Variable not found")
+
+
+@router.get("/{var_id}/reveal", response_model=ProjectVariableOut)
+async def reveal_project_variable(
+    var_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the variable with its plaintext value. Use only for
+    in-place edits on the client. Secret values are never returned by
+    the list endpoint."""
+    svc = ProjectVariableService(db)
+    var = await svc.get(var_id)
+    if var is None:
+        raise HTTPException(status_code=404, detail="Variable not found")
+    return variable_to_out(var, reveal=True)
 
 
 @router.delete("/{var_id}", status_code=204)

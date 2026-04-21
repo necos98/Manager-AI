@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Archive } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -15,7 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { useUpdateProject } from "@/features/projects/hooks";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { useArchiveProject, useUpdateProject } from "@/features/projects/hooks";
 import type { Project } from "@/shared/types";
 
 const SHELL_OPTIONS = [
@@ -49,6 +52,22 @@ export function ProjectSettingsDialog({
   });
 
   const updateProject = useUpdateProject(project.id);
+  const archiveProject = useArchiveProject();
+  const navigate = useNavigate();
+
+  const handleArchive = () => {
+    const confirmed = window.confirm(
+      `Archive "${project.name}"? It will be hidden from the sidebar and dashboard. You can restore it from the archived page.`,
+    );
+    if (!confirmed) return;
+    archiveProject.mutate(project.id, {
+      onSuccess: () => {
+        toast.success("Project archived");
+        onOpenChange(false);
+        navigate({ to: "/" });
+      },
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +137,28 @@ export function ProjectSettingsDialog({
             <p className="text-xs text-muted-foreground mt-1">
               Shell to use when opening terminals for this project.
             </p>
+          </div>
+          <div className="pt-2 border-t">
+            <label className="text-sm font-medium flex items-center gap-1.5 mb-2 text-destructive">
+              <Archive className="size-3.5" />
+              Archive
+            </label>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Hides the project from sidebar and dashboard. You can restore it later from the archived page.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0"
+                disabled={archiveProject.isPending}
+                onClick={handleArchive}
+              >
+                <Archive className="size-3.5 mr-1.5" />
+                {archiveProject.isPending ? "Archiving..." : "Archive project"}
+              </Button>
+            </div>
           </div>
           {updateProject.error && (
             <p className="text-sm text-destructive">{updateProject.error.message}</p>

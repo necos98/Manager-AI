@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.database import Base
 from app.models import (  # noqa: F401
-    ActivityLog, Issue, IssueFeedback, IssueRelation, Project, ProjectSkill,
-    PromptTemplate, Setting, Task, TerminalCommand,
+    ActivityLog, Issue, IssueFeedback, IssueRelation, Memory, MemoryLink,
+    Project, ProjectSkill, PromptTemplate, Setting, Task, TerminalCommand,
 )
 from app.models.issue_relation import IssueRelation  # noqa: F401
 from app.models.project_variable import ProjectVariable  # noqa: F401
@@ -44,6 +44,30 @@ async def db_session():
             for col in cols:
                 table.append_column(col)
 
+        connection.exec_driver_sql(
+            "CREATE VIRTUAL TABLE memories_fts USING fts5("
+            "title, description, "
+            "content='memories', content_rowid='rowid', "
+            "tokenize='unicode61')"
+        )
+        connection.exec_driver_sql(
+            "CREATE TRIGGER memories_ai AFTER INSERT ON memories BEGIN "
+            "INSERT INTO memories_fts(rowid, title, description) "
+            "VALUES (new.rowid, new.title, new.description); END;"
+        )
+        connection.exec_driver_sql(
+            "CREATE TRIGGER memories_ad AFTER DELETE ON memories BEGIN "
+            "INSERT INTO memories_fts(memories_fts, rowid, title, description) "
+            "VALUES ('delete', old.rowid, old.title, old.description); END;"
+        )
+        connection.exec_driver_sql(
+            "CREATE TRIGGER memories_au AFTER UPDATE ON memories BEGIN "
+            "INSERT INTO memories_fts(memories_fts, rowid, title, description) "
+            "VALUES ('delete', old.rowid, old.title, old.description); "
+            "INSERT INTO memories_fts(rowid, title, description) "
+            "VALUES (new.rowid, new.title, new.description); END;"
+        )
+
     async with engine.begin() as conn:
         await conn.run_sync(_create_tables)
 
@@ -51,5 +75,9 @@ async def db_session():
     async with session_factory() as session:
         yield session
     async with engine.begin() as conn:
+        await conn.exec_driver_sql("DROP TRIGGER IF EXISTS memories_ai")
+        await conn.exec_driver_sql("DROP TRIGGER IF EXISTS memories_au")
+        await conn.exec_driver_sql("DROP TRIGGER IF EXISTS memories_ad")
+        await conn.exec_driver_sql("DROP TABLE IF EXISTS memories_fts")
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()

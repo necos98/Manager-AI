@@ -20,11 +20,18 @@
   "tool.send_notification.description": "Send a notification to the user via the Manager AI web interface. Use this to notify the user when:\n- You need their input or a decision (e.g., plan is ready for review)\n- A significant milestone is reached (e.g., all tasks completed)\n- An error or blocker requires their attention\n\nDo NOT use this for routine status updates — update task statuses instead so the user can track progress in the UI.",
   "terminal_soft_limit": "5",
   "tool.update_project_context.description": "Update the project context (description and/or tech_stack). Only updates fields that are provided.",
-  "tool.search_project_context.description": "Search project context using semantic similarity. Searches across embedded files and completed issues. Returns a list of matching chunks with preview, score, and source info. Use get_context_chunk_details to get the full text of a result.",
-  "tool.get_context_chunk_details.description": "Get full details of a specific context chunk found via search_project_context. Returns the complete text, metadata, and links to adjacent chunks for navigation.",
   "work_queue_paused": "false",
   "tool.get_next_issue.description": "Get the next workable issue for a project, ordered by priority. Returns an ACCEPTED issue (ready for implementation) first, then a NEW issue (needs planning). Returns null if no workable issues exist. Use this to implement a continuous work queue: after completing an issue, call get_next_issue to find the next one to start.",
   "terminal_theme": "catppuccin",
   "ask_brainstorm_command": "claude /ask-and-brainstorm $project_id",
-  "claude.skip_permissions": "false"
+  "claude.skip_permissions": "false",
+  "tool.memory_create.description": "Create a memory (title + description, optional parent_id) scoped to a project. Memories are long-term notes the LLM manages across sessions. Use this to record decisions, patterns, constraints, and user preferences.",
+  "tool.memory_update.description": "Update a memory's title, description, or parent_id. Passing a new parent_id moves the memory; cycles are rejected.",
+  "tool.memory_delete.description": "Delete a memory. Cascades links; children's parent_id becomes null.",
+  "tool.memory_get.description": "Fetch a memory with its parent, children, outgoing and incoming links.",
+  "tool.memory_list.description": "List memories for a project. Optional parent_id filters to one branch (use empty string for root-level memories).",
+  "tool.memory_link.description": "Create a lateral link between two memories (same project). Optional relation label (e.g. 'see_also', 'contradicts').",
+  "tool.memory_unlink.description": "Remove a lateral link (matches from_id + to_id + relation).",
+  "tool.memory_get_related.description": "Get parent, children, and both directions of lateral links for a memory.",
+  "tool.memory_search.description": "Full-text search across a project's memory titles and descriptions (SQLite FTS5). Returns matches with snippet and rank."
 }

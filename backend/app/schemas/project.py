@@ -28,6 +28,7 @@ class ProjectResponse(BaseModel):
     shell: str | None = None
     created_at: datetime
     updated_at: datetime
+    archived_at: datetime | None = None
     issue_counts: dict[str, int] = {}
 
     model_config = {"from_attributes": True}

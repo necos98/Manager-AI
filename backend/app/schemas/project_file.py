@@ -13,6 +13,7 @@ class ProjectFileResponse(BaseModel):
     file_size: int
     mime_type: str
     metadata: dict[str, Any] | None = None
+    created_at: datetime
 
     @classmethod
     def from_model(cls, obj: Any) -> "ProjectFileResponse":
@@ -27,6 +28,5 @@ class ProjectFileResponse(BaseModel):
             metadata=obj.file_metadata,
             created_at=obj.created_at,
         )
-    created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -87,6 +87,7 @@ export interface Project {
   shell?: string | null;
   created_at: string;
   updated_at: string;
+  archived_at?: string | null;
   issue_counts?: Record<string, number>;
 }
 
@@ -208,6 +209,41 @@ export interface AllowedFormats {
   label: string;
 }
 
+// ── Memory ──
+
+export interface Memory {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string;
+  parent_id: string | null;
+  created_at: string;
+  updated_at: string;
+  children_count: number;
+  links_out_count: number;
+  links_in_count: number;
+}
+
+export interface MemoryLink {
+  from_id: string;
+  to_id: string;
+  relation: string;
+  created_at: string;
+}
+
+export interface MemoryDetail extends Memory {
+  parent: Memory | null;
+  children: Memory[];
+  links_out: MemoryLink[];
+  links_in: MemoryLink[];
+}
+
+export interface MemorySearchHit {
+  memory: Memory;
+  snippet: string;
+  rank: number;
+}
+
 // ── Event ──
 
 export interface ServerEvent {
@@ -271,7 +307,10 @@ export interface ProjectVariable {
   id: number;
   project_id: string;
   name: string;
+  /** Empty string on list responses when `is_secret` is true. Fetch the
+   * real value via the `/reveal` endpoint. */
   value: string;
+  has_value: boolean;
   is_secret: boolean;
   sort_order: number;
   created_at: string;
