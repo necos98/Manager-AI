@@ -79,7 +79,8 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
     const tag = `@.manager_ai/resources/${file.stored_name} `;
     sendToWs(tag);
     setGalleryOpen(false);
-  }, [projectId, sendToWs]);
+    setTimeout(() => termRef.current?.focus(), 0);
+  }, [sendToWs]);
 
   const markActive = useCallback(() => {
     setActive(terminalId, projectId);
