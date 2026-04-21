@@ -62,6 +62,21 @@ export function useDeleteProject() {
   });
 }
 
+export function useProjectHealth(projectId: string) {
+  return useQuery({
+    queryKey: ["projects", projectId, "health"] as const,
+    queryFn: () => api.fetchProjectHealth(projectId),
+    enabled: !!projectId,
+  });
+}
+
+export function useInstallMcp(projectId: string) {
+  return useMutation({
+    mutationFn: () => api.installMcp(projectId),
+    onError: onMutationError,
+  });
+}
+
 export function useInstallManagerJson(projectId: string) {
   return useMutation({
     mutationFn: () => api.installManagerJson(projectId),

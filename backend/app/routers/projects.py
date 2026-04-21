@@ -1,16 +1,80 @@
 import json
+import logging
 import os
 import shutil
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
 from app.schemas.project import DashboardProject, ProjectCreate, ProjectResponse, ProjectUpdate
+from app.schemas.terminal import TerminalResponse
 from app.services.project_service import ProjectService
 from app.services.terminal_service import terminal_service
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/projects", tags=["projects"])
+
+
+def _claude_resources_source() -> str:
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+        "claude_resources",
+    )
+
+
+def _check_manager_json(project) -> dict:
+    path = os.path.join(project.path, "manager.json")
+    if not os.path.isfile(path):
+        return {"installed": False, "path": path}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        installed = data.get("project_id") == project.id
+    except Exception:
+        installed = False
+    return {"installed": installed, "path": path}
+
+
+def _check_claude_resources(project) -> dict:
+    dest = os.path.join(project.path, ".claude")
+    src = _claude_resources_source()
+    if not os.path.isdir(src):
+        return {"installed": False, "path": dest, "missing": []}
+    expected = [i for i in os.listdir(src) if not i.startswith(".")]
+    if not os.path.isdir(dest):
+        return {"installed": False, "path": dest, "missing": expected}
+    missing = [i for i in expected if not os.path.exists(os.path.join(dest, i))]
+    return {"installed": len(missing) == 0, "path": dest, "missing": missing}
+
+
+def _check_mcp(project) -> dict:
+    project_mcp = os.path.join(project.path, ".mcp.json")
+    if os.path.isfile(project_mcp):
+        try:
+            with open(project_mcp, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if "ManagerAi" in (data.get("mcpServers") or {}):
+                return {"installed": True, "location": project_mcp}
+        except Exception:
+            pass
+
+    home_cfg = os.path.join(os.path.expanduser("~"), ".claude.json")
+    if os.path.isfile(home_cfg):
+        try:
+            with open(home_cfg, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if "ManagerAi" in (data.get("mcpServers") or {}):
+                return {"installed": True, "location": home_cfg}
+            norm = os.path.normpath(project.path).lower()
+            for key, val in (data.get("projects") or {}).items():
+                if os.path.normpath(key).lower() == norm and "ManagerAi" in (val.get("mcpServers") or {}):
+                    return {"installed": True, "location": home_cfg}
+        except Exception:
+            pass
+    return {"installed": False, "location": None}
 
 
 async def _enrich_project(service: ProjectService, project) -> dict:
@@ -123,6 +187,45 @@ async def install_claude_resources(project_id: str, db: AsyncSession = Depends(g
         copied.append(item)
 
     return {"path": dest, "copied": copied}
+
+
+@router.get("/{project_id}/health")
+async def project_health(project_id: str, db: AsyncSession = Depends(get_db)):
+    service = ProjectService(db)
+    project = await service.get_by_id(project_id)
+    return {
+        "manager_json": _check_manager_json(project),
+        "claude_resources": _check_claude_resources(project),
+        "mcp": _check_mcp(project),
+    }
+
+
+@router.post("/{project_id}/install-mcp", response_model=TerminalResponse, status_code=201)
+async def install_mcp(project_id: str, db: AsyncSession = Depends(get_db)):
+    service = ProjectService(db)
+    project = await service.get_by_id(project_id)
+    if not os.path.isdir(project.path):
+        raise HTTPException(status_code=400, detail=f"Project path does not exist: {project.path}")
+
+    try:
+        terminal = terminal_service.create(
+            issue_id="",
+            project_id=project_id,
+            project_path=project.path,
+            shell=project.shell,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
+
+    port = int(os.environ.get("BACKEND_PORT") or settings.backend_port)
+    cmd = f"claude mcp add --transport http ManagerAi http://localhost:{port}/mcp/"
+    try:
+        pty = terminal_service.get_pty(terminal["id"])
+        pty.write(cmd + "\r\n")
+    except Exception:
+        logger.warning("Failed to write install-mcp command for terminal %s", terminal["id"], exc_info=True)
+
+    return TerminalResponse(**terminal)
 
 
 dashboard_router = APIRouter(tags=["dashboard"])

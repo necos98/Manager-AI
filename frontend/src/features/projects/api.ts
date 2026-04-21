@@ -1,5 +1,19 @@
 import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/api/client";
-import type { Project, ProjectCreate, ProjectUpdate } from "@/shared/types";
+import type { Project, ProjectCreate, ProjectUpdate, Terminal } from "@/shared/types";
+
+export interface ProjectHealth {
+  manager_json: { installed: boolean; path: string };
+  claude_resources: { installed: boolean; path: string; missing: string[] };
+  mcp: { installed: boolean; location: string | null };
+}
+
+export function fetchProjectHealth(projectId: string): Promise<ProjectHealth> {
+  return apiGet<ProjectHealth>(`/projects/${projectId}/health`);
+}
+
+export function installMcp(projectId: string): Promise<Terminal> {
+  return apiPost<Terminal>(`/projects/${projectId}/install-mcp`);
+}
 
 export function fetchProjects(archived: boolean = false): Promise<Project[]> {
   const query = archived ? "?archived=true" : "";

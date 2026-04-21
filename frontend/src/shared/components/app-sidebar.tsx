@@ -3,15 +3,13 @@ import {
   BookOpen,
   Brain,
   CircleDot,
-  Download,
   FileText,
-  FolderSync,
+  HeartPulse,
   Key,
   LayoutDashboard,
   MessageSquare,
   MoreHorizontal,
   Pencil,
-  Plug,
   Settings,
   Smartphone,
   SquareTerminal,
@@ -44,9 +42,7 @@ import { ProjectSwitcher } from "@/features/projects/components/project-switcher
 import { ProjectSettingsDialog } from "@/features/projects/components/project-settings-dialog";
 import { McpSetupDialog } from "@/features/projects/components/mcp-setup-dialog";
 import { SmartphoneQrDialog } from "@/shared/components/smartphone-qr-dialog";
-import { useInstallManagerJson, useInstallClaudeResources } from "@/features/projects/hooks";
 import { useTerminalCount } from "@/features/terminals/hooks";
-import { toast } from "sonner";
 import type { Project } from "@/shared/types";
 
 interface AppSidebarProps {
@@ -63,9 +59,6 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
   const [smartphoneQrOpen, setSmartphoneQrOpen] = useState(false);
 
   const projectId = activeProject?.id;
-
-  const installManagerJson = useInstallManagerJson(projectId ?? "");
-  const installClaudeResources = useInstallClaudeResources(projectId ?? "");
 
   const projectNav = projectId
     ? [
@@ -117,28 +110,14 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
           params: { projectId },
           icon: BookOpen,
         },
+        {
+          label: "Health",
+          to: "/projects/$projectId/health" as const,
+          params: { projectId },
+          icon: HeartPulse,
+        },
       ]
     : [];
-
-  function handleInstallManagerJson() {
-    installManagerJson.mutate(undefined, {
-      onSuccess: () => toast.success("manager.json installed successfully"),
-      onError: (err) => toast.error(`Failed to install manager.json: ${err.message}`),
-    });
-  }
-
-  function handleInstallClaudeResources() {
-    installClaudeResources.mutate(undefined, {
-      onSuccess: () => toast.success("Claude resources installed successfully"),
-      onError: (err) => toast.error(`Failed to install Claude resources: ${err.message}`),
-    });
-  }
-
-  function handleExportManagerJson() {
-    if (projectId) {
-      window.open(`/api/projects/${projectId}/export-manager-json`);
-    }
-  }
 
   return (
     <>
@@ -182,19 +161,6 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
                         <DropdownMenuItem onClick={() => setProjectSettingsOpen(true)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit Project
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleInstallManagerJson}>
-                          <FolderSync className="mr-2 h-4 w-4" />
-                          Install manager.json
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleInstallClaudeResources}>
-                          <Plug className="mr-2 h-4 w-4" />
-                          Install Claude Resources
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleExportManagerJson}>
-                          <Download className="mr-2 h-4 w-4" />
-                          Export manager.json
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setMcpSetupOpen(true)}>

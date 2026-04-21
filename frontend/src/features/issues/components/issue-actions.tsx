@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { CheckCircle, XCircle, Loader2, Play } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -46,6 +47,7 @@ const CONFIRM_COPY: Record<ActionType, { title: string; description: string; con
 export function IssueActions({ issue, projectId }: IssueActionsProps) {
   const [confirmAction, setConfirmAction] = useState<ActionType | null>(null);
   const [recap, setRecap] = useState("");
+  const navigate = useNavigate();
 
   const acceptIssue = useAcceptIssue(projectId, issue.id);
   const cancelIssue = useCancelIssue(projectId, issue.id);
@@ -66,7 +68,12 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
     if (confirmAction === "accept") {
       acceptIssue.mutate(undefined, { onSuccess: () => setConfirmAction(null) });
     } else if (confirmAction === "cancel") {
-      cancelIssue.mutate(undefined, { onSuccess: () => setConfirmAction(null) });
+      cancelIssue.mutate(undefined, {
+        onSuccess: () => {
+          setConfirmAction(null);
+          navigate({ to: "/projects/$projectId", params: { projectId } });
+        },
+      });
     } else if (confirmAction === "complete") {
       completeIssue.mutate(
         { recap },
