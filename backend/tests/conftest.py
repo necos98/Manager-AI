@@ -44,6 +44,30 @@ async def db_session():
             for col in cols:
                 table.append_column(col)
 
+        connection.exec_driver_sql(
+            "CREATE VIRTUAL TABLE memories_fts USING fts5("
+            "title, description, "
+            "content='memories', content_rowid='rowid', "
+            "tokenize='unicode61')"
+        )
+        connection.exec_driver_sql(
+            "CREATE TRIGGER memories_ai AFTER INSERT ON memories BEGIN "
+            "INSERT INTO memories_fts(rowid, title, description) "
+            "VALUES (new.rowid, new.title, new.description); END;"
+        )
+        connection.exec_driver_sql(
+            "CREATE TRIGGER memories_ad AFTER DELETE ON memories BEGIN "
+            "INSERT INTO memories_fts(memories_fts, rowid, title, description) "
+            "VALUES ('delete', old.rowid, old.title, old.description); END;"
+        )
+        connection.exec_driver_sql(
+            "CREATE TRIGGER memories_au AFTER UPDATE ON memories BEGIN "
+            "INSERT INTO memories_fts(memories_fts, rowid, title, description) "
+            "VALUES ('delete', old.rowid, old.title, old.description); "
+            "INSERT INTO memories_fts(rowid, title, description) "
+            "VALUES (new.rowid, new.title, new.description); END;"
+        )
+
     async with engine.begin() as conn:
         await conn.run_sync(_create_tables)
 
