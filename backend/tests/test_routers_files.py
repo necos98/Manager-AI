@@ -128,3 +128,32 @@ async def test_upload_rejects_oversized_file(db_session, tmp_path, monkeypatch):
         assert "exceeds 5 MB" in r.json()["detail"]
 
     app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_preview_returns_raw_bytes(db_session, tmp_path, monkeypatch):
+    monkeypatch.setattr(file_service, "BASE_DIR", str(tmp_path))
+
+    async def _override():
+        yield db_session
+    app.dependency_overrides[get_db] = _override
+
+    db_session.add(Project(id="p1", name="P", path="/tmp/p"))
+    await db_session.commit()
+
+    png_bytes = b"\x89PNG\r\n\x1a\nRAWBYTES"
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        files = [("files", ("pic.png", png_bytes, "image/png"))]
+        r = await client.post("/api/projects/p1/files", files=files)
+        file_id = r.json()[0]["id"]
+
+        r = await client.get(f"/api/projects/p1/files/{file_id}/preview")
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith("image/png")
+        assert r.content == png_bytes
+
+        r = await client.get("/api/projects/p1/files/does-not-exist/preview")
+        assert r.status_code == 404
+
+    app.dependency_overrides.clear()
