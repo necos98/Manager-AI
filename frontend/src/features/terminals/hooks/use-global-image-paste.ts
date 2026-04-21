@@ -48,7 +48,7 @@ export function useGlobalImagePaste() {
         const records = await uploadFilesApi(projectId, formData);
         queryClient.invalidateQueries({ queryKey: fileKeys.all(projectId) });
         for (const rec of records) {
-          const tag = `@project_resources/${projectId}/${rec.stored_name} `;
+          const tag = `@.manager_ai/resources/${rec.stored_name} `;
           injectIntoTerminal(terminalId, tag);
         }
         toast.success(`Pasted ${records.length} image(s) into terminal`);

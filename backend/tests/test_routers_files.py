@@ -8,14 +8,12 @@ from app.services import file_service
 
 
 @pytest.mark.asyncio
-async def test_upload_extract_read_search(db_session, tmp_path, monkeypatch):
-    monkeypatch.setattr(file_service, "BASE_DIR", str(tmp_path))
-
+async def test_upload_extract_read_search(db_session, tmp_path):
     async def _override():
         yield db_session
     app.dependency_overrides[get_db] = _override
 
-    db_session.add(Project(id="p1", name="P", path="/tmp/p"))
+    db_session.add(Project(id="p1", name="P", path=str(tmp_path)))
     await db_session.commit()
 
     transport = ASGITransport(app=app)
@@ -50,14 +48,12 @@ async def test_upload_extract_read_search(db_session, tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_pagination(db_session, tmp_path, monkeypatch):
-    monkeypatch.setattr(file_service, "BASE_DIR", str(tmp_path))
-
+async def test_pagination(db_session, tmp_path):
     async def _override():
         yield db_session
     app.dependency_overrides[get_db] = _override
 
-    db_session.add(Project(id="p1", name="P", path="/tmp/p"))
+    db_session.add(Project(id="p1", name="P", path=str(tmp_path)))
     await db_session.commit()
 
     big = "abcdefghij" * 100  # 1000 chars
@@ -83,14 +79,12 @@ async def test_pagination(db_session, tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_upload_image_skips_extraction(db_session, tmp_path, monkeypatch):
-    monkeypatch.setattr(file_service, "BASE_DIR", str(tmp_path))
-
+async def test_upload_image_skips_extraction(db_session, tmp_path):
     async def _override():
         yield db_session
     app.dependency_overrides[get_db] = _override
 
-    db_session.add(Project(id="p1", name="P", path="/tmp/p"))
+    db_session.add(Project(id="p1", name="P", path=str(tmp_path)))
     await db_session.commit()
 
     png_bytes = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
@@ -109,14 +103,12 @@ async def test_upload_image_skips_extraction(db_session, tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_upload_rejects_oversized_file(db_session, tmp_path, monkeypatch):
-    monkeypatch.setattr(file_service, "BASE_DIR", str(tmp_path))
-
+async def test_upload_rejects_oversized_file(db_session, tmp_path):
     async def _override():
         yield db_session
     app.dependency_overrides[get_db] = _override
 
-    db_session.add(Project(id="p1", name="P", path="/tmp/p"))
+    db_session.add(Project(id="p1", name="P", path=str(tmp_path)))
     await db_session.commit()
 
     oversized = b"\x00" * (file_service.MAX_FILE_SIZE + 1)
@@ -131,14 +123,12 @@ async def test_upload_rejects_oversized_file(db_session, tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_preview_returns_raw_bytes(db_session, tmp_path, monkeypatch):
-    monkeypatch.setattr(file_service, "BASE_DIR", str(tmp_path))
-
+async def test_preview_returns_raw_bytes(db_session, tmp_path):
     async def _override():
         yield db_session
     app.dependency_overrides[get_db] = _override
 
-    db_session.add(Project(id="p1", name="P", path="/tmp/p"))
+    db_session.add(Project(id="p1", name="P", path=str(tmp_path)))
     await db_session.commit()
 
     png_bytes = b"\x89PNG\r\n\x1a\nRAWBYTES"

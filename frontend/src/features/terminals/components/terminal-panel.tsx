@@ -76,7 +76,7 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
   }, []);
 
   const handleFileSelect = useCallback((file: ProjectFile) => {
-    const tag = `@project_resources/${projectId}/${file.stored_name} `;
+    const tag = `@.manager_ai/resources/${file.stored_name} `;
     sendToWs(tag);
     setGalleryOpen(false);
   }, [projectId, sendToWs]);

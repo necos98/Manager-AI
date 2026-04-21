@@ -59,7 +59,7 @@ async def download_file(project_id: str, file_id: str, db: AsyncSession = Depend
     record = await service.get_by_id(project_id, file_id)
     if record is None:
         raise HTTPException(status_code=404, detail="File not found")
-    file_path = service.get_file_path(project_id, record.stored_name)
+    file_path = await service.get_file_path(project_id, record.stored_name)
     return FileResponse(path=file_path, filename=record.original_name, media_type=record.mime_type)
 
 
@@ -80,7 +80,7 @@ async def preview_file(project_id: str, file_id: str, db: AsyncSession = Depends
     record = await service.get_by_id(project_id, file_id)
     if record is None:
         raise HTTPException(status_code=404, detail="File not found")
-    file_path = service.get_file_path(project_id, record.stored_name)
+    file_path = await service.get_file_path(project_id, record.stored_name)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File missing on disk")
     return FileResponse(path=file_path, media_type=record.mime_type, filename=record.original_name)
