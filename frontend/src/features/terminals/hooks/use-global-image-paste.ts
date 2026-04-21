@@ -24,6 +24,8 @@ export function useGlobalImagePaste() {
     }
 
     async function handler(e: ClipboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('[role="dialog"]')) return;
       const images = extractImageFiles(e.clipboardData);
       if (images.length === 0) return;
 

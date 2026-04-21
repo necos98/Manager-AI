@@ -55,13 +55,15 @@ export function FileGalleryModal({ open, onClose, projectId, onSelect }: FileGal
     const picked: File[] = [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      if (item.kind === "file") {
+      if (item && item.kind === "file") {
         const f = item.getAsFile();
         if (f) picked.push(f);
       }
     }
     if (picked.length === 0) return;
     e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
     uploadList(picked);
   }
 
