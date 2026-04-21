@@ -24,5 +24,14 @@
   "tool.get_next_issue.description": "Get the next workable issue for a project, ordered by priority. Returns an ACCEPTED issue (ready for implementation) first, then a NEW issue (needs planning). Returns null if no workable issues exist. Use this to implement a continuous work queue: after completing an issue, call get_next_issue to find the next one to start.",
   "terminal_theme": "catppuccin",
   "ask_brainstorm_command": "claude /ask-and-brainstorm $project_id",
-  "claude.skip_permissions": "false"
+  "claude.skip_permissions": "false",
+  "tool.memory_create.description": "Create a memory (title + description, optional parent_id) scoped to a project. Memories are long-term notes the LLM manages across sessions. Use this to record decisions, patterns, constraints, and user preferences.",
+  "tool.memory_update.description": "Update a memory's title, description, or parent_id. Passing a new parent_id moves the memory; cycles are rejected.",
+  "tool.memory_delete.description": "Delete a memory. Cascades links; children's parent_id becomes null.",
+  "tool.memory_get.description": "Fetch a memory with its parent, children, outgoing and incoming links.",
+  "tool.memory_list.description": "List memories for a project. Optional parent_id filters to one branch (use empty string for root-level memories).",
+  "tool.memory_link.description": "Create a lateral link between two memories (same project). Optional relation label (e.g. 'see_also', 'contradicts').",
+  "tool.memory_unlink.description": "Remove a lateral link (matches from_id + to_id + relation).",
+  "tool.memory_get_related.description": "Get parent, children, and both directions of lateral links for a memory.",
+  "tool.memory_search.description": "Full-text search across a project's memory titles and descriptions (SQLite FTS5). Returns matches with snippet and rank."
 }

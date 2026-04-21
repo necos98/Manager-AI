@@ -476,3 +476,140 @@ async def get_next_issue(project_id: str) -> dict:
             }
         except AppError as e:
             return {"error": e.message}
+
+
+from app.schemas.memory import MemoryResponse
+from app.services.memory_service import MemoryService
+from app.services import memory_events
+
+
+def _memory_to_dict(m, counts) -> dict:
+    r = MemoryResponse.from_model(m, **counts)
+    return r.model_dump(mode="json")
+
+
+@mcp.tool(description=_desc["tool.memory_create.description"])
+async def memory_create(project_id: str, title: str, description: str = "", parent_id: str | None = None) -> dict:
+    async with async_session() as session:
+        svc = MemoryService(session)
+        try:
+            m = await svc.create(project_id=project_id, title=title, description=description, parent_id=parent_id)
+            await session.commit()
+        except AppError as e:
+            return {"error": e.message}
+        counts = await svc.counts(m.id)
+        await memory_events.emit_created(project_id=project_id, memory_id=m.id)
+        return _memory_to_dict(m, counts)
+
+
+@mcp.tool(description=_desc["tool.memory_update.description"])
+async def memory_update(memory_id: str, title: str | None = None, description: str | None = None, parent_id: str | None = None, parent_id_clear: bool = False) -> dict:
+    async with async_session() as session:
+        svc = MemoryService(session)
+        try:
+            if parent_id_clear:
+                m = await svc.update(memory_id, title=title, description=description, parent_id=None)
+            elif parent_id is not None:
+                m = await svc.update(memory_id, title=title, description=description, parent_id=parent_id)
+            else:
+                m = await svc.update(memory_id, title=title, description=description)
+            await session.commit()
+        except AppError as e:
+            return {"error": e.message}
+        counts = await svc.counts(m.id)
+        await memory_events.emit_updated(project_id=m.project_id, memory_id=m.id)
+        return _memory_to_dict(m, counts)
+
+
+@mcp.tool(description=_desc["tool.memory_delete.description"])
+async def memory_delete(memory_id: str) -> dict:
+    async with async_session() as session:
+        svc = MemoryService(session)
+        try:
+            m = await svc.get(memory_id)
+            project_id = m.project_id
+            await svc.delete(memory_id)
+            await session.commit()
+        except AppError as e:
+            return {"error": e.message}
+        await memory_events.emit_deleted(project_id=project_id, memory_id=memory_id)
+        return {"deleted": True}
+
+
+@mcp.tool(description=_desc["tool.memory_get.description"])
+async def memory_get(memory_id: str) -> dict:
+    async with async_session() as session:
+        svc = MemoryService(session)
+        try:
+            bundle = await svc.get_related(memory_id)
+        except AppError as e:
+            return {"error": e.message}
+        counts = await svc.counts(memory_id)
+        return {
+            "memory": _memory_to_dict(bundle["memory"], counts),
+            "parent": _memory_to_dict(bundle["parent"], await svc.counts(bundle["parent"].id)) if bundle["parent"] else None,
+            "children": [_memory_to_dict(c, await svc.counts(c.id)) for c in bundle["children"]],
+            "links_out": [{"from_id": l.from_id, "to_id": l.to_id, "relation": l.relation} for l in bundle["links_out"]],
+            "links_in": [{"from_id": l.from_id, "to_id": l.to_id, "relation": l.relation} for l in bundle["links_in"]],
+        }
+
+
+@mcp.tool(description=_desc["tool.memory_list.description"])
+async def memory_list(project_id: str, parent_id: str | None = None, limit: int = 50, offset: int = 0) -> dict:
+    async with async_session() as session:
+        svc = MemoryService(session)
+        effective_parent = parent_id if parent_id != "" else None
+        rows = await svc.list(project_id=project_id, parent_id=effective_parent, limit=limit, offset=offset)
+        out = []
+        for m in rows:
+            out.append(_memory_to_dict(m, await svc.counts(m.id)))
+        return {"memories": out}
+
+
+@mcp.tool(description=_desc["tool.memory_link.description"])
+async def memory_link(from_id: str, to_id: str, relation: str = "") -> dict:
+    async with async_session() as session:
+        svc = MemoryService(session)
+        try:
+            link = await svc.link(from_id, to_id, relation=relation)
+            m = await svc.get(from_id)
+            await session.commit()
+        except AppError as e:
+            return {"error": e.message}
+        await memory_events.emit_linked(project_id=m.project_id, from_id=from_id, to_id=to_id, relation=link.relation)
+        return {"from_id": link.from_id, "to_id": link.to_id, "relation": link.relation}
+
+
+@mcp.tool(description=_desc["tool.memory_unlink.description"])
+async def memory_unlink(from_id: str, to_id: str, relation: str = "") -> dict:
+    async with async_session() as session:
+        svc = MemoryService(session)
+        try:
+            m = await svc.get(from_id)
+            deleted = await svc.unlink(from_id, to_id, relation=relation)
+            await session.commit()
+        except AppError as e:
+            return {"error": e.message}
+        if deleted:
+            await memory_events.emit_unlinked(project_id=m.project_id, from_id=from_id, to_id=to_id, relation=relation)
+        return {"deleted": bool(deleted)}
+
+
+@mcp.tool(description=_desc["tool.memory_get_related.description"])
+async def memory_get_related(memory_id: str) -> dict:
+    return await memory_get(memory_id)
+
+
+@mcp.tool(description=_desc["tool.memory_search.description"])
+async def memory_search(project_id: str, query: str, limit: int = 20) -> dict:
+    async with async_session() as session:
+        svc = MemoryService(session)
+        hits = await svc.search(project_id=project_id, query=query, limit=limit)
+        results = []
+        for h in hits:
+            results.append({
+                "memory": _memory_to_dict(h["memory"], await svc.counts(h["memory"].id)),
+                "snippet": h["snippet"],
+                "rank": h["rank"],
+            })
+        return {"results": results}
