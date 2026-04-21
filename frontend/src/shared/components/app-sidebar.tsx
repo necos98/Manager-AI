@@ -1,6 +1,7 @@
 import {
   Activity,
   BookOpen,
+  Brain,
   CircleDot,
   Download,
   FileText,
@@ -97,6 +98,12 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
           to: "/projects/$projectId/activity" as const,
           params: { projectId },
           icon: Activity,
+        },
+        {
+          label: "Memories",
+          to: "/projects/$projectId/memories" as const,
+          params: { projectId },
+          icon: Brain,
         },
         {
           label: "Ask & Brainstorming",

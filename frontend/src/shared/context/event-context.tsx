@@ -16,6 +16,10 @@ export type WsEventData = Record<string, unknown> & {
   content_type?: string;
   title?: string;
   source_type?: string;
+  memory_id?: string;
+  from_id?: string;
+  to_id?: string;
+  relation?: string;
 };
 
 type EventSubscriber = (event: WsEventData) => void;
@@ -145,6 +149,11 @@ function buildToastContent(data: WsEventData): ToastContent {
       };
 
     case "project_updated":
+    case "memory_created":
+    case "memory_updated":
+    case "memory_deleted":
+    case "memory_linked":
+    case "memory_unlinked":
       return { title: "", message: "", variant: "default", silent: true };
 
     default:
@@ -227,6 +236,21 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         // Invalidate terminal queries when a new terminal is spawned
         if (data.type === "terminal_created") {
           queryClient.invalidateQueries({ queryKey: ["terminals"] });
+        }
+
+        if (
+          data.type === "memory_created" ||
+          data.type === "memory_updated" ||
+          data.type === "memory_deleted" ||
+          data.type === "memory_linked" ||
+          data.type === "memory_unlinked"
+        ) {
+          if (data.project_id) {
+            queryClient.invalidateQueries({ queryKey: ["projects", data.project_id, "memories"] });
+          }
+          if (typeof data.memory_id === "string") {
+            queryClient.invalidateQueries({ queryKey: ["memories", data.memory_id, "detail"] });
+          }
         }
 
         // Invalidate relevant queries for real-time updates
