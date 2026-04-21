@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Play, Square, LayoutTemplate } from "lucide-react";
+import { Play, Square } from "lucide-react";
 import { toast } from "sonner";
 import { useIssue } from "@/features/issues/hooks";
 import { useProject } from "@/features/projects/hooks";
@@ -96,16 +96,10 @@ function IssueDetailPage() {
           </Button>
         )}
         {hasAny && !hasSplit && (
-          <>
-            <Button variant="outline" size="sm" onClick={openTerminal} disabled={createTerminal.isPending}>
-              <LayoutTemplate className="size-3 mr-1" />
-              Split
-            </Button>
-            <Button variant="destructive" size="sm" onClick={() => setShowCloseConfirm(true)}>
-              <Square className="size-3 mr-1" />
-              Close Terminal
-            </Button>
-          </>
+          <Button variant="destructive" size="sm" onClick={() => setShowCloseConfirm(true)}>
+            <Square className="size-3 mr-1" />
+            Close Terminal
+          </Button>
         )}
         {hasSplit && (
           <Button variant="destructive" size="sm" onClick={() => setShowCloseConfirm(true)}>
@@ -137,6 +131,7 @@ function IssueDetailPage() {
               terminal1 && (
                 <TerminalPanel
                   terminalId={terminal1.id}
+                  projectId={projectId}
                   onSessionEnd={() => killTerminal.mutate(terminal1.id)}
                   onDownloadRecording={() => handleDownload(terminal1.id)}
                 />
@@ -147,6 +142,7 @@ function IssueDetailPage() {
                   {terminal1 && (
                     <TerminalPanel
                       terminalId={terminal1.id}
+                      projectId={projectId}
                       onSessionEnd={() => killTerminal.mutate(terminal1.id)}
                       onDownloadRecording={() => handleDownload(terminal1.id)}
                     />
@@ -157,6 +153,7 @@ function IssueDetailPage() {
                   {terminal2 && (
                     <TerminalPanel
                       terminalId={terminal2.id}
+                      projectId={projectId}
                       onSessionEnd={() => killTerminal.mutate(terminal2.id)}
                       onDownloadRecording={() => handleDownload(terminal2.id)}
                     />
