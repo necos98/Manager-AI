@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.database import Base
 from app.models import (  # noqa: F401
     ActivityLog, Issue, IssueFeedback, IssueRelation, Memory, MemoryLink,
-    Project, ProjectSkill, PromptTemplate, Setting, Task, TerminalCommand,
+    Project, ProjectFile, ProjectSkill, PromptTemplate, Setting, Task, TerminalCommand,
 )
 from app.models.issue_relation import IssueRelation  # noqa: F401
 from app.models.project_variable import ProjectVariable  # noqa: F401
@@ -67,6 +67,29 @@ async def db_session():
             "INSERT INTO memories_fts(rowid, title, description) "
             "VALUES (new.rowid, new.title, new.description); END;"
         )
+        connection.exec_driver_sql(
+            "CREATE VIRTUAL TABLE project_files_fts USING fts5("
+            "original_name, extracted_text, "
+            "content='project_files', content_rowid='rowid', "
+            "tokenize='unicode61')"
+        )
+        connection.exec_driver_sql(
+            "CREATE TRIGGER project_files_ai AFTER INSERT ON project_files BEGIN "
+            "INSERT INTO project_files_fts(rowid, original_name, extracted_text) "
+            "VALUES (new.rowid, new.original_name, COALESCE(new.extracted_text, '')); END;"
+        )
+        connection.exec_driver_sql(
+            "CREATE TRIGGER project_files_ad AFTER DELETE ON project_files BEGIN "
+            "INSERT INTO project_files_fts(project_files_fts, rowid, original_name, extracted_text) "
+            "VALUES ('delete', old.rowid, old.original_name, COALESCE(old.extracted_text, '')); END;"
+        )
+        connection.exec_driver_sql(
+            "CREATE TRIGGER project_files_au AFTER UPDATE ON project_files BEGIN "
+            "INSERT INTO project_files_fts(project_files_fts, rowid, original_name, extracted_text) "
+            "VALUES ('delete', old.rowid, old.original_name, COALESCE(old.extracted_text, '')); "
+            "INSERT INTO project_files_fts(rowid, original_name, extracted_text) "
+            "VALUES (new.rowid, new.original_name, COALESCE(new.extracted_text, '')); END;"
+        )
 
     async with engine.begin() as conn:
         await conn.run_sync(_create_tables)
@@ -79,5 +102,9 @@ async def db_session():
         await conn.exec_driver_sql("DROP TRIGGER IF EXISTS memories_au")
         await conn.exec_driver_sql("DROP TRIGGER IF EXISTS memories_ad")
         await conn.exec_driver_sql("DROP TABLE IF EXISTS memories_fts")
+        await conn.exec_driver_sql("DROP TRIGGER IF EXISTS project_files_ai")
+        await conn.exec_driver_sql("DROP TRIGGER IF EXISTS project_files_au")
+        await conn.exec_driver_sql("DROP TRIGGER IF EXISTS project_files_ad")
+        await conn.exec_driver_sql("DROP TABLE IF EXISTS project_files_fts")
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()

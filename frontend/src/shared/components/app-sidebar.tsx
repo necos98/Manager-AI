@@ -1,18 +1,15 @@
 import {
   Activity,
-  BookOpen,
   Brain,
   CircleDot,
   FileText,
   HeartPulse,
-  Key,
   LayoutDashboard,
   MessageSquare,
   MoreHorizontal,
   Pencil,
   Settings,
   Smartphone,
-  SquareTerminal,
   Terminal,
 } from "lucide-react";
 import { useState } from "react";
@@ -75,18 +72,6 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
           icon: FileText,
         },
         {
-          label: "Commands",
-          to: "/projects/$projectId/commands" as const,
-          params: { projectId },
-          icon: SquareTerminal,
-        },
-        {
-          label: "Variables",
-          to: "/projects/$projectId/variables" as const,
-          params: { projectId },
-          icon: Key,
-        },
-        {
           label: "Activity",
           to: "/projects/$projectId/activity" as const,
           params: { projectId },
@@ -103,12 +88,6 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
           to: "/projects/$projectId/ask" as const,
           params: { projectId },
           icon: MessageSquare,
-        },
-        {
-          label: "Library",
-          to: "/projects/$projectId/library" as const,
-          params: { projectId },
-          icon: BookOpen,
         },
         {
           label: "Health",
@@ -205,17 +184,6 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
                   {terminalCount > 0 && (
                     <SidebarMenuBadge>{terminalCount}</SidebarMenuBadge>
                   )}
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={!!matchRoute({ to: "/library", fuzzy: true })}
-                  >
-                    <Link to="/library">
-                      <BookOpen />
-                      <span>Library</span>
-                    </Link>
-                  </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
