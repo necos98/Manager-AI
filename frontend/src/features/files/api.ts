@@ -17,6 +17,10 @@ export function getFileDownloadUrl(projectId: string, fileId: string): string {
   return buildUrl(`/projects/${projectId}/files/${fileId}/download`);
 }
 
+export function getFilePreviewUrl(projectId: string, fileId: string): string {
+  return buildUrl(`/projects/${projectId}/files/${fileId}/preview`);
+}
+
 export function deleteFile(projectId: string, fileId: string): Promise<null> {
   return apiDelete(`/projects/${projectId}/files/${fileId}`);
 }
