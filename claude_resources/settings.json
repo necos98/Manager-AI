@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$(cygpath -w \"$(pwd)\")\\.claude\\scripts\\notify-hook.ps1\" -DefaultTitle \"Claude finished\" -DefaultMessage \"Response complete\""
+          },
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$(cygpath -w \"$(pwd)\")\\.claude\\scripts\\tts-hook.ps1\""
           }
         ]
       }

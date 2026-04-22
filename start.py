@@ -281,10 +281,15 @@ def main():
 
     signal.signal(signal.SIGINT, handle_sigint)
 
+    webview_storage = DATA_DIR / "webview"
+    webview_storage.mkdir(parents=True, exist_ok=True)
+
     try:
         webview.start(
             func=poll_worker,
             debug=bool(os.environ.get("MANAGER_AI_DEV")),
+            private_mode=False,
+            storage_path=str(webview_storage),
         )
     finally:
         shutdown()
