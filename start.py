@@ -208,6 +208,28 @@ def main():
 
     signal.signal(signal.SIGINT, shutdown)
 
+    stop_event = threading.Event()
+
+    def poll_worker():
+        """Watch subprocess health on the webview worker thread.
+
+        Destroying the window unblocks webview.start() on the main thread,
+        which then runs shutdown() in its finally clause.
+        """
+        while not stop_event.is_set():
+            for proc in processes:
+                ret = proc.poll()
+                if ret is not None:
+                    proc_name = "Backend" if proc is backend_proc else "Frontend"
+                    print(f"\n[!] {proc_name} exited with code {ret}")
+                    stop_event.set()
+                    try:
+                        window.destroy()
+                    except Exception:
+                        pass
+                    return
+            time.sleep(0.5)
+
     # Wait — poll processes and exit if one crashes
     try:
         while True:
