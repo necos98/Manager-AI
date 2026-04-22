@@ -28,7 +28,7 @@ async def test_get_raises_keyerror_for_unknown_key(service):
 
 async def test_get_all_returns_all_defaults_not_customized(service):
     settings = await service.get_all()
-    assert len(settings) == 39
+    assert len(settings) == 49
     keys = [s.key for s in settings]
     assert "server.name" in keys
     assert "tool.create_issue_spec.description" in keys

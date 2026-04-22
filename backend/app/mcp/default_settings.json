@@ -37,5 +37,15 @@
   "tool.memory_search.description": "Full-text search across a project's memory titles and descriptions (SQLite FTS5). Returns matches with snippet and rank.",
   "tool.list_project_files.description": "List all files uploaded by the user to a project. Returns id, original_name, file_type, file_size, extraction_status (pending/ok/failed/unsupported), low_text flag, created_at. Use this first to discover attached materials (specs, PDFs, spreadsheets) before searching or reading them.",
   "tool.read_project_file.description": "Read the extracted text content of an uploaded file. Supports pagination via offset/max_chars (default 50000, hard cap 500000). Returns {id, name, type, status, content, offset, total_chars, truncated, error}. Only files with extraction_status='ok' contain text. Legacy .doc/.xls are 'unsupported' — ask user to re-upload as .docx/.xlsx.",
-  "tool.search_project_files.description": "Full-text search (SQLite FTS5) across filenames and extracted content of uploaded project files. Returns matches with snippet and rank. Use this when you know keywords but not which file contains them. Pattern: list_project_files → search_project_files → read_project_file."
+  "tool.search_project_files.description": "Full-text search (SQLite FTS5) across filenames and extracted content of uploaded project files. Returns matches with snippet and rank. Use this when you know keywords but not which file contains them. Pattern: list_project_files → search_project_files → read_project_file.",
+  "tts.enabled": "false",
+  "tts.cap_chars": "500",
+  "tts.voice": "",
+  "tts.rate": "1.0",
+  "tts.pitch": "1.0",
+  "tts.summarize_enabled": "false",
+  "tts.summarize_model": "claude-haiku-4-5-20251001",
+  "tts.summarize_prompt": "Riassumi il seguente testo per la lettura vocale in italiano. Scrivi in prosa scorrevole, massimo {max_length} parole. Niente code block, niente liste puntate, niente markdown. Se ci sono comandi o nomi di file leggili come testo normale.",
+  "tts.summarize_max_length": "60",
+  "tts.summarize_timeout_seconds": "10"
 }

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.services.event_service import event_service, websocket_notifier
+from app.services.settings_service import SettingsService
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +29,64 @@ async def events_ws(websocket: WebSocket):
         websocket_notifier.disconnect(websocket)
 
 
+def _truncate_for_tts(text: str, cap: int) -> str:
+    text = text.strip()
+    if len(text) <= cap:
+        return text
+    window = text[:cap]
+    for sep in (". ", "! ", "? "):
+        idx = window.rfind(sep)
+        if idx >= cap // 2:
+            return window[: idx + 1].rstrip() + "…"
+    idx = window.rfind(" ")
+    if idx >= cap // 2:
+        return window[:idx] + "…"
+    return window + "…"
+
+
+async def _prepare_tts_event(event: dict, db: AsyncSession) -> dict | None:
+    text = (event.get("text") or "").strip()
+    if not text:
+        return None
+    svc = SettingsService(db)
+    enabled = (await svc.get("tts.enabled")).lower() == "true"
+    if not enabled:
+        return None
+    try:
+        cap = max(1, int(await svc.get("tts.cap_chars")))
+    except (TypeError, ValueError):
+        cap = 500
+    voice = await svc.get("tts.voice")
+    try:
+        rate = float(await svc.get("tts.rate"))
+    except (TypeError, ValueError):
+        rate = 1.0
+    try:
+        pitch = float(await svc.get("tts.pitch"))
+    except (TypeError, ValueError):
+        pitch = 1.0
+    return {
+        "type": "tts",
+        "text": _truncate_for_tts(text, cap),
+        "voice": voice,
+        "rate": rate,
+        "pitch": pitch,
+        "terminal_id": event.get("terminal_id"),
+        "issue_id": event.get("issue_id"),
+        "project_id": event.get("project_id"),
+        "timestamp": event.get("timestamp") or datetime.now(timezone.utc).isoformat(),
+    }
+
+
 @router.post("")
 async def post_event(event: dict, db: AsyncSession = Depends(get_db)):
+    if event.get("type") == "tts":
+        tts_event = await _prepare_tts_event(event, db)
+        if tts_event is None:
+            return {"ok": True, "dropped": True}
+        await event_service.emit(tts_event)
+        return {"ok": True}
+
     # Enrich with issue_name if issue_id + project_id are provided
     if event.get("issue_id") and event.get("project_id") and "issue_name" not in event:
         try:
