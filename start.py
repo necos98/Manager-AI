@@ -16,6 +16,45 @@ import sys
 import threading
 import time
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+
+BACKEND_DIR = ROOT / "backend"
+FRONTEND_DIR = ROOT / "frontend"
+VENV_DIR = ROOT / "venv"
+DATA_DIR = ROOT / "data"
+
+IS_WINDOWS = platform.system() == "Windows"
+VENV_PYTHON = VENV_DIR / ("Scripts/python.exe" if IS_WINDOWS else "bin/python")
+VENV_PIP = VENV_DIR / ("Scripts/pip.exe" if IS_WINDOWS else "bin/pip")
+VENV_ALEMBIC = VENV_DIR / ("Scripts/alembic.exe" if IS_WINDOWS else "bin/alembic")
+
+
+def _bootstrap_venv_and_reexec():
+    """Create venv, install deps, then re-exec this script under venv python.
+
+    Must run BEFORE importing webview/dotenv — those live in the venv.
+    """
+    if not VENV_PYTHON.exists():
+        print("[...] Creating Python virtual environment...")
+        subprocess.run([sys.executable, "-m", "venv", str(VENV_DIR)], check=True)
+        print("[ok] Virtual environment created")
+
+    print("[...] Installing backend dependencies...")
+    subprocess.run(
+        [str(VENV_PYTHON), "-m", "pip", "install", "-r", str(BACKEND_DIR / "requirements.txt"), "-q"],
+        check=True,
+    )
+    print("[ok] Backend dependencies installed")
+
+    if Path(sys.executable).resolve() != VENV_PYTHON.resolve():
+        os.environ["MANAGER_AI_VENV_BOOTSTRAPPED"] = "1"
+        os.execv(str(VENV_PYTHON), [str(VENV_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]])
+
+
+if not os.environ.get("MANAGER_AI_VENV_BOOTSTRAPPED") and Path(sys.executable).resolve() != VENV_PYTHON.resolve():
+    _bootstrap_venv_and_reexec()
+
 try:
     from dotenv import load_dotenv
     _HAS_DOTENV = True
@@ -23,8 +62,6 @@ except ImportError:
     _HAS_DOTENV = False
 
 import webview  # pywebview: desktop window wrapper
-
-ROOT = Path(__file__).resolve().parent
 
 if _HAS_DOTENV:
     load_dotenv(ROOT / ".env")
@@ -37,17 +74,8 @@ else:
             if line and not line.startswith("#") and "=" in line:
                 key, _, val = line.partition("=")
                 os.environ.setdefault(key.strip(), val.strip())
-BACKEND_DIR = ROOT / "backend"
-FRONTEND_DIR = ROOT / "frontend"
-VENV_DIR = ROOT / "venv"
-DATA_DIR = ROOT / "data"
 
 FRONTEND_PORT = int(os.environ.get("FRONTEND_PORT", 4173))
-
-IS_WINDOWS = platform.system() == "Windows"
-VENV_PYTHON = VENV_DIR / ("Scripts/python.exe" if IS_WINDOWS else "bin/python")
-VENV_PIP = VENV_DIR / ("Scripts/pip.exe" if IS_WINDOWS else "bin/pip")
-VENV_ALEMBIC = VENV_DIR / ("Scripts/alembic.exe" if IS_WINDOWS else "bin/alembic")
 
 
 def check_prerequisites():
@@ -59,21 +87,6 @@ def check_prerequisites():
         print("ERROR: npm is not installed or not in PATH.")
         sys.exit(1)
     print("[ok] Node.js and npm found")
-
-
-def setup_venv():
-    """Create venv and install backend dependencies if needed."""
-    if not VENV_PYTHON.exists():
-        print("[...] Creating Python virtual environment...")
-        subprocess.run([sys.executable, "-m", "venv", str(VENV_DIR)], check=True)
-        print("[ok] Virtual environment created")
-
-    print("[...] Installing backend dependencies...")
-    subprocess.run(
-        [str(VENV_PYTHON), "-m", "pip", "install", "-r", str(BACKEND_DIR / "requirements.txt"), "-q"],
-        check=True,
-    )
-    print("[ok] Backend dependencies installed")
 
 
 def setup_frontend():
@@ -118,7 +131,6 @@ def main():
     backend_port = int(os.environ.get("BACKEND_PORT", 8000))
 
     check_prerequisites()
-    setup_venv()
     setup_frontend()
     run_migrations()
 

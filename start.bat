@@ -1,5 +1,5 @@
 @echo off
 cd /d "%~dp0"
-call venv\Scripts\activate.bat
+if exist venv\Scripts\activate.bat call venv\Scripts\activate.bat
 python start.py
 pause
