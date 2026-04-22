@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -Command \"$d = $input | Out-String | ConvertFrom-Json; $t = if ($d.title) { $d.title } else { 'Claude' }; $m = if ($d.message) { $d.message } else { 'Done' }; & '.\\claude_resources\\scripts\\notify.bat' $t $m\""
+          }
+        ]
+      }
+    ]
+  }
+}

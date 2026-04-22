@@ -11,6 +11,7 @@ export const terminalKeys = {
   all: ["terminals"] as const,
   count: ["terminals", "count"] as const,
   config: ["terminals", "config"] as const,
+  ask: (projectId: string) => ["terminals", "ask", projectId] as const,
   commands: (projectId?: string | null) => ["terminal-commands", projectId] as const,
   variables: ["terminal-commands", "variables"] as const,
 };
@@ -59,6 +60,15 @@ export function useCreateAskTerminal() {
       queryClient.invalidateQueries({ queryKey: terminalKeys.count });
     },
     onError: onMutationError,
+  });
+}
+
+export function useAskTerminals(projectId: string) {
+  return useQuery({
+    queryKey: terminalKeys.ask(projectId),
+    queryFn: () => api.fetchAskTerminals(projectId),
+    enabled: Boolean(projectId),
+    staleTime: 10_000,
   });
 }
 

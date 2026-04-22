@@ -17,6 +17,10 @@ export function createAskTerminal(data: AskTerminalCreate): Promise<Terminal> {
   return apiPost<Terminal>("/terminals/ask", data);
 }
 
+export function fetchAskTerminals(projectId: string): Promise<TerminalListItem[]> {
+  return apiGet<TerminalListItem[]>(`/terminals/ask?project_id=${encodeURIComponent(projectId)}`);
+}
+
 export function killTerminal(terminalId: string): Promise<null> {
   return apiDelete(`/terminals/${terminalId}`);
 }

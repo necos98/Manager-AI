@@ -123,6 +123,23 @@ class TestTerminalServiceRegistry:
             t1_terms = service.list_active(issue_id="t1")
             assert len(t1_terms) == 1
 
+    def test_list_filter_empty_issue_id_returns_ask_only(self, service):
+        """issue_id='' must filter to ask terminals (issue_id=''), not be ignored."""
+        with patch("app.services.terminal_service.PTY") as MockPTY:
+            mock_pty = MagicMock()
+            mock_pty.spawn = MagicMock()
+            MockPTY.return_value = mock_pty
+
+            service.create(issue_id="", project_id="p1", project_path="C:/a")
+            service.create(issue_id="i-1", project_id="p1", project_path="C:/a")
+
+            ask_terms = service.list_active(project_id="p1", issue_id="")
+            assert len(ask_terms) == 1
+            assert ask_terms[0]["issue_id"] == ""
+
+            all_terms = service.list_active(project_id="p1", issue_id=None)
+            assert len(all_terms) == 2
+
     def test_active_count(self, service):
         with patch("app.services.terminal_service.PTY") as MockPTY:
             mock_pty = MagicMock()

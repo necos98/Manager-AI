@@ -38,13 +38,12 @@ Before defining tasks, map out the files that will be created or modified. Each 
 1. **Read project_id** from `manager.json`
 2. **Read the spec** — fetch from MCP with `mcp__ManagerAi__get_task_details` using the spec's task_id
 3. **Verify scope** — if the spec covers multiple independent subsystems, suggest splitting into separate plans
-4. **Memory scan (MUST)** — `mcp__ManagerAi__memory_search` for prior patterns, constraints, architectural decisions, and gotchas relevant to the spec. Factor findings into the plan (reuse prior conventions; flag any contradictions to the user before proceeding).
-5. **Map files** — list all files to create/modify with their responsibilities
-6. **Write the full plan** — task by task, step by step (see structure below)
-7. **Save plan via MCP** — `mcp__ManagerAi__create_task_plan`
-8. **Create MCP tasks** — one `mcp__ManagerAi__create_task` for each main task in the plan
-9. **Plan review loop** — dispatch reviewer subagent; fix and re-dispatch until approved (max 3 iterations)
-10. **Execution handoff** — present execution options to the user
+4. **Map files** — list all files to create/modify with their responsibilities
+5. **Write the full plan** — task by task, step by step (see structure below)
+6. **Save plan via MCP** — `mcp__ManagerAi__create_task_plan`
+7. **Create MCP tasks** — one `mcp__ManagerAi__create_task` for each main task in the plan
+8. **Plan review loop** — dispatch reviewer subagent; fix and re-dispatch until approved (max 3 iterations)
+9. **Execution handoff** — present execution options to the user
 
 ## Task structure in the plan
 

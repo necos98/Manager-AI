@@ -160,6 +160,33 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
             return {"error": e.message}
 
 
+@mcp.tool(description=_desc["tool.create_issue.description"])
+async def create_issue(project_id: str, description: str, priority: int = 3) -> dict:
+    if not description or not description.strip():
+        return {"error": "Description cannot be blank"}
+    if priority < 1 or priority > 5:
+        return {"error": "Priority must be between 1 and 5"}
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.create(
+                project_id=project_id,
+                description=description,
+                priority=priority,
+            )
+            result = {
+                "id": issue.id,
+                "project_id": issue.project_id,
+                "description": issue.description,
+                "priority": issue.priority,
+                "status": issue.status.value,
+            }
+            await session.commit()
+            return result
+        except AppError as e:
+            return {"error": e.message}
+
+
 @mcp.tool(description=_desc["tool.create_issue_spec.description"])
 async def create_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
     async with async_session() as session:

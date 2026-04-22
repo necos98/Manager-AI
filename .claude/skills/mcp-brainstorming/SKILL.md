@@ -23,14 +23,13 @@ Create a task for each item and complete them in order:
 
 1. **Read project_id** from `manager.json`
 2. **Explore project context** — files, structure, recent commits; use `mcp__ManagerAi__get_project_context`
-3. **Memory scan (MUST)** — `mcp__ManagerAi__memory_search` with topic keywords and `mcp__ManagerAi__memory_list(project_id, parent_id="")` for root memories; surface any prior decisions, constraints, or user preferences before asking clarifying questions
-4. **Ask clarifying questions** — one at a time; scope, constraints, success criteria
-5. **Propose 2-3 approaches** — with trade-offs and a recommendation
-6. **Present the design** — section by section, ask for approval after each section
-7. **Save spec via MCP** — `mcp__ManagerAi__create_task_spec`
-8. **Spec review loop** — dispatch reviewer subagent; fix and re-dispatch until approved (max 3 iterations)
-9. **Request user review** — share the spec task_id, wait for approval
-10. **Transition to mcp-writing-plans** — invoke the skill for the plan
+3. **Ask clarifying questions** — one at a time; scope, constraints, success criteria
+4. **Propose 2-3 approaches** — with trade-offs and a recommendation
+5. **Present the design** — section by section, ask for approval after each section
+6. **Save spec via MCP** — `mcp__ManagerAi__create_task_spec`
+7. **Spec review loop** — dispatch reviewer subagent; fix and re-dispatch until approved (max 3 iterations)
+8. **Request user review** — share the spec task_id, wait for approval
+9. **Transition to mcp-writing-plans** — invoke the skill for the plan
 
 ## Flow
 
@@ -38,7 +37,6 @@ Create a task for each item and complete them in order:
 digraph mcp_brainstorming {
     "Read project_id" [shape=box];
     "Explore context" [shape=box];
-    "Memory scan" [shape=box];
     "Clarifying questions" [shape=box];
     "Propose 2-3 approaches" [shape=box];
     "Present design" [shape=box];
@@ -50,8 +48,7 @@ digraph mcp_brainstorming {
     "Invoke mcp-writing-plans" [shape=doublecircle];
 
     "Read project_id" -> "Explore context";
-    "Explore context" -> "Memory scan";
-    "Memory scan" -> "Clarifying questions";
+    "Explore context" -> "Clarifying questions";
     "Clarifying questions" -> "Propose 2-3 approaches";
     "Propose 2-3 approaches" -> "Present design";
     "Present design" -> "User approves?";

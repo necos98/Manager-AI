@@ -153,7 +153,7 @@ class TerminalService:
                 continue
             if project_id and term["project_id"] != project_id:
                 continue
-            if issue_id and term["issue_id"] != issue_id:
+            if issue_id is not None and term["issue_id"] != issue_id:
                 continue
             results.append(self._to_response(term))
         return results
