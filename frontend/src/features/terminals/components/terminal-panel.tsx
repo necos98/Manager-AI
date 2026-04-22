@@ -3,13 +3,14 @@ import { Terminal } from "xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { SearchAddon } from "@xterm/addon-search";
-import { Copy, Download, Images, Search, X } from "lucide-react";
+import { Copy, Download, Images, Mic, Search, X } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { TERMINAL_THEMES } from "@/features/terminals/themes";
 import { useSettings } from "@/features/settings/hooks";
 import { useTerminalContext } from "@/features/terminals/contexts/terminal-context";
 import { FileGalleryModal } from "@/features/files/components/file-gallery-modal";
+import { SpeechModal } from "@/features/terminals/components/speech-modal";
 import type { ProjectFile } from "@/shared/types";
 import "xterm/css/xterm.css";
 
@@ -31,6 +32,7 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [speechOpen, setSpeechOpen] = useState(false);
   const retryCountRef = useRef(0);
   const MAX_RETRIES = 5;
 
@@ -80,6 +82,18 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
     sendToWs(tag);
     setGalleryOpen(false);
     setTimeout(() => termRef.current?.focus(), 0);
+  }, [sendToWs]);
+
+  const handleSpeechSend = useCallback(async (text: string) => {
+    setSpeechOpen(false);
+    const CHUNK = 8;
+    for (let i = 0; i < text.length; i += CHUNK) {
+      if (!sendToWs(text.slice(i, i + CHUNK))) return;
+      await new Promise((r) => setTimeout(r, 15));
+    }
+    await new Promise((r) => setTimeout(r, 80));
+    sendToWs("\r");
+    termRef.current?.focus();
   }, [sendToWs]);
 
   const markActive = useCallback(() => {
@@ -276,6 +290,17 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
           variant="ghost"
           size="sm"
           className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
+          onClick={() => setSpeechOpen(true)}
+          title="Voice input"
+          aria-label="Voice input"
+        >
+          <Mic className="size-3 mr-1" />
+          Voice
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
           onClick={handleCopy}
           title="Copy selection"
           aria-label="Copy terminal selection"
@@ -351,6 +376,11 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
         onClose={() => setGalleryOpen(false)}
         projectId={projectId}
         onSelect={handleFileSelect}
+      />
+      <SpeechModal
+        open={speechOpen}
+        onClose={() => setSpeechOpen(false)}
+        onSend={handleSpeechSend}
       />
     </div>
   );
