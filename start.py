@@ -30,6 +30,18 @@ VENV_PIP = VENV_DIR / ("Scripts/pip.exe" if IS_WINDOWS else "bin/pip")
 VENV_ALEMBIC = VENV_DIR / ("Scripts/alembic.exe" if IS_WINDOWS else "bin/alembic")
 
 
+def _in_project_venv():
+    """True when current interpreter runs from this project's venv.
+
+    Uses sys.prefix (not executable path) — on Linux venv/bin/python is a
+    symlink to system python, so resolving paths gives false negatives.
+    """
+    try:
+        return Path(sys.prefix).resolve() == VENV_DIR.resolve()
+    except OSError:
+        return False
+
+
 def _bootstrap_venv_and_reexec():
     """Create venv, install deps, then re-exec this script under venv python.
 
@@ -47,12 +59,16 @@ def _bootstrap_venv_and_reexec():
     )
     print("[ok] Backend dependencies installed")
 
-    if Path(sys.executable).resolve() != VENV_PYTHON.resolve():
-        os.environ["MANAGER_AI_VENV_BOOTSTRAPPED"] = "1"
+    os.environ["MANAGER_AI_VENV_BOOTSTRAPPED"] = "1"
+    # execv on Windows doesn't replace process cleanly in some shells; spawn+exit is safer.
+    if IS_WINDOWS:
+        ret = subprocess.run([str(VENV_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]]).returncode
+        sys.exit(ret)
+    else:
         os.execv(str(VENV_PYTHON), [str(VENV_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]])
 
 
-if not os.environ.get("MANAGER_AI_VENV_BOOTSTRAPPED") and Path(sys.executable).resolve() != VENV_PYTHON.resolve():
+if not os.environ.get("MANAGER_AI_VENV_BOOTSTRAPPED") and not _in_project_venv():
     _bootstrap_venv_and_reexec()
 
 try:
