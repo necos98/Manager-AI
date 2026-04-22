@@ -42,6 +42,16 @@ def _in_project_venv():
         return False
 
 
+def _install_backend_deps():
+    """Install/update backend deps in the project venv. Idempotent — pip skips up-to-date."""
+    print("[...] Checking backend dependencies...")
+    subprocess.run(
+        [str(VENV_PYTHON), "-m", "pip", "install", "-r", str(BACKEND_DIR / "requirements.txt"), "-q"],
+        check=True,
+    )
+    print("[ok] Backend dependencies up to date")
+
+
 def _bootstrap_venv_and_reexec():
     """Create venv, install deps, then re-exec this script under venv python.
 
@@ -52,14 +62,8 @@ def _bootstrap_venv_and_reexec():
         subprocess.run([sys.executable, "-m", "venv", str(VENV_DIR)], check=True)
         print("[ok] Virtual environment created")
 
-    print("[...] Installing backend dependencies...")
-    subprocess.run(
-        [str(VENV_PYTHON), "-m", "pip", "install", "-r", str(BACKEND_DIR / "requirements.txt"), "-q"],
-        check=True,
-    )
-    print("[ok] Backend dependencies installed")
+    _install_backend_deps()
 
-    os.environ["MANAGER_AI_VENV_BOOTSTRAPPED"] = "1"
     # execv on Windows doesn't replace process cleanly in some shells; spawn+exit is safer.
     if IS_WINDOWS:
         ret = subprocess.run([str(VENV_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]]).returncode
@@ -68,8 +72,12 @@ def _bootstrap_venv_and_reexec():
         os.execv(str(VENV_PYTHON), [str(VENV_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]])
 
 
-if not os.environ.get("MANAGER_AI_VENV_BOOTSTRAPPED") and not _in_project_venv():
+if not _in_project_venv():
     _bootstrap_venv_and_reexec()
+else:
+    # Already in venv (re-exec or direct invoke): still verify deps every run
+    # so newly-added requirements get installed without needing to nuke venv.
+    _install_backend_deps()
 
 try:
     from dotenv import load_dotenv
