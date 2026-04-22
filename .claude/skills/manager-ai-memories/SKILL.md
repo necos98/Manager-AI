@@ -9,6 +9,25 @@ description: >
   question and AFTER learning something durable the user will want available next session.
 ---
 
+<EXTREMELY-IMPORTANT>
+Before answering ANY project-specific question, before making ANY
+architectural choice, and after learning ANY durable fact, you MUST
+use the `memory_*` MCP tools. Not optional. Not "if it seems relevant."
+
+**Read triggers — call `memory_search` before responding when:**
+- user asks "how do we…", "what did we decide…", "why is X done this way"
+- you are about to choose a naming convention, default, or architecture
+- you are starting a non-trivial task in an area not touched this session
+- user says "remember", "recall", "check memory"
+
+**Write triggers — call `memory_create` (or `memory_update`) when:**
+- an issue completes and its recap names a durable decision, constraint, gotcha, or preference
+- the user states a preference that will apply to future work
+- you hit a non-obvious gotcha you would want future-you to know
+
+If unsure whether to invoke memory, invoke it. Cost of a spurious search is tiny; cost of missing a prior decision is high.
+</EXTREMELY-IMPORTANT>
+
 # Manager AI — Memories
 
 Long-term, project-scoped notes that persist across Claude Code sessions. Backed

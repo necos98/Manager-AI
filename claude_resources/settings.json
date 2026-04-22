@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -Command \"$d = $input | Out-String | ConvertFrom-Json; $t = if ($d.title) { $d.title } else { 'Claude finished' }; $m = if ($d.message) { $d.message } else { 'Response complete' }; $script = Join-Path $env:CLAUDE_PROJECT_DIR 'claude_resources\\scripts\\notify.bat'; if (-not (Test-Path $script)) { $script = Join-Path $env:CLAUDE_PROJECT_DIR '.claude\\scripts\\notify.bat' }; & $script $t $m\""
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$(cygpath -w \"$(pwd)\")\\.claude\\scripts\\notify-hook.ps1\" -DefaultTitle \"Claude finished\" -DefaultMessage \"Response complete\""
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -Command \"$d = $input | Out-String | ConvertFrom-Json; $t = if ($d.title) { $d.title } else { 'Claude attention' }; $m = if ($d.message) { $d.message } else { 'Awaiting input' }; $script = Join-Path $env:CLAUDE_PROJECT_DIR 'claude_resources\\scripts\\notify.bat'; if (-not (Test-Path $script)) { $script = Join-Path $env:CLAUDE_PROJECT_DIR '.claude\\scripts\\notify.bat' }; & $script $t $m\""
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$(cygpath -w \"$(pwd)\")\\.claude\\scripts\\notify-hook.ps1\" -DefaultTitle \"Claude attention\" -DefaultMessage \"Awaiting input\""
           }
         ]
       }
