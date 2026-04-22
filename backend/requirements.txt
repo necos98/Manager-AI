@@ -14,3 +14,5 @@ pywinpty>=2.0.0; sys_platform == "win32"  # Windows-only; Linux uses built-in pt
 pypdf==5.1.0
 python-docx==1.1.2
 openpyxl==3.1.5
+pythonnet>=3.1.0rc0; python_version >= "3.14"  # Py 3.14: stable pythonnet caps at <3.14, RC adds support (pywebview Windows backend dep)
+pywebview>=5.0
