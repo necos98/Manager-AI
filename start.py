@@ -170,6 +170,24 @@ def main():
         env=frontend_env,
     )
 
+    print("[...] Waiting for frontend to be ready...")
+    for i in range(30):
+        if frontend_proc.poll() is not None:
+            print(f"[!] Frontend exited with code {frontend_proc.returncode}")
+            backend_proc.terminate()
+            sys.exit(1)
+        try:
+            with socket.create_connection(("127.0.0.1", FRONTEND_PORT), timeout=1):
+                break
+        except OSError:
+            time.sleep(0.5)
+    else:
+        print("[!] Frontend did not start within 15 seconds")
+        frontend_proc.terminate()
+        backend_proc.terminate()
+        sys.exit(1)
+    print("[ok] Frontend is ready")
+
     processes = [backend_proc, frontend_proc]
 
     def shutdown(sig=None, frame=None):
