@@ -13,6 +13,7 @@ import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 try:
@@ -20,6 +21,8 @@ try:
     _HAS_DOTENV = True
 except ImportError:
     _HAS_DOTENV = False
+
+import webview  # pywebview: desktop window wrapper
 
 ROOT = Path(__file__).resolve().parent
 
@@ -38,6 +41,8 @@ BACKEND_DIR = ROOT / "backend"
 FRONTEND_DIR = ROOT / "frontend"
 VENV_DIR = ROOT / "venv"
 DATA_DIR = ROOT / "data"
+
+FRONTEND_PORT = int(os.environ.get("FRONTEND_PORT", 4173))
 
 IS_WINDOWS = platform.system() == "Windows"
 VENV_PYTHON = VENV_DIR / ("Scripts/python.exe" if IS_WINDOWS else "bin/python")
@@ -120,7 +125,7 @@ def main():
     print()
     print("=" * 50)
     print("  Manager AI")
-    print("  Frontend: http://localhost:4173  (also accessible on LAN)")
+    print(f"  Frontend: http://localhost:{FRONTEND_PORT}  (also accessible on LAN)")
     print(f"  Backend:  http://localhost:{backend_port}  (also accessible on LAN)")
     print("  Press Ctrl+C to stop")
     print("=" * 50)
@@ -165,9 +170,31 @@ def main():
         env=frontend_env,
     )
 
+    print("[...] Waiting for frontend to be ready...")
+    for i in range(30):
+        if frontend_proc.poll() is not None:
+            print(f"[!] Frontend exited with code {frontend_proc.returncode}")
+            backend_proc.terminate()
+            sys.exit(1)
+        try:
+            with socket.create_connection(("127.0.0.1", FRONTEND_PORT), timeout=1):
+                break
+        except OSError:
+            time.sleep(0.5)
+    else:
+        print("[!] Frontend did not start within 15 seconds")
+        frontend_proc.terminate()
+        backend_proc.terminate()
+        sys.exit(1)
+    print("[ok] Frontend is ready")
+
     processes = [backend_proc, frontend_proc]
+    shutdown_called = {"done": False}
 
     def shutdown(sig=None, frame=None):
+        if shutdown_called["done"]:
+            return
+        shutdown_called["done"] = True
         print("\n[...] Shutting down...")
         for proc in processes:
             if proc.poll() is None:
@@ -178,21 +205,52 @@ def main():
             except subprocess.TimeoutExpired:
                 proc.kill()
         print("[ok] All processes stopped")
-        sys.exit(0)
 
-    signal.signal(signal.SIGINT, shutdown)
+    stop_event = threading.Event()
 
-    # Wait — poll processes and exit if one crashes
-    try:
-        while True:
+    window = webview.create_window(
+        "Manager AI",
+        f"http://localhost:{FRONTEND_PORT}",
+        width=1400,
+        height=900,
+    )
+    window.events.closed += lambda: stop_event.set()
+
+    def poll_worker():
+        """Watch subprocess health on the webview worker thread.
+
+        Destroying the window unblocks webview.start() on the main thread,
+        which then runs shutdown() in its finally clause.
+        """
+        while not stop_event.is_set():
             for proc in processes:
                 ret = proc.poll()
                 if ret is not None:
-                    proc_name = "Backend" if proc == backend_proc else "Frontend"
+                    proc_name = "Backend" if proc is backend_proc else "Frontend"
                     print(f"\n[!] {proc_name} exited with code {ret}")
-                    shutdown()
+                    stop_event.set()
+                    try:
+                        window.destroy()
+                    except Exception:
+                        pass
+                    return
             time.sleep(0.5)
-    except KeyboardInterrupt:
+
+    def handle_sigint(sig, frame):
+        stop_event.set()
+        try:
+            window.destroy()
+        except Exception:
+            pass
+
+    signal.signal(signal.SIGINT, handle_sigint)
+
+    try:
+        webview.start(
+            func=poll_worker,
+            debug=bool(os.environ.get("MANAGER_AI_DEV")),
+        )
+    finally:
         shutdown()
 
 
