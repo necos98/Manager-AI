@@ -7,7 +7,7 @@ interface MarkdownViewerProps {
 export function MarkdownViewer({ content }: MarkdownViewerProps) {
   if (!content) return <p className="text-muted-foreground italic text-sm">No content</p>;
   return (
-    <div className="prose prose-sm max-w-none">
+    <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
       <ReactMarkdown>{content}</ReactMarkdown>
     </div>
   );
