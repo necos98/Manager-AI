@@ -189,8 +189,12 @@ def main():
     print("[ok] Frontend is ready")
 
     processes = [backend_proc, frontend_proc]
+    shutdown_called = {"done": False}
 
     def shutdown(sig=None, frame=None):
+        if shutdown_called["done"]:
+            return
+        shutdown_called["done"] = True
         print("\n[...] Shutting down...")
         for proc in processes:
             if proc.poll() is None:
@@ -201,7 +205,6 @@ def main():
             except subprocess.TimeoutExpired:
                 proc.kill()
         print("[ok] All processes stopped")
-        sys.exit(0)
 
     signal.signal(signal.SIGINT, shutdown)
 
