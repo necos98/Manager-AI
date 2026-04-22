@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
-import { useCreateAskTerminal } from "@/features/terminals/hooks";
+import { useAskTerminals, useCreateAskTerminal, useKillTerminal, terminalKeys } from "@/features/terminals/hooks";
 import { useProject } from "@/features/projects/hooks";
 import { toast } from "sonner";
 
@@ -16,22 +17,46 @@ function AskPage() {
   const { data: project } = useProject(projectId);
   const [terminalId, setTerminalId] = useState<string | null>(null);
   const createAskTerminal = useCreateAskTerminal();
+  const killTerminal = useKillTerminal();
+  const { data: askTerminals, isLoading: askTerminalsLoading } = useAskTerminals(projectId);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     document.title = project ? `Ask & Brainstorming - ${project.name}` : "Ask & Brainstorming";
   }, [project]);
 
+  // Reattach to an existing ask terminal for this project when the page remounts.
+  useEffect(() => {
+    if (terminalId) return;
+    if (!askTerminals || askTerminals.length === 0) return;
+    const latest = [...askTerminals].sort((a, b) =>
+      (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+    )[0];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (latest?.id) setTerminalId(latest.id);
+  }, [askTerminals, terminalId, setTerminalId]);
+
   const handleStart = async () => {
     try {
       const terminal = await createAskTerminal.mutateAsync({ project_id: projectId });
       setTerminalId(terminal.id);
+      queryClient.invalidateQueries({ queryKey: terminalKeys.ask(projectId) });
     } catch (err) {
       toast.error("Failed to start session: " + (err instanceof Error ? err.message : "Unknown error"));
     }
   };
 
-  const handleNewConversation = () => {
+  const handleNewConversation = async () => {
+    const current = terminalId;
+    if (current) {
+      try {
+        await killTerminal.mutateAsync(current);
+      } catch {
+        // already gone — ignore
+      }
+    }
     setTerminalId(null);
+    queryClient.invalidateQueries({ queryKey: terminalKeys.ask(projectId) });
   };
 
   return (
@@ -65,7 +90,7 @@ function AskPage() {
           </div>
           <Button
             onClick={handleStart}
-            disabled={createAskTerminal.isPending}
+            disabled={createAskTerminal.isPending || askTerminalsLoading}
           >
             {createAskTerminal.isPending ? "Starting..." : "Start conversation"}
           </Button>

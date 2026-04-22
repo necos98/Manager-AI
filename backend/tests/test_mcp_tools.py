@@ -148,3 +148,78 @@ async def test_mcp_issue_project_validation(issue_service, project):
         await issue_service.complete_issue(issue.id, fake_project_id, "Recap")
 
 
+@pytest.mark.asyncio
+async def test_mcp_create_issue_success(db_session, project):
+    """create_issue tool creates issue in New status and returns payload"""
+
+    @asynccontextmanager
+    async def fake_session():
+        yield db_session
+
+    class MockSessionmaker:
+        def __call__(self):
+            return fake_session()
+
+    with patch("app.mcp.server.async_session", MockSessionmaker()):
+        result = await mcp_server.create_issue(
+            project_id=str(project.id),
+            description="fix the thing",
+            priority=2,
+        )
+
+    assert "error" not in result
+    assert result["project_id"] == project.id
+    assert result["description"] == "fix the thing"
+    assert result["priority"] == 2
+    assert result["status"] == "New"
+    assert result["id"]
+
+
+@pytest.mark.asyncio
+async def test_mcp_create_issue_default_priority(db_session, project):
+    """create_issue defaults priority to 3 when omitted"""
+
+    @asynccontextmanager
+    async def fake_session():
+        yield db_session
+
+    class MockSessionmaker:
+        def __call__(self):
+            return fake_session()
+
+    with patch("app.mcp.server.async_session", MockSessionmaker()):
+        result = await mcp_server.create_issue(
+            project_id=str(project.id),
+            description="default-priority issue",
+        )
+
+    assert result["priority"] == 3
+    assert result["status"] == "New"
+
+
+@pytest.mark.asyncio
+async def test_mcp_create_issue_rejects_blank_description():
+    """Blank description is rejected without touching the DB"""
+    result = await mcp_server.create_issue(project_id="anything", description="   ")
+    assert result == {"error": "Description cannot be blank"}
+
+
+@pytest.mark.asyncio
+async def test_mcp_create_issue_rejects_bad_priority(db_session, project):
+    """Priority outside [1,5] is rejected"""
+
+    @asynccontextmanager
+    async def fake_session():
+        yield db_session
+
+    class MockSessionmaker:
+        def __call__(self):
+            return fake_session()
+
+    with patch("app.mcp.server.async_session", MockSessionmaker()):
+        low = await mcp_server.create_issue(project_id=str(project.id), description="x", priority=0)
+        high = await mcp_server.create_issue(project_id=str(project.id), description="x", priority=9)
+
+    assert low == {"error": "Priority must be between 1 and 5"}
+    assert high == {"error": "Priority must be between 1 and 5"}
+

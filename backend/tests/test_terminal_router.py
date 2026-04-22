@@ -103,6 +103,27 @@ async def test_list_terminals_with_project_filter(client, mock_service):
     mock_service.list_active.assert_called_with(project_id="proj-1", issue_id=None)
 
 
+@pytest.mark.asyncio
+async def test_list_ask_terminals(client, mock_service):
+    """GET /api/terminals/ask?project_id=X returns only ask terminals (issue_id='')."""
+    mock_service.list_active = MagicMock(return_value=[{
+        "id": "term-ask-1",
+        "issue_id": "",
+        "project_id": "proj-1",
+        "project_path": "C:/fake",
+        "status": "active",
+        "created_at": "2026-04-22T00:00:00Z",
+        "cols": 120,
+        "rows": 30,
+    }])
+    resp = await client.get("/api/terminals/ask?project_id=proj-1")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["id"] == "term-ask-1"
+    mock_service.list_active.assert_called_with(project_id="proj-1", issue_id="")
+
+
 def test_evaluate_condition_no_condition():
     from app.services.terminal_condition import evaluate_condition
     assert evaluate_condition(None, {"issue_status": "NEW"}) is True

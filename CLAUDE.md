@@ -85,3 +85,13 @@ npm run lint    # ESLint
 - SQLite database and LanceDB vectors stored in `data/`
 - Config via `.env` file (see `.env.example`)
 - `manager.json` holds project ID configuration
+
+## Memory Protocol
+
+This project has a persistent project-scoped memory store accessed via the Manager AI MCP (`memory_search`, `memory_get`, `memory_create`, `memory_update`, `memory_list`, `memory_link`).
+
+**You MUST:**
+- Call `memory_search` before answering any project-specific question, before making architectural decisions, and at the start of non-trivial tasks (see `/run-issue` step 2 and the `manager-ai-memories` skill for the full trigger list).
+- Call `memory_create` (or `memory_update`) after completing an issue or whenever you learn a durable, non-obvious fact (decision + reasoning, constraint not enforced by code, user preference, recurring gotcha).
+
+The `project_id` is in `manager.json` at the repo root. Full policy and anti-patterns: `.claude/skills/manager-ai-memories/SKILL.md`.

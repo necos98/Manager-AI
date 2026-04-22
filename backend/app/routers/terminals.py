@@ -104,6 +104,26 @@ def _stop_reader(terminal_id: str) -> None:
         task.cancel()
 
 
+async def _teardown_terminal(terminal_id: str, service: TerminalService) -> None:
+    """Save recording, stop reader, close WS, and kill PTY for a terminal."""
+    try:
+        buf = service.get_buffered_output(terminal_id)
+        _save_recording(terminal_id, buf)
+    except Exception:
+        pass
+    _stop_reader(terminal_id)
+    ws = _terminal_ws.pop(terminal_id, None)
+    if ws:
+        try:
+            await ws.close(code=1000, reason="Terminal replaced")
+        except Exception:
+            pass
+    try:
+        service.kill(terminal_id)
+    except KeyError:
+        pass
+
+
 def get_terminal_service() -> TerminalService:
     return terminal_service
 
@@ -233,6 +253,11 @@ async def create_ask_terminal(
     if not os.path.isdir(project_path):
         raise HTTPException(status_code=400, detail=f"Project path does not exist: {project_path}")
 
+    # Enforce single active ask&brainstorming terminal per project:
+    # tear down any existing ones before spawning a new initialized session.
+    for existing in service.list_active(project_id=data.project_id, issue_id=""):
+        await _teardown_terminal(existing["id"], service)
+
     # Fetch project shell config
     project_obj = await db.get(Project, data.project_id)
     project_shell = project_obj.shell if project_obj else None
@@ -288,6 +313,7 @@ async def create_ask_terminal(
         }
         for var, val in variables.items():
             cmd = cmd.replace(var, val)
+        logger.info("Ask terminal %s command: %s", terminal["id"], cmd)
         pty = service.get_pty(terminal["id"])
         pty.write(cmd + "\r\n")
     except Exception:
@@ -296,8 +322,25 @@ async def create_ask_terminal(
     return TerminalResponse(**terminal)
 
 
-# NOTE: /config and /count MUST be defined before /{terminal_id} routes
+# NOTE: /config, /count, and /ask MUST be defined before /{terminal_id} routes
 # to avoid FastAPI matching them as path parameters.
+@router.get("/ask", response_model=list[TerminalListResponse])
+async def list_ask_terminals(
+    project_id: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+    service: TerminalService = Depends(get_terminal_service),
+):
+    """Return active Ask & Brainstorming terminals (issue_id == '') for a project."""
+    from app.models.project import Project
+
+    terminals = service.list_active(project_id=project_id, issue_id="")
+    for term in terminals:
+        project = await db.get(Project, term["project_id"])
+        term["project_name"] = project.name if project else None
+        term["issue_name"] = None
+    return terminals
+
+
 @router.get("/config")
 async def terminal_config(
     db: AsyncSession = Depends(get_db),
