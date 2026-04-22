@@ -13,6 +13,7 @@ import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 try:
@@ -20,6 +21,8 @@ try:
     _HAS_DOTENV = True
 except ImportError:
     _HAS_DOTENV = False
+
+import webview  # pywebview: desktop window wrapper
 
 ROOT = Path(__file__).resolve().parent
 
@@ -38,6 +41,8 @@ BACKEND_DIR = ROOT / "backend"
 FRONTEND_DIR = ROOT / "frontend"
 VENV_DIR = ROOT / "venv"
 DATA_DIR = ROOT / "data"
+
+FRONTEND_PORT = int(os.environ.get("FRONTEND_PORT", 4173))
 
 IS_WINDOWS = platform.system() == "Windows"
 VENV_PYTHON = VENV_DIR / ("Scripts/python.exe" if IS_WINDOWS else "bin/python")
@@ -120,7 +125,7 @@ def main():
     print()
     print("=" * 50)
     print("  Manager AI")
-    print("  Frontend: http://localhost:4173  (also accessible on LAN)")
+    print(f"  Frontend: http://localhost:{FRONTEND_PORT}  (also accessible on LAN)")
     print(f"  Backend:  http://localhost:{backend_port}  (also accessible on LAN)")
     print("  Press Ctrl+C to stop")
     print("=" * 50)
