@@ -206,9 +206,15 @@ def main():
                 proc.kill()
         print("[ok] All processes stopped")
 
-    signal.signal(signal.SIGINT, shutdown)
-
     stop_event = threading.Event()
+
+    window = webview.create_window(
+        "Manager AI",
+        f"http://localhost:{FRONTEND_PORT}",
+        width=1400,
+        height=900,
+    )
+    window.events.closed += lambda: stop_event.set()
 
     def poll_worker():
         """Watch subprocess health on the webview worker thread.
@@ -230,17 +236,21 @@ def main():
                     return
             time.sleep(0.5)
 
-    # Wait — poll processes and exit if one crashes
+    def handle_sigint(sig, frame):
+        stop_event.set()
+        try:
+            window.destroy()
+        except Exception:
+            pass
+
+    signal.signal(signal.SIGINT, handle_sigint)
+
     try:
-        while True:
-            for proc in processes:
-                ret = proc.poll()
-                if ret is not None:
-                    proc_name = "Backend" if proc == backend_proc else "Frontend"
-                    print(f"\n[!] {proc_name} exited with code {ret}")
-                    shutdown()
-            time.sleep(0.5)
-    except KeyboardInterrupt:
+        webview.start(
+            func=poll_worker,
+            debug=bool(os.environ.get("MANAGER_AI_DEV")),
+        )
+    finally:
         shutdown()
 
 
