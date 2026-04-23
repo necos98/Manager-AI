@@ -585,36 +585,6 @@ async def memory_delete(memory_id: str) -> dict:
         return {"deleted": True}
 
 
-@mcp.tool(description=_desc["tool.memory_get.description"])
-async def memory_get(memory_id: str) -> dict:
-    async with async_session() as session:
-        svc = MemoryService(session)
-        try:
-            bundle = await svc.get_related(memory_id)
-        except AppError as e:
-            return {"error": e.message}
-        counts = await svc.counts(memory_id)
-        return {
-            "memory": _memory_to_dict(bundle["memory"], counts),
-            "parent": _memory_to_dict(bundle["parent"], await svc.counts(bundle["parent"].id)) if bundle["parent"] else None,
-            "children": [_memory_to_dict(c, await svc.counts(c.id)) for c in bundle["children"]],
-            "links_out": [{"from_id": l.from_id, "to_id": l.to_id, "relation": l.relation} for l in bundle["links_out"]],
-            "links_in": [{"from_id": l.from_id, "to_id": l.to_id, "relation": l.relation} for l in bundle["links_in"]],
-        }
-
-
-@mcp.tool(description=_desc["tool.memory_list.description"])
-async def memory_list(project_id: str, parent_id: str | None = None, limit: int = 50, offset: int = 0) -> dict:
-    async with async_session() as session:
-        svc = MemoryService(session)
-        effective_parent = parent_id if parent_id != "" else None
-        rows = await svc.list(project_id=project_id, parent_id=effective_parent, limit=limit, offset=offset)
-        out = []
-        for m in rows:
-            out.append(_memory_to_dict(m, await svc.counts(m.id)))
-        return {"memories": out}
-
-
 @mcp.tool(description=_desc["tool.memory_link.description"])
 async def memory_link(from_id: str, to_id: str, relation: str = "") -> dict:
     async with async_session() as session:
@@ -642,26 +612,6 @@ async def memory_unlink(from_id: str, to_id: str, relation: str = "") -> dict:
         if deleted:
             await memory_events.emit_unlinked(project_id=m.project_id, from_id=from_id, to_id=to_id, relation=relation)
         return {"deleted": bool(deleted)}
-
-
-@mcp.tool(description=_desc["tool.memory_get_related.description"])
-async def memory_get_related(memory_id: str) -> dict:
-    return await memory_get(memory_id)
-
-
-@mcp.tool(description=_desc["tool.memory_search.description"])
-async def memory_search(project_id: str, query: str, limit: int = 20) -> dict:
-    async with async_session() as session:
-        svc = MemoryService(session)
-        hits = await svc.search(project_id=project_id, query=query, limit=limit)
-        results = []
-        for h in hits:
-            results.append({
-                "memory": _memory_to_dict(h["memory"], await svc.counts(h["memory"].id)),
-                "snippet": h["snippet"],
-                "rank": h["rank"],
-            })
-        return {"results": results}
 
 
 # ── Project file tools ──────────────────────────────────────────────────────
@@ -720,18 +670,4 @@ async def read_project_file(project_id: str, file_id: str, offset: int = 0, max_
         }
 
 
-@mcp.tool(description=_desc["tool.search_project_files.description"])
-async def search_project_files(project_id: str, query: str, limit: int = 20) -> dict:
-    async with async_session() as session:
-        svc = FileService(session)
-        hits = await svc.search(project_id, query, limit=limit)
-        return {
-            "results": [
-                {
-                    "file": _file_to_dict(h["file"], project_id=project_id),
-                    "snippet": h["snippet"],
-                    "rank": h["rank"],
-                }
-                for h in hits
-            ]
-        }
+# search_project_files removed — LLM greps .manager_ai/files/*.txt directly.
