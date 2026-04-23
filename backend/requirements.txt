@@ -11,6 +11,8 @@ httpx==0.28.1
 pytest==8.3.5
 pytest-asyncio==0.25.3
 pywinpty>=2.0.0; sys_platform == "win32"  # Windows-only; Linux uses built-in pty module
+PyYAML==6.0.2
+watchdog==6.0.0
 pypdf==5.1.0
 python-docx==1.1.2
 openpyxl==3.1.5
