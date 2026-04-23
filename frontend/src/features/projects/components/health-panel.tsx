@@ -53,6 +53,7 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
   const installMcp = useInstallMcp(projectId);
   const [running, setRunning] = useState(false);
   const [reinstallingResources, setReinstallingResources] = useState(false);
+  const [reinstallingMcp, setReinstallingMcp] = useState(false);
 
   const health = healthQuery.data;
 
@@ -67,6 +68,23 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
       toast.error(e instanceof Error ? e.message : "Reinstall failed");
     } finally {
       setReinstallingResources(false);
+    }
+  }
+
+  async function handleReinstallMcp() {
+    if (reinstallingMcp) return;
+    setReinstallingMcp(true);
+    try {
+      await installMcp.mutateAsync();
+      toast.success("Terminal opened — MCP re-registration running");
+      queryClient.invalidateQueries({ queryKey: terminalKeys.all });
+      queryClient.invalidateQueries({ queryKey: terminalKeys.count });
+      queryClient.invalidateQueries({ queryKey: ["projects", projectId, "health"] });
+      navigate({ to: "/terminals" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "MCP reinstall failed");
+    } finally {
+      setReinstallingMcp(false);
     }
   }
 
@@ -141,6 +159,25 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
           title="MCP Server"
           installed={health.mcp.installed}
           detail={health.mcp.location ?? undefined}
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleReinstallMcp}
+              disabled={reinstallingMcp || running}
+            >
+              {reinstallingMcp ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              {reinstallingMcp
+                ? "Reinstalling..."
+                : health.mcp.installed
+                  ? "Reinstall"
+                  : "Install"}
+            </Button>
+          }
         />
         <StatusRow
           title="manager.json"
