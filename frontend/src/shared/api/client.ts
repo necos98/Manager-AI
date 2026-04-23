@@ -26,7 +26,22 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     if (res.status === 204) return null as T;
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Unknown error" }));
-      throw new ApiError(err.detail || "Request failed", res.status);
+      // FastAPI 422 validation errors come back as an array of objects.
+      // Flatten them to a human-readable string so toasts don't render "[object Object]".
+      let message: string;
+      if (Array.isArray(err.detail)) {
+        message = err.detail
+          .map((e: { loc?: unknown[]; msg?: string }) => {
+            const where = Array.isArray(e.loc) ? e.loc.join(".") : "";
+            return where ? `${where}: ${e.msg}` : e.msg ?? "invalid";
+          })
+          .join("; ");
+      } else if (typeof err.detail === "string") {
+        message = err.detail;
+      } else {
+        message = "Request failed";
+      }
+      throw new ApiError(message, res.status);
     }
     return res.json();
   } finally {
