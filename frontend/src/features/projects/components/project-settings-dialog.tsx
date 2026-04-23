@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Archive } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -52,6 +52,19 @@ export function ProjectSettingsDialog({
     shell: project.shell || "__default__",
     wsl_distro: project.wsl_distro || "",
   });
+
+  // Re-sync form when the dialog opens so the newest project values are shown
+  useEffect(() => {
+    if (!open) return;
+    setForm({
+      name: project.name,
+      path: project.path,
+      description: project.description || "",
+      tech_stack: project.tech_stack || "",
+      shell: project.shell || "__default__",
+      wsl_distro: project.wsl_distro || "",
+    });
+  }, [open, project]);
 
   const { data: systemInfo } = useSystemInfo();
   const isWslShell = form.shell.toLowerCase().endsWith("wsl.exe");
