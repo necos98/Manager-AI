@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+import shutil
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from app.storage import atomic, paths
@@ -181,3 +182,145 @@ def _as_iso(value: Any) -> str:
     if value is None:
         return ""
     return str(value)
+
+
+# -------- write side --------
+
+
+_MD_FIELDS = ("specification", "plan", "recap")
+
+
+def create_issue(project_path: str, record: IssueRecord) -> None:
+    _write_issue_files(project_path, record)
+    rebuild_issues_index(project_path)
+
+
+def update_issue(project_path: str, record: IssueRecord) -> None:
+    _write_issue_files(project_path, record)
+    rebuild_issues_index(project_path)
+
+
+def delete_issue(project_path: str, issue_id: str) -> None:
+    folder = paths.issue_dir(project_path, issue_id)
+    if folder.exists():
+        shutil.rmtree(folder)
+    rebuild_issues_index(project_path)
+
+
+def upsert_task(project_path: str, issue_id: str, task: TaskRecord) -> None:
+    record = load_issue(project_path, issue_id)
+    if record is None:
+        raise ValueError(f"Issue {issue_id} not found")
+    tasks = [t for t in record.tasks if t.id != task.id]
+    tasks.append(task)
+    tasks.sort(key=lambda t: (t.order, t.id))
+    record.tasks = tasks
+    update_issue(project_path, record)
+
+
+def remove_task(project_path: str, issue_id: str, task_id: str) -> None:
+    record = load_issue(project_path, issue_id)
+    if record is None:
+        return
+    record.tasks = [t for t in record.tasks if t.id != task_id]
+    update_issue(project_path, record)
+
+
+def replace_tasks(project_path: str, issue_id: str, tasks: list[TaskRecord]) -> None:
+    record = load_issue(project_path, issue_id)
+    if record is None:
+        raise ValueError(f"Issue {issue_id} not found")
+    ordered = sorted(tasks, key=lambda t: (t.order, t.id))
+    record.tasks = ordered
+    update_issue(project_path, record)
+
+
+def find_task(project_path: str, task_id: str) -> tuple[IssueRecord, TaskRecord] | None:
+    for issue in list_issues_full(project_path):
+        for t in issue.tasks:
+            if t.id == task_id:
+                return issue, t
+    return None
+
+
+def add_feedback(project_path: str, issue_id: str, feedback: FeedbackRecord) -> None:
+    fb_path = paths.issue_feedback_md(project_path, issue_id, feedback.id)
+    content = (
+        "---\n"
+        f"id: {feedback.id}\n"
+        f"issue_id: {feedback.issue_id}\n"
+        f"created_at: \"{feedback.created_at}\"\n"
+        "---\n"
+        f"{feedback.content}"
+    )
+    atomic.write_text(fb_path, content)
+
+
+def upsert_relation(project_path: str, issue_id: str, rel: RelationRecord) -> None:
+    record = load_issue(project_path, issue_id)
+    if record is None:
+        raise ValueError(f"Issue {issue_id} not found")
+    existing = [r for r in record.relations if not (r.target_id == rel.target_id and r.type == rel.type)]
+    existing.append(rel)
+    existing.sort(key=lambda r: (r.type, r.target_id))
+    record.relations = existing
+    update_issue(project_path, record)
+
+
+def remove_relation(project_path: str, source_id: str, target_id: str, type: str) -> None:
+    record = load_issue(project_path, source_id)
+    if record is None:
+        return
+    record.relations = [r for r in record.relations if not (r.target_id == target_id and r.type == type)]
+    update_issue(project_path, record)
+
+
+def rebuild_issues_index(project_path: str) -> None:
+    issues_dir = paths.issues_dir(project_path)
+    entries: list[dict[str, Any]] = []
+    if issues_dir.exists():
+        for issue_folder in issues_dir.iterdir():
+            if not issue_folder.is_dir():
+                continue
+            yaml_path = issue_folder / "issue.yaml"
+            if not yaml_path.exists():
+                continue
+            data = atomic.read_yaml(yaml_path) or {}
+            entries.append(
+                {
+                    "id": data.get("id", issue_folder.name),
+                    "project_id": data.get("project_id", ""),
+                    "name": data.get("name"),
+                    "status": data.get("status", "New"),
+                    "priority": int(data.get("priority", 3)),
+                    "created_at": _as_iso(data.get("created_at")),
+                    "updated_at": _as_iso(data.get("updated_at")),
+                }
+            )
+    entries.sort(key=lambda e: (e["created_at"], e["id"]))
+    atomic.write_yaml(paths.issues_index(project_path), {"schema_version": 1, "issues": entries})
+
+
+def _write_issue_files(project_path: str, record: IssueRecord) -> None:
+    yaml_path = paths.issue_yaml(project_path, record.id)
+    payload: dict[str, Any] = {
+        "schema_version": 1,
+        "id": record.id,
+        "project_id": record.project_id,
+        "name": record.name,
+        "status": record.status,
+        "priority": record.priority,
+        "created_at": record.created_at,
+        "updated_at": record.updated_at,
+        "tasks": [asdict(t) for t in sorted(record.tasks, key=lambda t: (t.order, t.id))],
+        "relations": [asdict(r) for r in sorted(record.relations, key=lambda r: (r.type, r.target_id))],
+    }
+    atomic.write_yaml(yaml_path, payload)
+    atomic.write_text(paths.issue_md(project_path, record.id, "description"), record.description or "")
+    for field_name in _MD_FIELDS:
+        value = getattr(record, field_name)
+        md_path = paths.issue_md(project_path, record.id, field_name)  # type: ignore[arg-type]
+        if value is None:
+            atomic.remove_if_exists(md_path)
+        else:
+            atomic.write_text(md_path, value)
