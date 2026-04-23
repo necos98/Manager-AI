@@ -27,6 +27,7 @@ class ProjectService:
             stmt = stmt.where(Project.archived_at.is_(None))
         elif archived is True:
             stmt = stmt.where(Project.archived_at.is_not(None))
+        # archived is None → include both archived and active
         stmt = stmt.order_by(func.lower(Project.name).asc())
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
@@ -65,34 +66,33 @@ class ProjectService:
         await self.session.flush()
 
     async def get_dashboard_data(self) -> list[dict]:
-        from app.models.issue import Issue, IssueStatus
+        from app.models.issue import IssueStatus
+        from app.storage import issue_store
         projects = await self.list_all()
         result = []
+        terminal_statuses = {IssueStatus.FINISHED.value, IssueStatus.CANCELED.value}
         for project in projects:
-            q = (
-                select(Issue)
-                .where(Issue.project_id == project.id)
-                .where(Issue.status.notin_([IssueStatus.FINISHED, IssueStatus.CANCELED]))
-                .order_by(Issue.priority.asc(), Issue.created_at.asc())
-            )
-            r = await self.session.execute(q)
-            active = list(r.scalars().all())
+            records = [
+                r
+                for r in issue_store.list_issues_full(project.path)
+                if r.project_id == project.id and r.status not in terminal_statuses
+            ]
+            records.sort(key=lambda r: (r.priority, r.created_at))
             result.append({
                 "id": project.id,
                 "name": project.name,
                 "path": project.path,
-                "active_issues": active,
+                "active_issues": records,
             })
         return result
 
     async def get_issue_counts(self, project_id: str) -> dict[str, int]:
-        from sqlalchemy import func as sqlfunc, select as sqlselect
+        from app.storage import issue_store
 
-        from app.models.issue import Issue
-
-        result = await self.session.execute(
-            sqlselect(Issue.status, sqlfunc.count())
-            .where(Issue.project_id == project_id)
-            .group_by(Issue.status)
-        )
-        return {row[0].value: row[1] for row in result.all()}
+        project = await self.get_by_id(project_id)
+        counts: dict[str, int] = {}
+        for record in issue_store.list_issues(project.path):
+            if record.project_id != project_id:
+                continue
+            counts[record.status] = counts.get(record.status, 0) + 1
+        return counts

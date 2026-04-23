@@ -1,30 +1,28 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.exceptions import InvalidTransitionError
-from app.models.issue import Issue, IssueStatus
-from app.schemas.issue import IssueCreate, IssueCompleteBody, IssueFeedbackCreate, IssueFeedbackResponse, IssueResponse, IssueStatusUpdate, IssueUpdate
+from app.models.issue import IssueStatus
+from app.schemas.issue import (
+    IssueCompleteBody,
+    IssueCreate,
+    IssueFeedbackCreate,
+    IssueFeedbackResponse,
+    IssueResponse,
+    IssueStatusUpdate,
+    IssueUpdate,
+)
 from app.services.issue_service import IssueService
 
 router = APIRouter(prefix="/api/projects/{project_id}/issues", tags=["issues"])
 
 
-async def _reload_with_tasks(db: AsyncSession, issue_id: str) -> Issue:
-    result = await db.execute(
-        select(Issue).options(selectinload(Issue.tasks)).where(Issue.id == issue_id)
-    )
-    return result.scalar_one()
-
-
 @router.post("", response_model=IssueResponse, status_code=201)
 async def create_issue(project_id: str, data: IssueCreate, db: AsyncSession = Depends(get_db)):
     service = IssueService(db)
-    issue = await service.create(project_id=project_id, description=data.description, priority=data.priority)
+    record = await service.create(project_id=project_id, description=data.description, priority=data.priority)
     await db.commit()
-    return await _reload_with_tasks(db, issue.id)
+    return IssueResponse.from_record(record)
 
 
 @router.get("", response_model=list[IssueResponse])
@@ -35,13 +33,14 @@ async def list_issues(
     db: AsyncSession = Depends(get_db),
 ):
     service = IssueService(db)
-    return await service.list_by_project(project_id, status=status, search=search)
+    records = await service.list_by_project(project_id, status=status, search=search)
+    return [IssueResponse.from_record(r) for r in records]
 
 
 @router.get("/{issue_id}", response_model=IssueResponse)
 async def get_issue(project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)):
     service = IssueService(db)
-    return await service.get_for_project(issue_id, project_id)
+    return IssueResponse.from_record(await service.get_for_project(issue_id, project_id))
 
 
 @router.put("/{issue_id}", response_model=IssueResponse)
@@ -53,9 +52,14 @@ async def update_issue(
     if "name" in payload:
         await service.set_name(issue_id, project_id, payload.pop("name"))
     if payload:
-        await service.update_fields(issue_id, project_id, **payload)
+        # Schema field "spec" maps to record field "specification"
+        if "spec" in payload:
+            payload["specification"] = payload.pop("spec")
+        record = await service.update_fields(issue_id, project_id, **payload)
+    else:
+        record = await service.get_for_project(issue_id, project_id)
     await db.commit()
-    return await _reload_with_tasks(db, issue_id)
+    return IssueResponse.from_record(record)
 
 
 @router.patch("/{issue_id}/status", response_model=IssueResponse)
@@ -66,9 +70,9 @@ async def update_issue_status(
     db: AsyncSession = Depends(get_db),
 ):
     service = IssueService(db)
-    issue = await service.update_status(issue_id, project_id, data.status)
+    record = await service.update_status(issue_id, project_id, data.status)
     await db.commit()
-    return await _reload_with_tasks(db, issue.id)
+    return IssueResponse.from_record(record)
 
 
 @router.delete("/{issue_id}", status_code=204)
@@ -78,15 +82,14 @@ async def delete_issue(project_id: str, issue_id: str, db: AsyncSession = Depend
     await db.commit()
 
 
-
 @router.post("/{issue_id}/accept", response_model=IssueResponse)
 async def accept_issue(
     project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
 ):
     service = IssueService(db)
-    issue = await service.accept_issue(issue_id, project_id)
+    record = await service.accept_issue(issue_id, project_id)
     await db.commit()
-    return await _reload_with_tasks(db, issue.id)
+    return IssueResponse.from_record(record)
 
 
 @router.post("/{issue_id}/cancel", response_model=IssueResponse)
@@ -94,9 +97,9 @@ async def cancel_issue_endpoint(
     project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
 ):
     service = IssueService(db)
-    issue = await service.cancel_issue(issue_id, project_id)
+    record = await service.cancel_issue(issue_id, project_id)
     await db.commit()
-    return await _reload_with_tasks(db, issue.id)
+    return IssueResponse.from_record(record)
 
 
 @router.post("/{issue_id}/complete", response_model=IssueResponse)
@@ -104,9 +107,9 @@ async def complete_issue(
     project_id: str, issue_id: str, data: IssueCompleteBody, db: AsyncSession = Depends(get_db)
 ):
     service = IssueService(db)
-    issue = await service.complete_issue(issue_id, project_id, recap=data.recap)
+    record = await service.complete_issue(issue_id, project_id, recap=data.recap)
     await db.commit()
-    return await _reload_with_tasks(db, issue.id)
+    return IssueResponse.from_record(record)
 
 
 @router.get("/{issue_id}/feedback", response_model=list[IssueFeedbackResponse])
@@ -114,7 +117,8 @@ async def list_feedback(
     project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
 ):
     service = IssueService(db)
-    return await service.list_feedback(issue_id, project_id)
+    records = await service.list_feedback(issue_id, project_id)
+    return [IssueFeedbackResponse.from_record(r) for r in records]
 
 
 @router.post("/{issue_id}/feedback", response_model=IssueFeedbackResponse, status_code=201)
@@ -124,5 +128,4 @@ async def add_feedback(
     service = IssueService(db)
     fb = await service.add_feedback(issue_id, project_id, data.content)
     await db.commit()
-    await db.refresh(fb)
-    return fb
+    return IssueFeedbackResponse.from_record(fb)

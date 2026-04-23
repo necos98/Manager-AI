@@ -7,9 +7,9 @@ from app.services.project_service import ProjectService
 
 
 @pytest_asyncio.fixture
-async def project(db_session):
+async def project(db_session, tmp_path):
     service = ProjectService(db_session)
-    return await service.create(name="Test", path="/tmp/test")
+    return await service.create(name="Test", path=str(tmp_path))
 
 
 @pytest_asyncio.fixture

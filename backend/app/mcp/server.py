@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 
 from app.database import async_session
 from app.exceptions import AppError
-from app.models.issue import Issue
 from app.services.event_service import event_service
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
@@ -38,17 +37,17 @@ async def get_issue_details(project_id: str, issue_id: str) -> dict:
             "project_id": issue.project_id,
             "name": issue.name,
             "description": issue.description,
-            "status": issue.status.value,
+            "status": issue.status,
             "priority": issue.priority,
             "specification": issue.specification,
             "plan": issue.plan,
             "recap": issue.recap,
             "tasks": [
-                {"id": t.id, "name": t.name, "status": t.status.value, "order": t.order}
+                {"id": t.id, "name": t.name, "status": t.status, "order": t.order}
                 for t in issue.tasks
             ],
-            "created_at": issue.created_at.isoformat() if issue.created_at else None,
-            "updated_at": issue.updated_at.isoformat() if issue.updated_at else None,
+            "created_at": issue.created_at or None,
+            "updated_at": issue.updated_at or None,
         }
 
 
@@ -60,7 +59,7 @@ async def get_issue_status(project_id: str, issue_id: str) -> dict:
             issue = await issue_service.get_for_project(issue_id, project_id)
         except AppError as e:
             return {"error": e.message}
-        return {"id": issue.id, "status": issue.status.value}
+        return {"id": issue.id, "status": issue.status}
 
 
 @mcp.tool(description=_desc["tool.get_project_context.description"])
@@ -138,7 +137,7 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
             }
             issue_id_val = issue.id
             issue_name = issue.name or (issue.description or "")[:50] or ""
-            issue_status = issue.status.value
+            issue_status = issue.status
             try:
                 project = await ProjectService(session).get_by_id(project_id)
                 project_name = project.name
@@ -179,7 +178,7 @@ async def create_issue(project_id: str, description: str, priority: int = 3) -> 
                 "project_id": issue.project_id,
                 "description": issue.description,
                 "priority": issue.priority,
-                "status": issue.status.value,
+                "status": issue.status,
             }
             await session.commit()
             return result
@@ -196,13 +195,13 @@ async def create_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
             await session.commit()
             await event_service.emit({
                 "type": "issue_status_changed",
-                "new_status": issue.status.value,
+                "new_status": issue.status,
                 "project_id": project_id,
                 "issue_id": issue_id,
                 "issue_name": issue.name or (issue.description or "")[:50] or "",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
-            return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
+            return {"id": issue.id, "status": issue.status, "specification": issue.specification}
         except AppError as e:
             return {"error": e.message}
 
@@ -222,7 +221,7 @@ async def edit_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
                 "issue_name": issue.name or (issue.description or "")[:50] or "",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
-            return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
+            return {"id": issue.id, "status": issue.status, "specification": issue.specification}
         except AppError as e:
             return {"error": e.message}
 
@@ -236,13 +235,13 @@ async def create_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
             await session.commit()
             await event_service.emit({
                 "type": "issue_status_changed",
-                "new_status": issue.status.value,
+                "new_status": issue.status,
                 "project_id": project_id,
                 "issue_id": issue_id,
                 "issue_name": issue.name or (issue.description or "")[:50] or "",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
-            return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
+            return {"id": issue.id, "status": issue.status, "plan": issue.plan}
         except AppError as e:
             return {"error": e.message}
 
@@ -262,7 +261,7 @@ async def edit_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
                 "issue_name": issue.name or (issue.description or "")[:50] or "",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
-            return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
+            return {"id": issue.id, "status": issue.status, "plan": issue.plan}
         except AppError as e:
             return {"error": e.message}
 
@@ -273,7 +272,7 @@ async def accept_issue(project_id: str, issue_id: str) -> dict:
         issue_service = IssueService(session)
         try:
             issue = await issue_service.accept_issue(issue_id, project_id)
-            issue_status = issue.status.value
+            issue_status = issue.status
             issue_name_val = issue.name or (issue.description or "")[:50] or ""
             await session.commit()
             await event_service.emit({
@@ -295,7 +294,7 @@ async def cancel_issue(project_id: str, issue_id: str) -> dict:
         issue_service = IssueService(session)
         try:
             issue = await issue_service.cancel_issue(issue_id, project_id)
-            issue_status = issue.status.value
+            issue_status = issue.status
             issue_name_val = issue.name or (issue.description or "")[:50] or ""
             await session.commit()
             await event_service.emit({
@@ -344,7 +343,7 @@ async def create_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
         task_service = TaskService(session)
         try:
             created = await task_service.create_bulk(issue_id, tasks)
-            issue = await session.get(Issue, issue_id)
+            issue = await IssueService(session).get_by_id(issue_id)
             await session.commit()
             if issue:
                 await event_service.emit({
@@ -353,7 +352,7 @@ async def create_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
                     "issue_id": issue_id,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
-            return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
+            return {"tasks": [{"id": t.id, "name": t.name, "status": t.status, "order": t.order} for t in created]}
         except AppError as e:
             return {"error": e.message}
 
@@ -364,7 +363,7 @@ async def replace_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
         task_service = TaskService(session)
         try:
             created = await task_service.replace_all(issue_id, tasks)
-            issue = await session.get(Issue, issue_id)
+            issue = await IssueService(session).get_by_id(issue_id)
             await session.commit()
             if issue:
                 await event_service.emit({
@@ -373,7 +372,7 @@ async def replace_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
                     "issue_id": issue_id,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
-            return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
+            return {"tasks": [{"id": t.id, "name": t.name, "status": t.status, "order": t.order} for t in created]}
         except AppError as e:
             return {"error": e.message}
 
@@ -384,14 +383,23 @@ async def update_task_status(task_id: str, status: str) -> dict:
         task_service = TaskService(session)
         try:
             task = await task_service.update(task_id, status=status)
-            task_issue_id = task.issue_id
+            # file-backed TaskService returns TaskRecord without issue_id — find it via IssueService
+            issue_rec = None
+            task_issue_id = ""
+            for project in await ProjectService(session).list_all(archived=None):
+                from app.storage import issue_store as _is
+                found = _is.find_task(project.path, task_id)
+                if found is not None:
+                    issue_rec, _ = found
+                    task_issue_id = issue_rec.id
+                    break
             task_id_val = task.id
             task_name = task.name
-            task_status = task.status.value
-            issue = await session.get(Issue, task_issue_id)
+            task_status = task.status
+            issue = issue_rec
             all_done = (
                 await task_service.all_completed(task_issue_id)
-                if task.status == TaskStatus.COMPLETED
+                if task.status == TaskStatus.COMPLETED.value
                 else False
             )
             await session.commit()
@@ -432,10 +440,17 @@ async def update_task_name(task_id: str, name: str) -> dict:
         task_service = TaskService(session)
         try:
             task = await task_service.update(task_id, name=name)
-            task_issue_id = task.issue_id
+            issue = None
+            task_issue_id = ""
+            for project in await ProjectService(session).list_all(archived=None):
+                from app.storage import issue_store as _is
+                found = _is.find_task(project.path, task_id)
+                if found is not None:
+                    issue, _ = found
+                    task_issue_id = issue.id
+                    break
             task_id_val = task.id
             task_name = task.name
-            issue = await session.get(Issue, task_issue_id)
             await session.commit()
             if issue:
                 await event_service.emit({
@@ -455,11 +470,18 @@ async def delete_task(task_id: str) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
         try:
-            task = await task_service.get_by_id(task_id)
-            task_issue_id = task.issue_id
-            issue = await session.get(Issue, task_issue_id)
+            # Find owning issue before deletion
+            issue = None
+            task_issue_id = ""
+            for project in await ProjectService(session).list_all(archived=None):
+                from app.storage import issue_store as _is
+                found = _is.find_task(project.path, task_id)
+                if found is not None:
+                    issue, _ = found
+                    task_issue_id = issue.id
+                    break
+            await task_service.delete(task_id)
             project_id = issue.project_id if issue else None
-            await session.delete(task)
             await session.commit()
             if project_id:
                 await event_service.emit({
@@ -478,7 +500,7 @@ async def get_plan_tasks(issue_id: str) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
         tasks = await task_service.list_by_issue(issue_id)
-        return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in tasks]}
+        return {"tasks": [{"id": t.id, "name": t.name, "status": t.status, "order": t.order} for t in tasks]}
 
 
 @mcp.tool(description=_desc["tool.get_next_issue.description"])
@@ -497,7 +519,7 @@ async def get_next_issue(project_id: str) -> dict:
                     "id": issue.id,
                     "name": issue.name,
                     "description": issue.description,
-                    "status": issue.status.value,
+                    "status": issue.status,
                     "priority": issue.priority,
                 }
             }

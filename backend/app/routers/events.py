@@ -90,10 +90,9 @@ async def post_event(event: dict, db: AsyncSession = Depends(get_db)):
     # Enrich with issue_name if issue_id + project_id are provided
     if event.get("issue_id") and event.get("project_id") and "issue_name" not in event:
         try:
-            from app.models.issue import Issue
-            issue = await db.get(Issue, event["issue_id"])
-            if issue:
-                event["issue_name"] = issue.name or (issue.description or "")[:50] or "Untitled issue"
+            from app.services.issue_service import IssueService
+            issue = await IssueService(db).get_for_project(event["issue_id"], event["project_id"])
+            event["issue_name"] = issue.name or (issue.description or "")[:50] or "Untitled issue"
         except Exception:
             pass
 

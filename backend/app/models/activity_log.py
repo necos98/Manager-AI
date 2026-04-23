@@ -16,8 +16,10 @@ class ActivityLog(Base):
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    # Plain column — no FK. Issues live in .manager_ai/ not in DB; log rows must
+    # survive issue deletion as audit trail.
     issue_id: Mapped[Optional[str]] = mapped_column(
-        String(36), ForeignKey("issues.id", ondelete="SET NULL"), nullable=True, index=True
+        String(36), nullable=True, index=True
     )
     event_type: Mapped[str] = mapped_column(String(64), nullable=False)
     details: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
