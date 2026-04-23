@@ -85,6 +85,7 @@ export interface Project {
   description: string;
   tech_stack: string;
   shell?: string | null;
+  wsl_distro?: string | null;
   created_at: string;
   updated_at: string;
   archived_at?: string | null;
@@ -97,6 +98,7 @@ export interface ProjectCreate {
   description?: string;
   tech_stack?: string;
   shell?: string | null;
+  wsl_distro?: string | null;
 }
 
 export interface ProjectUpdate {
@@ -105,6 +107,7 @@ export interface ProjectUpdate {
   description?: string | null;
   tech_stack?: string | null;
   shell?: string | null;
+  wsl_distro?: string | null;
 }
 
 // ── Setting ──
@@ -118,6 +121,16 @@ export interface Setting {
 
 export interface SettingUpdate {
   value: string;
+}
+
+// ── System ──
+
+export interface SystemInfo {
+  platform: string;
+  wsl_available: boolean;
+  distros: string[];
+  default_distro: string | null;
+  host_ip_for_wsl: string | null;
 }
 
 // ── Terminal ──
