@@ -136,6 +136,25 @@ async def get_project_path(project_id: str, db: AsyncSession) -> str:
     return project.path
 
 
+def _inject_env_vars(
+    pty,
+    env: dict[str, str],
+    *,
+    is_wsl: bool,
+) -> None:
+    """Write env exports to the PTY using the shell dialect.
+
+    - is_wsl=True  -> bash ``export`` (runs inside WSL).
+    - is_wsl=False -> Windows ``set`` on Windows host, ``export`` on Linux/macOS host.
+    """
+    if is_wsl:
+        set_cmd = "export"
+    else:
+        set_cmd = "set" if platform.system() == "Windows" else "export"
+    line = " && ".join(f"{set_cmd} {k}={v}" for k, v in env.items())
+    pty.write(line + "\r\n")
+
+
 @router.post("", response_model=TerminalResponse, status_code=201)
 async def create_terminal(
     data: TerminalCreate,
@@ -173,9 +192,7 @@ async def create_terminal(
             "MANAGER_AI_PROJECT_ID": data.project_id,
             "MANAGER_AI_BASE_URL": f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}",
         }
-        set_cmd = "set" if platform.system() == "Windows" else "export"
-        env_commands = " && ".join(f"{set_cmd} {k}={v}" for k, v in env_vars.items())
-        pty.write(env_commands + "\r\n")
+        _inject_env_vars(pty, env_vars, is_wsl=False)
     except Exception:
         logger.warning("Failed to inject env vars for terminal %s", terminal["id"], exc_info=True)
 
@@ -186,9 +203,7 @@ async def create_terminal(
         custom_vars = await var_svc.list(data.project_id)
         if custom_vars:
             pty = service.get_pty(terminal["id"])
-            set_cmd = "set" if platform.system() == "Windows" else "export"
-            var_commands = " && ".join(f"{set_cmd} {v.name}={v.value}" for v in custom_vars)
-            pty.write(var_commands + "\r\n")
+            _inject_env_vars(pty, {v.name: v.value for v in custom_vars}, is_wsl=False)
     except Exception:
         logger.warning("Failed to inject custom variables for terminal %s", terminal["id"], exc_info=True)
 
@@ -280,9 +295,7 @@ async def create_ask_terminal(
             "MANAGER_AI_PROJECT_ID": data.project_id,
             "MANAGER_AI_BASE_URL": f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}",
         }
-        set_cmd = "set" if platform.system() == "Windows" else "export"
-        env_commands = " && ".join(f"{set_cmd} {k}={v}" for k, v in env_vars.items())
-        pty.write(env_commands + "\r\n")
+        _inject_env_vars(pty, env_vars, is_wsl=False)
     except Exception:
         logger.warning("Failed to inject env vars for ask terminal %s", terminal["id"], exc_info=True)
 
@@ -293,9 +306,7 @@ async def create_ask_terminal(
         custom_vars = await var_svc.list(data.project_id)
         if custom_vars:
             pty = service.get_pty(terminal["id"])
-            set_cmd = "set" if platform.system() == "Windows" else "export"
-            var_commands = " && ".join(f"{set_cmd} {v.name}={v.value}" for v in custom_vars)
-            pty.write(var_commands + "\r\n")
+            _inject_env_vars(pty, {v.name: v.value for v in custom_vars}, is_wsl=False)
     except Exception:
         logger.warning("Failed to inject custom vars for ask terminal %s", terminal["id"], exc_info=True)
 
