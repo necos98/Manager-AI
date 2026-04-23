@@ -6,10 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.database import async_session
 from app.exceptions import AppError
 from app.hooks import hook_registry
 import app.hooks.handlers  # noqa: F401 — triggers @hook decorator registration
 from app.mcp.server import mcp
+from app.migration.db_to_files import migrate_all_projects
 from app.routers import activity, events, files, issue_relations, issues, library, memories, network, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, system, tasks, terminals, terminal_commands
 
 logger = logging.getLogger(__name__)
@@ -23,6 +25,11 @@ async def lifespan(app):
     for event_type, hooks in hook_registry._hooks.items():
         for h in hooks:
             logger.info("  %s -> %s", event_type.value, h.name)
+
+    try:
+        await migrate_all_projects(async_session)
+    except Exception:
+        logger.exception("DB → .manager_ai/ migration failed; continuing startup")
 
     async with mcp.session_manager.run():
         yield
