@@ -73,9 +73,11 @@ def test_service_create_appends_distro(monkeypatch):
         wsl_distro="Ubuntu-22.04",
     )
     spawn = spawns[-1]
-    assert spawn["appname"].lower().endswith("wsl.exe")
-    assert "-d Ubuntu-22.04" in spawn["cmdline"]
-    assert "wsl.exe" in spawn["cmdline"]
+    # pywinpty concatenates appname + cmdline; passing cmdline with an argv[0]
+    # causes wsl.exe to re-run itself inside bash. Everything must live in appname.
+    assert spawn["cmdline"] is None
+    assert "-d Ubuntu-22.04" in spawn["appname"]
+    assert "wsl.exe" in spawn["appname"].lower()
     # WSL shells must not receive a Windows cwd — UNC project paths would make
     # CreateProcess fail, and the router emits `cd` inside bash anyway.
     assert spawn["cwd"] is None

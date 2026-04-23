@@ -127,13 +127,13 @@ class TerminalService:
         #   working directory is correct regardless.
         spawn_cwd = None if is_wsl_shell(shell_to_use) else project_path
 
+        # pywinpty concatenates appname + cmdline to build lpCommandLine, which
+        # means passing `cmdline` with argv[0] repeats wsl.exe as an argument
+        # and wsl runs that string inside bash (producing "command not found").
+        # Pass the full command in `appname` and omit `cmdline`.
         pty = PTY(cols, rows)
         if use_wsl_distro:
-            pty.spawn(
-                shell_to_use,
-                cmdline=f'"{shell_to_use}" -d {wsl_distro}',
-                cwd=spawn_cwd,
-            )
+            pty.spawn(f'"{shell_to_use}" -d {wsl_distro}', cwd=spawn_cwd)
         else:
             pty.spawn(shell_to_use, cwd=spawn_cwd)
 
