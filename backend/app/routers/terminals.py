@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import platform
+import shlex
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from app.schemas.terminal import AskTerminalCreate, TerminalCreate, TerminalList
 from app.services.terminal_service import TerminalService, terminal_service
 from app.services.terminal_command_service import TerminalCommandService
 from app.services.terminal_condition import UnknownConditionError, evaluate_condition
+from app.services.wsl_support import is_wsl_shell, win_to_wsl_path
 
 logger = logging.getLogger(__name__)
 
@@ -183,6 +185,15 @@ async def create_terminal(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
 
+    # Determine if this terminal is running inside WSL
+    is_wsl = is_wsl_shell(project_shell)
+
+    # If WSL: cd into the POSIX-translated path before injecting env vars
+    if is_wsl:
+        cwd_wsl = win_to_wsl_path(project_path)
+        pty = service.get_pty(terminal["id"])
+        pty.write(f"cd {shlex.quote(cwd_wsl)}\r\n")
+
     # Inject Manager AI environment variables into the terminal
     try:
         pty = service.get_pty(terminal["id"])
@@ -190,9 +201,19 @@ async def create_terminal(
             "MANAGER_AI_TERMINAL_ID": terminal["id"],
             "MANAGER_AI_ISSUE_ID": data.issue_id,
             "MANAGER_AI_PROJECT_ID": data.project_id,
-            "MANAGER_AI_BASE_URL": f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}",
         }
-        _inject_env_vars(pty, env_vars, is_wsl=False)
+        if is_wsl:
+            _inject_env_vars(pty, env_vars, is_wsl=True)
+            pty.write(
+                'export MANAGER_AI_BASE_URL='
+                f'"http://$(ip route show default | awk \'{{print $3}}\'):'
+                f'{os.environ.get("BACKEND_PORT", "8000")}"\r\n'
+            )
+        else:
+            env_vars["MANAGER_AI_BASE_URL"] = (
+                f'http://localhost:{os.environ.get("BACKEND_PORT", "8000")}'
+            )
+            _inject_env_vars(pty, env_vars, is_wsl=False)
     except Exception:
         logger.warning("Failed to inject env vars for terminal %s", terminal["id"], exc_info=True)
 
@@ -203,7 +224,7 @@ async def create_terminal(
         custom_vars = await var_svc.list(data.project_id)
         if custom_vars:
             pty = service.get_pty(terminal["id"])
-            _inject_env_vars(pty, {v.name: v.value for v in custom_vars}, is_wsl=False)
+            _inject_env_vars(pty, {v.name: v.value for v in custom_vars}, is_wsl=is_wsl)
     except Exception:
         logger.warning("Failed to inject custom variables for terminal %s", terminal["id"], exc_info=True)
 
@@ -223,7 +244,7 @@ async def create_terminal(
                 replacements = {
                     "$issue_id": data.issue_id,
                     "$project_id": data.project_id,
-                    "$project_path": project_path,
+                    "$project_path": win_to_wsl_path(project_path) if is_wsl else project_path,
                 }
                 condition_vars = {
                     "issue_status": issue_status,
@@ -287,15 +308,34 @@ async def create_ask_terminal(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
 
+    # Determine if this terminal is running inside WSL
+    is_wsl = is_wsl_shell(project_shell)
+
+    # If WSL: cd into the POSIX-translated path before injecting env vars
+    if is_wsl:
+        cwd_wsl = win_to_wsl_path(project_path)
+        pty = service.get_pty(terminal["id"])
+        pty.write(f"cd {shlex.quote(cwd_wsl)}\r\n")
+
     # Inject Manager AI environment variables
     try:
         pty = service.get_pty(terminal["id"])
         env_vars = {
             "MANAGER_AI_TERMINAL_ID": terminal["id"],
             "MANAGER_AI_PROJECT_ID": data.project_id,
-            "MANAGER_AI_BASE_URL": f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}",
         }
-        _inject_env_vars(pty, env_vars, is_wsl=False)
+        if is_wsl:
+            _inject_env_vars(pty, env_vars, is_wsl=True)
+            pty.write(
+                'export MANAGER_AI_BASE_URL='
+                f'"http://$(ip route show default | awk \'{{print $3}}\'):'
+                f'{os.environ.get("BACKEND_PORT", "8000")}"\r\n'
+            )
+        else:
+            env_vars["MANAGER_AI_BASE_URL"] = (
+                f'http://localhost:{os.environ.get("BACKEND_PORT", "8000")}'
+            )
+            _inject_env_vars(pty, env_vars, is_wsl=False)
     except Exception:
         logger.warning("Failed to inject env vars for ask terminal %s", terminal["id"], exc_info=True)
 
@@ -306,7 +346,7 @@ async def create_ask_terminal(
         custom_vars = await var_svc.list(data.project_id)
         if custom_vars:
             pty = service.get_pty(terminal["id"])
-            _inject_env_vars(pty, {v.name: v.value for v in custom_vars}, is_wsl=False)
+            _inject_env_vars(pty, {v.name: v.value for v in custom_vars}, is_wsl=is_wsl)
     except Exception:
         logger.warning("Failed to inject custom vars for ask terminal %s", terminal["id"], exc_info=True)
 
@@ -320,7 +360,7 @@ async def create_ask_terminal(
             cmd = "claude --dangerously-skip-permissions " + cmd[len("claude "):]
         variables = {
             "$project_id": data.project_id,
-            "$project_path": project_path,
+            "$project_path": win_to_wsl_path(project_path) if is_wsl else project_path,
         }
         for var, val in variables.items():
             cmd = cmd.replace(var, val)
