@@ -18,8 +18,8 @@ async def client(db_session):
 
 
 @pytest_asyncio.fixture
-async def project(client):
-    resp = await client.post("/api/projects", json={"name": "Test", "path": "/tmp"})
+async def project(client, tmp_path):
+    resp = await client.post("/api/projects", json={"name": "Test", "path": str(tmp_path)})
     return resp.json()
 
 
