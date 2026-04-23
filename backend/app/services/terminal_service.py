@@ -121,15 +121,21 @@ class TerminalService:
                 f"Invalid wsl_distro name {wsl_distro!r}: must match [A-Za-z0-9._-]{{1,100}}"
             )
 
+        # For WSL shells, skip passing cwd to CreateProcess:
+        # - UNC paths (\\wsl.localhost\<distro>\...) are rejected as CWDs on Windows.
+        # - The router emits `cd <posix path>` inside bash anyway, so the final
+        #   working directory is correct regardless.
+        spawn_cwd = None if is_wsl_shell(shell_to_use) else project_path
+
         pty = PTY(cols, rows)
         if use_wsl_distro:
             pty.spawn(
                 shell_to_use,
                 cmdline=f'"{shell_to_use}" -d {wsl_distro}',
-                cwd=project_path,
+                cwd=spawn_cwd,
             )
         else:
-            pty.spawn(shell_to_use, cwd=project_path)
+            pty.spawn(shell_to_use, cwd=spawn_cwd)
 
         term_id = str(uuid.uuid4())
         entry = {

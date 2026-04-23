@@ -76,6 +76,36 @@ def test_service_create_appends_distro(monkeypatch):
     assert spawn["appname"].lower().endswith("wsl.exe")
     assert "-d Ubuntu-22.04" in spawn["cmdline"]
     assert "wsl.exe" in spawn["cmdline"]
+    # WSL shells must not receive a Windows cwd — UNC project paths would make
+    # CreateProcess fail, and the router emits `cd` inside bash anyway.
+    assert spawn["cwd"] is None
+
+
+def test_service_create_unc_path_does_not_leak_to_spawn(monkeypatch):
+    """UNC project paths must never reach winpty as cwd."""
+    from app.services import terminal_service as ts
+    spawns = []
+    monkeypatch.setattr(ts, "PTY", _make_fake_pty(spawns))
+    svc = ts.TerminalService()
+    svc.create(
+        issue_id="i", project_id="p",
+        project_path=r"\\wsl.localhost\Ubuntu-22.04\home\u\proj",
+        shell=r"C:\Windows\System32\wsl.exe",
+    )
+    assert spawns[-1]["cwd"] is None
+
+
+def test_service_create_non_wsl_keeps_cwd(monkeypatch):
+    """Non-WSL shells still receive the project_path as cwd."""
+    from app.services import terminal_service as ts
+    spawns = []
+    monkeypatch.setattr(ts, "PTY", _make_fake_pty(spawns))
+    svc = ts.TerminalService()
+    svc.create(
+        issue_id="i", project_id="p", project_path=r"C:\dev\proj",
+        shell=r"C:\Windows\System32\cmd.exe",
+    )
+    assert spawns[-1]["cwd"] == r"C:\dev\proj"
 
 
 def test_service_create_rejects_injection(monkeypatch):
