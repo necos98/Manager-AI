@@ -26,7 +26,7 @@ def win_to_wsl_path(path: str) -> str:
         return path
     if path.startswith("\\\\wsl.localhost\\") or path.startswith("\\\\wsl$\\"):
         parts = path.split("\\")
-        tail = parts[4:]
+        tail = [p for p in parts[4:] if p]
         return "/" + "/".join(tail)
     if len(path) >= 2 and path[1] == ":":
         drive = path[0].lower()
@@ -66,11 +66,7 @@ def list_wsl_distros() -> list[str]:
         text = result.stdout.decode("utf-16-le").lstrip("﻿")
     except UnicodeDecodeError:
         text = result.stdout.decode("utf-8", errors="replace")
-    distros = [
-        line.strip().replace("\x00", "")
-        for line in text.splitlines()
-        if line.strip()
-    ]
+    distros = [line.strip() for line in text.splitlines() if line.strip()]
     return [d for d in distros if not d.startswith("docker-desktop")]
 
 

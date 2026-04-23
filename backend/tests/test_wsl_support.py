@@ -55,3 +55,13 @@ class TestWinToWslPath:
 
     def test_empty(self):
         assert win_to_wsl_path("") == ""
+
+    def test_unc_wsl_localhost_distro_root_trailing(self):
+        assert win_to_wsl_path("\\\\wsl.localhost\\Ubuntu\\") == "/"
+
+    def test_unc_wsl_localhost_distro_root_no_trailing(self):
+        assert win_to_wsl_path("\\\\wsl.localhost\\Ubuntu") == "/"
+
+    def test_drive_letter_no_backslash(self):
+        # C: alone — treat as drive root
+        assert win_to_wsl_path("C:") == "/mnt/c/"
