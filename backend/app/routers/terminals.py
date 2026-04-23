@@ -153,7 +153,13 @@ def _inject_env_vars(
         set_cmd = "export"
     else:
         set_cmd = "set" if platform.system() == "Windows" else "export"
-    line = " && ".join(f"{set_cmd} {k}={v}" for k, v in env.items())
+    if set_cmd == "export":
+        # bash — shell-quote values so spaces and metacharacters stay literal
+        pairs = (f"{k}={shlex.quote(str(v))}" for k, v in env.items())
+    else:
+        # cmd.exe — no quoting; values with spaces are already unsupported here
+        pairs = (f"{k}={v}" for k, v in env.items())
+    line = " && ".join(f"{set_cmd} {p}" for p in pairs)
     pty.write(line + "\r\n")
 
 
