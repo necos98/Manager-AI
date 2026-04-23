@@ -63,7 +63,7 @@ def list_wsl_distros() -> list[str]:
     if result.returncode != 0:
         return []
     try:
-        text = result.stdout.decode("utf-16-le").lstrip("﻿")
+        text = result.stdout.decode("utf-16-le").lstrip("\ufeff")
     except UnicodeDecodeError:
         text = result.stdout.decode("utf-8", errors="replace")
     distros = [line.strip() for line in text.splitlines() if line.strip()]
