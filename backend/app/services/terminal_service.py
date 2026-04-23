@@ -115,14 +115,14 @@ class TerminalService:
     ) -> dict:
         shell_to_use = shell or DEFAULT_SHELL
 
-        if wsl_distro is not None:
-            if not re.fullmatch(r"[A-Za-z0-9._-]{1,100}", wsl_distro):
-                raise ValueError(
-                    f"Invalid wsl_distro name {wsl_distro!r}: must match [A-Za-z0-9._-]{{1,100}}"
-                )
+        use_wsl_distro = bool(wsl_distro) and is_wsl_shell(shell_to_use)
+        if use_wsl_distro and not re.fullmatch(r"[A-Za-z0-9._-]{1,100}", wsl_distro):
+            raise ValueError(
+                f"Invalid wsl_distro name {wsl_distro!r}: must match [A-Za-z0-9._-]{{1,100}}"
+            )
 
         pty = PTY(cols, rows)
-        if wsl_distro and is_wsl_shell(shell_to_use):
+        if use_wsl_distro:
             pty.spawn(
                 shell_to_use,
                 cmdline=f'"{shell_to_use}" -d {wsl_distro}',

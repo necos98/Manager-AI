@@ -50,43 +50,37 @@ def test_inject_env_vars_wsl_quotes_shell_metacharacters():
     assert shlex.split(written[len("export X="):])[0] == "a;b`c$d"
 
 
-def test_service_create_appends_distro(monkeypatch):
-    from app.services import terminal_service as ts
-    spawns = []
-
+def _make_fake_pty(spawns):
     class FakePTY:
         def __init__(self, *a, **k): pass
         def spawn(self, appname, cmdline=None, cwd=None, env=None):
-            spawns.append((cmdline or appname, cwd))
+            spawns.append({"appname": appname, "cmdline": cmdline, "cwd": cwd})
         def write(self, *a, **k): pass
         def close(self): pass
         def read(self, blocking=True): return ""
         def set_size(self, *a, **k): pass
+    return FakePTY
 
-    monkeypatch.setattr(ts, "PTY", FakePTY)
+
+def test_service_create_appends_distro(monkeypatch):
+    from app.services import terminal_service as ts
+    spawns = []
+    monkeypatch.setattr(ts, "PTY", _make_fake_pty(spawns))
     svc = ts.TerminalService()
     svc.create(
         issue_id="i", project_id="p", project_path="C:\\x",
         shell=r"C:\Windows\System32\wsl.exe",
         wsl_distro="Ubuntu-22.04",
     )
-    cmd, cwd = spawns[-1]
-    assert "-d Ubuntu-22.04" in cmd
-    assert "wsl.exe" in cmd
+    spawn = spawns[-1]
+    assert spawn["appname"].lower().endswith("wsl.exe")
+    assert "-d Ubuntu-22.04" in spawn["cmdline"]
+    assert "wsl.exe" in spawn["cmdline"]
 
 
 def test_service_create_rejects_injection(monkeypatch):
     from app.services import terminal_service as ts
-
-    class FakePTY:
-        def __init__(self, *a, **k): pass
-        def spawn(self, appname, cmdline=None, cwd=None, env=None): pass
-        def write(self, *a, **k): pass
-        def close(self): pass
-        def read(self, blocking=True): return ""
-        def set_size(self, *a, **k): pass
-
-    monkeypatch.setattr(ts, "PTY", FakePTY)
+    monkeypatch.setattr(ts, "PTY", _make_fake_pty([]))
     svc = ts.TerminalService()
     with pytest.raises(ValueError):
         svc.create(
@@ -94,3 +88,20 @@ def test_service_create_rejects_injection(monkeypatch):
             shell=r"C:\Windows\System32\wsl.exe",
             wsl_distro="foo; rm -rf /",
         )
+
+
+def test_service_create_ignores_distro_for_non_wsl_shell(monkeypatch):
+    """wsl_distro set on a non-WSL shell must be silently ignored, not rejected."""
+    from app.services import terminal_service as ts
+    spawns = []
+    monkeypatch.setattr(ts, "PTY", _make_fake_pty(spawns))
+    svc = ts.TerminalService()
+    # Even a value that would fail the regex must not raise when shell is cmd.exe
+    svc.create(
+        issue_id="i", project_id="p", project_path="C:\\x",
+        shell=r"C:\Windows\System32\cmd.exe",
+        wsl_distro="foo; rm -rf /",
+    )
+    spawn = spawns[-1]
+    assert spawn["appname"].lower().endswith("cmd.exe")
+    assert spawn["cmdline"] is None
