@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import threading
 import uuid
 from datetime import datetime, timezone
 
 from app.config import settings
+from app.services.wsl_support import is_wsl_shell
 
 IS_WINDOWS = platform.system() == "Windows"
 
@@ -109,11 +111,31 @@ class TerminalService:
         cols: int = 120,
         rows: int = 30,
         shell: str | None = None,
+        wsl_distro: str | None = None,
     ) -> dict:
         shell_to_use = shell or DEFAULT_SHELL
 
+        use_wsl_distro = bool(wsl_distro) and is_wsl_shell(shell_to_use)
+        if use_wsl_distro and not re.fullmatch(r"[A-Za-z0-9._-]{1,100}", wsl_distro):
+            raise ValueError(
+                f"Invalid wsl_distro name {wsl_distro!r}: must match [A-Za-z0-9._-]{{1,100}}"
+            )
+
+        # For WSL shells, skip passing cwd to CreateProcess:
+        # - UNC paths (\\wsl.localhost\<distro>\...) are rejected as CWDs on Windows.
+        # - The router emits `cd <posix path>` inside bash anyway, so the final
+        #   working directory is correct regardless.
+        spawn_cwd = None if is_wsl_shell(shell_to_use) else project_path
+
+        # pywinpty concatenates appname + cmdline to build lpCommandLine, which
+        # means passing `cmdline` with argv[0] repeats wsl.exe as an argument
+        # and wsl runs that string inside bash (producing "command not found").
+        # Pass the full command in `appname` and omit `cmdline`.
         pty = PTY(cols, rows)
-        pty.spawn(shell_to_use, cwd=project_path)
+        if use_wsl_distro:
+            pty.spawn(f'"{shell_to_use}" -d {wsl_distro}', cwd=spawn_cwd)
+        else:
+            pty.spawn(shell_to_use, cwd=spawn_cwd)
 
         term_id = str(uuid.uuid4())
         entry = {

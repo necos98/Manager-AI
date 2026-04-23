@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Archive } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useArchiveProject, useUpdateProject } from "@/features/projects/hooks";
+import { useSystemInfo } from "@/features/system/hooks";
 import type { Project } from "@/shared/types";
 
 const SHELL_OPTIONS = [
@@ -49,7 +50,25 @@ export function ProjectSettingsDialog({
     description: project.description || "",
     tech_stack: project.tech_stack || "",
     shell: project.shell || "__default__",
+    wsl_distro: project.wsl_distro || "",
   });
+
+  // Re-sync form when the dialog opens so the newest project values are shown
+  useEffect(() => {
+    if (!open) return;
+    setForm({
+      name: project.name,
+      path: project.path,
+      description: project.description || "",
+      tech_stack: project.tech_stack || "",
+      shell: project.shell || "__default__",
+      wsl_distro: project.wsl_distro || "",
+    });
+  }, [open, project]);
+
+  const { data: systemInfo } = useSystemInfo();
+  const isWslShell = form.shell.toLowerCase().endsWith("wsl.exe");
+  const showWslUi = !!systemInfo?.wsl_available && isWslShell;
 
   const updateProject = useUpdateProject(project.id);
   const archiveProject = useArchiveProject();
@@ -72,7 +91,11 @@ export function ProjectSettingsDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateProject.mutate(
-      { ...form, shell: form.shell === "__default__" ? null : form.shell },
+      {
+        ...form,
+        shell: form.shell === "__default__" ? null : form.shell,
+        wsl_distro: form.wsl_distro || null,
+      },
       { onSuccess: () => onOpenChange(false) }
     );
   };
@@ -138,6 +161,34 @@ export function ProjectSettingsDialog({
               Shell to use when opening terminals for this project.
             </p>
           </div>
+          {showWslUi && (
+            <div>
+              <label className="text-sm font-medium">WSL Distro</label>
+              <Select
+                value={form.wsl_distro || "__default__"}
+                onValueChange={(v) =>
+                  setForm({ ...form, wsl_distro: v === "__default__" ? "" : v })
+                }
+              >
+                <SelectTrigger className="font-mono text-sm">
+                  <SelectValue placeholder="Default distro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__default__" className="font-mono text-sm">
+                    Default distro
+                  </SelectItem>
+                  {systemInfo!.distros.map((d) => (
+                    <SelectItem key={d} value={d} className="font-mono text-sm">
+                      {d}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Claude Code must be installed inside the selected WSL distro.
+              </p>
+            </div>
+          )}
           <div className="pt-2 border-t">
             <label className="text-sm font-medium flex items-center gap-1.5 mb-2 text-destructive">
               <Archive className="size-3.5" />

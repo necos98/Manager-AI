@@ -19,6 +19,7 @@ class ProjectCreate(BaseModel):
     description: str = ""
     tech_stack: str = ""
     shell: str | None = None
+    wsl_distro: str | None = None
 
     @field_validator("path")
     @classmethod
@@ -32,6 +33,7 @@ class ProjectUpdate(BaseModel):
     description: str | None = None
     tech_stack: str | None = None
     shell: str | None = None
+    wsl_distro: str | None = None
 
     @field_validator("path")
     @classmethod
@@ -46,6 +48,7 @@ class ProjectResponse(BaseModel):
     description: str
     tech_stack: str
     shell: str | None = None
+    wsl_distro: str | None = None
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None = None

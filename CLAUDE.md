@@ -78,6 +78,8 @@ npm run lint    # ESLint
 
 **Terminal Service** (`app/services/terminal_service.py`): Manages PTY instances via pywinpty. WebSocket streaming. Supports dynamic variable resolution (`$issue_id`, `$project_id`) and injects `MANAGER_AI_*` environment variables.
 
+**WSL support**: when `project.shell` is `wsl.exe`, the terminal router (`app/routers/terminals.py`) translates `project.path` via `wsl_support.win_to_wsl_path`, issues a `cd` inside the PTY, and emits env vars with bash `export` rather than cmd `set`. `MANAGER_AI_BASE_URL` is resolved at runtime inside bash via `ip route show default`. Optional `Project.wsl_distro` picks a specific distro (`wsl.exe -d <distro>`). `GET /api/system/info` exposes WSL availability + distro list to the frontend, which conditionally shows a distro picker in project settings. See `docs/wsl-setup.md`.
+
 **Issue Lifecycle**: `IssueStatus` enum with valid transitions defined in `VALID_TRANSITIONS`. States: NEW → REASONING → PLANNED → ACCEPTED/DECLINED → FINISHED.
 
 ### Data

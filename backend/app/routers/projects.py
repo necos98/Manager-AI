@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import shlex
 import shutil
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -12,6 +13,7 @@ from app.schemas.project import DashboardProject, ProjectCreate, ProjectResponse
 from app.schemas.terminal import TerminalResponse
 from app.services.project_service import ProjectService
 from app.services.terminal_service import terminal_service
+from app.services.wsl_support import is_wsl_shell, win_to_wsl_path
 
 logger = logging.getLogger(__name__)
 
@@ -214,6 +216,13 @@ async def project_health(project_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.post("/{project_id}/install-mcp", response_model=TerminalResponse, status_code=201)
 async def install_mcp(project_id: str, db: AsyncSession = Depends(get_db)):
+    """Spawn a terminal and re-register the Manager AI MCP server.
+
+    Idempotent: runs `claude mcp remove ManagerAi` before `claude mcp add`
+    so the caller can use this as both "install" and "reinstall". When the
+    project shell is wsl.exe, the URL resolves at runtime from the WSL2
+    gateway IP; otherwise it uses localhost.
+    """
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
     if not os.path.isdir(project.path):
@@ -225,15 +234,33 @@ async def install_mcp(project_id: str, db: AsyncSession = Depends(get_db)):
             project_id=project_id,
             project_path=project.path,
             shell=project.shell,
+            wsl_distro=project.wsl_distro,
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
 
     port = int(os.environ.get("BACKEND_PORT") or settings.backend_port)
-    cmd = f"claude mcp add --transport http ManagerAi http://localhost:{port}/mcp/"
+    is_wsl = is_wsl_shell(project.shell)
+
     try:
         pty = terminal_service.get_pty(terminal["id"])
-        pty.write(cmd + "\r\n")
+        if is_wsl:
+            cwd = win_to_wsl_path(project.path)
+            url = (
+                f'"http://$(ip route show default | awk \'{{print $3}}\'):'
+                f'{port}/mcp/"'
+            )
+            pty.write(f"cd {shlex.quote(cwd)}\r\n")
+            pty.write(
+                "claude mcp remove ManagerAi 2>/dev/null; "
+                f"claude mcp add ManagerAi --transport http {url}\r\n"
+            )
+        else:
+            url = f"http://localhost:{port}/mcp/"
+            pty.write("claude mcp remove ManagerAi\r\n")
+            pty.write(f"claude mcp add ManagerAi --transport http {url}\r\n")
     except Exception:
         logger.warning("Failed to write install-mcp command for terminal %s", terminal["id"], exc_info=True)
 
