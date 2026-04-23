@@ -259,8 +259,10 @@ async def install_mcp(project_id: str, db: AsyncSession = Depends(get_db)):
             )
         else:
             url = f"http://localhost:{port}/mcp/"
-            pty.write("claude mcp remove ManagerAi\r\n")
-            pty.write(f"claude mcp add ManagerAi --transport http {url}\r\n")
+            pty.write(
+                "claude mcp remove ManagerAi 2>nul & "
+                f"claude mcp add ManagerAi --transport http {url}\r\n"
+            )
     except Exception:
         logger.warning("Failed to write install-mcp command for terminal %s", terminal["id"], exc_info=True)
 
