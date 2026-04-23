@@ -26,15 +26,18 @@ curl -fsSL https://claude.ai/install.sh | bash
 command -v claude   # sanity check — must print a path
 ```
 
-### 2. Register Manager AI's MCP server with Claude
+### 2. MCP server registration (automatic)
 
-Inside the distro, once `MANAGER_AI_BASE_URL` is available (it is set automatically by Manager AI at terminal spawn time):
+Every WSL terminal Manager AI spawns now re-registers the MCP server `ManagerAi` against the current `$MANAGER_AI_BASE_URL` automatically. Nothing to do. The registration is idempotent (remove + add, silenced), so a changed WSL2 gateway IP still lands on a working entry.
+
+If you want to check it:
 
 ```bash
-claude mcp add manager-ai --transport http "$MANAGER_AI_BASE_URL/mcp"
+claude mcp list
+# ManagerAi: http://172.x.x.1:8000/mcp/ (HTTP) - ✓ Connected
 ```
 
-This is idempotent; running it again errors harmlessly.
+If `claude` is not yet installed in the distro, the auto-registration is a silent no-op — finish step 1 and open a new terminal.
 
 ## Per-project configuration
 

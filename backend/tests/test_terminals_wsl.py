@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from app.routers.terminals import _inject_env_vars
+from app.routers.terminals import _inject_env_vars, _inject_wsl_mcp_registration
 
 
 def test_inject_env_vars_wsl_uses_export():
@@ -48,6 +48,21 @@ def test_inject_env_vars_wsl_quotes_shell_metacharacters():
     # Quoted value round-trips through shlex
     import shlex
     assert shlex.split(written[len("export X="):])[0] == "a;b`c$d"
+
+
+def test_inject_wsl_mcp_registration_is_idempotent_and_silent():
+    pty = MagicMock()
+    _inject_wsl_mcp_registration(pty)
+    written = pty.write.call_args.args[0]
+    # Guard so first-run (no claude installed) is a silent no-op
+    assert "command -v claude" in written
+    # Remove before add so a changed WSL gateway IP re-syncs the registration
+    assert "claude mcp remove ManagerAi" in written
+    assert "claude mcp add ManagerAi" in written
+    # URL comes from the exported env var, not a hardcoded localhost
+    assert '"$MANAGER_AI_BASE_URL/mcp/"' in written
+    # Output suppressed so the user's prompt stays clean
+    assert ">/dev/null 2>&1" in written
 
 
 def _make_fake_pty(spawns):

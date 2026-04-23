@@ -138,6 +138,25 @@ async def get_project_path(project_id: str, db: AsyncSession) -> str:
     return project.path
 
 
+MCP_SERVER_NAME = "ManagerAi"
+
+
+def _inject_wsl_mcp_registration(pty) -> None:
+    """Idempotently register the Manager AI MCP server inside the WSL bash session.
+
+    `$MANAGER_AI_BASE_URL` is already exported at this point (resolved at runtime
+    via `ip route`). Remove any stale entry first so the URL stays in sync if the
+    WSL gateway changes. All output is swallowed so the terminal stays clean,
+    and a missing `claude` binary is a silent no-op.
+    """
+    pty.write(
+        "command -v claude >/dev/null 2>&1 && {"
+        f" claude mcp remove {MCP_SERVER_NAME} >/dev/null 2>&1 || true;"
+        f' claude mcp add {MCP_SERVER_NAME} --transport http "$MANAGER_AI_BASE_URL/mcp/"'
+        " >/dev/null 2>&1 || true; }\r\n"
+    )
+
+
 def _inject_env_vars(
     pty,
     env: dict[str, str],
@@ -219,6 +238,7 @@ async def create_terminal(
                 f'"http://$(ip route show default | awk \'{{print $3}}\'):'
                 f'{os.environ.get("BACKEND_PORT", "8000")}"\r\n'
             )
+            _inject_wsl_mcp_registration(pty)
         else:
             env_vars["MANAGER_AI_BASE_URL"] = (
                 f'http://localhost:{os.environ.get("BACKEND_PORT", "8000")}'
@@ -345,6 +365,7 @@ async def create_ask_terminal(
                 f'"http://$(ip route show default | awk \'{{print $3}}\'):'
                 f'{os.environ.get("BACKEND_PORT", "8000")}"\r\n'
             )
+            _inject_wsl_mcp_registration(pty)
         else:
             env_vars["MANAGER_AI_BASE_URL"] = (
                 f'http://localhost:{os.environ.get("BACKEND_PORT", "8000")}'
