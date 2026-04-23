@@ -48,3 +48,49 @@ def test_inject_env_vars_wsl_quotes_shell_metacharacters():
     # Quoted value round-trips through shlex
     import shlex
     assert shlex.split(written[len("export X="):])[0] == "a;b`c$d"
+
+
+def test_service_create_appends_distro(monkeypatch):
+    from app.services import terminal_service as ts
+    spawns = []
+
+    class FakePTY:
+        def __init__(self, *a, **k): pass
+        def spawn(self, appname, cmdline=None, cwd=None, env=None):
+            spawns.append((cmdline or appname, cwd))
+        def write(self, *a, **k): pass
+        def close(self): pass
+        def read(self, blocking=True): return ""
+        def set_size(self, *a, **k): pass
+
+    monkeypatch.setattr(ts, "PTY", FakePTY)
+    svc = ts.TerminalService()
+    svc.create(
+        issue_id="i", project_id="p", project_path="C:\\x",
+        shell=r"C:\Windows\System32\wsl.exe",
+        wsl_distro="Ubuntu-22.04",
+    )
+    cmd, cwd = spawns[-1]
+    assert "-d Ubuntu-22.04" in cmd
+    assert "wsl.exe" in cmd
+
+
+def test_service_create_rejects_injection(monkeypatch):
+    from app.services import terminal_service as ts
+
+    class FakePTY:
+        def __init__(self, *a, **k): pass
+        def spawn(self, appname, cmdline=None, cwd=None, env=None): pass
+        def write(self, *a, **k): pass
+        def close(self): pass
+        def read(self, blocking=True): return ""
+        def set_size(self, *a, **k): pass
+
+    monkeypatch.setattr(ts, "PTY", FakePTY)
+    svc = ts.TerminalService()
+    with pytest.raises(ValueError):
+        svc.create(
+            issue_id="i", project_id="p", project_path="C:\\x",
+            shell=r"C:\Windows\System32\wsl.exe",
+            wsl_distro="foo; rm -rf /",
+        )

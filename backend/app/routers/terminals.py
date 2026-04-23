@@ -180,6 +180,7 @@ async def create_terminal(
     # Fetch project shell config
     project_obj = await db.get(Project, data.project_id)
     project_shell = project_obj.shell if project_obj else None
+    project_wsl_distro = project_obj.wsl_distro if project_obj else None
 
     try:
         terminal = service.create(
@@ -187,7 +188,10 @@ async def create_terminal(
             project_id=data.project_id,
             project_path=project_path,
             shell=project_shell,
+            wsl_distro=project_wsl_distro,
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
 
@@ -303,6 +307,7 @@ async def create_ask_terminal(
     # Fetch project shell config
     project_obj = await db.get(Project, data.project_id)
     project_shell = project_obj.shell if project_obj else None
+    project_wsl_distro = project_obj.wsl_distro if project_obj else None
 
     try:
         terminal = service.create(
@@ -310,7 +315,10 @@ async def create_ask_terminal(
             project_id=data.project_id,
             project_path=project_path,
             shell=project_shell,
+            wsl_distro=project_wsl_distro,
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
 

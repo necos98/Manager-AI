@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import threading
 import uuid
 from datetime import datetime, timezone
 
 from app.config import settings
+from app.services.wsl_support import is_wsl_shell
 
 IS_WINDOWS = platform.system() == "Windows"
 
@@ -109,11 +111,25 @@ class TerminalService:
         cols: int = 120,
         rows: int = 30,
         shell: str | None = None,
+        wsl_distro: str | None = None,
     ) -> dict:
         shell_to_use = shell or DEFAULT_SHELL
 
+        if wsl_distro is not None:
+            if not re.fullmatch(r"[A-Za-z0-9._-]{1,100}", wsl_distro):
+                raise ValueError(
+                    f"Invalid wsl_distro name {wsl_distro!r}: must match [A-Za-z0-9._-]{{1,100}}"
+                )
+
         pty = PTY(cols, rows)
-        pty.spawn(shell_to_use, cwd=project_path)
+        if wsl_distro and is_wsl_shell(shell_to_use):
+            pty.spawn(
+                shell_to_use,
+                cmdline=f'"{shell_to_use}" -d {wsl_distro}',
+                cwd=project_path,
+            )
+        else:
+            pty.spawn(shell_to_use, cwd=project_path)
 
         term_id = str(uuid.uuid4())
         entry = {
