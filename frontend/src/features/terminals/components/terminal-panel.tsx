@@ -274,11 +274,11 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
       onMouseDownCapture={markActive}
       onFocusCapture={markActive}
     >
-      <div className="flex items-center justify-end gap-1 px-2 py-1 bg-zinc-900 border-b border-zinc-800">
+      <div className="flex items-center justify-end gap-1 px-2 py-1 bg-zinc-800/40 border-b border-zinc-700">
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
+          className="h-8 text-xs text-zinc-200 hover:text-zinc-200 px-2"
           onClick={() => setGalleryOpen(true)}
           title="Open file gallery"
           aria-label="Open file gallery"
@@ -289,7 +289,7 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
+          className="h-8 text-xs text-zinc-200 hover:text-zinc-200 px-2"
           onClick={() => setSpeechOpen(true)}
           title="Voice input"
           aria-label="Voice input"
@@ -300,7 +300,7 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
+          className="h-8 text-xs text-zinc-200 hover:text-zinc-200 px-2"
           onClick={handleCopy}
           title="Copy selection"
           aria-label="Copy terminal selection"
@@ -311,7 +311,7 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
+          className="h-8 text-xs text-zinc-200 hover:text-zinc-200 px-2"
           onClick={() => setShowSearch((p) => !p)}
           title="Search (Ctrl+F)"
           aria-label="Search in terminal"
@@ -322,7 +322,7 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 text-xs text-zinc-400 hover:text-zinc-200 px-2"
+            className="h-8 text-xs text-zinc-200 hover:text-zinc-200 px-2"
             onClick={onDownloadRecording}
             title="Download session recording"
             aria-label="Download session recording"
