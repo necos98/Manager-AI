@@ -92,7 +92,7 @@ async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)
     service = ProjectService(db)
     project = await service.create(
         name=data.name, path=data.path, description=data.description,
-        tech_stack=data.tech_stack, shell=data.shell
+        tech_stack=data.tech_stack, shell=data.shell, url=data.url
     )
     await db.commit()
     return await _enrich_project(service, project)
