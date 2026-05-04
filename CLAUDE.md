@@ -90,10 +90,12 @@ npm run lint    # ESLint
 
 ## Memory Protocol
 
-This project has a persistent project-scoped memory store accessed via the Manager AI MCP (`memory_search`, `memory_get`, `memory_create`, `memory_update`, `memory_list`, `memory_link`).
+Project-scoped memory is stored on disk as plain markdown under
+`<project.path>/.manager_ai/memories/<id>.md` (one file per memory, YAML frontmatter
++ body), with `memories.yaml` as the rollup index. The files are source of truth.
 
 **You MUST:**
-- Call `memory_search` before answering any project-specific question, before making architectural decisions, and at the start of non-trivial tasks (see `/run-issue` step 2 and the `manager-ai-memories` skill for the full trigger list).
-- Call `memory_create` (or `memory_update`) after completing an issue or whenever you learn a durable, non-obvious fact (decision + reasoning, constraint not enforced by code, user preference, recurring gotcha).
+- **Read** via filesystem: `Grep -ri "<3–5 keywords>" .manager_ai/memories/` (or `Read .manager_ai/memories/<id>.md` for a specific entry) before answering any project-specific question, before making architectural decisions, and at the start of non-trivial tasks (see `/run-issue` step 2 and the `manager-ai-memories` skill for the full trigger list).
+- **Write** via MCP: `memory_create` (or `memory_update`) after completing an issue or whenever you learn a durable, non-obvious fact (decision + reasoning, constraint not enforced by code, user preference, recurring gotcha). The backend validates (cycle/cross-project guards) and emits realtime events — do **not** edit the `.md` files by hand.
 
 The `project_id` is in `manager.json` at the repo root. Full policy and anti-patterns: `.claude/skills/manager-ai-memories/SKILL.md`.

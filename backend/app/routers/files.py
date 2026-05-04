@@ -41,7 +41,7 @@ async def upload_files(project_id: str, files: list[UploadFile], db: AsyncSessio
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     await db.commit()
-    return [ProjectFileResponse.from_model(r) for r in records]
+    return [ProjectFileResponse.from_model(r, project_id=project_id) for r in records]
 
 
 @router.get("", response_model=list[ProjectFileResponse])
@@ -49,7 +49,7 @@ async def list_files(project_id: str, db: AsyncSession = Depends(get_db)):
     await _check_project(project_id, db)
     service = FileService(db)
     records = await service.list_by_project(project_id)
-    return [ProjectFileResponse.from_model(r) for r in records]
+    return [ProjectFileResponse.from_model(r, project_id=project_id) for r in records]
 
 
 @router.get("/{file_id}/download")
@@ -125,7 +125,7 @@ async def reextract_file(project_id: str, file_id: str, db: AsyncSession = Depen
     if record is None:
         raise HTTPException(status_code=404, detail="File not found")
     await db.commit()
-    return ProjectFileResponse.from_model(record)
+    return ProjectFileResponse.from_model(record, project_id=project_id)
 
 
 @router.get("/search")
@@ -136,7 +136,7 @@ async def search_files(project_id: str, q: str, limit: int = 20, db: AsyncSessio
     return {
         "results": [
             {
-                "file": ProjectFileResponse.from_model(h["file"]).model_dump(mode="json"),
+                "file": ProjectFileResponse.from_model(h["file"], project_id=project_id).model_dump(mode="json"),
                 "snippet": h["snippet"],
                 "rank": h["rank"],
             }

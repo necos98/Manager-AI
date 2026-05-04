@@ -8,12 +8,12 @@ from app.services.memory_service import MemoryService
 
 
 @pytest.mark.asyncio
-async def test_list_and_detail(db_session):
+async def test_list_and_detail(db_session, tmp_path):
     async def _override():
         yield db_session
     app.dependency_overrides[get_db] = _override
 
-    db_session.add(Project(id="p1", name="P", path="/tmp/p"))
+    db_session.add(Project(id="p1", name="P", path=str(tmp_path)))
     await db_session.flush()
     svc = MemoryService(db_session)
     a = await svc.create(project_id="p1", title="Root", description="top")

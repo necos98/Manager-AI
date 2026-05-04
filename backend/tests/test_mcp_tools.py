@@ -14,9 +14,9 @@ from unittest.mock import patch
 
 
 @pytest_asyncio.fixture
-async def project(db_session):
+async def project(db_session, tmp_path):
     service = ProjectService(db_session)
-    return await service.create(name="MCP Test", path="/tmp/mcp", description="MCP test project", tech_stack="Python, FastAPI")
+    return await service.create(name="MCP Test", path=str(tmp_path), description="MCP test project", tech_stack="Python, FastAPI")
 
 
 @pytest.fixture
@@ -35,26 +35,26 @@ async def test_mcp_autonomous_workflow(issue_service, project):
     issue = await issue_service.create(project_id=project.id, description="Feature Z", priority=1)
 
     # Claude writes spec
-    await issue_service.create_spec(issue.id, project.id, "# Spec\n\nBuild feature Z.")
-    assert issue.status == IssueStatus.REASONING
-    assert issue.specification == "# Spec\n\nBuild feature Z."
+    rec = await issue_service.create_spec(issue.id, project.id, "# Spec\n\nBuild feature Z.")
+    assert rec.status == IssueStatus.REASONING.value
+    assert rec.specification == "# Spec\n\nBuild feature Z."
 
     # Claude refines spec after user feedback
-    await issue_service.edit_spec(issue.id, project.id, "# Spec v2\n\nBuild feature Z with extra.")
-    assert issue.specification == "# Spec v2\n\nBuild feature Z with extra."
-    assert issue.status == IssueStatus.REASONING
+    rec = await issue_service.edit_spec(issue.id, project.id, "# Spec v2\n\nBuild feature Z with extra.")
+    assert rec.specification == "# Spec v2\n\nBuild feature Z with extra."
+    assert rec.status == IssueStatus.REASONING.value
 
     # Claude writes plan
-    await issue_service.create_plan(issue.id, project.id, "# Plan\n\nStep 1: Do it.")
-    assert issue.status == IssueStatus.PLANNED
+    rec = await issue_service.create_plan(issue.id, project.id, "# Plan\n\nStep 1: Do it.")
+    assert rec.status == IssueStatus.PLANNED.value
 
     # User approves in conversation, Claude accepts
-    await issue_service.accept_issue(issue.id, project.id)
-    assert issue.status == IssueStatus.ACCEPTED
+    rec = await issue_service.accept_issue(issue.id, project.id)
+    assert rec.status == IssueStatus.ACCEPTED.value
 
     # Claude completes
     result = await issue_service.complete_issue(issue.id, project.id, "Done.")
-    assert result.status == IssueStatus.FINISHED
+    assert result.status == IssueStatus.FINISHED.value
 
 
 @pytest.mark.asyncio
@@ -63,11 +63,11 @@ async def test_mcp_complete_flow(issue_service, project):
     issue = await issue_service.create(project_id=project.id, description="Feature Y", priority=1)
     await issue_service.create_spec(issue.id, project.id, "# Spec")
     await issue_service.create_plan(issue.id, project.id, "# Plan")
-    await issue_service.accept_issue(issue.id, project.id)
-    assert issue.status == IssueStatus.ACCEPTED
+    accepted = await issue_service.accept_issue(issue.id, project.id)
+    assert accepted.status == IssueStatus.ACCEPTED.value
 
     result = await issue_service.complete_issue(issue.id, project.id, "Implemented feature Y successfully")
-    assert result.status == IssueStatus.FINISHED
+    assert result.status == IssueStatus.FINISHED.value
     assert result.recap == "Implemented feature Y successfully"
 
 
@@ -77,7 +77,7 @@ async def test_mcp_cancel_flow(issue_service, project):
     issue = await issue_service.create(project_id=project.id, description="Cancel me", priority=1)
     await issue_service.create_spec(issue.id, project.id, "# Spec")
     result = await issue_service.cancel_issue(issue.id, project.id)
-    assert result.status == IssueStatus.CANCELED
+    assert result.status == IssueStatus.CANCELED.value
 
 
 @pytest.mark.asyncio
@@ -85,7 +85,7 @@ async def test_mcp_project_context(project_service, project):
     """get_project_context returns project info"""
     fetched = await project_service.get_by_id(project.id)
     assert fetched.name == "MCP Test"
-    assert fetched.path == "/tmp/mcp"
+    assert fetched.path == project.path
     assert fetched.description == "MCP test project"
     assert fetched.tech_stack == "Python, FastAPI"
 
@@ -115,7 +115,6 @@ async def test_mcp_get_issue_details_includes_specification(db_session, project)
     issue_service = IssueService(db_session)
     issue = await issue_service.create(project_id=project.id, description="Spec issue", priority=1)
     await issue_service.create_spec(issue.id, project.id, "# My Spec")
-    await db_session.refresh(issue)  # populate server_default fields (created_at, updated_at)
 
     @asynccontextmanager
     async def fake_session():
@@ -136,15 +135,15 @@ async def test_mcp_get_issue_details_includes_specification(db_session, project)
 async def test_mcp_issue_project_validation(issue_service, project):
     """All MCP tools must validate project_id ownership"""
     issue = await issue_service.create(project_id=project.id, description="Test", priority=1)
-    fake_project_id = uuid.uuid4()
+    fake_project_id = str(uuid.uuid4())
 
-    with pytest.raises(NotFoundError, match="Issue not found"):
+    with pytest.raises(NotFoundError):
         await issue_service.set_name(issue.id, fake_project_id, "Name")
 
-    with pytest.raises(NotFoundError, match="Issue not found"):
+    with pytest.raises(NotFoundError):
         await issue_service.create_spec(issue.id, fake_project_id, "Spec")
 
-    with pytest.raises(NotFoundError, match="Issue not found"):
+    with pytest.raises(NotFoundError):
         await issue_service.complete_issue(issue.id, fake_project_id, "Recap")
 
 

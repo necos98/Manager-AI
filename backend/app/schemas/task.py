@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -27,4 +30,22 @@ class TaskResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    @classmethod
+    def from_record(cls, record: Any, *, issue_id: str) -> "TaskResponse":
+        return cls(
+            id=record.id,
+            issue_id=issue_id,
+            name=record.name,
+            status=TaskStatus(record.status),
+            order=record.order,
+            created_at=_parse_dt(record.created_at),
+            updated_at=_parse_dt(record.updated_at),
+        )
+
+
+def _parse_dt(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    if not value:
+        return datetime.min
+    return datetime.fromisoformat(str(value))
