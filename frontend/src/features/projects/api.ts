@@ -5,6 +5,7 @@ export interface ProjectHealth {
   manager_json: { installed: boolean; path: string };
   claude_resources: { installed: boolean; path: string; missing: string[] };
   mcp: { installed: boolean; location: string | null };
+  playwright_mcp: { installed: boolean; location: string | null };
 }
 
 export function fetchProjectHealth(projectId: string): Promise<ProjectHealth> {
@@ -13,6 +14,10 @@ export function fetchProjectHealth(projectId: string): Promise<ProjectHealth> {
 
 export function installMcp(projectId: string): Promise<Terminal> {
   return apiPost<Terminal>(`/projects/${projectId}/install-mcp`);
+}
+
+export function installPlaywrightMcp(projectId: string): Promise<Terminal> {
+  return apiPost<Terminal>(`/projects/${projectId}/install-playwright-mcp`);
 }
 
 export function fetchProjects(archived: boolean = false): Promise<Project[]> {

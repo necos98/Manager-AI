@@ -10,6 +10,7 @@ import {
   useInstallManagerJson,
   useInstallClaudeResources,
   useInstallMcp,
+  useInstallPlaywrightMcp,
 } from "@/features/projects/hooks";
 import { terminalKeys } from "@/features/terminals/hooks";
 
@@ -51,9 +52,11 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
   const installManagerJson = useInstallManagerJson(projectId);
   const installClaudeResources = useInstallClaudeResources(projectId);
   const installMcp = useInstallMcp(projectId);
+  const installPlaywrightMcp = useInstallPlaywrightMcp(projectId);
   const [running, setRunning] = useState(false);
   const [reinstallingResources, setReinstallingResources] = useState(false);
   const [reinstallingMcp, setReinstallingMcp] = useState(false);
+  const [reinstallingPlaywright, setReinstallingPlaywright] = useState(false);
 
   const health = healthQuery.data;
 
@@ -88,6 +91,23 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
     }
   }
 
+  async function handleReinstallPlaywright() {
+    if (reinstallingPlaywright) return;
+    setReinstallingPlaywright(true);
+    try {
+      await installPlaywrightMcp.mutateAsync();
+      toast.success("Terminal opened — Playwright MCP re-registration running");
+      queryClient.invalidateQueries({ queryKey: terminalKeys.all });
+      queryClient.invalidateQueries({ queryKey: terminalKeys.count });
+      queryClient.invalidateQueries({ queryKey: ["projects", projectId, "health"] });
+      navigate({ to: "/terminals" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Playwright MCP reinstall failed");
+    } finally {
+      setReinstallingPlaywright(false);
+    }
+  }
+
   async function handleInstallAll() {
     if (!health || running) return;
     setRunning(true);
@@ -102,9 +122,18 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
         queryClient.invalidateQueries({ queryKey: terminalKeys.all });
         queryClient.invalidateQueries({ queryKey: terminalKeys.count });
         navigate({ to: "/terminals" });
-      } else {
-        toast.success("Dependencies installed");
+        return;
       }
+      if (!health.playwright_mcp.installed) {
+        await installPlaywrightMcp.mutateAsync();
+        toast.success("Terminal opened — Playwright MCP install running");
+        queryClient.invalidateQueries({ queryKey: terminalKeys.all });
+        queryClient.invalidateQueries({ queryKey: terminalKeys.count });
+        queryClient.invalidateQueries({ queryKey: ["projects", projectId, "health"] });
+        navigate({ to: "/terminals" });
+        return;
+      }
+      toast.success("Dependencies installed");
       queryClient.invalidateQueries({ queryKey: ["projects", projectId, "health"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Install failed");
@@ -128,7 +157,7 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
   }
 
   const allInstalled =
-    health.manager_json.installed && health.claude_resources.installed && health.mcp.installed;
+    health.manager_json.installed && health.claude_resources.installed && health.mcp.installed && health.playwright_mcp.installed;
 
   const resourcesDetail = health.claude_resources.installed
     ? health.claude_resources.path
@@ -204,6 +233,30 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
                 {reinstallingResources ? "Reinstalling..." : "Reinstall"}
               </Button>
             ) : undefined
+          }
+        />
+        <StatusRow
+          title="Playwright MCP"
+          installed={health.playwright_mcp.installed}
+          detail={health.playwright_mcp.location ?? undefined}
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleReinstallPlaywright}
+              disabled={reinstallingPlaywright || running}
+            >
+              {reinstallingPlaywright ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              {reinstallingPlaywright
+                ? "Reinstalling..."
+                : health.playwright_mcp.installed
+                  ? "Reinstall"
+                  : "Install"}
+            </Button>
           }
         />
       </div>
