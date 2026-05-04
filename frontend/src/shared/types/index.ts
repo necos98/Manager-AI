@@ -86,6 +86,7 @@ export interface Project {
   tech_stack: string;
   shell?: string | null;
   wsl_distro?: string | null;
+  url?: string | null;
   created_at: string;
   updated_at: string;
   archived_at?: string | null;
@@ -99,6 +100,7 @@ export interface ProjectCreate {
   tech_stack?: string;
   shell?: string | null;
   wsl_distro?: string | null;
+  url?: string | null;
 }
 
 export interface ProjectUpdate {
@@ -108,6 +110,7 @@ export interface ProjectUpdate {
   tech_stack?: string | null;
   shell?: string | null;
   wsl_distro?: string | null;
+  url?: string | null;
 }
 
 // ── Setting ──
@@ -394,4 +397,22 @@ export interface IssueRelation {
 export interface IssueRelationCreate {
   target_id: string;
   relation_type: RelationType;
+}
+
+// ── Credentials ──
+
+export interface ProjectCredential {
+  id: string;
+  project_id: string;
+  role: string;
+  url: string;
+  fields: Record<string, string>;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface CredentialUpsert {
+  role: string;
+  url: string;
+  fields: Record<string, string>;
 }
