@@ -4,6 +4,7 @@ import os
 import shlex
 import shutil
 
+import yaml
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -77,6 +78,143 @@ def _check_mcp(project) -> dict:
         except Exception:
             pass
     return {"installed": False, "location": None}
+
+
+def _check_resource_consistency(project) -> dict:
+    """Scan all .manager_ai/ YAML files for project_id mismatches and auto-fix them.
+
+    Authority is manager.json. Resources checked:
+      - issues.yaml (index)
+      - .manager_ai/issues/<id>/issue.yaml (individual)
+      - memories.yaml (index)
+      - .manager_ai/memories/<id>.md (frontmatter)
+    """
+    mgr_json = os.path.join(project.path, "manager.json")
+    if not os.path.isfile(mgr_json):
+        return {"ok": None, "scanned": 0, "fixed": 0, "details": [], "note": "manager.json missing"}
+    try:
+        with open(mgr_json, "r", encoding="utf-8") as f:
+            auth_id = json.load(f).get("project_id")
+    except Exception:
+        return {"ok": None, "scanned": 0, "fixed": 0, "details": [], "note": "manager.json unreadable"}
+    if not auth_id:
+        return {"ok": None, "scanned": 0, "fixed": 0, "details": [], "note": "manager.json missing project_id"}
+
+    mgr_dir = os.path.join(project.path, ".manager_ai")
+    scanned = 0
+    fixed = 0
+    details = []
+
+    def _fix_yaml_file(filepath, entries_key):
+        nonlocal scanned, fixed
+        if not os.path.isfile(filepath):
+            return
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+        except Exception:
+            return
+        entries = data.get(entries_key, [])
+        if not isinstance(entries, list):
+            return
+        changed = False
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            scanned += 1
+            if entry.get("project_id") != auth_id:
+                entry["project_id"] = auth_id
+                changed = True
+                fixed += 1
+                details.append({
+                    "resource_id": entry.get("id"),
+                    "resource_type": entries_key,
+                    "file": os.path.relpath(filepath, project.path),
+                })
+        if changed:
+            tmp = filepath + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                yaml.safe_dump(data, f, sort_keys=False, allow_unicode=True, width=4096)
+            os.replace(tmp, filepath)
+
+    def _fix_issue_files():
+        nonlocal scanned, fixed
+        issues_dir = os.path.join(mgr_dir, "issues")
+        if not os.path.isdir(issues_dir):
+            return
+        for name in os.listdir(issues_dir):
+            filepath = os.path.join(issues_dir, name, "issue.yaml")
+            if not os.path.isfile(filepath):
+                continue
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f) or {}
+            except Exception:
+                continue
+            if not isinstance(data, dict):
+                continue
+            scanned += 1
+            if data.get("project_id") != auth_id:
+                data["project_id"] = auth_id
+                fixed += 1
+                details.append({
+                    "resource_id": data.get("id"),
+                    "resource_type": "issue",
+                    "file": os.path.relpath(filepath, project.path),
+                })
+                tmp = filepath + ".tmp"
+                with open(tmp, "w", encoding="utf-8") as f:
+                    yaml.safe_dump(data, f, sort_keys=False, allow_unicode=True, width=4096)
+                os.replace(tmp, filepath)
+
+    def _fix_memory_md_files():
+        nonlocal scanned, fixed
+        mem_dir = os.path.join(mgr_dir, "memories")
+        if not os.path.isdir(mem_dir):
+            return
+        for name in os.listdir(mem_dir):
+            if not name.endswith(".md"):
+                continue
+            filepath = os.path.join(mem_dir, name)
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    raw = f.read()
+            except Exception:
+                continue
+            if not raw.startswith("---"):
+                continue
+            parts = raw.split("---", 2)
+            if len(parts) < 3:
+                continue
+            frontmatter = parts[1]
+            try:
+                fm = yaml.safe_load(frontmatter) or {}
+            except Exception:
+                continue
+            if not isinstance(fm, dict):
+                continue
+            scanned += 1
+            if fm.get("project_id") != auth_id:
+                fm["project_id"] = auth_id
+                fixed += 1
+                details.append({
+                    "resource_id": fm.get("id"),
+                    "resource_type": "memory",
+                    "file": os.path.relpath(filepath, project.path),
+                })
+                new_fm = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True, width=4096).rstrip()
+                new_raw = "---\n" + new_fm + "\n---" + parts[2]
+                tmp = filepath + ".tmp"
+                with open(tmp, "w", encoding="utf-8") as f:
+                    f.write(new_raw)
+                os.replace(tmp, filepath)
+
+    _fix_yaml_file(os.path.join(mgr_dir, "issues.yaml"), "issues")
+    _fix_issue_files()
+    _fix_yaml_file(os.path.join(mgr_dir, "memories.yaml"), "memories")
+    _fix_memory_md_files()
+
+    return {"ok": fixed == 0, "scanned": scanned, "fixed": fixed, "details": details}
 
 
 async def _enrich_project(service: ProjectService, project) -> dict:
@@ -211,6 +349,7 @@ async def project_health(project_id: str, db: AsyncSession = Depends(get_db)):
         "manager_json": _check_manager_json(project),
         "claude_resources": _check_claude_resources(project),
         "mcp": _check_mcp(project),
+        "resource_consistency": _check_resource_consistency(project),
     }
 
 
