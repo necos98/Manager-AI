@@ -1,0 +1,1 @@
+Added `issue_updated` and `file_updated` to the silent event list in `event-context.tsx` buildToastContent. These watcher events are cache-invalidation signals (like `memory_updated` already was) and should not produce user-facing toast notifications or sounds. One-line change, no backend modifications needed.

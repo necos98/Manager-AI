@@ -1,0 +1,1 @@
+Notifiche arrassment. Credo che vengano inviate notifiche ogni qual volta un file viene "cambiato", questo produce un vero arrasment di notifiche, ne ricevo veramente tantissime e da fastidio.

@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from app.storage import atomic, paths
+from app.storage.cache import issue_cache
 
 
 @dataclass
@@ -58,6 +59,11 @@ def issue_exists(project_path: str, issue_id: str) -> bool:
 
 
 def load_issue(project_path: str, issue_id: str) -> IssueRecord | None:
+    cache_key = f"{project_path}:{issue_id}"
+    cached = issue_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     yaml_path = paths.issue_yaml(project_path, issue_id)
     if not yaml_path.exists():
         return None
@@ -66,7 +72,7 @@ def load_issue(project_path: str, issue_id: str) -> IssueRecord | None:
     specification = _read_optional_md(project_path, issue_id, "specification")
     plan = _read_optional_md(project_path, issue_id, "plan")
     recap = _read_optional_md(project_path, issue_id, "recap")
-    return IssueRecord(
+    record = IssueRecord(
         id=data.get("id", issue_id),
         project_id=data.get("project_id", ""),
         name=data.get("name"),
@@ -81,10 +87,17 @@ def load_issue(project_path: str, issue_id: str) -> IssueRecord | None:
         tasks=[_task_from_dict(t) for t in (data.get("tasks") or [])],
         relations=[_relation_from_dict(r) for r in (data.get("relations") or [])],
     )
+    issue_cache.set(cache_key, record)
+    return record
 
 
 def list_issues(project_path: str) -> list[IssueRecord]:
     """Light listing from issues.yaml index — no markdown bodies loaded."""
+    cache_key = f"{project_path}:__index__"
+    cached = issue_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     data = atomic.read_yaml(paths.issues_index(project_path)) or {}
     entries = data.get("issues") or []
     out: list[IssueRecord] = []
@@ -104,6 +117,7 @@ def list_issues(project_path: str) -> list[IssueRecord]:
                 updated_at=_as_iso(entry.get("updated_at")),
             )
         )
+    issue_cache.set(cache_key, out)
     return out
 
 
@@ -193,11 +207,15 @@ _MD_FIELDS = ("specification", "plan", "recap")
 def create_issue(project_path: str, record: IssueRecord) -> None:
     _write_issue_files(project_path, record)
     rebuild_issues_index(project_path)
+    issue_cache.set(f"{project_path}:{record.id}", record)
+    issue_cache.invalidate(f"{project_path}:__index__")
 
 
 def update_issue(project_path: str, record: IssueRecord) -> None:
     _write_issue_files(project_path, record)
     rebuild_issues_index(project_path)
+    issue_cache.set(f"{project_path}:{record.id}", record)
+    issue_cache.invalidate(f"{project_path}:__index__")
 
 
 def delete_issue(project_path: str, issue_id: str) -> None:
@@ -205,6 +223,8 @@ def delete_issue(project_path: str, issue_id: str) -> None:
     if folder.exists():
         shutil.rmtree(folder)
     rebuild_issues_index(project_path)
+    issue_cache.invalidate(f"{project_path}:{issue_id}")
+    issue_cache.invalidate(f"{project_path}:__index__")
 
 
 def upsert_task(project_path: str, issue_id: str, task: TaskRecord) -> None:
@@ -299,6 +319,12 @@ def rebuild_issues_index(project_path: str) -> None:
             )
     entries.sort(key=lambda e: (e["created_at"], e["id"]))
     atomic.write_yaml(paths.issues_index(project_path), {"schema_version": 1, "issues": entries})
+    issue_cache.invalidate(f"{project_path}:__index__")
+
+
+def invalidate_issue_cache(project_path: str) -> None:
+    """Clear all cached issue data for a project. Called by watcher."""
+    issue_cache.clear()
 
 
 def _write_issue_files(project_path: str, record: IssueRecord) -> None:

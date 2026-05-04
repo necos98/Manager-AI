@@ -1,0 +1,1 @@
+Raggruppare i terminali per progetto nella sezione "Terminals"

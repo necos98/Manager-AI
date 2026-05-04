@@ -1,0 +1,1 @@
+Nella modale "New Issue" capita a volte che se si incollano dei link, la textarea esce fuori completamente dalla modale, esce verso destra. Risolvere questo problema

@@ -1,0 +1,52 @@
+schema_version: 1
+id: 7e20cdfc-85e6-4950-afad-5f64300c05b1
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Cache layer for flat-file system performance
+status: Finished
+priority: 3
+created_at: '2026-05-04T12:16:01.823152'
+updated_at: '2026-05-04T12:50:12.057695'
+tasks:
+- id: 6a4a025e-688f-481f-9918-6a19adc383f4
+  name: Create ReadCache class in backend/app/storage/cache.py
+  status: Completed
+  order: 0
+  created_at: '2026-05-04T12:48:57'
+  updated_at: '2026-05-04T12:49:41'
+- id: 3682e6e0-7ffa-45bf-9fcd-86416753a4b5
+  name: Integrate cache into issue_store.py read/write paths
+  status: Completed
+  order: 1
+  created_at: '2026-05-04T12:48:57'
+  updated_at: '2026-05-04T12:49:43'
+- id: b829c1e4-e277-404f-8ae9-f507623cd47e
+  name: Integrate cache into memory_store.py read/write paths
+  status: Completed
+  order: 2
+  created_at: '2026-05-04T12:48:57'
+  updated_at: '2026-05-04T12:49:44'
+- id: 3871f50e-3010-4acd-871c-224e268b416e
+  name: Integrate cache into file_store.py read/write paths
+  status: Completed
+  order: 3
+  created_at: '2026-05-04T12:48:57'
+  updated_at: '2026-05-04T12:49:46'
+- id: 6e16dee8-336a-4821-8877-a6780293de40
+  name: Add watcher cache invalidation in manager_ai_watcher.py
+  status: Completed
+  order: 4
+  created_at: '2026-05-04T12:48:57'
+  updated_at: '2026-05-04T12:49:48'
+- id: 0e9c9085-2f5c-404a-9dd0-27fe13169ddd
+  name: Add cache clearing to test fixtures (conftest.py)
+  status: Completed
+  order: 5
+  created_at: '2026-05-04T12:48:57'
+  updated_at: '2026-05-04T12:49:50'
+- id: f7431fc8-0dc1-490c-9a49-1164ee69b5bc
+  name: Run full test suite, verify no regressions
+  status: Completed
+  order: 6
+  created_at: '2026-05-04T12:48:57'
+  updated_at: '2026-05-04T12:49:52'
+relations: []
