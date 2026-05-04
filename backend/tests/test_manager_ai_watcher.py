@@ -66,3 +66,46 @@ async def test_watcher_ignores_tmp_files(watcher_with_project):
     await asyncio.sleep(1.0)
     # *.tmp create should not trigger an event
     assert len(captured) == initial
+
+
+async def test_watcher_skips_root_index_files_but_reacts_to_content(watcher_with_project):
+    watcher, project_path, captured = watcher_with_project
+
+    # Write root-level issues.yaml (simulating rebuild_issues_index output)
+    root_index = paths.issues_index(project_path)
+    root_index.parent.mkdir(parents=True, exist_ok=True)
+    atomic.write_yaml(root_index, {"schema_version": 1, "issues": []})
+
+    await asyncio.sleep(1.2)
+    assert not any(ev.get("type") == "issue_updated" for ev in captured), \
+        "Root index write must NOT trigger issue_updated"
+
+    # Write inside issues/<id>/issue.yaml (simulating real data change)
+    issue_dir = paths.issues_dir(project_path) / "test-id"
+    issue_dir.mkdir(parents=True, exist_ok=True)
+    issue_yaml = issue_dir / "issue.yaml"
+    atomic.write_yaml(issue_yaml, {"id": "test-id", "status": "New", "priority": 3})
+
+    captured.clear()
+    await asyncio.sleep(1.2)
+    assert any(ev.get("type") == "issue_updated" for ev in captured), \
+        "Issue dir content write MUST trigger issue_updated"
+
+    # Same for memories
+    root_mem_index = paths.memories_index(project_path)
+    atomic.write_yaml(root_mem_index, {"schema_version": 1, "memories": []})
+
+    await asyncio.sleep(1.2)
+    assert not any(ev.get("type") == "memory_updated" for ev in captured), \
+        "Root memories index write must NOT trigger memory_updated"
+
+    # Memories dir content should still trigger
+    mem_dir = paths.memories_dir(project_path) / "mem-test"
+    mem_dir.mkdir(parents=True, exist_ok=True)
+    mem_md = mem_dir / "memory.md"
+    atomic.write_text(mem_md, "test memory content")
+
+    captured.clear()
+    await asyncio.sleep(1.2)
+    assert any(ev.get("type") == "memory_updated" for ev in captured), \
+        "Memories dir content write MUST trigger memory_updated"

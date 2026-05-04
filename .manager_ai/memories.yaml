@@ -1,0 +1,9 @@
+schema_version: 1
+memories:
+- id: 11f591dc-f1ea-4805-b4c1-e93cbd3f1c5a
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Watcher _classify must skip root-level index YAML files to avoid infinite event loop
+  parent_id: null
+  created_at: '2026-05-04T08:02:06.910705'
+  updated_at: '2026-05-04T08:02:06.910705'
+  links: []

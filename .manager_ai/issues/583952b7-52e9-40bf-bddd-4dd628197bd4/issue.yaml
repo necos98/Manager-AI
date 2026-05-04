@@ -1,0 +1,34 @@
+schema_version: 1
+id: 583952b7-52e9-40bf-bddd-4dd628197bd4
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix spurious issue_updated notification loop after flat-system refactor
+status: Finished
+priority: 3
+created_at: '2026-05-04T07:47:38.821965'
+updated_at: '2026-05-04T08:01:44.089947'
+tasks:
+- id: f03db1f7-72e8-4e42-adba-72efba67de8d
+  name: Write failing test for watcher _classify skipping root index files
+  status: Completed
+  order: 0
+  created_at: '2026-05-04T07:58:45'
+  updated_at: '2026-05-04T08:00:15'
+- id: 964c4409-e3be-4b26-a6a2-8965d337dcb1
+  name: Fix _classify to exclude root-level index YAML files
+  status: Completed
+  order: 1
+  created_at: '2026-05-04T07:58:45'
+  updated_at: '2026-05-04T08:00:46'
+- id: 99c697f3-d4b0-43c6-9a7e-7e275b72c93c
+  name: Run existing watcher tests to verify no regressions
+  status: Completed
+  order: 2
+  created_at: '2026-05-04T07:58:45'
+  updated_at: '2026-05-04T08:01:12'
+- id: 21d7393a-5d83-4a31-b4b5-f879cf617c33
+  name: Manual verification — check event loop is broken
+  status: Completed
+  order: 3
+  created_at: '2026-05-04T07:58:45'
+  updated_at: '2026-05-04T08:01:25'
+relations: []

@@ -1,0 +1,1 @@
+Devo integrare in questo software "playwright" per testing end-to-end. Vorrei che facessi una ricerca sulla fattibilità e se ha senso integrarlo e come integrarlo. Creami un report sulle potenzialità che può portare l'integrazione di "playwright" in questo software.
