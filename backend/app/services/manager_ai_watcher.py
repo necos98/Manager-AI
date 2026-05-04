@@ -64,11 +64,11 @@ class _Handler(FileSystemEventHandler):
         parts = relative.parts
         if not parts:
             return None
-        if parts[0] in {"issues", "issues.yaml"}:
+        if parts[0] == "issues" and len(parts) > 1:
             return "issues"
-        if parts[0] in {"memories", "memories.yaml"}:
+        if parts[0] == "memories" and len(parts) > 1:
             return "memories"
-        if parts[0] in {"files", "files.yaml"}:
+        if parts[0] == "files" and len(parts) > 1:
             return "files"
         return None
 

@@ -1,0 +1,1 @@
+Il sistema di notifiche sembra essere buggato dopo l'aggiornamento al flat-system. Non so quando, ma il sistema triggera "issue_updated" e invia in continuazione quella notifica al frontend. Investigare e scoprire perchè.

@@ -1,0 +1,16 @@
+schema_version: 1
+issues:
+- id: 07e1b49e-7017-4b60-a5d4-7da0f641ffe8
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Integrate Playwright for End-to-End Testing
+  status: Reasoning
+  priority: 3
+  created_at: '2026-05-04T07:45:27.582057'
+  updated_at: '2026-05-04T08:13:58.892209'
+- id: 583952b7-52e9-40bf-bddd-4dd628197bd4
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Fix spurious issue_updated notification loop after flat-system refactor
+  status: Finished
+  priority: 3
+  created_at: '2026-05-04T07:47:38.821965'
+  updated_at: '2026-05-04T08:01:44.089947'
