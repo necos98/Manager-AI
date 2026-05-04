@@ -6,10 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.database import async_session
 from app.exceptions import AppError
 from app.hooks import hook_registry
 import app.hooks.handlers  # noqa: F401 — triggers @hook decorator registration
 from app.mcp.server import mcp
+from app.migration.db_to_files import migrate_all_projects
+from app.services.manager_ai_watcher import manager_ai_watcher
 from app.routers import activity, events, files, issue_relations, issues, library, memories, network, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, system, tasks, terminals, terminal_commands
 
 logger = logging.getLogger(__name__)
@@ -24,8 +27,30 @@ async def lifespan(app):
         for h in hooks:
             logger.info("  %s -> %s", event_type.value, h.name)
 
+    try:
+        await migrate_all_projects(async_session)
+    except Exception:
+        logger.exception("DB → .manager_ai/ migration failed; continuing startup")
+
+    try:
+        from sqlalchemy import select
+        from app.models.project import Project
+        async with async_session() as session:
+            rows = (
+                await session.execute(
+                    select(Project).where(Project.archived_at.is_(None))
+                )
+            ).scalars().all()
+            for p in rows:
+                await manager_ai_watcher.start_project(p.id, p.path)
+    except Exception:
+        logger.exception("Failed to start .manager_ai/ watchers; continuing startup")
+
     async with mcp.session_manager.run():
-        yield
+        try:
+            yield
+        finally:
+            await manager_ai_watcher.stop_all()
 
 
 app = FastAPI(title="Manager AI", version="0.1.0", lifespan=lifespan)

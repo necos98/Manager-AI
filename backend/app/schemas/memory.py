@@ -34,16 +34,24 @@ class MemoryResponse(BaseModel):
             id=obj.id,
             project_id=obj.project_id,
             title=obj.title,
-            description=obj.description,
+            description=obj.description or "",
             parent_id=obj.parent_id,
-            created_at=obj.created_at,
-            updated_at=obj.updated_at,
+            created_at=_coerce_dt(obj.created_at),
+            updated_at=_coerce_dt(obj.updated_at),
             children_count=children_count,
             links_out_count=links_out_count,
             links_in_count=links_in_count,
         )
 
     model_config = {"from_attributes": True}
+
+
+def _coerce_dt(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    if not value:
+        return datetime.min
+    return datetime.fromisoformat(str(value))
 
 
 class MemoryLinkResponse(BaseModel):

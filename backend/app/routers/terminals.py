@@ -241,9 +241,9 @@ async def create_terminal(
     # Inject startup commands into the PTY
     if data.run_commands:
         try:
-            from app.models.issue import Issue
-            issue = await db.get(Issue, data.issue_id)
-            issue_status = issue.status.value if issue else ""
+            from app.services.issue_service import IssueService
+            issue = await IssueService(db).get_by_id(data.issue_id)
+            issue_status = issue.status if issue else ""
 
             cmd_service = TerminalCommandService(db)
             commands = await cmd_service.resolve(data.project_id)
@@ -428,13 +428,13 @@ async def list_terminals(
     service: TerminalService = Depends(get_terminal_service),
 ):
     from app.models.project import Project
-    from app.models.issue import Issue
+    from app.services.issue_service import IssueService
 
     terminals = service.list_active(project_id=project_id, issue_id=issue_id)
-    # Enrich with issue/project names
+    issue_svc = IssueService(db)
     for term in terminals:
         project = await db.get(Project, term["project_id"])
-        issue = await db.get(Issue, term["issue_id"])
+        issue = await issue_svc.get_by_id(term["issue_id"])
         term["project_name"] = project.name if project else None
         term["issue_name"] = (issue.name or issue.description[:50]) if issue else None
     return terminals
