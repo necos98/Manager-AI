@@ -215,9 +215,8 @@ async def create_terminal(
         if is_wsl:
             _inject_env_vars(pty, env_vars, is_wsl=True)
             pty.write(
-                'export MANAGER_AI_BASE_URL='
-                f'"http://$(ip route show default | awk \'{{print $3}}\'):'
-                f'{os.environ.get("BACKEND_PORT", "8000")}"\r\n'
+                f'export MANAGER_AI_BASE_URL='
+                f'"http://localhost:{os.environ.get("BACKEND_PORT", "8000")}"\r\n'
             )
         else:
             env_vars["MANAGER_AI_BASE_URL"] = (
@@ -341,9 +340,8 @@ async def create_ask_terminal(
         if is_wsl:
             _inject_env_vars(pty, env_vars, is_wsl=True)
             pty.write(
-                'export MANAGER_AI_BASE_URL='
-                f'"http://$(ip route show default | awk \'{{print $3}}\'):'
-                f'{os.environ.get("BACKEND_PORT", "8000")}"\r\n'
+                f'export MANAGER_AI_BASE_URL='
+                f'"http://localhost:{os.environ.get("BACKEND_PORT", "8000")}"\r\n'
             )
         else:
             env_vars["MANAGER_AI_BASE_URL"] = (
