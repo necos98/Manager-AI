@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Archive } from "lucide-react";
+import { Archive, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -20,6 +20,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useArchiveProject, useUpdateProject } from "@/features/projects/hooks";
 import { useSystemInfo } from "@/features/system/hooks";
+import {
+  useCredentials,
+  useDeleteCredential,
+  useUpsertCredential,
+} from "@/features/projects/hooks-credentials";
 import type { Project } from "@/shared/types";
 
 const SHELL_OPTIONS = [
@@ -51,6 +56,7 @@ export function ProjectSettingsDialog({
     tech_stack: project.tech_stack || "",
     shell: project.shell || "__default__",
     wsl_distro: project.wsl_distro || "",
+    url: project.url || "",
   });
 
   // Re-sync form when the dialog opens so the newest project values are shown
@@ -63,6 +69,7 @@ export function ProjectSettingsDialog({
       tech_stack: project.tech_stack || "",
       shell: project.shell || "__default__",
       wsl_distro: project.wsl_distro || "",
+      url: project.url || "",
     });
   }, [open, project]);
 
@@ -73,6 +80,18 @@ export function ProjectSettingsDialog({
   const updateProject = useUpdateProject(project.id);
   const archiveProject = useArchiveProject();
   const navigate = useNavigate();
+
+  const { data: credentials } = useCredentials(open ? project.id : "");
+  const upsertCred = useUpsertCredential(project.id);
+  const deleteCred = useDeleteCredential(project.id);
+
+  const [credForm, setCredForm] = useState({
+    role: "",
+    url: "",
+    username: "",
+    password: "",
+  });
+  const [credExpanded, setCredExpanded] = useState(false);
 
   const handleArchive = () => {
     const confirmed = window.confirm(
@@ -95,9 +114,31 @@ export function ProjectSettingsDialog({
         ...form,
         shell: form.shell === "__default__" ? null : form.shell,
         wsl_distro: form.wsl_distro || null,
+        url: form.url || null,
       },
       { onSuccess: () => onOpenChange(false) }
     );
+  };
+
+  const handleCredSave = () => {
+    if (!credForm.role || !credForm.url) return;
+    const fields: Record<string, string> = {};
+    if (credForm.username) fields.username = credForm.username;
+    if (credForm.password) fields.password = credForm.password;
+    upsertCred.mutate(
+      { role: credForm.role, url: credForm.url, fields },
+      {
+        onSuccess: () => {
+          setCredForm({ role: "", url: "", username: "", password: "" });
+          setCredExpanded(false);
+          toast.success("Credential saved");
+        },
+      }
+    );
+  };
+
+  const handleCredDelete = (role: string) => {
+    deleteCred.mutate(role);
   };
 
   return (
@@ -139,6 +180,17 @@ export function ProjectSettingsDialog({
               onChange={(e) => setForm({ ...form, tech_stack: e.target.value })}
               rows={3}
             />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Web App URL</label>
+            <Input
+              value={form.url}
+              onChange={(e) => setForm({ ...form, url: e.target.value })}
+              placeholder="https://example.com"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Base URL for Playwright browser testing.
+            </p>
           </div>
           <div>
             <label className="text-sm font-medium">Terminal Shell</label>
@@ -189,6 +241,94 @@ export function ProjectSettingsDialog({
               </p>
             </div>
           )}
+          <div className="pt-2 border-t">
+            <label className="text-sm font-medium">Test Credentials</label>
+            <p className="text-xs text-muted-foreground mt-1 mb-3">
+              Credentials for Claude + Playwright browser testing. Stored encrypted.
+            </p>
+
+            {credentials && credentials.length > 0 && (
+              <div className="space-y-1 mb-3">
+                {credentials.map((role) => (
+                  <div
+                    key={role}
+                    className="flex items-center justify-between rounded border px-2 py-1 text-sm"
+                  >
+                    <span className="font-medium">{role}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      disabled={deleteCred.isPending}
+                      onClick={() => handleCredDelete(role)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {credExpanded ? (
+              <div className="space-y-2 rounded border p-3">
+                <Input
+                  placeholder="Role (e.g. admin)"
+                  value={credForm.role}
+                  onChange={(e) => setCredForm({ ...credForm, role: e.target.value })}
+                />
+                <Input
+                  placeholder="Login URL"
+                  value={credForm.url}
+                  onChange={(e) => setCredForm({ ...credForm, url: e.target.value })}
+                />
+                <Input
+                  placeholder="Username"
+                  value={credForm.username}
+                  onChange={(e) => setCredForm({ ...credForm, username: e.target.value })}
+                />
+                <Input
+                  placeholder="Password"
+                  type="password"
+                  value={credForm.password}
+                  onChange={(e) => setCredForm({ ...credForm, password: e.target.value })}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={upsertCred.isPending}
+                    onClick={handleCredSave}
+                  >
+                    {upsertCred.isPending ? "Saving..." : "Save"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCredExpanded(false);
+                      setCredForm({ role: "", url: "", username: "", password: "" });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setCredExpanded(true)}
+              >
+                <Plus className="size-3.5 mr-1.5" />
+                Add Credential
+              </Button>
+            )}
+          </div>
+
           <div className="pt-2 border-t">
             <label className="text-sm font-medium flex items-center gap-1.5 mb-2 text-destructive">
               <Archive className="size-3.5" />

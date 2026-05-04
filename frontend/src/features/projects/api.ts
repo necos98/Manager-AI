@@ -1,10 +1,11 @@
 import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/api/client";
-import type { Project, ProjectCreate, ProjectUpdate, Terminal } from "@/shared/types";
+import type { CredentialUpsert, Project, ProjectCreate, ProjectCredential, ProjectUpdate, Terminal } from "@/shared/types";
 
 export interface ProjectHealth {
   manager_json: { installed: boolean; path: string };
   claude_resources: { installed: boolean; path: string; missing: string[] };
   mcp: { installed: boolean; location: string | null };
+  playwright_mcp: { installed: boolean; location: string | null };
 }
 
 export function fetchProjectHealth(projectId: string): Promise<ProjectHealth> {
@@ -13,6 +14,10 @@ export function fetchProjectHealth(projectId: string): Promise<ProjectHealth> {
 
 export function installMcp(projectId: string): Promise<Terminal> {
   return apiPost<Terminal>(`/projects/${projectId}/install-mcp`);
+}
+
+export function installPlaywrightMcp(projectId: string): Promise<Terminal> {
+  return apiPost<Terminal>(`/projects/${projectId}/install-playwright-mcp`);
 }
 
 export function fetchProjects(archived: boolean = false): Promise<Project[]> {
@@ -63,4 +68,20 @@ export function fetchCodebaseIndexStatus(projectId: string): Promise<CodebaseInd
 
 export function triggerCodebaseIndex(projectId: string): Promise<{ status: string }> {
   return apiPost<{ status: string }>(`/projects/${projectId}/index-codebase`);
+}
+
+export function fetchCredentials(projectId: string): Promise<string[]> {
+  return apiGet<string[]>(`/projects/${projectId}/credentials`);
+}
+
+export function fetchCredential(projectId: string, role: string): Promise<ProjectCredential> {
+  return apiGet<ProjectCredential>(`/projects/${projectId}/credentials/${encodeURIComponent(role)}`);
+}
+
+export function upsertCredential(projectId: string, data: CredentialUpsert): Promise<ProjectCredential> {
+  return apiPost<ProjectCredential>(`/projects/${projectId}/credentials`, data);
+}
+
+export function deleteCredential(projectId: string, role: string): Promise<void> {
+  return apiDelete(`/projects/${projectId}/credentials/${encodeURIComponent(role)}`);
 }

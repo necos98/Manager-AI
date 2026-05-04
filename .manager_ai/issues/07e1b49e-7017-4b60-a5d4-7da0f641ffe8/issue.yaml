@@ -2,9 +2,57 @@ schema_version: 1
 id: 07e1b49e-7017-4b60-a5d4-7da0f641ffe8
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Integrate Playwright for End-to-End Testing
-status: Reasoning
+status: Finished
 priority: 3
 created_at: '2026-05-04T07:45:27.582057'
-updated_at: '2026-05-04T08:13:58.892209'
-tasks: []
+updated_at: '2026-05-04T08:58:35.824723'
+tasks:
+- id: cd2a4350-27eb-40dd-a0c5-12ada812d5df
+  name: 'Task 1: Database Model — ProjectCredential + Project.url'
+  status: Completed
+  order: 0
+  created_at: '2026-05-04T08:42:38'
+  updated_at: '2026-05-04T08:46:36'
+- id: 2bf4234e-f227-4971-a86b-1ee6b502eb15
+  name: 'Task 2: Credential Service with Fernet Encryption'
+  status: Completed
+  order: 1
+  created_at: '2026-05-04T08:42:38'
+  updated_at: '2026-05-04T08:48:17'
+- id: 6e16b60e-5b3a-4180-9143-609941264690
+  name: 'Task 3: Credential Schemas and Router'
+  status: Completed
+  order: 2
+  created_at: '2026-05-04T08:42:38'
+  updated_at: '2026-05-04T08:49:58'
+- id: 7e5a468e-8718-4c8d-af82-321aec4f2e47
+  name: 'Task 4: MCP Tools for Playwright Integration'
+  status: Completed
+  order: 3
+  created_at: '2026-05-04T08:42:38'
+  updated_at: '2026-05-04T08:50:54'
+- id: 6d6a0365-402f-4a4e-99d9-938ba9803065
+  name: 'Task 5: Frontend — Types and API Layer'
+  status: Completed
+  order: 4
+  created_at: '2026-05-04T08:42:38'
+  updated_at: '2026-05-04T08:52:06'
+- id: 9838b9d5-7d82-41c8-a222-8ebd76ad8493
+  name: 'Task 6: Frontend — React Query Hooks'
+  status: Completed
+  order: 5
+  created_at: '2026-05-04T08:42:38'
+  updated_at: '2026-05-04T08:52:37'
+- id: 53884c8d-7fe9-480e-b928-e17e2343329c
+  name: 'Task 7: Frontend — Project Settings UI'
+  status: Completed
+  order: 6
+  created_at: '2026-05-04T08:42:38'
+  updated_at: '2026-05-04T08:54:42'
+- id: fde49b72-2f85-44b1-a331-b4c6389b7142
+  name: 'Task 8: Database Migration'
+  status: Completed
+  order: 7
+  created_at: '2026-05-04T08:42:38'
+  updated_at: '2026-05-04T08:58:16'
 relations: []
