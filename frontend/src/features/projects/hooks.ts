@@ -67,6 +67,7 @@ export function useProjectHealth(projectId: string) {
     queryKey: ["projects", projectId, "health"] as const,
     queryFn: () => api.fetchProjectHealth(projectId),
     enabled: !!projectId,
+    refetchInterval: 30_000,
   });
 }
 

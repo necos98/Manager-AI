@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.storage import atomic, paths
+from app.storage.cache import file_cache
 
 
 @dataclass
@@ -25,43 +26,82 @@ class FileRecord:
 def create_file(project_path: str, record: FileRecord) -> None:
     _persist_text(project_path, record)
     _write_files_index(project_path, _merge_entry(_load_entries(project_path), record))
+    file_cache.set(f"{project_path}:{record.id}", record)
+    file_cache.invalidate(f"{project_path}:__index__")
+    if record.extracted_text is not None:
+        file_cache.set(f"{project_path}:text:{record.id}", record.extracted_text)
 
 
 def update_file(project_path: str, record: FileRecord) -> None:
     _persist_text(project_path, record)
     _write_files_index(project_path, _merge_entry(_load_entries(project_path), record))
+    file_cache.set(f"{project_path}:{record.id}", record)
+    file_cache.invalidate(f"{project_path}:__index__")
+    if record.extracted_text is not None:
+        file_cache.set(f"{project_path}:text:{record.id}", record.extracted_text)
 
 
 def load_file(project_path: str, file_id: str) -> FileRecord | None:
+    cache_key = f"{project_path}:{file_id}"
+    cached = file_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     entry = _find_entry(project_path, file_id)
     if entry is None:
         return None
     rec = _entry_to_record(entry)
     rec.extracted_text = read_extracted_text(project_path, file_id) or None
+    file_cache.set(cache_key, rec)
     return rec
 
 
 def list_files(project_path: str) -> list[FileRecord]:
-    return [_entry_to_record(e) for e in _load_entries(project_path)]
+    cache_key = f"{project_path}:__index__"
+    cached = file_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    out = [_entry_to_record(e) for e in _load_entries(project_path)]
+    file_cache.set(cache_key, out)
+    return out
 
 
 def delete_file(project_path: str, file_id: str) -> None:
     entries = [e for e in _load_entries(project_path) if e.get("id") != file_id]
     atomic.remove_if_exists(paths.file_text_cache(project_path, file_id))
     _write_files_index(project_path, entries)
+    file_cache.invalidate(f"{project_path}:{file_id}")
+    file_cache.invalidate(f"{project_path}:text:{file_id}")
+    file_cache.invalidate(f"{project_path}:__index__")
 
 
 def read_extracted_text(project_path: str, file_id: str) -> str:
-    return atomic.read_text(paths.file_text_cache(project_path, file_id))
+    cache_key = f"{project_path}:text:{file_id}"
+    cached = file_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    text = atomic.read_text(paths.file_text_cache(project_path, file_id))
+    file_cache.set(cache_key, text)
+    return text
 
 
 def write_extracted_text(project_path: str, file_id: str, text: str) -> None:
     atomic.write_text(paths.file_text_cache(project_path, file_id), text)
+    file_cache.set(f"{project_path}:text:{file_id}", text)
+    file_cache.invalidate(f"{project_path}:{file_id}")
 
 
 def rebuild_files_index(project_path: str) -> None:
     entries = _load_entries(project_path)
     _write_files_index(project_path, entries)
+    file_cache.invalidate(f"{project_path}:__index__")
+
+
+def invalidate_file_cache(project_path: str) -> None:
+    """Clear all cached file data for a project. Called by watcher."""
+    file_cache.clear()
 
 
 def _load_entries(project_path: str) -> list[dict[str, Any]]:

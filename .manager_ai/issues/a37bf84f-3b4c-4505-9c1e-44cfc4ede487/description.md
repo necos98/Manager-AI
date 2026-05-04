@@ -1,0 +1,1 @@
+Voglio aggiungere uno step in più quando un utente non ha ancora effettuato la conversione al flat-system. Vorrei che venisse backuppato il database sql lite cosi da non aver problemi in caso di errori. E' possibile?

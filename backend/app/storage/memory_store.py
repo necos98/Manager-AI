@@ -6,6 +6,7 @@ from typing import Any
 import yaml
 
 from app.storage import atomic, paths
+from app.storage.cache import memory_cache
 from app.storage.issue_store import _parse_frontmatter
 
 
@@ -31,21 +32,30 @@ class MemoryRecord:
 def create_memory(project_path: str, record: MemoryRecord) -> None:
     _write_memory_file(project_path, record)
     rebuild_memories_index(project_path)
+    memory_cache.set(f"{project_path}:{record.id}", record)
+    memory_cache.invalidate(f"{project_path}:__index__")
 
 
 def update_memory(project_path: str, record: MemoryRecord) -> None:
     _write_memory_file(project_path, record)
     rebuild_memories_index(project_path)
+    memory_cache.set(f"{project_path}:{record.id}", record)
+    memory_cache.invalidate(f"{project_path}:__index__")
 
 
 def load_memory(project_path: str, memory_id: str) -> MemoryRecord | None:
+    cache_key = f"{project_path}:{memory_id}"
+    cached = memory_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     path = paths.memory_md(project_path, memory_id)
     if not path.exists():
         return None
     parsed = _parse_frontmatter(atomic.read_text(path))
     meta = parsed["meta"] or {}
     body = parsed["body"]
-    return MemoryRecord(
+    record = MemoryRecord(
         id=str(meta.get("id", memory_id)),
         project_id=str(meta.get("project_id", "")),
         title=str(meta.get("title", "")),
@@ -55,28 +65,42 @@ def load_memory(project_path: str, memory_id: str) -> MemoryRecord | None:
         updated_at=_as_str(meta.get("updated_at")),
         links=[_link_from_dict(l) for l in (meta.get("links") or [])],
     )
+    memory_cache.set(cache_key, record)
+    return record
 
 
 def delete_memory(project_path: str, memory_id: str) -> None:
     # Detach children
+    affected: set[str] = set()
     for other in list_memories_full(project_path):
         if other.parent_id == memory_id:
             other.parent_id = None
             _write_memory_file(project_path, other)
+            affected.add(other.id)
     # Strip inbound links
     for other in list_memories_full(project_path):
         new_links = [l for l in other.links if l.to_id != memory_id]
         if new_links != other.links:
             other.links = new_links
             _write_memory_file(project_path, other)
+            affected.add(other.id)
     atomic.remove_if_exists(paths.memory_md(project_path, memory_id))
     rebuild_memories_index(project_path)
+    memory_cache.invalidate(f"{project_path}:{memory_id}")
+    memory_cache.invalidate(f"{project_path}:__index__")
+    for other_id in affected:
+        memory_cache.invalidate(f"{project_path}:{other_id}")
 
 
 def list_memories(project_path: str) -> list[MemoryRecord]:
+    cache_key = f"{project_path}:__index__"
+    cached = memory_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     data = atomic.read_yaml(paths.memories_index(project_path)) or {}
     entries = data.get("memories") or []
-    return [
+    out = [
         MemoryRecord(
             id=str(e.get("id", "")),
             project_id=str(e.get("project_id", "")),
@@ -89,6 +113,8 @@ def list_memories(project_path: str) -> list[MemoryRecord]:
         )
         for e in entries
     ]
+    memory_cache.set(cache_key, out)
+    return out
 
 
 def list_memories_full(project_path: str) -> list[MemoryRecord]:
@@ -111,6 +137,8 @@ def add_link(project_path: str, from_id: str, link: MemoryLinkRecord) -> None:
     record.links = existing
     _write_memory_file(project_path, record)
     rebuild_memories_index(project_path)
+    memory_cache.set(f"{project_path}:{from_id}", record)
+    memory_cache.invalidate(f"{project_path}:__index__")
 
 
 def remove_link(project_path: str, from_id: str, to_id: str, relation: str) -> bool:
@@ -123,6 +151,8 @@ def remove_link(project_path: str, from_id: str, to_id: str, relation: str) -> b
         return False
     _write_memory_file(project_path, record)
     rebuild_memories_index(project_path)
+    memory_cache.set(f"{project_path}:{from_id}", record)
+    memory_cache.invalidate(f"{project_path}:__index__")
     return True
 
 
@@ -146,6 +176,12 @@ def rebuild_memories_index(project_path: str) -> None:
             )
     entries.sort(key=lambda e: (e["created_at"], e["id"]))
     atomic.write_yaml(paths.memories_index(project_path), {"schema_version": 1, "memories": entries})
+    memory_cache.invalidate(f"{project_path}:__index__")
+
+
+def invalidate_memory_cache(project_path: str) -> None:
+    """Clear all cached memory data for a project. Called by watcher."""
+    memory_cache.clear()
 
 
 def _write_memory_file(project_path: str, record: MemoryRecord) -> None:

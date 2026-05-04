@@ -1,0 +1,22 @@
+schema_version: 1
+id: 7a354013-b168-41cc-93e1-88757c760dd8
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Group terminals by project in Terminals section
+status: Finished
+priority: 3
+created_at: '2026-05-04T11:39:54.530007'
+updated_at: '2026-05-04T11:53:54.723489'
+tasks:
+- id: 26b0d4f5-213b-40b5-8ca5-6b451a192ab0
+  name: Group terminals by project in TerminalGrid component
+  status: Completed
+  order: 0
+  created_at: '2026-05-04T11:51:37'
+  updated_at: '2026-05-04T11:53:18'
+- id: 46a447cc-8f23-44f9-9d40-a3727a969d42
+  name: Verify terminals page renders correctly with grouping
+  status: Completed
+  order: 1
+  created_at: '2026-05-04T11:51:37'
+  updated_at: '2026-05-04T11:53:44'
+relations: []

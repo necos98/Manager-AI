@@ -1,0 +1,58 @@
+schema_version: 1
+id: df70ee7c-af32-4bdc-bc05-f1d3770e409e
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Health check per inconsistenza project_id tra manager.json e resources
+status: Finished
+priority: 3
+created_at: '2026-05-04T11:38:14.283974'
+updated_at: '2026-05-04T12:03:46.246170'
+tasks:
+- id: f6324ac9-e654-4507-9db8-7804cd8e168c
+  name: Write unit test for _check_resource_consistency with mocked .manager_ai/ filesystem
+  status: Completed
+  order: 0
+  created_at: '2026-05-04T11:57:15'
+  updated_at: '2026-05-04T11:59:01'
+- id: ae9e893d-8dc6-4c0b-906e-9cdcda557b1c
+  name: Run unit test to verify it fails (function not defined)
+  status: Completed
+  order: 1
+  created_at: '2026-05-04T11:57:15'
+  updated_at: '2026-05-04T11:59:13'
+- id: acfd0cf2-cb1f-44ea-8cce-f292523743ec
+  name: Implement _check_resource_consistency function in projects.py
+  status: Completed
+  order: 2
+  created_at: '2026-05-04T11:57:15'
+  updated_at: '2026-05-04T12:00:10'
+- id: 33b0e003-b0a0-4f94-a43f-6f996dc9a491
+  name: Run unit test to verify it passes
+  status: Completed
+  order: 3
+  created_at: '2026-05-04T11:57:15'
+  updated_at: '2026-05-04T12:00:44'
+- id: 85275631-9124-4db1-ad1a-b51aeb8ad706
+  name: Wire _check_resource_consistency into project_health endpoint
+  status: Completed
+  order: 4
+  created_at: '2026-05-04T11:57:15'
+  updated_at: '2026-05-04T12:01:01'
+- id: e21cb646-1a2d-4fc5-a48d-3d73cd6977ee
+  name: Add integration test for health endpoint with resource_consistency field
+  status: Completed
+  order: 5
+  created_at: '2026-05-04T11:57:15'
+  updated_at: '2026-05-04T12:01:45'
+- id: 83ec7108-9b6d-4b34-bc37-727d6ff41edc
+  name: Run full test suite to verify no regressions
+  status: Completed
+  order: 6
+  created_at: '2026-05-04T11:57:15'
+  updated_at: '2026-05-04T12:02:50'
+- id: 57274a43-ead1-4537-a169-c16a9a98a19b
+  name: Commit changes
+  status: Completed
+  order: 7
+  created_at: '2026-05-04T11:57:15'
+  updated_at: '2026-05-04T12:03:32'
+relations: []
