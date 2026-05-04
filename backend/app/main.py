@@ -13,7 +13,7 @@ import app.hooks.handlers  # noqa: F401 — triggers @hook decorator registratio
 from app.mcp.server import mcp
 from app.migration.db_to_files import migrate_all_projects
 from app.services.manager_ai_watcher import manager_ai_watcher
-from app.routers import activity, events, files, issue_relations, issues, library, memories, network, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, system, tasks, terminals, terminal_commands
+from app.routers import activity, credentials, events, files, issue_relations, issues, library, memories, network, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, system, tasks, terminals, terminal_commands
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +73,7 @@ app.include_router(projects.router)
 app.include_router(projects.dashboard_router)
 app.include_router(project_settings.router)
 app.include_router(project_templates.router)
+app.include_router(credentials.router)
 app.include_router(files.formats_router)
 app.include_router(files.router)
 app.include_router(issues.router)
