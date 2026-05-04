@@ -248,10 +248,7 @@ async def install_mcp(project_id: str, db: AsyncSession = Depends(get_db)):
         pty = terminal_service.get_pty(terminal["id"])
         if is_wsl:
             cwd = win_to_wsl_path(project.path)
-            url = (
-                f'"http://$(ip route show default | awk \'{{print $3}}\'):'
-                f'{port}/mcp/"'
-            )
+            url = f'"http://localhost:{port}/mcp/"'
             pty.write(f"cd {shlex.quote(cwd)}\r\n")
             pty.write(
                 "claude mcp remove ManagerAi 2>/dev/null; "

@@ -11,8 +11,8 @@ def svc(db_session):
 
 
 @pytest.mark.asyncio
-async def test_create_list_get(db_session, svc):
-    db_session.add(Project(id="p1", name="P", path="/tmp/p"))
+async def test_create_list_get(db_session, svc, tmp_path):
+    db_session.add(Project(id="p1", name="P", path=str(tmp_path)))
     await db_session.flush()
     m = await svc.create(project_id="p1", title="T", description="D")
     assert m.id and m.title == "T"
@@ -25,8 +25,8 @@ async def test_create_list_get(db_session, svc):
 
 
 @pytest.mark.asyncio
-async def test_parent_cycle_is_rejected(db_session, svc):
-    db_session.add(Project(id="p1", name="P", path="/tmp/p"))
+async def test_parent_cycle_is_rejected(db_session, svc, tmp_path):
+    db_session.add(Project(id="p1", name="P", path=str(tmp_path)))
     await db_session.flush()
     a = await svc.create(project_id="p1", title="A", description="")
     b = await svc.create(project_id="p1", title="B", description="", parent_id=a.id)
@@ -35,8 +35,11 @@ async def test_parent_cycle_is_rejected(db_session, svc):
 
 
 @pytest.mark.asyncio
-async def test_parent_must_be_same_project(db_session, svc):
-    db_session.add_all([Project(id="p1", name="P", path="/a"), Project(id="p2", name="Q", path="/b")])
+async def test_parent_must_be_same_project(db_session, svc, tmp_path):
+    p1 = tmp_path / "p1"
+    p2 = tmp_path / "p2"
+    p1.mkdir(); p2.mkdir()
+    db_session.add_all([Project(id="p1", name="P", path=str(p1)), Project(id="p2", name="Q", path=str(p2))])
     await db_session.flush()
     a = await svc.create(project_id="p1", title="A", description="")
     with pytest.raises(AppError):
@@ -44,8 +47,8 @@ async def test_parent_must_be_same_project(db_session, svc):
 
 
 @pytest.mark.asyncio
-async def test_delete_sets_children_parent_to_null(db_session, svc):
-    db_session.add(Project(id="p1", name="P", path="/a"))
+async def test_delete_sets_children_parent_to_null(db_session, svc, tmp_path):
+    db_session.add(Project(id="p1", name="P", path=str(tmp_path)))
     await db_session.flush()
     a = await svc.create(project_id="p1", title="A", description="")
     b = await svc.create(project_id="p1", title="B", description="", parent_id=a.id)
@@ -55,8 +58,8 @@ async def test_delete_sets_children_parent_to_null(db_session, svc):
 
 
 @pytest.mark.asyncio
-async def test_link_and_unlink(db_session, svc):
-    db_session.add(Project(id="p1", name="P", path="/a"))
+async def test_link_and_unlink(db_session, svc, tmp_path):
+    db_session.add(Project(id="p1", name="P", path=str(tmp_path)))
     await db_session.flush()
     a = await svc.create(project_id="p1", title="A", description="")
     b = await svc.create(project_id="p1", title="B", description="")
@@ -70,8 +73,8 @@ async def test_link_and_unlink(db_session, svc):
 
 
 @pytest.mark.asyncio
-async def test_search_fts(db_session, svc):
-    db_session.add(Project(id="p1", name="P", path="/a"))
+async def test_search_naive(db_session, svc, tmp_path):
+    db_session.add(Project(id="p1", name="P", path=str(tmp_path)))
     await db_session.flush()
     await svc.create(project_id="p1", title="Alpha memory", description="about databases")
     await svc.create(project_id="p1", title="Beta", description="about painting")

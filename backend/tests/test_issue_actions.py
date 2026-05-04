@@ -9,9 +9,9 @@ from app.services.project_service import ProjectService
 
 
 @pytest_asyncio.fixture
-async def project(db_session):
+async def project(db_session, tmp_path):
     service = ProjectService(db_session)
-    return await service.create(name="Test", path="/tmp/test")
+    return await service.create(name="Test", path=str(tmp_path))
 
 
 @pytest_asyncio.fixture
@@ -20,15 +20,18 @@ async def issue(db_session, project):
     return await service.create(project_id=project.id, description="Test issue")
 
 
+async def _advance_to_planned(service, issue, project):
+    await service.create_spec(issue.id, project.id, "# Spec")
+    await service.create_plan(issue.id, project.id, "# Plan")
+
 
 async def test_accept_issue_via_service(db_session, issue, project):
     with patch("app.services.issue_service.hook_registry") as mock_registry:
         mock_registry.fire = AsyncMock()
         service = IssueService(db_session)
-        issue.status = IssueStatus.PLANNED
-        await db_session.flush()
+        await _advance_to_planned(service, issue, project)
         result = await service.accept_issue(issue.id, project.id)
-        assert result.status == IssueStatus.ACCEPTED
+        assert result.status == IssueStatus.ACCEPTED.value
 
 
 async def test_cancel_issue_via_service(db_session, issue, project):
@@ -36,7 +39,7 @@ async def test_cancel_issue_via_service(db_session, issue, project):
         mock_registry.fire = AsyncMock()
         service = IssueService(db_session)
         result = await service.cancel_issue(issue.id, project.id)
-        assert result.status == IssueStatus.CANCELED
+        assert result.status == IssueStatus.CANCELED.value
 
 
 async def test_update_issue_name(db_session, issue, project):
@@ -63,10 +66,6 @@ async def test_update_issue_name_and_priority_together(db_session, issue, projec
     """Both name and priority can be updated in one call."""
     service = IssueService(db_session)
     await service.set_name(issue.id, project.id, "Combined update")
-    await service.update_fields(issue.id, project.id, priority=1)
-    from sqlalchemy import select
-    from app.models.issue import Issue
-    result = await db_session.execute(select(Issue).where(Issue.id == issue.id))
-    updated = result.scalar_one()
+    updated = await service.update_fields(issue.id, project.id, priority=1)
     assert updated.name == "Combined update"
     assert updated.priority == 1

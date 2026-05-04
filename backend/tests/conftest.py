@@ -1,3 +1,4 @@
+import pytest
 import pytest_asyncio
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -108,3 +109,14 @@ async def db_session():
         await conn.exec_driver_sql("DROP TABLE IF EXISTS project_files_fts")
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def project_with_tmp_path(db_session, tmp_path):
+    """Project whose .path points to a tmp dir — file-backed services work against it."""
+    from app.models.project import Project as _Project
+    project = _Project(name="Test Project", path=str(tmp_path), description="", tech_stack="")
+    db_session.add(project)
+    await db_session.commit()
+    await db_session.refresh(project)
+    return project

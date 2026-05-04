@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 from app.models.issue import IssueStatus
-from app.schemas.task import TaskResponse
+from app.schemas.task import TaskResponse, _parse_dt
 
 _DESCRIPTION_MAX = 50_000
 _RECAP_MAX = 50_000
@@ -46,7 +49,22 @@ class IssueResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    @classmethod
+    def from_record(cls, record: Any) -> "IssueResponse":
+        return cls(
+            id=record.id,
+            project_id=record.project_id,
+            name=record.name,
+            description=record.description or "",
+            status=IssueStatus(record.status),
+            priority=record.priority,
+            plan=record.plan,
+            specification=record.specification,
+            recap=record.recap,
+            tasks=[TaskResponse.from_record(t, issue_id=record.id) for t in (record.tasks or [])],
+            created_at=_parse_dt(record.created_at),
+            updated_at=_parse_dt(record.updated_at),
+        )
 
 
 class IssueFeedbackCreate(BaseModel):
@@ -59,4 +77,11 @@ class IssueFeedbackResponse(BaseModel):
     content: str
     created_at: datetime
 
-    model_config = {"from_attributes": True}
+    @classmethod
+    def from_record(cls, record: Any) -> "IssueFeedbackResponse":
+        return cls(
+            id=record.id,
+            issue_id=record.issue_id,
+            content=record.content,
+            created_at=_parse_dt(record.created_at),
+        )

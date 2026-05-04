@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 
 from app.database import async_session
 from app.exceptions import AppError
-from app.models.issue import Issue
 from app.services.event_service import event_service
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
@@ -38,17 +37,17 @@ async def get_issue_details(project_id: str, issue_id: str) -> dict:
             "project_id": issue.project_id,
             "name": issue.name,
             "description": issue.description,
-            "status": issue.status.value,
+            "status": issue.status,
             "priority": issue.priority,
             "specification": issue.specification,
             "plan": issue.plan,
             "recap": issue.recap,
             "tasks": [
-                {"id": t.id, "name": t.name, "status": t.status.value, "order": t.order}
+                {"id": t.id, "name": t.name, "status": t.status, "order": t.order}
                 for t in issue.tasks
             ],
-            "created_at": issue.created_at.isoformat() if issue.created_at else None,
-            "updated_at": issue.updated_at.isoformat() if issue.updated_at else None,
+            "created_at": issue.created_at or None,
+            "updated_at": issue.updated_at or None,
         }
 
 
@@ -60,7 +59,7 @@ async def get_issue_status(project_id: str, issue_id: str) -> dict:
             issue = await issue_service.get_for_project(issue_id, project_id)
         except AppError as e:
             return {"error": e.message}
-        return {"id": issue.id, "status": issue.status.value}
+        return {"id": issue.id, "status": issue.status}
 
 
 @mcp.tool(description=_desc["tool.get_project_context.description"])
@@ -138,7 +137,7 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
             }
             issue_id_val = issue.id
             issue_name = issue.name or (issue.description or "")[:50] or ""
-            issue_status = issue.status.value
+            issue_status = issue.status
             try:
                 project = await ProjectService(session).get_by_id(project_id)
                 project_name = project.name
@@ -179,7 +178,7 @@ async def create_issue(project_id: str, description: str, priority: int = 3) -> 
                 "project_id": issue.project_id,
                 "description": issue.description,
                 "priority": issue.priority,
-                "status": issue.status.value,
+                "status": issue.status,
             }
             await session.commit()
             return result
@@ -196,13 +195,13 @@ async def create_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
             await session.commit()
             await event_service.emit({
                 "type": "issue_status_changed",
-                "new_status": issue.status.value,
+                "new_status": issue.status,
                 "project_id": project_id,
                 "issue_id": issue_id,
                 "issue_name": issue.name or (issue.description or "")[:50] or "",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
-            return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
+            return {"id": issue.id, "status": issue.status, "specification": issue.specification}
         except AppError as e:
             return {"error": e.message}
 
@@ -222,7 +221,7 @@ async def edit_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
                 "issue_name": issue.name or (issue.description or "")[:50] or "",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
-            return {"id": issue.id, "status": issue.status.value, "specification": issue.specification}
+            return {"id": issue.id, "status": issue.status, "specification": issue.specification}
         except AppError as e:
             return {"error": e.message}
 
@@ -236,13 +235,13 @@ async def create_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
             await session.commit()
             await event_service.emit({
                 "type": "issue_status_changed",
-                "new_status": issue.status.value,
+                "new_status": issue.status,
                 "project_id": project_id,
                 "issue_id": issue_id,
                 "issue_name": issue.name or (issue.description or "")[:50] or "",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
-            return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
+            return {"id": issue.id, "status": issue.status, "plan": issue.plan}
         except AppError as e:
             return {"error": e.message}
 
@@ -262,7 +261,7 @@ async def edit_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
                 "issue_name": issue.name or (issue.description or "")[:50] or "",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
-            return {"id": issue.id, "status": issue.status.value, "plan": issue.plan}
+            return {"id": issue.id, "status": issue.status, "plan": issue.plan}
         except AppError as e:
             return {"error": e.message}
 
@@ -273,7 +272,7 @@ async def accept_issue(project_id: str, issue_id: str) -> dict:
         issue_service = IssueService(session)
         try:
             issue = await issue_service.accept_issue(issue_id, project_id)
-            issue_status = issue.status.value
+            issue_status = issue.status
             issue_name_val = issue.name or (issue.description or "")[:50] or ""
             await session.commit()
             await event_service.emit({
@@ -295,7 +294,7 @@ async def cancel_issue(project_id: str, issue_id: str) -> dict:
         issue_service = IssueService(session)
         try:
             issue = await issue_service.cancel_issue(issue_id, project_id)
-            issue_status = issue.status.value
+            issue_status = issue.status
             issue_name_val = issue.name or (issue.description or "")[:50] or ""
             await session.commit()
             await event_service.emit({
@@ -344,7 +343,7 @@ async def create_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
         task_service = TaskService(session)
         try:
             created = await task_service.create_bulk(issue_id, tasks)
-            issue = await session.get(Issue, issue_id)
+            issue = await IssueService(session).get_by_id(issue_id)
             await session.commit()
             if issue:
                 await event_service.emit({
@@ -353,7 +352,7 @@ async def create_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
                     "issue_id": issue_id,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
-            return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
+            return {"tasks": [{"id": t.id, "name": t.name, "status": t.status, "order": t.order} for t in created]}
         except AppError as e:
             return {"error": e.message}
 
@@ -364,7 +363,7 @@ async def replace_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
         task_service = TaskService(session)
         try:
             created = await task_service.replace_all(issue_id, tasks)
-            issue = await session.get(Issue, issue_id)
+            issue = await IssueService(session).get_by_id(issue_id)
             await session.commit()
             if issue:
                 await event_service.emit({
@@ -373,7 +372,7 @@ async def replace_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
                     "issue_id": issue_id,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
-            return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in created]}
+            return {"tasks": [{"id": t.id, "name": t.name, "status": t.status, "order": t.order} for t in created]}
         except AppError as e:
             return {"error": e.message}
 
@@ -384,14 +383,23 @@ async def update_task_status(task_id: str, status: str) -> dict:
         task_service = TaskService(session)
         try:
             task = await task_service.update(task_id, status=status)
-            task_issue_id = task.issue_id
+            # file-backed TaskService returns TaskRecord without issue_id — find it via IssueService
+            issue_rec = None
+            task_issue_id = ""
+            for project in await ProjectService(session).list_all(archived=None):
+                from app.storage import issue_store as _is
+                found = _is.find_task(project.path, task_id)
+                if found is not None:
+                    issue_rec, _ = found
+                    task_issue_id = issue_rec.id
+                    break
             task_id_val = task.id
             task_name = task.name
-            task_status = task.status.value
-            issue = await session.get(Issue, task_issue_id)
+            task_status = task.status
+            issue = issue_rec
             all_done = (
                 await task_service.all_completed(task_issue_id)
-                if task.status == TaskStatus.COMPLETED
+                if task.status == TaskStatus.COMPLETED.value
                 else False
             )
             await session.commit()
@@ -432,10 +440,17 @@ async def update_task_name(task_id: str, name: str) -> dict:
         task_service = TaskService(session)
         try:
             task = await task_service.update(task_id, name=name)
-            task_issue_id = task.issue_id
+            issue = None
+            task_issue_id = ""
+            for project in await ProjectService(session).list_all(archived=None):
+                from app.storage import issue_store as _is
+                found = _is.find_task(project.path, task_id)
+                if found is not None:
+                    issue, _ = found
+                    task_issue_id = issue.id
+                    break
             task_id_val = task.id
             task_name = task.name
-            issue = await session.get(Issue, task_issue_id)
             await session.commit()
             if issue:
                 await event_service.emit({
@@ -455,11 +470,18 @@ async def delete_task(task_id: str) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
         try:
-            task = await task_service.get_by_id(task_id)
-            task_issue_id = task.issue_id
-            issue = await session.get(Issue, task_issue_id)
+            # Find owning issue before deletion
+            issue = None
+            task_issue_id = ""
+            for project in await ProjectService(session).list_all(archived=None):
+                from app.storage import issue_store as _is
+                found = _is.find_task(project.path, task_id)
+                if found is not None:
+                    issue, _ = found
+                    task_issue_id = issue.id
+                    break
+            await task_service.delete(task_id)
             project_id = issue.project_id if issue else None
-            await session.delete(task)
             await session.commit()
             if project_id:
                 await event_service.emit({
@@ -478,7 +500,7 @@ async def get_plan_tasks(issue_id: str) -> dict:
     async with async_session() as session:
         task_service = TaskService(session)
         tasks = await task_service.list_by_issue(issue_id)
-        return {"tasks": [{"id": t.id, "name": t.name, "status": t.status.value, "order": t.order} for t in tasks]}
+        return {"tasks": [{"id": t.id, "name": t.name, "status": t.status, "order": t.order} for t in tasks]}
 
 
 @mcp.tool(description=_desc["tool.get_next_issue.description"])
@@ -497,7 +519,7 @@ async def get_next_issue(project_id: str) -> dict:
                     "id": issue.id,
                     "name": issue.name,
                     "description": issue.description,
-                    "status": issue.status.value,
+                    "status": issue.status,
                     "priority": issue.priority,
                 }
             }
@@ -563,36 +585,6 @@ async def memory_delete(memory_id: str) -> dict:
         return {"deleted": True}
 
 
-@mcp.tool(description=_desc["tool.memory_get.description"])
-async def memory_get(memory_id: str) -> dict:
-    async with async_session() as session:
-        svc = MemoryService(session)
-        try:
-            bundle = await svc.get_related(memory_id)
-        except AppError as e:
-            return {"error": e.message}
-        counts = await svc.counts(memory_id)
-        return {
-            "memory": _memory_to_dict(bundle["memory"], counts),
-            "parent": _memory_to_dict(bundle["parent"], await svc.counts(bundle["parent"].id)) if bundle["parent"] else None,
-            "children": [_memory_to_dict(c, await svc.counts(c.id)) for c in bundle["children"]],
-            "links_out": [{"from_id": l.from_id, "to_id": l.to_id, "relation": l.relation} for l in bundle["links_out"]],
-            "links_in": [{"from_id": l.from_id, "to_id": l.to_id, "relation": l.relation} for l in bundle["links_in"]],
-        }
-
-
-@mcp.tool(description=_desc["tool.memory_list.description"])
-async def memory_list(project_id: str, parent_id: str | None = None, limit: int = 50, offset: int = 0) -> dict:
-    async with async_session() as session:
-        svc = MemoryService(session)
-        effective_parent = parent_id if parent_id != "" else None
-        rows = await svc.list(project_id=project_id, parent_id=effective_parent, limit=limit, offset=offset)
-        out = []
-        for m in rows:
-            out.append(_memory_to_dict(m, await svc.counts(m.id)))
-        return {"memories": out}
-
-
 @mcp.tool(description=_desc["tool.memory_link.description"])
 async def memory_link(from_id: str, to_id: str, relation: str = "") -> dict:
     async with async_session() as session:
@@ -622,37 +614,17 @@ async def memory_unlink(from_id: str, to_id: str, relation: str = "") -> dict:
         return {"deleted": bool(deleted)}
 
 
-@mcp.tool(description=_desc["tool.memory_get_related.description"])
-async def memory_get_related(memory_id: str) -> dict:
-    return await memory_get(memory_id)
-
-
-@mcp.tool(description=_desc["tool.memory_search.description"])
-async def memory_search(project_id: str, query: str, limit: int = 20) -> dict:
-    async with async_session() as session:
-        svc = MemoryService(session)
-        hits = await svc.search(project_id=project_id, query=query, limit=limit)
-        results = []
-        for h in hits:
-            results.append({
-                "memory": _memory_to_dict(h["memory"], await svc.counts(h["memory"].id)),
-                "snippet": h["snippet"],
-                "rank": h["rank"],
-            })
-        return {"results": results}
-
-
 # ── Project file tools ──────────────────────────────────────────────────────
 
 
 from app.services.file_service import FileService
 
 
-def _file_to_dict(f) -> dict:
-    meta = f.file_metadata or {}
+def _file_to_dict(f, *, project_id: str = "") -> dict:
+    meta = (getattr(f, "metadata", None) or getattr(f, "file_metadata", None) or {})
     return {
         "id": f.id,
-        "project_id": f.project_id,
+        "project_id": getattr(f, "project_id", project_id),
         "original_name": f.original_name,
         "file_type": f.file_type,
         "file_size": f.file_size,
@@ -660,7 +632,7 @@ def _file_to_dict(f) -> dict:
         "extraction_status": f.extraction_status,
         "extraction_error": f.extraction_error,
         "low_text": bool(meta.get("low_text")),
-        "created_at": f.created_at.isoformat() if f.created_at else None,
+        "created_at": f.created_at if isinstance(f.created_at, str) else (f.created_at.isoformat() if f.created_at else None),
     }
 
 
@@ -669,7 +641,7 @@ async def list_project_files(project_id: str) -> dict:
     async with async_session() as session:
         svc = FileService(session)
         records = await svc.list_by_project(project_id)
-        return {"files": [_file_to_dict(r) for r in records]}
+        return {"files": [_file_to_dict(r, project_id=project_id) for r in records]}
 
 
 @mcp.tool(description=_desc["tool.read_project_file.description"])
@@ -680,6 +652,7 @@ async def read_project_file(project_id: str, file_id: str, offset: int = 0, max_
         if record is None:
             return {"error": "File not found"}
         text_full = record.extracted_text or ""
+        _ = project_id  # keep reference; file_store already loaded text cache
         total = len(text_full)
         offset = max(0, offset)
         max_chars = max(1, min(max_chars, 500_000))
@@ -697,18 +670,4 @@ async def read_project_file(project_id: str, file_id: str, offset: int = 0, max_
         }
 
 
-@mcp.tool(description=_desc["tool.search_project_files.description"])
-async def search_project_files(project_id: str, query: str, limit: int = 20) -> dict:
-    async with async_session() as session:
-        svc = FileService(session)
-        hits = await svc.search(project_id, query, limit=limit)
-        return {
-            "results": [
-                {
-                    "file": _file_to_dict(h["file"]),
-                    "snippet": h["snippet"],
-                    "rank": h["rank"],
-                }
-                for h in hits
-            ]
-        }
+# search_project_files removed — LLM greps .manager_ai/files/*.txt directly.
