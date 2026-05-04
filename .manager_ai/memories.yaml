@@ -7,3 +7,31 @@ memories:
   created_at: '2026-05-04T08:02:06.910705'
   updated_at: '2026-05-04T08:02:06.910705'
   links: []
+- id: 9363f624-fa86-46cc-a74c-bb94360199f3
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Credential encryption uses Fernet with auto-generated key
+  parent_id: null
+  created_at: '2026-05-04T08:58:50.912142'
+  updated_at: '2026-05-04T08:58:50.912142'
+  links: []
+- id: fb1e0814-089f-45ca-970a-1c15213b2ddb
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Project model has nullable url field for Playwright testing
+  parent_id: null
+  created_at: '2026-05-04T08:58:56.038879'
+  updated_at: '2026-05-04T08:58:56.038879'
+  links: []
+- id: 5f160686-d7af-493f-ba21-8a3fdef9f742
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: MCP tool descriptions live in default_settings.json
+  parent_id: null
+  created_at: '2026-05-04T08:59:00.433560'
+  updated_at: '2026-05-04T08:59:00.433560'
+  links: []
+- id: 9ea9f7af-4be9-4bbd-b501-cfe837486aa5
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: MCP health checks read .mcp.json and ~/.claude.json for server entries
+  parent_id: null
+  created_at: '2026-05-04T10:38:44.069402'
+  updated_at: '2026-05-04T10:38:44.069402'
+  links: []
