@@ -77,6 +77,13 @@ export function useInstallMcp(projectId: string) {
   });
 }
 
+export function useInstallPlaywrightMcp(projectId: string) {
+  return useMutation({
+    mutationFn: () => api.installPlaywrightMcp(projectId),
+    onError: onMutationError,
+  });
+}
+
 export function useInstallManagerJson(projectId: string) {
   return useMutation({
     mutationFn: () => api.installManagerJson(projectId),

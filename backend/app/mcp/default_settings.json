@@ -47,5 +47,10 @@
   "tts.summarize_model": "claude-haiku-4-5-20251001",
   "tts.summarize_prompt": "Riassumi il seguente testo per la lettura vocale in italiano. Scrivi in prosa scorrevole, massimo {max_length} parole. Niente code block, niente liste puntate, niente markdown. Se ci sono comandi o nomi di file leggili come testo normale.",
   "tts.summarize_max_length": "60",
-  "tts.summarize_timeout_seconds": "10"
+  "tts.summarize_timeout_seconds": "10",
+  "tool.get_project_url.description": "Get the web application URL for a project (for Playwright browser testing). Returns null if project has no URL configured.",
+  "tool.list_credentials.description": "List available credential roles for a project (e.g. 'admin', 'user'). Only returns role names, never the actual credential values.",
+  "tool.get_credential.description": "Get decrypted credentials for a specific role. Returns url, username, password, and any extra fields. Credentials are decrypted in-memory and never logged.",
+  "tool.set_credential.description": "Save or update credentials for a project role. Fields should be a JSON object like {\"username\": \"...\", \"password\": \"...\"}. Encrypted at rest with Fernet.",
+  "tool.delete_credential.description": "Delete credentials for a specific role from a project."
 }

@@ -17,6 +17,7 @@ class Project(Base):
     tech_stack: Mapped[str] = mapped_column(Text, nullable=False, default="")
     shell: Mapped[str | None] = mapped_column(String(500), nullable=True)
     wsl_distro: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    url: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
     archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
