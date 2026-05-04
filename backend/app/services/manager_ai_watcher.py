@@ -86,12 +86,15 @@ class _Handler(FileSystemEventHandler):
         try:
             if area == "issues":
                 issue_store.rebuild_issues_index(self.project_path)
+                issue_store.invalidate_issue_cache(self.project_path)
                 event_type = "issue_updated"
             elif area == "memories":
                 memory_store.rebuild_memories_index(self.project_path)
+                memory_store.invalidate_memory_cache(self.project_path)
                 event_type = "memory_updated"
             elif area == "files":
                 file_store.rebuild_files_index(self.project_path)
+                file_store.invalidate_file_cache(self.project_path)
                 event_type = "file_updated"
             else:
                 return

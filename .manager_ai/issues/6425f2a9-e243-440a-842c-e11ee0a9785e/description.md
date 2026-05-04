@@ -1,0 +1,1 @@
+Nella sezione Health gli stati non si aggiornano correttamente, bisogna per forza riavviare il backend. Far si che si aggiorni ogni tot secondi.

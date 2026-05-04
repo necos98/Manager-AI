@@ -1,0 +1,1 @@
+Quando si crea una issue, poter indicare determinati file scelti dalla gallery.

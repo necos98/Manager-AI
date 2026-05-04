@@ -3,10 +3,10 @@ issues:
 - id: 07e1b49e-7017-4b60-a5d4-7da0f641ffe8
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Integrate Playwright for End-to-End Testing
-  status: Canceled
+  status: Reasoning
   priority: 3
   created_at: '2026-05-04T07:45:27.582057'
-  updated_at: '2026-05-04T11:33:51.120895'
+  updated_at: '2026-05-04T08:13:58.892209'
 - id: 583952b7-52e9-40bf-bddd-4dd628197bd4
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Fix spurious issue_updated notification loop after flat-system refactor
@@ -24,10 +24,10 @@ issues:
 - id: df70ee7c-af32-4bdc-bc05-f1d3770e409e
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Health check per inconsistenza project_id tra manager.json e resources
-  status: Accepted
+  status: Finished
   priority: 3
   created_at: '2026-05-04T11:38:14.283974'
-  updated_at: '2026-05-04T11:57:22.465013'
+  updated_at: '2026-05-04T12:03:46.246170'
 - id: 43aaf7dd-9f0e-4fe4-a32c-1d1e93b2e14f
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Fix New Issue modal textarea overflow when pasting links
@@ -44,15 +44,29 @@ issues:
   updated_at: '2026-05-04T11:53:54.723489'
 - id: a37bf84f-3b4c-4505-9c1e-44cfc4ede487
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-  name: null
-  status: New
+  name: Backup SQLite prima della migrazione flat-system
+  status: Finished
   priority: 3
   created_at: '2026-05-04T11:52:52.538749'
-  updated_at: '2026-05-04T11:52:52.538749'
+  updated_at: '2026-05-04T12:30:25.197032'
 - id: 68ea44e3-b45b-4f18-8ccf-532aaea5cce3
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Throttle file-change notifications to reduce noise
-  status: New
+  status: Finished
   priority: 3
   created_at: '2026-05-04T11:54:49.239382'
-  updated_at: '2026-05-04T11:55:20.941039'
+  updated_at: '2026-05-04T12:09:09.406372'
+- id: 778314a4-2cf5-44ad-8b5f-1561481996e4
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Attach project files to issues from the file gallery
+  status: Finished
+  priority: 3
+  created_at: '2026-05-04T12:11:53.608176'
+  updated_at: '2026-05-04T12:27:13.109238'
+- id: 7e20cdfc-85e6-4950-afad-5f64300c05b1
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Cache layer for flat-file system performance
+  status: Finished
+  priority: 3
+  created_at: '2026-05-04T12:16:01.823152'
+  updated_at: '2026-05-04T12:50:12.057695'

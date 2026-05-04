@@ -12,6 +12,15 @@ from app.models.issue_relation import IssueRelation  # noqa: F401
 from app.models.project_variable import ProjectVariable  # noqa: F401
 
 
+@pytest.fixture(autouse=True)
+def _clear_store_caches():
+    """Reset storage caches before and after each test."""
+    from app.storage.cache import clear_all_caches
+    clear_all_caches()
+    yield
+    clear_all_caches()
+
+
 @pytest_asyncio.fixture
 async def db_session():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")

@@ -1,0 +1,16 @@
+schema_version: 1
+id: 68ea44e3-b45b-4f18-8ccf-532aaea5cce3
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Throttle file-change notifications to reduce noise
+status: Finished
+priority: 3
+created_at: '2026-05-04T11:54:49.239382'
+updated_at: '2026-05-04T12:09:09.406372'
+tasks:
+- id: a19a7fcb-760d-4add-b8f5-0336fb9e50fa
+  name: Add issue_updated and file_updated to silent event list in event-context.tsx
+  status: Completed
+  order: 0
+  created_at: '2026-05-04T12:07:55'
+  updated_at: '2026-05-04T12:09:02'
+relations: []

@@ -1,0 +1,16 @@
+schema_version: 1
+id: 6425f2a9-e243-440a-842c-e11ee0a9785e
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Auto-refresh Health panel statuses with polling interval
+status: Finished
+priority: 3
+created_at: '2026-05-04T11:35:51.429695'
+updated_at: '2026-05-04T11:42:26.921973'
+tasks:
+- id: 55c7c646-d47e-4b8b-8811-d6adfb4c58ef
+  name: 'Add refetchInterval: 30_000 to useProjectHealth hook'
+  status: Completed
+  order: 0
+  created_at: '2026-05-04T11:41:29'
+  updated_at: '2026-05-04T11:42:16'
+relations: []
