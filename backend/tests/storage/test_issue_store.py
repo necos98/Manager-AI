@@ -250,6 +250,7 @@ class TestPrewarmCache:
 
     def test_list_issues_full_uses_prewarm(self, proj):
         _seed_issue(proj, "pw-full", name="FullTest", description="full desc", specification="full spec")
+        issue_store.rebuild_issues_index(proj)
 
         from app.storage.cache import issue_cache
         issue_cache.clear()

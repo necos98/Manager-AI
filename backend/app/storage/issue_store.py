@@ -123,6 +123,7 @@ def list_issues(project_path: str) -> list[IssueRecord]:
 
 def list_issues_full(project_path: str) -> list[IssueRecord]:
     """Full listing: loads every issue.yaml + all markdown bodies."""
+    prewarm_project_cache(project_path)
     index = list_issues(project_path)
     out: list[IssueRecord] = []
     for light in index:
@@ -130,6 +131,59 @@ def list_issues_full(project_path: str) -> list[IssueRecord]:
         if full is not None:
             out.append(full)
     return out
+
+
+def prewarm_project_cache(project_path: str) -> None:
+    """Batch-load all issue files into cache for a project.
+
+    Reads every issue.yaml + markdown body, builds IssueRecords,
+    and populates the in-process cache so subsequent load_issue calls
+    are cache hits with zero disk I/O.
+
+    Skips early if the index is already cached (prewarmed this TTL window).
+    """
+    index_key = f"{project_path}:__index__"
+    if issue_cache.get(index_key) is not None:
+        return
+
+    issues_dir = paths.issues_dir(project_path)
+    if not issues_dir.exists():
+        return
+
+    for issue_folder in issues_dir.iterdir():
+        if not issue_folder.is_dir():
+            continue
+        yaml_path = issue_folder / "issue.yaml"
+        if not yaml_path.exists():
+            continue
+        data = atomic.read_yaml(yaml_path) or {}
+        issue_id = data.get("id", issue_folder.name)
+        cache_key = f"{project_path}:{issue_id}"
+        if issue_cache.get(cache_key) is not None:
+            continue
+
+        description = atomic.read_text(
+            paths.issue_md(project_path, issue_id, "description")
+        )
+        record = IssueRecord(
+            id=issue_id,
+            project_id=data.get("project_id", ""),
+            name=data.get("name"),
+            status=data.get("status", "New"),
+            priority=int(data.get("priority", 3)),
+            description=description,
+            specification=_read_optional_md(project_path, issue_id, "specification"),
+            plan=_read_optional_md(project_path, issue_id, "plan"),
+            recap=_read_optional_md(project_path, issue_id, "recap"),
+            created_at=_as_iso(data.get("created_at")),
+            updated_at=_as_iso(data.get("updated_at")),
+            tasks=[_task_from_dict(t) for t in (data.get("tasks") or [])],
+            relations=[_relation_from_dict(r) for r in (data.get("relations") or [])],
+        )
+        issue_cache.set(cache_key, record)
+
+    # Seed index cache so subsequent calls skip early
+    list_issues(project_path)
 
 
 def load_feedback(project_path: str, issue_id: str) -> list[FeedbackRecord]:

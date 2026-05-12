@@ -84,3 +84,13 @@ memories:
   created_at: '2026-05-12T14:43:06.671299'
   updated_at: '2026-05-12T14:43:06.671299'
   links: []
+- id: e7bebcfe-b3e8-4608-bfa5-73e5b0146b4f
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: 'prewarm_project_cache: skip mechanism uses index cache key as sentinel'
+  parent_id: null
+  created_at: '2026-05-12T14:59:37.382795'
+  updated_at: '2026-05-12T14:59:37.382795'
+  links:
+  - to_id: 20e00014-c1d0-43c6-8f27-0a9b703400e3
+    relation: see_also
+    created_at: '2026-05-12T14:59:44.805830'
