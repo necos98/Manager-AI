@@ -400,3 +400,47 @@ async def test_health_includes_resource_consistency(client, tmp_path):
     assert "resource_consistency" in data
     assert data["resource_consistency"]["ok"] is True
     assert data["resource_consistency"]["scanned"] >= 0
+
+
+@pytest.mark.asyncio
+async def test_health_includes_playwright_mcp(client, tmp_path):
+    """GET /api/projects/{id}/health includes playwright_mcp field."""
+    root = str(tmp_path)
+    _make_manager_json(root)
+
+    create_resp = await client.post("/api/projects", json={
+        "name": "health-pw-test", "path": root,
+    })
+    assert create_resp.status_code == 201
+    project_id = create_resp.json()["id"]
+
+    response = await client.get(f"/api/projects/{project_id}/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert "playwright_mcp" in data
+    assert "installed" in data["playwright_mcp"]
+    assert "location" in data["playwright_mcp"]
+    assert data["playwright_mcp"]["installed"] is False
+    assert data["playwright_mcp"]["location"] is None
+
+
+@pytest.mark.asyncio
+async def test_health_playwright_mcp_installed_via_project_mcp(client, tmp_path):
+    """GET /api/projects/{id}/health detects Playwright in .mcp.json."""
+    root = str(tmp_path)
+    _make_manager_json(root)
+    _write(os.path.join(root, ".mcp.json"), json.dumps({
+        "mcpServers": {"Playwright": {"command": "npx", "args": ["@playwright/mcp@latest"]}},
+    }))
+
+    create_resp = await client.post("/api/projects", json={
+        "name": "health-pw-installed", "path": root,
+    })
+    assert create_resp.status_code == 201
+    project_id = create_resp.json()["id"]
+
+    response = await client.get(f"/api/projects/{project_id}/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["playwright_mcp"]["installed"] is True
+    assert ".mcp.json" in data["playwright_mcp"]["location"]
