@@ -101,7 +101,7 @@ def rebuild_files_index(project_path: str) -> None:
 
 def invalidate_file_cache(project_path: str) -> None:
     """Clear all cached file data for a project. Called by watcher."""
-    file_cache.clear()
+    file_cache.invalidate_prefix(f"{project_path}:")
 
 
 def _load_entries(project_path: str) -> list[dict[str, Any]]:

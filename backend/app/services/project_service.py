@@ -74,7 +74,7 @@ class ProjectService:
         for project in projects:
             records = [
                 r
-                for r in issue_store.list_issues_full(project.path)
+                for r in issue_store.list_issues(project.path)
                 if r.project_id == project.id and r.status not in terminal_statuses
             ]
             records.sort(key=lambda r: (r.priority, r.created_at))

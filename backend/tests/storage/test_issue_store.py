@@ -195,3 +195,75 @@ def test_load_feedback_parses_frontmatter_and_body(proj):
     out = issue_store.load_feedback(proj, "i7")
     assert out[0].content == "body text\nline 2"
     assert out[0].issue_id == "i7"
+
+
+class TestPrewarmCache:
+    def test_prewarm_populates_all_issue_cache_keys(self, proj):
+        _seed_issue(proj, "pw1", name="Issue 1", description="desc 1", specification="spec 1", plan="plan 1", recap="recap 1")
+        _seed_issue(proj, "pw2", name="Issue 2", description="desc 2", specification="spec 2")
+        _seed_issue(proj, "pw3", name="Issue 3", description="desc 3")
+
+        from app.storage.cache import issue_cache
+        issue_cache.clear()
+
+        issue_store.prewarm_project_cache(proj)
+
+        for iid, name, desc in [("pw1", "Issue 1", "desc 1"), ("pw2", "Issue 2", "desc 2"), ("pw3", "Issue 3", "desc 3")]:
+            cached = issue_cache.get(f"{proj}:{iid}")
+            assert cached is not None, f"{iid} should be cached"
+            assert cached.name == name
+            assert cached.description == desc
+
+        # pw1 has all optional fields
+        cached = issue_cache.get(f"{proj}:pw1")
+        assert cached.specification == "spec 1"
+        assert cached.plan == "plan 1"
+        assert cached.recap == "recap 1"
+
+        # pw2 has spec but no plan/recap
+        cached = issue_cache.get(f"{proj}:pw2")
+        assert cached.specification == "spec 2"
+        assert cached.plan is None
+        assert cached.recap is None
+
+    def test_prewarm_skips_when_index_already_cached(self, proj):
+        _seed_issue(proj, "pw-skip", name="Test", description="desc")
+
+        from app.storage.cache import issue_cache
+        issue_cache.clear()
+
+        # First call populates cache
+        issue_store.prewarm_project_cache(proj)
+        assert issue_cache.get(f"{proj}:pw-skip") is not None
+
+        # Second call: index cache is warm, should return early
+        # Verify issue remains cached (second prewarm is no-op, not clearing)
+        issue_store.prewarm_project_cache(proj)
+        assert issue_cache.get(f"{proj}:pw-skip") is not None
+
+    def test_prewarm_empty_project(self, proj):
+        from app.storage.cache import issue_cache
+        issue_cache.clear()
+
+        # No issues seeded — should not raise
+        issue_store.prewarm_project_cache(proj)
+
+    def test_list_issues_full_uses_prewarm(self, proj):
+        _seed_issue(proj, "pw-full", name="FullTest", description="full desc", specification="full spec")
+        issue_store.rebuild_issues_index(proj)
+
+        from app.storage.cache import issue_cache
+        issue_cache.clear()
+
+        results = issue_store.list_issues_full(proj)
+        assert len(results) >= 1
+
+        matches = [r for r in results if r.id == "pw-full"]
+        assert len(matches) == 1
+        assert matches[0].name == "FullTest"
+        assert matches[0].description == "full desc"
+        assert matches[0].specification == "full spec"
+
+        # Should also be cached after list_issues_full
+        cached = issue_cache.get(f"{proj}:pw-full")
+        assert cached is not None

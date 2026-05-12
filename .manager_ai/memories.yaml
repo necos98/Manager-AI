@@ -7,12 +7,40 @@ memories:
   created_at: '2026-05-04T08:02:06.910705'
   updated_at: '2026-05-04T08:02:06.910705'
   links: []
+- id: 9363f624-fa86-46cc-a74c-bb94360199f3
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Credential encryption uses Fernet with auto-generated key
+  parent_id: null
+  created_at: '2026-05-04T08:58:50.912142'
+  updated_at: '2026-05-04T08:58:50.912142'
+  links: []
+- id: fb1e0814-089f-45ca-970a-1c15213b2ddb
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Project model has nullable url field for Playwright testing
+  parent_id: null
+  created_at: '2026-05-04T08:58:56.038879'
+  updated_at: '2026-05-04T08:58:56.038879'
+  links: []
+- id: 5f160686-d7af-493f-ba21-8a3fdef9f742
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: MCP tool descriptions live in default_settings.json
+  parent_id: null
+  created_at: '2026-05-04T08:59:00.433560'
+  updated_at: '2026-05-04T08:59:00.433560'
+  links: []
+- id: 9ea9f7af-4be9-4bbd-b501-cfe837486aa5
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: MCP health checks read .mcp.json and ~/.claude.json for server entries
+  parent_id: null
+  created_at: '2026-05-04T10:38:44.069402'
+  updated_at: '2026-05-04T10:38:44.069402'
+  links: []
 - id: fb3a2384-5916-426e-aa9f-e7daa8fd403f
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   title: Resource consistency health check auto-fixes project_id mismatches
   parent_id: null
   created_at: '2026-05-04T12:04:15.212721'
-  updated_at: '2026-05-04T12:04:15.212721'
+  updated_at: '2026-05-12T14:34:14.318531'
   links: []
 - id: d4bd467b-9cc0-43a7-be1d-32e59009d08c
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
@@ -40,5 +68,29 @@ memories:
   title: Read-through TTL cache in storage layer — design decisions
   parent_id: null
   created_at: '2026-05-04T12:50:41.922807'
-  updated_at: '2026-05-04T12:50:41.922807'
+  updated_at: '2026-05-12T14:52:51.603896'
   links: []
+- id: 08a3d81e-f765-4fe1-bbf2-3b2a8801b833
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Prefer list_issues() over list_issues_full() for list endpoints
+  parent_id: null
+  created_at: '2026-05-12T14:34:07.941777'
+  updated_at: '2026-05-12T14:34:07.941777'
+  links: []
+- id: 0c42fb69-0668-4793-bf45-d8b1e89778db
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Service instance dicts work as natural request-scoped cache
+  parent_id: null
+  created_at: '2026-05-12T14:43:06.671299'
+  updated_at: '2026-05-12T14:43:06.671299'
+  links: []
+- id: e7bebcfe-b3e8-4608-bfa5-73e5b0146b4f
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: 'prewarm_project_cache: skip mechanism uses index cache key as sentinel'
+  parent_id: null
+  created_at: '2026-05-12T14:59:37.382795'
+  updated_at: '2026-05-12T14:59:37.382795'
+  links:
+  - to_id: 20e00014-c1d0-43c6-8f27-0a9b703400e3
+    relation: see_also
+    created_at: '2026-05-12T14:59:44.805830'

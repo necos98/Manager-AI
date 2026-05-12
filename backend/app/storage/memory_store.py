@@ -181,7 +181,7 @@ def rebuild_memories_index(project_path: str) -> None:
 
 def invalidate_memory_cache(project_path: str) -> None:
     """Clear all cached memory data for a project. Called by watcher."""
-    memory_cache.clear()
+    memory_cache.invalidate_prefix(f"{project_path}:")
 
 
 def _write_memory_file(project_path: str, record: MemoryRecord) -> None:
