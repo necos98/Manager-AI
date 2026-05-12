@@ -324,7 +324,7 @@ def rebuild_issues_index(project_path: str) -> None:
 
 def invalidate_issue_cache(project_path: str) -> None:
     """Clear all cached issue data for a project. Called by watcher."""
-    issue_cache.clear()
+    issue_cache.invalidate_prefix(f"{project_path}:")
 
 
 def _write_issue_files(project_path: str, record: IssueRecord) -> None:

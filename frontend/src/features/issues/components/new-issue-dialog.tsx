@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -6,10 +6,12 @@ import {
   ChevronsUp,
   Equal,
   FilePlus,
+  Paperclip,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCreateIssue } from "@/features/issues/hooks";
+import { FileGalleryModal } from "@/features/files/components/file-gallery-modal";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
+import type { ProjectFile } from "@/shared/types";
 
 type PriorityLevel = 1 | 2 | 3 | 4 | 5;
 
@@ -49,12 +52,33 @@ type Props = {
 export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState(3);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const createIssue = useCreateIssue(projectId);
 
   const reset = () => {
     setDescription("");
     setPriority(3);
   };
+
+  const handleFileSelect = useCallback((file: ProjectFile) => {
+    const tag = `@.manager_ai/resources/${file.stored_name} `;
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      setDescription((prev) => prev.slice(0, start) + tag + prev.slice(end));
+      requestAnimationFrame(() => {
+        const newPos = start + tag.length;
+        textarea.selectionStart = newPos;
+        textarea.selectionEnd = newPos;
+        textarea.focus();
+      });
+    } else {
+      setDescription((prev) => prev + tag);
+    }
+    setGalleryOpen(false);
+  }, []);
 
   const handleOpenChange = (next: boolean) => {
     if (!next) reset();
@@ -99,6 +123,7 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
             </label>
             <Textarea
               id="new-issue-description"
+              ref={textareaRef}
               required
               autoFocus
               value={description}
@@ -119,6 +144,16 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
             >
               {description.length.toLocaleString()} / {DESCRIPTION_MAX.toLocaleString()}
             </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => setGalleryOpen(true)}
+            >
+              <Paperclip className="size-4 mr-2" />
+              Browse Files
+            </Button>
           </div>
 
           <div>
@@ -167,6 +202,12 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
           </DialogFooter>
         </form>
       </DialogContent>
+      <FileGalleryModal
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        projectId={projectId}
+        onSelect={handleFileSelect}
+      />
     </Dialog>
   );
 }

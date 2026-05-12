@@ -43,10 +43,13 @@ def _now_iso() -> str:
 class IssueService:
     def __init__(self, session: AsyncSession):
         self.session = session
+        self._path_cache: dict[str, str] = {}
 
     async def _resolve_path(self, project_id: str) -> str:
-        project = await ProjectService(self.session).get_by_id(project_id)
-        return project.path
+        if project_id not in self._path_cache:
+            project = await ProjectService(self.session).get_by_id(project_id)
+            self._path_cache[project_id] = project.path
+        return self._path_cache[project_id]
 
     async def create(self, project_id: str, description: str, priority: int = 3) -> IssueRecord:
         project = await ProjectService(self.session).get_by_id(project_id)

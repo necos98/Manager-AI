@@ -1,0 +1,22 @@
+schema_version: 1
+id: c15a4e35-560c-4cf7-909a-8c04da1361b2
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Add prewarm_project_cache for batch issue loading
+status: Accepted
+priority: 5
+created_at: '2026-05-12T14:19:36.895427'
+updated_at: '2026-05-12T14:53:57.423312'
+tasks:
+- id: 4bfeef9d-2210-4fe7-b51e-8abf0b017437
+  name: 'Task 1: Write failing test for prewarm_project_cache'
+  status: In Progress
+  order: 0
+  created_at: '2026-05-12T14:53:50'
+  updated_at: '2026-05-12T14:54:03'
+- id: 720e4384-7000-4f64-96a8-a92c8365ceee
+  name: 'Task 2: Implement prewarm_project_cache and integrate in list_issues_full'
+  status: Pending
+  order: 1
+  created_at: '2026-05-12T14:53:50'
+  updated_at: '2026-05-12T14:53:50'
+relations: []

@@ -1,0 +1,46 @@
+schema_version: 1
+id: 085e16d8-9346-48b5-861f-c8593e0a7c9d
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Per-project cache invalidation instead of global clear
+status: Finished
+priority: 2
+created_at: '2026-05-12T14:19:00.195979'
+updated_at: '2026-05-12T14:53:15.831577'
+tasks:
+- id: f3583ccf-205b-4275-86ee-610edbd28a03
+  name: Add invalidate_prefix method to ReadCache in cache.py
+  status: Completed
+  order: 0
+  created_at: '2026-05-12T14:50:03'
+  updated_at: '2026-05-12T14:50:40'
+- id: a386dbc8-9365-4983-86f5-3466f584f67a
+  name: Fix invalidate_issue_cache to use invalidate_prefix
+  status: Completed
+  order: 1
+  created_at: '2026-05-12T14:50:03'
+  updated_at: '2026-05-12T14:51:14'
+- id: 7e334fa9-6643-455f-a964-5ee18296d0b5
+  name: Fix invalidate_memory_cache to use invalidate_prefix
+  status: Completed
+  order: 2
+  created_at: '2026-05-12T14:50:03'
+  updated_at: '2026-05-12T14:51:16'
+- id: b3f2b1bc-3343-4981-972f-50ef349b6c3b
+  name: Fix invalidate_file_cache to use invalidate_prefix
+  status: Completed
+  order: 3
+  created_at: '2026-05-12T14:50:03'
+  updated_at: '2026-05-12T14:51:19'
+- id: 98db07f2-137a-4559-9d01-904467822e73
+  name: Run existing tests to verify no regressions
+  status: Completed
+  order: 4
+  created_at: '2026-05-12T14:50:03'
+  updated_at: '2026-05-12T14:52:38'
+- id: 235245e0-bb39-4a0c-a1ab-0e8516173499
+  name: Update cache design memory to reflect new behavior
+  status: Completed
+  order: 5
+  created_at: '2026-05-12T14:50:03'
+  updated_at: '2026-05-12T14:52:58'
+relations: []

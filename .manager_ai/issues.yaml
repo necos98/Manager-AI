@@ -3,10 +3,10 @@ issues:
 - id: 07e1b49e-7017-4b60-a5d4-7da0f641ffe8
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Integrate Playwright for End-to-End Testing
-  status: Reasoning
+  status: Finished
   priority: 3
   created_at: '2026-05-04T07:45:27.582057'
-  updated_at: '2026-05-04T08:13:58.892209'
+  updated_at: '2026-05-04T08:58:35.824723'
 - id: 583952b7-52e9-40bf-bddd-4dd628197bd4
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Fix spurious issue_updated notification loop after flat-system refactor
@@ -14,6 +14,13 @@ issues:
   priority: 3
   created_at: '2026-05-04T07:47:38.821965'
   updated_at: '2026-05-04T08:01:44.089947'
+- id: 7f792b13-78f9-443b-8595-e8da920063e7
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Add Playwright MCP to Health Panel with One-Click Install
+  status: Finished
+  priority: 3
+  created_at: '2026-05-04T10:15:55.008004'
+  updated_at: '2026-05-04T10:38:27.377540'
 - id: 6425f2a9-e243-440a-842c-e11ee0a9785e
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Auto-refresh Health panel statuses with polling interval
@@ -70,3 +77,45 @@ issues:
   priority: 3
   created_at: '2026-05-04T12:16:01.823152'
   updated_at: '2026-05-04T12:50:12.057695'
+- id: 687f959b-ff21-41b8-a4ca-06cdd4c09dd8
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Dashboard uses list_issues_full() — wastes 4N markdown reads per request
+  status: Finished
+  priority: 1
+  created_at: '2026-05-12T14:18:35.393405'
+  updated_at: '2026-05-12T14:33:47.266497'
+- id: 49b4b5df-6358-41c7-85a2-69acbba5e268
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Cache resource_consistency health check result to avoid redundant I/O
+  status: Finished
+  priority: 1
+  created_at: '2026-05-12T14:18:50.366171'
+  updated_at: '2026-05-12T14:34:03.150787'
+- id: 085e16d8-9346-48b5-861f-c8593e0a7c9d
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Per-project cache invalidation instead of global clear
+  status: Finished
+  priority: 2
+  created_at: '2026-05-12T14:19:00.195979'
+  updated_at: '2026-05-12T14:53:15.831577'
+- id: 892a12b4-f7df-4c6d-946a-be387ab834eb
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Raise ReadCache TTL from 30s to 300s for issue/memory/file caches
+  status: Finished
+  priority: 3
+  created_at: '2026-05-12T14:19:12.463821'
+  updated_at: '2026-05-12T14:43:45.104393'
+- id: b5cf186d-62de-45f7-b0ea-1d45f620c58d
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Cache _resolve_path project_id lookups per request
+  status: Finished
+  priority: 4
+  created_at: '2026-05-12T14:19:27.722408'
+  updated_at: '2026-05-12T14:42:38.098462'
+- id: c15a4e35-560c-4cf7-909a-8c04da1361b2
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Add prewarm_project_cache for batch issue loading
+  status: Accepted
+  priority: 5
+  created_at: '2026-05-12T14:19:36.895427'
+  updated_at: '2026-05-12T14:53:57.423312'

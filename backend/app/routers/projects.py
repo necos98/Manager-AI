@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
+from app.storage.cache import resource_consistency_cache
 from app.schemas.project import DashboardProject, ProjectCreate, ProjectResponse, ProjectUpdate
 from app.schemas.terminal import TerminalResponse
 from app.services.project_service import ProjectService
@@ -310,6 +311,7 @@ async def install_manager_json(project_id: str, db: AsyncSession = Depends(get_d
     dest = os.path.join(project.path, "manager.json")
     with open(dest, "w", encoding="utf-8") as f:
         json.dump({"project_id": project.id}, f, indent=2)
+    resource_consistency_cache.clear()
     return {"path": dest}
 
 
@@ -345,11 +347,18 @@ async def install_claude_resources(project_id: str, db: AsyncSession = Depends(g
 async def project_health(project_id: str, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
+    cache_key = f"health:{project.id}"
+    cached = resource_consistency_cache.get(cache_key)
+    if cached is not None:
+        consistency = cached
+    else:
+        consistency = _check_resource_consistency(project)
+        resource_consistency_cache.set(cache_key, consistency)
     return {
         "manager_json": _check_manager_json(project),
         "claude_resources": _check_claude_resources(project),
         "mcp": _check_mcp(project),
-        "resource_consistency": _check_resource_consistency(project),
+        "resource_consistency": consistency,
     }
 
 
