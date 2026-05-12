@@ -181,6 +181,8 @@ function buildToastContent(data: WsEventData): ToastContent {
     case "memory_deleted":
     case "memory_linked":
     case "memory_unlinked":
+    case "issue_updated":
+    case "file_updated":
       return { title: "", message: "", variant: "default", silent: true };
 
     default:

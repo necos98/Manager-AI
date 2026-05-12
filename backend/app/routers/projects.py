@@ -80,6 +80,33 @@ def _check_mcp(project) -> dict:
     return {"installed": False, "location": None}
 
 
+def _check_playwright_mcp(project) -> dict:
+    project_mcp = os.path.join(project.path, ".mcp.json")
+    if os.path.isfile(project_mcp):
+        try:
+            with open(project_mcp, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if "Playwright" in (data.get("mcpServers") or {}):
+                return {"installed": True, "location": project_mcp}
+        except Exception:
+            pass
+
+    home_cfg = os.path.join(os.path.expanduser("~"), ".claude.json")
+    if os.path.isfile(home_cfg):
+        try:
+            with open(home_cfg, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if "Playwright" in (data.get("mcpServers") or {}):
+                return {"installed": True, "location": home_cfg}
+            norm = os.path.normpath(project.path).lower()
+            for key, val in (data.get("projects") or {}).items():
+                if os.path.normpath(key).lower() == norm and "Playwright" in (val.get("mcpServers") or {}):
+                    return {"installed": True, "location": home_cfg}
+        except Exception:
+            pass
+    return {"installed": False, "location": None}
+
+
 def _check_resource_consistency(project) -> dict:
     """Scan all .manager_ai/ YAML files for project_id mismatches and auto-fix them.
 
@@ -349,6 +376,7 @@ async def project_health(project_id: str, db: AsyncSession = Depends(get_db)):
         "manager_json": _check_manager_json(project),
         "claude_resources": _check_claude_resources(project),
         "mcp": _check_mcp(project),
+        "playwright_mcp": _check_playwright_mcp(project),
         "resource_consistency": _check_resource_consistency(project),
     }
 
@@ -401,6 +429,54 @@ async def install_mcp(project_id: str, db: AsyncSession = Depends(get_db)):
             )
     except Exception:
         logger.warning("Failed to write install-mcp command for terminal %s", terminal["id"], exc_info=True)
+
+    return TerminalResponse(**terminal)
+
+
+@router.post("/{project_id}/install-playwright-mcp", response_model=TerminalResponse, status_code=201)
+async def install_playwright_mcp(project_id: str, db: AsyncSession = Depends(get_db)):
+    """Spawn a terminal and re-register the Playwright MCP server.
+
+    Idempotent: runs `claude mcp remove Playwright` before `claude mcp add`.
+    When the project shell is wsl.exe, the URL resolves at runtime from the WSL2
+    gateway IP; otherwise it uses localhost.
+    """
+    service = ProjectService(db)
+    project = await service.get_by_id(project_id)
+    if not os.path.isdir(project.path):
+        raise HTTPException(status_code=400, detail=f"Project path does not exist: {project.path}")
+
+    try:
+        terminal = terminal_service.create(
+            issue_id="",
+            project_id=project_id,
+            project_path=project.path,
+            shell=project.shell,
+            wsl_distro=project.wsl_distro,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
+
+    is_wsl = is_wsl_shell(project.shell)
+
+    try:
+        pty = terminal_service.get_pty(terminal["id"])
+        if is_wsl:
+            cwd = win_to_wsl_path(project.path)
+            pty.write(f"cd {shlex.quote(cwd)}\r\n")
+            pty.write(
+                "claude mcp remove Playwright 2>/dev/null; "
+                "claude mcp add Playwright -- npx @playwright/mcp@latest\r\n"
+            )
+        else:
+            pty.write(
+                "claude mcp remove Playwright 2>nul & "
+                "claude mcp add Playwright -- npx @playwright/mcp@latest\r\n"
+            )
+    except Exception:
+        logger.warning("Failed to write install-playwright-mcp command for terminal %s", terminal["id"], exc_info=True)
 
     return TerminalResponse(**terminal)
 
