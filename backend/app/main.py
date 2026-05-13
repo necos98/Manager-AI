@@ -11,9 +11,11 @@ from app.exceptions import AppError
 from app.hooks import hook_registry
 import app.hooks.handlers  # noqa: F401 — triggers @hook decorator registration
 from app.mcp.server import mcp
+from app.mcp.plugin_manager import plugin_manager
 from app.migration.db_to_files import migrate_all_projects
+from app.services.file_service import recover_pending_transcriptions
 from app.services.manager_ai_watcher import manager_ai_watcher
-from app.routers import activity, credentials, events, files, issue_relations, issues, library, memories, network, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, system, tasks, terminals, terminal_commands
+from app.routers import activity, credentials, events, files, issue_relations, issues, library, memories, network, plugins, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, system, tasks, terminals, terminal_commands
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,7 @@ async def lifespan(app):
     except Exception:
         logger.exception("DB → .manager_ai/ migration failed; continuing startup")
 
+    rows = []
     try:
         from sqlalchemy import select
         from app.models.project import Project
@@ -42,14 +45,30 @@ async def lifespan(app):
                 )
             ).scalars().all()
             for p in rows:
-                await manager_ai_watcher.start_project(p.id, p.path)
+                await manager_ai_watcher.start_project(p.id, p.path, mcp=mcp, plugin_manager=plugin_manager)
     except Exception:
         logger.exception("Failed to start .manager_ai/ watchers; continuing startup")
+    else:
+        try:
+            for p in rows:
+                recover_pending_transcriptions(p.path)
+        except Exception:
+            logger.exception("Failed to recover pending transcriptions; continuing startup")
+        try:
+            for p in rows:
+                await plugin_manager.start_plugins_for_project(p.id, p.path, mcp)
+        except Exception:
+            logger.exception("Failed to start MCP plugins; continuing startup")
 
     async with mcp.session_manager.run():
         try:
             yield
         finally:
+            try:
+                for p in rows:
+                    await plugin_manager.stop_plugins_for_project(p.id)
+            except Exception:
+                logger.exception("Failed to stop MCP plugins; continuing shutdown")
             await manager_ai_watcher.stop_all()
 
 
@@ -89,6 +108,7 @@ app.include_router(library.router)
 app.include_router(memories.project_scoped)
 app.include_router(memories.flat)
 app.include_router(project_skills.router)
+app.include_router(plugins.router)
 app.include_router(network.router)
 app.include_router(system.router)
 

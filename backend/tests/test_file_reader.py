@@ -83,3 +83,40 @@ def test_truncation(tmp_path, monkeypatch):
     r = file_reader.extract(str(p), "txt")
     assert r.status == "ok"
     assert len(r.text) == 50
+
+
+def test_audio_extensions_defined():
+    assert "ogg" in file_reader.AUDIO_EXTENSIONS
+    assert "mp3" in file_reader.AUDIO_EXTENSIONS
+    assert "wav" in file_reader.AUDIO_EXTENSIONS
+
+
+def test_extract_audio_dispatcher_routes(tmp_path, monkeypatch):
+    def fake_extract_audio(path):
+        return "transcribed text"
+
+    monkeypatch.setattr(file_reader, "_extract_audio", fake_extract_audio)
+    p = tmp_path / "audio.mp3"
+    p.write_bytes(b"fake audio data")
+    r = file_reader.extract(str(p), "mp3")
+    assert r.status == "ok"
+    assert r.text == "transcribed text"
+
+
+def test_extract_audio_missing_whisper(tmp_path, monkeypatch):
+    def raise_import_error():
+        raise ImportError("No module named 'whisper'")
+
+    monkeypatch.setattr(file_reader, "_get_whisper_model", raise_import_error)
+    p = tmp_path / "audio.ogg"
+    p.write_bytes(b"fake ogg data")
+    r = file_reader.extract(str(p), "ogg")
+    assert r.status == "failed"
+    assert "whisper" in r.error.lower()
+
+
+def test_extract_audio_unsupported_format(tmp_path):
+    p = tmp_path / "unknown.xyz"
+    p.write_bytes(b"unknown")
+    r = file_reader.extract(str(p), "xyz")
+    assert r.status == "unsupported"

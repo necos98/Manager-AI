@@ -3,10 +3,10 @@ issues:
 - id: 07e1b49e-7017-4b60-a5d4-7da0f641ffe8
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Integrate Playwright for End-to-End Testing
-  status: Reasoning
+  status: Finished
   priority: 3
   created_at: '2026-05-04T07:45:27.582057'
-  updated_at: '2026-05-04T08:13:58.892209'
+  updated_at: '2026-05-04T08:58:35.824723'
 - id: 583952b7-52e9-40bf-bddd-4dd628197bd4
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Fix spurious issue_updated notification loop after flat-system refactor
@@ -14,6 +14,13 @@ issues:
   priority: 3
   created_at: '2026-05-04T07:47:38.821965'
   updated_at: '2026-05-04T08:01:44.089947'
+- id: 7f792b13-78f9-443b-8595-e8da920063e7
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Add Playwright MCP to Health Panel with One-Click Install
+  status: Finished
+  priority: 3
+  created_at: '2026-05-04T10:15:55.008004'
+  updated_at: '2026-05-04T10:38:27.377540'
 - id: 6425f2a9-e243-440a-842c-e11ee0a9785e
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Auto-refresh Health panel statuses with polling interval
@@ -70,3 +77,24 @@ issues:
   priority: 3
   created_at: '2026-05-04T12:16:01.823152'
   updated_at: '2026-05-04T12:50:12.057695'
+- id: 1d2a2422-6aac-4674-8fca-f5b01774ac76
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Audio-to-text transcription for uploaded files
+  status: Finished
+  priority: 3
+  created_at: '2026-05-12T15:37:41.884955'
+  updated_at: '2026-05-12T15:53:39.901872'
+- id: 23c82699-4acf-4e23-9693-80eac6b13180
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: 'MCP Plugin System: Feasibility Analysis for Extensible MCP Architecture'
+  status: Finished
+  priority: 3
+  created_at: '2026-05-13T07:26:25.625549'
+  updated_at: '2026-05-13T08:25:19.676590'
+- id: 4d8536d2-7b1f-444a-9fc2-e69b1227c970
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: null
+  status: New
+  priority: 3
+  created_at: '2026-05-13T07:34:11.416199'
+  updated_at: '2026-05-13T07:34:11.416199'
