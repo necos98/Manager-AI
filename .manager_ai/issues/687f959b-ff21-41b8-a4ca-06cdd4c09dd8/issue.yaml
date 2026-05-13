@@ -1,0 +1,28 @@
+schema_version: 1
+id: 687f959b-ff21-41b8-a4ca-06cdd4c09dd8
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Dashboard uses list_issues_full() — wastes 4N markdown reads per request
+status: Finished
+priority: 1
+created_at: '2026-05-12T14:18:35.393405'
+updated_at: '2026-05-12T14:33:47.266497'
+tasks:
+- id: c3a5ef79-fe52-4221-a4b6-60047605d213
+  name: Run dashboard tests before change
+  status: Completed
+  order: 0
+  created_at: '2026-05-12T14:32:13'
+  updated_at: '2026-05-12T14:33:00'
+- id: 306288ed-cc15-4a0a-9c30-21d4c6c85a3f
+  name: Replace list_issues_full with list_issues in get_dashboard_data()
+  status: Completed
+  order: 1
+  created_at: '2026-05-12T14:32:13'
+  updated_at: '2026-05-12T14:33:15'
+- id: 835aa4d3-f14c-4b77-942a-091d202e856f
+  name: Run dashboard tests after change to confirm no regression
+  status: Completed
+  order: 2
+  created_at: '2026-05-12T14:32:13'
+  updated_at: '2026-05-12T14:33:33'
+relations: []

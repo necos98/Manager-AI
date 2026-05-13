@@ -1,0 +1,16 @@
+schema_version: 1
+id: 892a12b4-f7df-4c6d-946a-be387ab834eb
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Raise ReadCache TTL from 30s to 300s for issue/memory/file caches
+status: Finished
+priority: 3
+created_at: '2026-05-12T14:19:12.463821'
+updated_at: '2026-05-12T14:43:45.104393'
+tasks:
+- id: 7302556b-3f6f-408e-8a27-fc5f7724200d
+  name: Change ReadCache default TTL from 30.0 to 300.0 in cache.py:12
+  status: Completed
+  order: 0
+  created_at: '2026-05-12T14:40:13'
+  updated_at: '2026-05-12T14:43:30'
+relations: []
