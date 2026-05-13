@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 MAX_CHARS = 500_000
 MAX_ROWS_PER_SHEET = 1000
 LEGACY_FORMATS = {"doc", "xls"}
+AUDIO_EXTENSIONS = {"ogg", "mp3", "wav", "flac", "m4a", "aac"}
 
 
 class ExtractionResult:
@@ -17,6 +18,25 @@ class ExtractionResult:
         self.text = text
         self.status = status
         self.error = error
+
+
+_whisper_model = None
+
+
+def _get_whisper_model():
+    global _whisper_model
+    if _whisper_model is None:
+        import whisper
+        logger.info("Loading Whisper base model (may trigger ~1GB download on first use)...")
+        _whisper_model = whisper.load_model("base")
+        logger.info("Whisper model loaded")
+    return _whisper_model
+
+
+def _extract_audio(path: str) -> str:
+    model = _get_whisper_model()
+    result = model.transcribe(path)
+    return result["text"].strip()
 
 
 def extract(path: str, ext: str) -> ExtractionResult:
@@ -32,6 +52,8 @@ def extract(path: str, ext: str) -> ExtractionResult:
             text = _extract_docx(path)
         elif ext == "xlsx":
             text = _extract_xlsx(path)
+        elif ext in AUDIO_EXTENSIONS:
+            text = _extract_audio(path)
         else:
             return ExtractionResult("", "unsupported", f"Extension '.{ext}' has no parser")
     except ImportError as e:

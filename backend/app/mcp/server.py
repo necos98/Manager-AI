@@ -676,6 +676,8 @@ async def read_project_file(project_id: str, file_id: str, offset: int = 0, max_
 # ── Playwright / Credential tools ──────────────────────────────────────────
 
 from app.services.credential_service import CredentialService
+from app.mcp.plugin_manager import plugin_manager
+from app.mcp.plugin_config import load_plugins, get_plugin_config
 
 
 @mcp.tool(description=_desc["tool.get_project_url.description"])
@@ -725,3 +727,65 @@ async def delete_credential(project_id: str, role: str) -> dict:
             return {"deleted": True}
         except AppError as e:
             return {"error": e.message}
+
+
+# ── Plugin tools ────────────────────────────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.list_plugins.description"])
+async def list_plugins(project_id: str) -> dict:
+    async with async_session() as session:
+        try:
+            project = await ProjectService(session).get_by_id(project_id)
+        except AppError as e:
+            return {"error": e.message}
+    return {"plugins": plugin_manager.get_status(project_id)}
+
+
+@mcp.tool(description=_desc["tool.get_plugin_config.description"])
+async def get_plugin_config(project_id: str, plugin_name: str) -> dict:
+    async with async_session() as session:
+        try:
+            project = await ProjectService(session).get_by_id(project_id)
+        except AppError as e:
+            return {"error": e.message}
+    cfg = get_plugin_config(project.path, plugin_name)
+    if cfg is None:
+        return {"error": f"Plugin {plugin_name} not found"}
+    return {
+        "name": cfg.name,
+        "enabled": cfg.enabled,
+        "transport": cfg.transport.value,
+        "command": cfg.command if cfg.transport.value == "stdio" else None,
+        "args": cfg.args if cfg.transport.value == "stdio" else None,
+        "url": cfg.url if cfg.transport.value == "http" else None,
+        "env_keys": list(cfg.env.keys()),
+        "access_level": cfg.access_level.value,
+        "timeout": cfg.timeout,
+    }
+
+
+@mcp.tool(description=_desc["tool.enable_plugin.description"])
+async def enable_plugin(project_id: str, plugin_name: str) -> dict:
+    async with async_session() as session:
+        try:
+            project = await ProjectService(session).get_by_id(project_id)
+        except AppError as e:
+            return {"error": e.message}
+    success = await plugin_manager.enable_plugin(
+        project_id, project.path, plugin_name, mcp
+    )
+    return {"success": success}
+
+
+@mcp.tool(description=_desc["tool.disable_plugin.description"])
+async def disable_plugin(project_id: str, plugin_name: str) -> dict:
+    async with async_session() as session:
+        try:
+            project = await ProjectService(session).get_by_id(project_id)
+        except AppError as e:
+            return {"error": e.message}
+    success = await plugin_manager.disable_plugin(
+        project_id, project.path, plugin_name, mcp
+    )
+    return {"success": success}

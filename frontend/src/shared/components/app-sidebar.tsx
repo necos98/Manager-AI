@@ -8,6 +8,7 @@ import {
   MessageSquare,
   MoreHorizontal,
   Pencil,
+  Plug,
   Settings,
   Smartphone,
   Terminal,
@@ -140,6 +141,13 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
                         <DropdownMenuItem onClick={() => setProjectSettingsOpen(true)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit Project
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to="/projects/$projectId/plugins" params={{ projectId }}>
+                            <Plug className="mr-2 h-4 w-4" />
+                            MCP Plugins
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setMcpSetupOpen(true)}>

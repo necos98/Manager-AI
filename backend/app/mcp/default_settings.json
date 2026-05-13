@@ -52,5 +52,9 @@
   "tool.list_credentials.description": "List available credential roles for a project (e.g. 'admin', 'user'). Only returns role names, never the actual credential values.",
   "tool.get_credential.description": "Get decrypted credentials for a specific role. Returns url, username, password, and any extra fields. Credentials are decrypted in-memory and never logged.",
   "tool.set_credential.description": "Save or update credentials for a project role. Fields should be a JSON object like {\"username\": \"...\", \"password\": \"...\"}. Encrypted at rest with Fernet.",
-  "tool.delete_credential.description": "Delete credentials for a specific role from a project."
+  "tool.delete_credential.description": "Delete credentials for a specific role from a project.",
+  "tool.list_plugins.description": "List all MCP plugins configured for a project. Returns plugin name, status (running/stopped/error), transport type, access_level, health, and tool count.",
+  "tool.get_plugin_config.description": "Get the full configuration of a specific plugin (no secrets). Returns name, transport, command/url, args, env var names (not values), access_level, timeout.",
+  "tool.enable_plugin.description": "Enable a plugin and start it. Writes enabled=true to plugins.yaml and spawns the plugin process. Returns success status.",
+  "tool.disable_plugin.description": "Disable a plugin and stop it. Writes enabled=false to plugins.yaml and terminates the plugin process. Returns success status."
 }

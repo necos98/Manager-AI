@@ -17,6 +17,8 @@ from typing import Any
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import asyncio
+
 from app.services import file_reader
 from app.services.project_service import ProjectService
 from app.storage import file_store, paths
@@ -25,6 +27,7 @@ from app.storage.file_store import FileRecord
 ALLOWED_EXTENSIONS = {
     "txt", "md", "doc", "docx", "pdf", "xls", "xlsx",
     "png", "jpg", "jpeg", "gif", "webp",
+    "ogg", "mp3", "wav", "flac", "m4a", "aac",
 }
 
 IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
@@ -44,6 +47,12 @@ MIME_MAP = {
     "jpeg": "image/jpeg",
     "gif": "image/gif",
     "webp": "image/webp",
+    "ogg": "audio/ogg",
+    "mp3": "audio/mpeg",
+    "wav": "audio/wav",
+    "flac": "audio/flac",
+    "m4a": "audio/mp4",
+    "aac": "audio/aac",
 }
 
 
@@ -54,6 +63,32 @@ def _get_extension(filename: str) -> str:
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep="T", timespec="microseconds")
+
+
+async def _transcribe_async(project_path: str, record: FileRecord) -> None:
+    try:
+        file_path = os.path.join(paths.resources_dir(project_path), record.stored_name)
+        text = await asyncio.to_thread(file_reader._extract_audio, file_path)
+        if len(text) > file_reader.MAX_CHARS:
+            text = text[: file_reader.MAX_CHARS]
+        record.extracted_text = text
+        record.extraction_status = "ok"
+        record.extracted_at = _now_iso()
+        record.extraction_error = None
+        logger.info("Transcription complete for %s", record.original_name)
+    except Exception as e:
+        logger.exception("Transcription failed for %s", record.original_name)
+        record.extraction_status = "failed"
+        record.extraction_error = str(e)
+        record.extracted_at = _now_iso()
+    file_store.update_file(project_path, record)
+
+
+def recover_pending_transcriptions(project_path: str) -> None:
+    for record in file_store.list_files(project_path):
+        if record.file_type in file_reader.AUDIO_EXTENSIONS and record.extraction_status == "pending":
+            logger.info("Recovering pending transcription: %s", record.original_name)
+            asyncio.create_task(_transcribe_async(project_path, record))
 
 
 class FileService:
@@ -98,6 +133,12 @@ class FileService:
                 extract_error: str | None = None
                 extract_meta: dict[str, Any] | None = None
                 extract_at: str | None = None
+            elif ext in file_reader.AUDIO_EXTENSIONS:
+                extract_text = None
+                extract_status = "pending"
+                extract_error = None
+                extract_meta = None
+                extract_at = None
             else:
                 result = file_reader.extract(file_path, ext)
                 meta: dict[str, Any] = {}
@@ -125,6 +166,10 @@ class FileService:
             )
             file_store.create_file(project_path, record)
             results.append(record)
+
+        for record in results:
+            if record.file_type in file_reader.AUDIO_EXTENSIONS:
+                asyncio.create_task(_transcribe_async(project_path, record))
 
         return results
 
