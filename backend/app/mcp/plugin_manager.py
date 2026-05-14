@@ -12,9 +12,11 @@ from app.mcp.plugin_config import (
     AccessLevel,
     PluginConfig,
     load_plugins,
+    set_plugin_config,
     set_plugin_enabled,
 )
 from app.mcp.plugin_proxy import register_plugin_tools, unregister_plugin_tools
+from app.mcp.catalog import catalog_loader
 from app.services.event_service import event_service
 
 logger = logging.getLogger(__name__)
@@ -67,13 +69,17 @@ class PluginManager:
         self._state.setdefault(project_id, {})
         existing = self._state[project_id]
 
-        for key, cfg in plugins_file.plugins.items():
-            if not cfg.enabled:
+        for key, proj_cfg in plugins_file.plugins.items():
+            if not proj_cfg.enabled:
                 continue
             if key in existing:
                 logger.warning("Plugin %s already running for project %s, skipping", key, project_id)
                 continue
-            await self._start_one(project_id, project_path, key, cfg, mcp_instance)
+            runtime_cfg = catalog_loader.build_runtime_config(key, True, proj_cfg.config)
+            if runtime_cfg is None:
+                logger.warning("Plugin %s not in catalog, skipping legacy plugin", key)
+                continue
+            await self._start_one(project_id, project_path, key, runtime_cfg, mcp_instance)
 
     async def _start_one(
         self,
@@ -167,16 +173,23 @@ class PluginManager:
         except Exception:
             pass
 
-        # Reconnect with fresh client
-        cfg = state.config
+        # Reconnect with fresh client — rebuild from catalog + stored config
+        plugins_file = load_plugins(project_path)
+        proj_cfg = plugins_file.plugins.get(plugin_key)
+        user_config = proj_cfg.config if proj_cfg else {}
+        runtime_cfg = catalog_loader.build_runtime_config(plugin_key, True, user_config)
+        if runtime_cfg is None:
+            logger.warning("Plugin %s no longer in catalog, cannot restart", plugin_key)
+            return False
+        state.config = runtime_cfg
         new_client = PluginClient(
-            plugin_name=cfg.name or plugin_key,
-            transport=cfg.transport.value,
-            command=cfg.command,
-            args=cfg.args,
-            url=cfg.url,
-            env=cfg.env,
-            timeout=cfg.timeout,
+            plugin_name=runtime_cfg.name or plugin_key,
+            transport=runtime_cfg.transport.value,
+            command=runtime_cfg.command,
+            args=runtime_cfg.args,
+            url=runtime_cfg.url,
+            env=runtime_cfg.env,
+            timeout=runtime_cfg.timeout,
         )
         state.client = new_client
 
@@ -196,14 +209,18 @@ class PluginManager:
         project_path: str,
         plugin_key: str,
         mcp_instance: FastMCP,
+        config: dict[str, str] | None = None,
     ) -> bool:
-        if not set_plugin_enabled(project_path, plugin_key, True):
+        cat = catalog_loader.get(plugin_key)
+        if cat is None:
+            logger.warning("Plugin %s not found in catalog, cannot enable", plugin_key)
             return False
-        cfg_file = load_plugins(project_path)
-        cfg = cfg_file.plugins.get(plugin_key)
-        if cfg is None:
+        user_config = config or {}
+        set_plugin_config(project_path, plugin_key, True, user_config)
+        runtime_cfg = catalog_loader.build_runtime_config(plugin_key, True, user_config)
+        if runtime_cfg is None:
             return False
-        await self._start_one(project_id, project_path, plugin_key, cfg, mcp_instance)
+        await self._start_one(project_id, project_path, plugin_key, runtime_cfg, mcp_instance)
         return True
 
     async def disable_plugin(

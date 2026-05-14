@@ -1,129 +1,118 @@
-# Configurare un plugin MCP
+# Usare e configurare i plugin
 
-I plugin si configurano per-progetto. La source of truth è il file `.manager_ai/plugins.yaml` nella root del progetto.
+I plugin si configurano per-progetto dalla UI di Manager AI. Non serve scrivere YAML a mano.
 
-## Via Frontend (UI)
+## Interfaccia
 
 1. Vai al progetto in Manager AI
-2. Nel menu "More" (⋮) del progetto, clicca **MCP Plugins**
-3. Clicca **Add Plugin**
-4. Compila i campi:
+2. Nel menu del progetto, clicca **MCP Plugins**
+3. La pagina mostra tre sezioni:
 
-| Campo | Descrizione | Esempio |
-|-------|------------|--------|
-| Key | ID univoco del plugin nel progetto | `mysql` |
-| Display Name | Nome mostrato nell'UI | `MySQL (produzione)` |
-| Transport | `stdio` per processo locale, `http` per remoto | `stdio` |
-| Command | (solo stdio) Comando da eseguire | `uvx mcp-server-mysql` |
-| URL | (solo http) URL dell'endpoint SSE | `https://mcp.internal/sse` |
-| Access Level | Vincolo dichiarativo per l'LLM | `read_only` |
+### Plugin abilitati
 
-5. Clicca **Save**. Il plugin viene avviato immediatamente.
+In cima alla pagina, i plugin attualmente attivi mostrano:
+- Nome e livello di accesso (badge colorato)
+- Stato connessione: pallino verde + "N tools" oppure rosso + "stopped"
+- Icona trasporto: terminale (stdio) o globo (http)
+- Pulsante **Configure** (icona ingranaggio) per modificare la configurazione
+- Toggle on/off per disabilitare rapidamente
 
-### Gestione plugin
+### Plugin disponibili (catalogo)
 
-- **Toggle on/off**: Abilita o disabilita il plugin senza rimuovere la configurazione
-- **Delete**: Rimuove il plugin e ferma il processo
-- **Stato**: Verde = connesso (con conteggio tool). Rosso = fermo o errore.
+Griglia di card con tutti i plugin nel catalogo non ancora abilitati:
+- Nome, descrizione, livello di accesso
+- Numero di opzioni configurabili
+- Pulsante **Configure** per aprire la modale di configurazione
 
-## Via YAML (manuale)
+### Plugin legacy
 
-Edita `.manager_ai/plugins.yaml` direttamente:
+Se esistono plugin creati prima del sistema a catalogo (versione 1), appaiono in una sezione separata in sola lettura. Possono solo essere disabilitati o eliminati — non modificati.
 
-### Plugin stdio (database MySQL read-only)
+## Configurare un plugin
+
+1. Clicca **Configure** su un plugin nella griglia
+2. Si apre la modale con:
+   - Nome, descrizione e livello di accesso del plugin
+   - **Toggle Enable/Disable** per abilitare o disabilitare il plugin
+   - **Campi di configurazione** generati automaticamente dal manifest:
+     - `string` → campo testo
+     - `secret` → campo password (mascherato)
+     - `number` → campo numerico
+     - `boolean` → toggle Yes/No
+     - `select` → dropdown con le choices definite
+   - I campi obbligatori sono contrassegnati con `*` rosso
+3. Compila i campi richiesti
+4. Clicca **Save**
+
+Il plugin viene avviato immediatamente (se enabled). I valori configurati vengono iniettati come variabili d'ambiente nel processo del plugin.
+
+### Plugin senza opzioni
+
+Se un plugin non ha opzioni configurabili, la modale mostra solo il toggle enable/disable e un messaggio "This plugin has no configurable options."
+
+## Formato plugins.yaml (v2)
+
+La configurazione viene salvata automaticamente in `.manager_ai/plugins.yaml`:
 
 ```yaml
-schema_version: 1
+schema_version: 2
 plugins:
   mysql:
-    name: "MySQL (produzione)"
     enabled: true
-    transport: stdio
-    command: "uvx"
-    args:
-      - "mcp-server-mysql"
-    env:
+    config:
       MYSQL_HOST: "10.0.1.5"
       MYSQL_PORT: "3306"
-      MYSQL_DATABASE: "analytics"
-    access_level: read_only
-    timeout: 30
+      MYSQL_USER: "admin"
+      MYSQL_PASSWORD: ""
 ```
 
-### Plugin HTTP (remoto)
+Solo due campi per plugin: `enabled` (bool) e `config` (dict chiave-valore). Tutto il resto (comando, transport, access_level) viene dal catalogo.
 
-```yaml
-schema_version: 1
-plugins:
-  slack:
-    name: "Slack notifications"
-    enabled: false
-    transport: http
-    url: "https://mcp-slack.internal/sse"
-    access_level: read_write
-    timeout: 30
-```
+### Migrazione da v1
 
-### Campi YAML
+Se hai un `plugins.yaml` in formato v1 (con `command`, `transport`, `env`, etc.), viene automaticamente migrato al formato v2 al primo avvio:
 
-| Campo | Tipo | Obbligatorio | Default | Descrizione |
-|-------|------|-------------|---------|------------|
-| `name` | string | No | `key` | Nome visualizzato |
-| `enabled` | bool | No | `true` | Plugin attivo all'avvio |
-| `transport` | string | No | `stdio` | `stdio` o `http` |
-| `command` | string | Solo stdio | `""` | Comando eseguibile |
-| `args` | list | No | `[]` | Argomenti del comando |
-| `url` | string | Solo http | `""` | URL endpoint SSE |
-| `env` | dict | No | `{}` | Variabili d'ambiente |
-| `access_level` | string | No | `read_only` | `read_only`, `read_write`, `admin` |
-| `timeout` | int | No | `30` | Timeout in secondi per chiamata tool |
+- `enabled` → `enabled` (invariato)
+- `env` → `config` (le variabili d'ambiente diventano config)
+- `name`, `command`, `transport`, `access_level`, `timeout` → **ignorati** (ora vengono dal catalogo)
+
+I plugin v1 senza corrispondenza nel catalogo appaiono come **legacy** nella UI.
+
+## Ricaricamento automatico
+
+Le modifiche a `plugins.yaml` vengono rilevate dal filesystem watcher:
+
+- **Plugin abilitato** → avviato
+- **Plugin disabilitato** → fermato
+- Il ricaricamento avviene entro ~500ms
 
 ## Sicurezza: credenziali
 
-**Non mettere password nel YAML.** Usa il vault crittografato di Manager AI:
+**Non mettere password in chiaro nelle option.** Per i campi di tipo `secret`:
 
-```yaml
-# plugins.yaml — SOLO riferimento a variabili d'ambiente
-env:
-  MYSQL_HOST: "${MYSQL_HOST}"
-  MYSQL_USER: "${MYSQL_USER}"
-  MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
-```
+- La UI li maschera con un input password
+- Usa il vault crittografato di Manager AI per credenziali sensibili
+- Le option `secret` vanno usate per valori sensibili che il plugin riceve come env var
 
-Le credenziali vere si salvano via MCP tool `set_credential` o via UI Project Settings → Credentials. Il vault usa crittografia Fernet.
-
-## Access Level e sicurezza reale
-
-Il campo `access_level` è **dichiarativo**: viene iniettato nella descrizione del tool visibile all'LLM per fargli capire i vincoli. Ma NON è un enforcement.
-
-Per un plugin MySQL read-only, la sicurezza reale si ottiene con:
-1. **Utente DB limitato**: Il DBA crea un utente con solo `SELECT` grant
-2. **Credenziali nel vault**: La password di quell'utente è nel vault crittografato
-3. **Variabili d'ambiente**: Il plugin riceve solo le credenziali dell'utente limitato
-
-## Ricaricare la configurazione
-
-Le modifiche a `plugins.yaml` vengono rilevate automaticamente dal filesystem watcher:
-- **Plugin aggiunto**: spawnato e connesso
-- **Plugin rimosso**: fermato e disconnesso
-- **Plugin modificato** (command, args, url): riavviato con la nuova configurazione
-- **enabled cambiato**: avviato o fermato
-
-Il ricaricamento avviene entro ~500ms dal salvataggio del file (debounce del watcher).
+Il campo `access_level` è **dichiarativo**: viene iniettato nella descrizione del tool visibile all'LLM, ma l'enforcement reale è a livello credenziali.
 
 ## Troubleshooting
 
+**Il plugin non appare nel catalogo**
+- Verifica che esista `backend/plugins/<key>/plugin.yaml`
+- Controlla i log del backend per errori di validazione del manifest
+- Il file YAML potrebbe essere malformattato
+
 **Il plugin non si avvia**
-- Controlla che il comando esista nel PATH (`which uvx` o simile)
-- Verifica il log del backend per errori di connessione
-- Prova ad avviare il comando manualmente nel terminale
+- Controlla che il comando nel manifest esista nel PATH
+- Verifica che tutte le option `required` siano state compilate
+- Guarda i log del backend per errori di connessione
 
 **Il plugin crasha dopo l'avvio**
 - Controlla lo stderr del processo (loggato dal backend)
-- Verifica che le variabili d'ambiente siano corrette
 - Dopo 3 retry falliti in 60 secondi, il plugin va in cooldown per 5 minuti
 
 **I tool non appaiono in Claude Code**
 - Verifica che il plugin sia `enabled: true`
-- Controlla lo stato nella UI: deve mostrare "X tools" in verde
+- Controlla lo stato nella UI: deve mostrare "N tools" in verde
 - Verifica il log: cerca `Registered proxy tool: nomeplugin__nometool`

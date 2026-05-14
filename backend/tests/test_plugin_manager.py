@@ -14,6 +14,7 @@ from app.mcp.plugin_config import (
     PluginConfig,
     PluginTransport,
     PluginsFile,
+    ProjectPluginConfig,
     load_plugins,
     save_plugins,
     set_plugin_enabled,
@@ -21,6 +22,7 @@ from app.mcp.plugin_config import (
 from app.mcp.plugin_client import PluginClient
 from app.mcp.plugin_proxy import register_plugin_tools, unregister_plugin_tools
 from app.mcp.plugin_manager import PluginManager
+from app.mcp.catalog import catalog_loader, CatalogPlugin, OptionDef
 
 
 # ── PluginConfig model tests ─────────────────────────────────────────────────
@@ -84,33 +86,51 @@ class TestPluginsYaml:
         assert plugins_file.plugins == {}
 
     def test_save_and_load(self, tmp_path):
-        cfg = PluginConfig(
-            name="test", transport=PluginTransport.stdio, command="echo"
-        )
-        pf = PluginsFile(plugins={"test": cfg})
+        proj_cfg = ProjectPluginConfig(enabled=True, config={"KEY": "val"})
+        pf = PluginsFile(plugins={"test": proj_cfg})
         save_plugins(str(tmp_path), pf)
 
         loaded = load_plugins(str(tmp_path))
         assert "test" in loaded.plugins
-        assert loaded.plugins["test"].name == "test"
-        assert loaded.plugins["test"].command == "echo"
+        assert loaded.plugins["test"].enabled is True
+        assert loaded.plugins["test"].config == {"KEY": "val"}
 
-    def test_invalid_plugin_skipped(self, tmp_path):
+    def test_save_and_load_v1_migration(self, tmp_path):
+        """V1 format plugins.yaml is migrated to v2 on load."""
         yaml_path = Path(tmp_path) / ".manager_ai" / "plugins.yaml"
         yaml_path.parent.mkdir(parents=True, exist_ok=True)
         data = {
             "schema_version": 1,
             "plugins": {
-                "good": {
-                    "name": "good",
+                "legacy": {
+                    "name": "Legacy Plugin",
+                    "enabled": True,
                     "transport": "stdio",
                     "command": "echo",
+                    "args": [],
+                    "env": {"HOST": "localhost"},
+                    "access_level": "read_only",
+                    "timeout": 30,
                 },
-                "bad": {
-                    "name": "bad",
-                    "transport": "stdio",
-                    # missing command
+            },
+        }
+        yaml_path.write_text(yaml.dump(data), encoding="utf-8")
+        loaded = load_plugins(str(tmp_path))
+        assert "legacy" in loaded.plugins
+        assert loaded.plugins["legacy"].enabled is True
+        assert loaded.plugins["legacy"].config == {"HOST": "localhost"}
+
+    def test_invalid_plugin_skipped(self, tmp_path):
+        yaml_path = Path(tmp_path) / ".manager_ai" / "plugins.yaml"
+        yaml_path.parent.mkdir(parents=True, exist_ok=True)
+        data = {
+            "schema_version": 2,
+            "plugins": {
+                "good": {
+                    "enabled": True,
+                    "config": {},
                 },
+                "bad": "not_a_dict",
             },
         }
         yaml_path.write_text(yaml.dump(data), encoding="utf-8")
@@ -120,8 +140,8 @@ class TestPluginsYaml:
         assert "bad" not in loaded.plugins  # invalid → skipped
 
     def test_set_plugin_enabled(self, tmp_path):
-        cfg = PluginConfig(name="test", transport=PluginTransport.stdio, command="echo")
-        pf = PluginsFile(plugins={"test": cfg})
+        proj_cfg = ProjectPluginConfig(enabled=True, config={})
+        pf = PluginsFile(plugins={"test": proj_cfg})
         save_plugins(str(tmp_path), pf)
 
         assert set_plugin_enabled(str(tmp_path), "test", False) is True
@@ -300,16 +320,11 @@ def plugins_yaml_with_dummy(tmp_path, dummy_mcp_script_path):
     manager_ai = tmp_path / ".manager_ai"
     manager_ai.mkdir(parents=True, exist_ok=True)
     cfg = {
-        "schema_version": 1,
+        "schema_version": 2,
         "plugins": {
             "dummy": {
-                "name": "Dummy Test",
                 "enabled": True,
-                "transport": "stdio",
-                "command": "python",
-                "args": [dummy_mcp_script_path],
-                "access_level": "read_only",
-                "timeout": 10,
+                "config": {},
             }
         },
     }
@@ -318,9 +333,27 @@ def plugins_yaml_with_dummy(tmp_path, dummy_mcp_script_path):
     return str(tmp_path)
 
 
+@pytest.fixture
+def catalog_entry_dummy(dummy_mcp_script_path):
+    """Inject a catalog entry for the dummy test plugin, then clean up."""
+    cat = CatalogPlugin(
+        key="dummy",
+        name="Dummy Test",
+        description="Test plugin",
+        transport=PluginTransport.stdio,
+        command="python",
+        args=[dummy_mcp_script_path],
+        access_level=AccessLevel.read_only,
+        timeout=10,
+    )
+    catalog_loader._plugins["dummy"] = cat
+    yield cat
+    catalog_loader._plugins.pop("dummy", None)
+
+
 class TestPluginManagerLifecycle:
     @pytest.mark.asyncio
-    async def test_start_stop_plugins(self, plugins_yaml_with_dummy):
+    async def test_start_stop_plugins(self, plugins_yaml_with_dummy, catalog_entry_dummy):
         from mcp.server.fastmcp import FastMCP
 
         mcp_instance = FastMCP("test-mcp")
@@ -345,7 +378,7 @@ class TestPluginManagerLifecycle:
         assert statuses_after == []
 
     @pytest.mark.asyncio
-    async def test_disable_plugin(self, plugins_yaml_with_dummy):
+    async def test_disable_plugin(self, plugins_yaml_with_dummy, catalog_entry_dummy):
         from mcp.server.fastmcp import FastMCP
 
         mcp_instance = FastMCP("test-mcp")
@@ -364,7 +397,7 @@ class TestPluginManagerLifecycle:
         assert loaded.plugins["dummy"].enabled is False
 
     @pytest.mark.asyncio
-    async def test_enable_then_disable(self, plugins_yaml_with_dummy):
+    async def test_enable_then_disable(self, plugins_yaml_with_dummy, catalog_entry_dummy):
         from mcp.server.fastmcp import FastMCP
 
         mcp_instance = FastMCP("test-mcp")

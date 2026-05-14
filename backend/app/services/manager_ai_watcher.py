@@ -123,36 +123,27 @@ class _Handler(FileSystemEventHandler):
         asyncio.run_coroutine_threadsafe(coro, self.loop)
 
     async def _reload_plugins(self) -> None:
-        """Reload plugins after plugins.yaml changes."""
+        """Reload plugins after plugins.yaml changes (v2: enable/disable toggles)."""
         try:
             from app.mcp.plugin_config import load_plugins as load_plugins_cfg
             config = load_plugins_cfg(self.project_path)
             current = self._plugin_manager._state.get(self.project_id, {})
 
-            # Stop plugins not in new config
+            # Stop plugins not in new config or disabled
             for key in list(current.keys()):
-                cfg = config.plugins.get(key)
-                if cfg is None or not cfg.enabled:
+                proj_cfg = config.plugins.get(key)
+                if proj_cfg is None or not proj_cfg.enabled:
                     await self._plugin_manager.disable_plugin(
                         self.project_id, self.project_path, key, self._mcp
                     )
 
-            # Start new or changed plugins
-            for key, cfg in config.plugins.items():
-                if not cfg.enabled:
+            # Start newly enabled plugins (catalog merge happens in enable_plugin)
+            for key, proj_cfg in config.plugins.items():
+                if not proj_cfg.enabled:
                     continue
                 existing = current.get(key)
                 if existing is None:
                     await self._plugin_manager.enable_plugin(
-                        self.project_id, self.project_path, key, self._mcp
-                    )
-                elif (
-                    existing.config.command != cfg.command
-                    or existing.config.args != cfg.args
-                    or existing.config.url != cfg.url
-                    or existing.config.transport != cfg.transport
-                ):
-                    await self._plugin_manager.restart_plugin(
                         self.project_id, self.project_path, key, self._mcp
                     )
         except Exception:

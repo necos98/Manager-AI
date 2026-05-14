@@ -1,5 +1,5 @@
 import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/api/client";
-import type { CredentialUpsert, Project, ProjectCreate, ProjectCredential, ProjectUpdate, Terminal } from "@/shared/types";
+import type { CredentialUpsert, Project, ProjectCreate, ProjectCredential, ProjectLink, ProjectLinkCreate, ProjectLinkUpdate, ProjectUpdate, Terminal } from "@/shared/types";
 
 export interface ProjectHealth {
   manager_json: { installed: boolean; path: string };
@@ -94,4 +94,20 @@ export function upsertCredential(projectId: string, data: CredentialUpsert): Pro
 
 export function deleteCredential(projectId: string, role: string): Promise<void> {
   return apiDelete(`/projects/${projectId}/credentials/${encodeURIComponent(role)}`);
+}
+
+export function fetchProjectLinks(projectId: string): Promise<ProjectLink[]> {
+  return apiGet<ProjectLink[]>(`/projects/${projectId}/links`);
+}
+
+export function createProjectLink(projectId: string, data: ProjectLinkCreate): Promise<ProjectLink> {
+  return apiPost<ProjectLink>(`/projects/${projectId}/links`, data);
+}
+
+export function updateProjectLink(projectId: string, linkId: string, data: ProjectLinkUpdate): Promise<ProjectLink> {
+  return apiPut<ProjectLink>(`/projects/${projectId}/links/${linkId}`, data);
+}
+
+export function deleteProjectLink(projectId: string, linkId: string): Promise<void> {
+  return apiDelete(`/projects/${projectId}/links/${linkId}`);
 }

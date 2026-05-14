@@ -7,9 +7,18 @@ const onMutationError = (e: unknown) => {
 };
 
 const pluginKeys = {
+  catalog: () => ["plugins", "catalog"] as const,
   list: (projectId: string) => ["plugins", projectId] as const,
   detail: (projectId: string, key: string) => ["plugins", projectId, key] as const,
 };
+
+export function useCatalog() {
+  return useQuery({
+    queryKey: pluginKeys.catalog(),
+    queryFn: api.fetchCatalog,
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 export function usePlugins(projectId: string) {
   return useQuery({
@@ -22,8 +31,8 @@ export function usePlugins(projectId: string) {
 export function useUpsertPlugin(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ key, data }: { key: string; data: Record<string, unknown> }) =>
-      api.upsertPlugin(projectId, key, data),
+    mutationFn: ({ key, enabled, config }: { key: string; enabled: boolean; config: Record<string, string> }) =>
+      api.upsertPlugin(projectId, key, { enabled, config }),
     onSuccess: () => qc.invalidateQueries({ queryKey: pluginKeys.list(projectId) }),
     onError: onMutationError,
   });
