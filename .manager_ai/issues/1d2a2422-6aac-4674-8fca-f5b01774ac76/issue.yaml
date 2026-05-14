@@ -1,0 +1,40 @@
+schema_version: 1
+id: 1d2a2422-6aac-4674-8fca-f5b01774ac76
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Audio-to-text transcription for uploaded files
+status: Finished
+priority: 3
+created_at: '2026-05-12T15:37:41.884955'
+updated_at: '2026-05-12T15:53:39.901872'
+tasks:
+- id: 9d7ff947-40e7-4628-ab3c-1b3969cbf3aa
+  name: Add openai-whisper to requirements.txt
+  status: Completed
+  order: 0
+  created_at: '2026-05-12T15:46:36'
+  updated_at: '2026-05-12T15:47:14'
+- id: f2bdf248-d0bd-4cbc-a5ed-e4e4d793689e
+  name: Add audio extraction (_extract_audio + dispatcher) to file_reader.py
+  status: Completed
+  order: 1
+  created_at: '2026-05-12T15:46:36'
+  updated_at: '2026-05-12T15:48:12'
+- id: a5605657-fea3-4835-9918-d3ea3625908b
+  name: Add audio constants, MIME types, and async transcription to file_service.py
+  status: Completed
+  order: 2
+  created_at: '2026-05-12T15:46:36'
+  updated_at: '2026-05-12T15:49:43'
+- id: 6db420e6-573a-4403-ac46-7292871184b9
+  name: Add startup recovery scan in main.py lifespan
+  status: Completed
+  order: 3
+  created_at: '2026-05-12T15:46:36'
+  updated_at: '2026-05-12T15:50:43'
+- id: 5cf949cb-ee87-4ece-b97d-eb5238fb95e0
+  name: Add audio extraction tests to test_file_reader.py
+  status: Completed
+  order: 4
+  created_at: '2026-05-12T15:46:36'
+  updated_at: '2026-05-12T15:53:11'
+relations: []

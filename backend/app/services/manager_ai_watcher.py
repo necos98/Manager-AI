@@ -33,11 +33,13 @@ def _now_iso() -> str:
 
 
 class _Handler(FileSystemEventHandler):
-    def __init__(self, *, project_id: str, project_path: str, loop: asyncio.AbstractEventLoop):
+    def __init__(self, *, project_id: str, project_path: str, loop: asyncio.AbstractEventLoop, mcp=None, plugin_manager=None):
         super().__init__()
         self.project_id = project_id
         self.project_path = project_path
         self.loop = loop
+        self._mcp = mcp
+        self._plugin_manager = plugin_manager
         self._timers: dict[str, threading.Timer] = {}
         self._lock = threading.Lock()
 
@@ -70,6 +72,8 @@ class _Handler(FileSystemEventHandler):
             return "memories"
         if parts[0] == "files" and len(parts) > 1:
             return "files"
+        if parts[0] == "plugins.yaml":
+            return "plugins"
         return None
 
     def _schedule(self, area: str) -> None:
@@ -96,6 +100,12 @@ class _Handler(FileSystemEventHandler):
                 file_store.rebuild_files_index(self.project_path)
                 file_store.invalidate_file_cache(self.project_path)
                 event_type = "file_updated"
+            elif area == "plugins":
+                if self._plugin_manager and self._mcp:
+                    asyncio.run_coroutine_threadsafe(
+                        self._reload_plugins(), self.loop
+                    )
+                event_type = "plugin_config_changed"
             else:
                 return
         except Exception:
@@ -112,13 +122,49 @@ class _Handler(FileSystemEventHandler):
         )
         asyncio.run_coroutine_threadsafe(coro, self.loop)
 
+    async def _reload_plugins(self) -> None:
+        """Reload plugins after plugins.yaml changes."""
+        try:
+            from app.mcp.plugin_config import load_plugins as load_plugins_cfg
+            config = load_plugins_cfg(self.project_path)
+            current = self._plugin_manager._state.get(self.project_id, {})
+
+            # Stop plugins not in new config
+            for key in list(current.keys()):
+                cfg = config.plugins.get(key)
+                if cfg is None or not cfg.enabled:
+                    await self._plugin_manager.disable_plugin(
+                        self.project_id, self.project_path, key, self._mcp
+                    )
+
+            # Start new or changed plugins
+            for key, cfg in config.plugins.items():
+                if not cfg.enabled:
+                    continue
+                existing = current.get(key)
+                if existing is None:
+                    await self._plugin_manager.enable_plugin(
+                        self.project_id, self.project_path, key, self._mcp
+                    )
+                elif (
+                    existing.config.command != cfg.command
+                    or existing.config.args != cfg.args
+                    or existing.config.url != cfg.url
+                    or existing.config.transport != cfg.transport
+                ):
+                    await self._plugin_manager.restart_plugin(
+                        self.project_id, self.project_path, key, self._mcp
+                    )
+        except Exception:
+            logger.exception("Plugin reload failed for project %s", self.project_id)
+
 
 class ManagerAiWatcher:
     def __init__(self) -> None:
         self._observers: dict[str, Observer] = {}
         self._lock = asyncio.Lock()
 
-    async def start_project(self, project_id: str, project_path: str) -> None:
+    async def start_project(self, project_id: str, project_path: str, mcp=None, plugin_manager=None) -> None:
         async with self._lock:
             if project_id in self._observers:
                 return
@@ -145,7 +191,8 @@ class ManagerAiWatcher:
 
             loop = asyncio.get_running_loop()
             handler = _Handler(
-                project_id=project_id, project_path=project_path, loop=loop
+                project_id=project_id, project_path=project_path, loop=loop,
+                mcp=mcp, plugin_manager=plugin_manager,
             )
             observer = Observer()
             observer.schedule(handler, str(root), recursive=True)

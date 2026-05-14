@@ -1,0 +1,1 @@
+Far si che quando carico dei file audio (ogg, mp3, waw ecc) vengano convertiti in testo cosi da poter essere letti dal modello llm. Mantieni sia il file originale che il file testuale.
