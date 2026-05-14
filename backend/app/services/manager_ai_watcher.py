@@ -128,6 +128,21 @@ class ManagerAiWatcher:
             except OSError:
                 logger.warning("Cannot create %s, skipping watcher", root)
                 return
+            # Regenerate index YAMLs from directory files on every startup.
+            # Individual files in subdirectories are the source of truth;
+            # root-level index files are not tracked in git and may be stale.
+            logger.info("Rebuilding indices for project %s", project_id)
+            issue_count = issue_store.rebuild_issues_index(project_path)
+            issue_store.invalidate_issue_cache(project_path)
+            memory_count = memory_store.rebuild_memories_index(project_path)
+            memory_store.invalidate_memory_cache(project_path)
+            file_count = file_store.rebuild_files_index(project_path)
+            file_store.invalidate_file_cache(project_path)
+            logger.info(
+                "Indices rebuilt for project %s: %d issues, %d memories, %d files",
+                project_id, issue_count, memory_count, file_count,
+            )
+
             loop = asyncio.get_running_loop()
             handler = _Handler(
                 project_id=project_id, project_path=project_path, loop=loop

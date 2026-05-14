@@ -1,0 +1,52 @@
+schema_version: 1
+id: 48c90ba2-0998-4f31-8953-2a1eb005d5ef
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix cache invalidation and rebuild gaps after index regeneration
+status: Finished
+priority: 2
+created_at: '2026-05-13T13:14:57.693528'
+updated_at: '2026-05-13T13:54:51.931964'
+tasks:
+- id: e7aaa352-8776-470a-a6b0-0432dcbe0f02
+  name: Return entry count from rebuild_issues_index()
+  status: Completed
+  order: 0
+  created_at: '2026-05-13T13:48:10'
+  updated_at: '2026-05-13T13:49:22'
+- id: d0282ff1-ad06-4c34-8bc1-db5e7a500fa6
+  name: Return entry count from rebuild_memories_index()
+  status: Completed
+  order: 1
+  created_at: '2026-05-13T13:48:10'
+  updated_at: '2026-05-13T13:49:45'
+- id: ab5cff45-ce13-4c38-bd55-cc98b70cd177
+  name: Return entry count from rebuild_files_index()
+  status: Completed
+  order: 2
+  created_at: '2026-05-13T13:48:10'
+  updated_at: '2026-05-13T13:49:47'
+- id: 37301d98-7e9c-4650-9728-777bbce1fde8
+  name: Add logging and full cache invalidation to start_project()
+  status: Completed
+  order: 3
+  created_at: '2026-05-13T13:48:10'
+  updated_at: '2026-05-13T13:50:22'
+- id: 04015fef-0538-4f4f-a50a-1e05130df4ae
+  name: Add POST /rebuild-index endpoint to projects router
+  status: Completed
+  order: 4
+  created_at: '2026-05-13T13:48:10'
+  updated_at: '2026-05-13T13:51:47'
+- id: 15451fb7-3d3a-4762-8491-3a978c3a89eb
+  name: Add rebuildIndex() API function and useRebuildIndex() hook
+  status: Completed
+  order: 5
+  created_at: '2026-05-13T13:48:10'
+  updated_at: '2026-05-13T13:52:24'
+- id: 8ac0845d-6c2b-430b-b868-1395c7afb610
+  name: Add Rebuild Index button to Health page
+  status: Completed
+  order: 6
+  created_at: '2026-05-13T13:48:10'
+  updated_at: '2026-05-13T13:53:48'
+relations: []

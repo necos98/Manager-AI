@@ -1,0 +1,28 @@
+schema_version: 1
+id: 0df22702-2f93-414d-8f0c-2c3e833b0e1a
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Regenerate issues.yaml and memories.yaml on startup from directory files
+status: Finished
+priority: 3
+created_at: '2026-05-13T09:19:35.360175'
+updated_at: '2026-05-13T09:37:58.595494'
+tasks:
+- id: 3b40cd86-30ba-4cec-8860-a4a7dbafa331
+  name: Add issues.yaml, memories.yaml, files.yaml to .manager_ai/.gitignore
+  status: Completed
+  order: 0
+  created_at: '2026-05-13T09:35:57'
+  updated_at: '2026-05-13T09:36:44'
+- id: 9acd38f9-0c69-4467-923e-0fb72490086a
+  name: Add startup rebuild calls in ManagerAiWatcher.start_project()
+  status: Completed
+  order: 1
+  created_at: '2026-05-13T09:35:57'
+  updated_at: '2026-05-13T09:37:02'
+- id: 3175e102-e288-4610-8c3a-6d6c52bd74a2
+  name: Run watcher tests to verify no regressions
+  status: Completed
+  order: 2
+  created_at: '2026-05-13T09:35:57'
+  updated_at: '2026-05-13T09:37:34'
+relations: []

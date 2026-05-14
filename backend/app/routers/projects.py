@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
+from app.storage import file_store, issue_store, memory_store, paths
 from app.storage.cache import resource_consistency_cache
 from app.schemas.project import DashboardProject, ProjectCreate, ProjectResponse, ProjectUpdate
 from app.schemas.terminal import TerminalResponse
@@ -388,6 +389,29 @@ async def project_health(project_id: str, db: AsyncSession = Depends(get_db)):
         "playwright_mcp": _check_playwright_mcp(project),
         "resource_consistency": _check_resource_consistency(project),
     }
+
+
+@router.post("/{project_id}/rebuild-index")
+async def rebuild_index(project_id: str, db: AsyncSession = Depends(get_db)):
+    """Rebuild all index YAML files from directory files and clear caches.
+
+    Does the same rebuild that happens at server startup via start_project().
+    Useful for recovering lost issues/memories/files without a restart.
+    """
+    service = ProjectService(db)
+    project = await service.get_by_id(project_id)
+    logger.info("Manual rebuild triggered for project %s", project_id)
+    issue_count = issue_store.rebuild_issues_index(project.path)
+    issue_store.invalidate_issue_cache(project.path)
+    memory_count = memory_store.rebuild_memories_index(project.path)
+    memory_store.invalidate_memory_cache(project.path)
+    file_count = file_store.rebuild_files_index(project.path)
+    file_store.invalidate_file_cache(project.path)
+    logger.info(
+        "Manual rebuild done for project %s: %d issues, %d memories, %d files",
+        project_id, issue_count, memory_count, file_count,
+    )
+    return {"issues": issue_count, "memories": memory_count, "files": file_count}
 
 
 @router.post("/{project_id}/install-mcp", response_model=TerminalResponse, status_code=201)

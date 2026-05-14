@@ -349,7 +349,7 @@ def remove_relation(project_path: str, source_id: str, target_id: str, type: str
     update_issue(project_path, record)
 
 
-def rebuild_issues_index(project_path: str) -> None:
+def rebuild_issues_index(project_path: str) -> int:
     issues_dir = paths.issues_dir(project_path)
     entries: list[dict[str, Any]] = []
     if issues_dir.exists():
@@ -374,6 +374,7 @@ def rebuild_issues_index(project_path: str) -> None:
     entries.sort(key=lambda e: (e["created_at"], e["id"]))
     atomic.write_yaml(paths.issues_index(project_path), {"schema_version": 1, "issues": entries})
     issue_cache.invalidate(f"{project_path}:__index__")
+    return len(entries)
 
 
 def invalidate_issue_cache(project_path: str) -> None:
