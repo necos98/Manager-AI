@@ -78,3 +78,13 @@ export function enablePlugin(projectId: string, key: string): Promise<{ success:
 export function disablePlugin(projectId: string, key: string): Promise<{ success: boolean }> {
   return apiPost<{ success: boolean }>(`/projects/${projectId}/plugins/${encodeURIComponent(key)}/disable`);
 }
+
+export interface TestConnectionResult {
+  success: boolean;
+  message: string;
+  tools?: string[];
+}
+
+export function testPluginConnection(projectId: string, key: string, config: Record<string, string>): Promise<TestConnectionResult> {
+  return apiPost<TestConnectionResult>(`/projects/${projectId}/plugins/${encodeURIComponent(key)}/test`, { config });
+}

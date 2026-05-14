@@ -1,10 +1,11 @@
 import { useState } from "react";
 import {
   Trash2, ToggleLeft, ToggleRight, Globe, Terminal, Wrench,
-  Plug, Settings, Circle,
+  Plug, Settings, Circle, Loader2,
 } from "lucide-react";
 import {
   usePlugins, useCatalog, useUpsertPlugin, useDeletePlugin, useTogglePlugin,
+  useTestPluginConnection,
 } from "@/features/settings/hooks-plugins";
 import type { CatalogPlugin } from "@/features/settings/api-plugins";
 import { Button } from "@/shared/components/ui/button";
@@ -49,6 +50,7 @@ function ConfigModal({
   currentEnabled: boolean;
 }) {
   const upsertPlugin = useUpsertPlugin(projectId);
+  const testConnection = useTestPluginConnection(projectId);
   const [enabled, setEnabled] = useState(currentEnabled);
   const [config, setConfig] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
@@ -72,6 +74,27 @@ function ConfigModal({
         onSuccess: () => {
           toast.success(`${plugin.name} saved`);
           onClose();
+        },
+      },
+    );
+  };
+
+  const handleTest = () => {
+    for (const opt of plugin.options) {
+      if (opt.required && !config[opt.key]?.trim()) {
+        toast.error(`${opt.label} is required`);
+        return;
+      }
+    }
+    testConnection.mutate(
+      { key: plugin.key, config },
+      {
+        onSuccess: (result) => {
+          if (result.success) {
+            toast.success(result.message);
+          } else {
+            toast.error(result.message);
+          }
         },
       },
     );
@@ -173,6 +196,18 @@ function ConfigModal({
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>
             Cancel
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleTest}
+            disabled={testConnection.isPending}
+          >
+            {testConnection.isPending ? (
+              <><Loader2 className="size-3.5 mr-1 animate-spin" /> Testing...</>
+            ) : (
+              "Test Connection"
+            )}
           </Button>
           <Button size="sm" onClick={handleSave} disabled={upsertPlugin.isPending}>
             Save

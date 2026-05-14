@@ -1,14 +1,22 @@
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.mcp.plugin_client import PluginClient
 from app.mcp.plugin_config import load_plugins, save_plugins, set_plugin_config, PluginsFile
 from app.mcp.plugin_manager import plugin_manager
 from app.mcp.catalog import catalog_loader
 from app.mcp.server import mcp
 from app.services.project_service import ProjectService
+
+
+class TestConnectionBody(BaseModel):
+    config: dict[str, str] = {}
 
 router = APIRouter(prefix="/api/projects/{project_id}/plugins", tags=["plugins"])
 catalog_router = APIRouter(prefix="/api/plugins", tags=["plugins"])
@@ -140,6 +148,43 @@ async def upsert_plugin(project_id: str, plugin_key: str, data: dict, db: AsyncS
         await plugin_manager.disable_plugin(project_id, project.path, plugin_key, mcp)
 
     return {"key": plugin_key, "name": cat.name, "enabled": enabled, "config": config}
+
+
+@router.post("/{plugin_key}/test")
+async def test_plugin_connection(project_id: str, plugin_key: str, data: TestConnectionBody):
+    """Test a plugin's connection by attempting an MCP handshake with the given config."""
+    cat = catalog_loader.get(plugin_key)
+    if cat is None:
+        raise HTTPException(status_code=404, detail=f"Plugin '{plugin_key}' not found in catalog")
+
+    test_timeout = min(cat.timeout, 15)
+    client = PluginClient(
+        plugin_name=plugin_key,
+        transport=cat.transport.value,
+        command=cat.command,
+        args=cat.args,
+        url=cat.url,
+        env=data.config,
+        timeout=test_timeout,
+    )
+
+    try:
+        await asyncio.wait_for(client.connect(), timeout=test_timeout)
+        tool_names = [t.name for t in client.tools]
+        return {
+            "success": True,
+            "message": f"Connected successfully. {len(tool_names)} tools available.",
+            "tools": tool_names,
+        }
+    except asyncio.TimeoutError:
+        return {"success": False, "message": f"Connection timed out after {test_timeout} seconds"}
+    except Exception as exc:
+        return {"success": False, "message": str(exc)}
+    finally:
+        try:
+            await asyncio.wait_for(client.disconnect(), timeout=5)
+        except Exception:
+            pass
 
 
 @router.delete("/{plugin_key}")
