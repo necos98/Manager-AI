@@ -1,10 +1,64 @@
 schema_version: 1
 id: 4d8536d2-7b1f-444a-9fc2-e69b1227c970
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: New
+name: Project Linking with Relationship Types
+status: Accepted
 priority: 3
 created_at: '2026-05-13T07:34:11.416199'
-updated_at: '2026-05-13T07:34:11.416199'
-tasks: []
+updated_at: '2026-05-14T07:48:46.453300'
+tasks:
+- id: 7703f01c-b8cd-444a-bea1-5357aa85331e
+  name: Create ProjectLink model and migration
+  status: Completed
+  order: 0
+  created_at: '2026-05-14T07:48:34'
+  updated_at: '2026-05-14T07:50:01'
+- id: 06a65201-1e3c-4ff7-b7a7-81c209124f75
+  name: Create Pydantic schemas
+  status: Completed
+  order: 1
+  created_at: '2026-05-14T07:48:34'
+  updated_at: '2026-05-14T07:50:18'
+- id: af854bc4-283c-4d6a-8b0d-7024054addd9
+  name: Create ProjectLinkService
+  status: Completed
+  order: 2
+  created_at: '2026-05-14T07:48:34'
+  updated_at: '2026-05-14T07:50:44'
+- id: db9a0a3c-cd2a-426b-a268-99bcc6ca022e
+  name: Create router and register in main.py
+  status: Completed
+  order: 3
+  created_at: '2026-05-14T07:48:34'
+  updated_at: '2026-05-14T07:51:25'
+- id: e0509e13-94a4-42d9-a958-b3cfc973f153
+  name: Add frontend types
+  status: Completed
+  order: 4
+  created_at: '2026-05-14T07:48:34'
+  updated_at: '2026-05-14T07:51:39'
+- id: ddff38cb-8498-47ec-bee8-b11e96fe2698
+  name: Add frontend API functions
+  status: Completed
+  order: 5
+  created_at: '2026-05-14T07:48:34'
+  updated_at: '2026-05-14T07:52:06'
+- id: 15e8244e-a643-427f-868c-d549abd65d60
+  name: Add frontend hooks
+  status: Completed
+  order: 6
+  created_at: '2026-05-14T07:48:34'
+  updated_at: '2026-05-14T07:52:41'
+- id: 70a2e624-cc90-4493-a174-2c4f7e9137a6
+  name: Add Linked Projects section to settings dialog
+  status: Completed
+  order: 7
+  created_at: '2026-05-14T07:48:34'
+  updated_at: '2026-05-14T07:54:48'
+- id: af3a327a-a5d1-44ad-b6e2-6b105c54e317
+  name: Integration smoke test
+  status: In Progress
+  order: 8
+  created_at: '2026-05-14T07:48:34'
+  updated_at: '2026-05-14T07:54:50'
 relations: []

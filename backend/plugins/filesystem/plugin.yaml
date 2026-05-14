@@ -1,0 +1,16 @@
+name: "Filesystem"
+description: "Read, write, and manage files on the local filesystem via MCP"
+transport: stdio
+command: "npx"
+args:
+  - "-y"
+  - "@modelcontextprotocol/server-filesystem"
+  - "/path/to/allowed/dir"
+access_level: read_write
+timeout: 30
+options:
+  - key: ALLOWED_DIR
+    label: "Allowed directory"
+    type: string
+    required: true
+    placeholder: "/path/to/allowed/directory"

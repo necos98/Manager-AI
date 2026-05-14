@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as api from "./api";
-import type { ProjectCreate, ProjectUpdate } from "@/shared/types";
+import type { ProjectCreate, ProjectLinkCreate, ProjectLinkUpdate, ProjectUpdate } from "@/shared/types";
 
 const onMutationError = (e: unknown) => {
   toast.error(e instanceof Error ? e.message : "Operation failed");
@@ -151,6 +151,52 @@ export function useUnarchiveProject() {
       queryClient.invalidateQueries({ queryKey: projectKeys.all });
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+    onError: onMutationError,
+  });
+}
+
+export const projectLinkKeys = {
+  list: (projectId: string) => ["projects", projectId, "links"] as const,
+};
+
+export function useProjectLinks(projectId: string) {
+  return useQuery({
+    queryKey: projectLinkKeys.list(projectId),
+    queryFn: () => api.fetchProjectLinks(projectId),
+    enabled: !!projectId,
+  });
+}
+
+export function useCreateProjectLink(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ProjectLinkCreate) => api.createProjectLink(projectId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectLinkKeys.list(projectId) });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useUpdateProjectLink(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ linkId, data }: { linkId: string; data: ProjectLinkUpdate }) =>
+      api.updateProjectLink(projectId, linkId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectLinkKeys.list(projectId) });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useDeleteProjectLink(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (linkId: string) => api.deleteProjectLink(projectId, linkId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectLinkKeys.list(projectId) });
     },
     onError: onMutationError,
   });

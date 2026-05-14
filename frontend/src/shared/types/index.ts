@@ -399,6 +399,28 @@ export interface IssueRelationCreate {
   relation_type: RelationType;
 }
 
+// ── Project Links ──
+
+export interface ProjectLink {
+  id: string;
+  source_project_id: string;
+  source_project_name: string;
+  target_project_id: string;
+  target_project_name: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectLinkCreate {
+  target_project_id: string;
+  description: string;
+}
+
+export interface ProjectLinkUpdate {
+  description: string;
+}
+
 // ── Credentials ──
 
 export interface ProjectCredential {

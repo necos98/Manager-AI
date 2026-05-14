@@ -1,0 +1,10 @@
+name: "Memory"
+description: "Knowledge graph memory system for persistent context across sessions"
+transport: stdio
+command: "npx"
+args:
+  - "-y"
+  - "@modelcontextprotocol/server-memory"
+access_level: read_write
+timeout: 30
+options: []

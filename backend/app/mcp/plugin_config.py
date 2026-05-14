@@ -49,9 +49,15 @@ class PluginConfig(BaseModel):
         return f"{plugin_key}__"
 
 
+class ProjectPluginConfig(BaseModel):
+    """Per-project plugin instance config (v2). References catalog by key."""
+    enabled: bool = False
+    config: dict[str, str] = Field(default_factory=dict)
+
+
 class PluginsFile(BaseModel):
-    schema_version: int = 1
-    plugins: dict[str, PluginConfig] = Field(default_factory=dict)
+    schema_version: int = 2
+    plugins: dict[str, ProjectPluginConfig] = Field(default_factory=dict)
 
 
 def _plugins_yaml_path(project_path: str) -> Path:
@@ -63,15 +69,23 @@ def load_plugins(project_path: str) -> PluginsFile:
     raw = atomic.read_yaml(path) or {}
     if not raw:
         return PluginsFile()
+    version = raw.get("schema_version", 1)
     plugins_raw = raw.get("plugins", {}) or {}
-    plugins: dict[str, PluginConfig] = {}
+    plugins: dict[str, ProjectPluginConfig] = {}
     for key, cfg in plugins_raw.items():
         try:
-            plugins[key] = PluginConfig(**cfg)
+            if version >= 2:
+                plugins[key] = ProjectPluginConfig(**cfg)
+            else:
+                # V1: PluginConfig has enabled + env fields, migrate to v2 format
+                v1 = PluginConfig(**cfg)
+                plugins[key] = ProjectPluginConfig(
+                    enabled=v1.enabled,
+                    config=v1.env,
+                )
         except Exception:
-            # Skip invalid plugin entries so remaining plugins still load
             pass
-    return PluginsFile(plugins=plugins)
+    return PluginsFile(plugins=plugins, schema_version=2)
 
 
 def save_plugins(project_path: str, plugins_file: PluginsFile) -> None:
@@ -86,7 +100,7 @@ def save_plugins(project_path: str, plugins_file: PluginsFile) -> None:
     atomic.write_yaml(path, data)
 
 
-def get_plugin_config(project_path: str, plugin_name: str) -> PluginConfig | None:
+def get_plugin_config(project_path: str, plugin_name: str) -> ProjectPluginConfig | None:
     pf = load_plugins(project_path)
     return pf.plugins.get(plugin_name)
 
@@ -97,5 +111,17 @@ def set_plugin_enabled(project_path: str, plugin_name: str, enabled: bool) -> bo
     if cfg is None:
         return False
     cfg.enabled = enabled
+    save_plugins(project_path, pf)
+    return True
+
+
+def set_plugin_config(project_path: str, plugin_name: str, enabled: bool, config: dict[str, str]) -> bool:
+    pf = load_plugins(project_path)
+    cfg = pf.plugins.get(plugin_name)
+    if cfg is None:
+        pf.plugins[plugin_name] = ProjectPluginConfig(enabled=enabled, config=config)
+    else:
+        cfg.enabled = enabled
+        cfg.config = config
     save_plugins(project_path, pf)
     return True

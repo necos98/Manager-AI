@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Archive, Plus, Trash2 } from "lucide-react";
+import { Archive, ArrowRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -18,14 +18,14 @@ import {
 } from "@/shared/components/ui/select";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { useArchiveProject, useUpdateProject } from "@/features/projects/hooks";
+import { useArchiveProject, useCreateProjectLink, useDeleteProjectLink, useProjectLinks, useProjects, useUpdateProject, useUpdateProjectLink } from "@/features/projects/hooks";
 import { useSystemInfo } from "@/features/system/hooks";
 import {
   useCredentials,
   useDeleteCredential,
   useUpsertCredential,
 } from "@/features/projects/hooks-credentials";
-import type { Project } from "@/shared/types";
+import type { Project, ProjectLink } from "@/shared/types";
 
 const SHELL_OPTIONS = [
   { value: "__default__", label: "Default (MANAGER_AI_SHELL env or cmd.exe)" },
@@ -92,6 +92,19 @@ export function ProjectSettingsDialog({
     password: "",
   });
   const [credExpanded, setCredExpanded] = useState(false);
+
+  const { data: links } = useProjectLinks(open ? project.id : "");
+  const createLink = useCreateProjectLink(project.id);
+  const updateLink = useUpdateProjectLink(project.id);
+  const deleteLink = useDeleteProjectLink(project.id);
+  const { data: allProjects } = useProjects(false);
+
+  const [linkForm, setLinkForm] = useState({ target_project_id: "", description: "" });
+  const [addingLink, setAddingLink] = useState(false);
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [editDescription, setEditDescription] = useState("");
+
+  const availableTargets = (allProjects || []).filter(p => p.id !== project.id);
 
   const handleArchive = () => {
     const confirmed = window.confirm(
@@ -241,6 +254,142 @@ export function ProjectSettingsDialog({
               </p>
             </div>
           )}
+          <div className="pt-2 border-t">
+            <label className="text-sm font-medium">Linked Projects</label>
+            <p className="text-xs text-muted-foreground mt-1 mb-3">
+              Declare how this project relates to other projects. Links are directional.
+            </p>
+
+            {links && links.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {links.map((link: ProjectLink) => {
+                  const isSource = link.source_project_id === project.id;
+                  return (
+                    <div key={link.id} className="flex items-start justify-between rounded border px-3 py-2 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-medium">{link.source_project_name}</span>
+                          <ArrowRight className="size-3.5 text-muted-foreground shrink-0" />
+                          <span className="font-medium">{link.target_project_name}</span>
+                          {!isSource && <span className="text-xs text-muted-foreground">(incoming)</span>}
+                        </div>
+                        {editingLinkId === link.id ? (
+                          <div className="flex gap-2 mt-1">
+                            <Input
+                              className="h-7 text-xs"
+                              value={editDescription}
+                              onChange={(e) => setEditDescription(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  updateLink.mutate({ linkId: link.id, data: { description: editDescription } }, {
+                                    onSuccess: () => setEditingLinkId(null),
+                                  });
+                                }
+                                if (e.key === "Escape") setEditingLinkId(null);
+                              }}
+                              autoFocus
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-0.5">{link.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        {isSource && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => {
+                              setEditingLinkId(link.id);
+                              setEditDescription(link.description);
+                            }}
+                          >
+                            <Pencil className="size-3" />
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          disabled={deleteLink.isPending}
+                          onClick={() => deleteLink.mutate(link.id)}
+                        >
+                          <Trash2 className="size-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {addingLink ? (
+              <div className="space-y-2 rounded border p-3">
+                <Select
+                  value={linkForm.target_project_id}
+                  onValueChange={(v) => setLinkForm({ ...linkForm, target_project_id: v })}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue placeholder="Select target project..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTargets.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  placeholder="How are they linked? (e.g. exposes API for)"
+                  value={linkForm.description}
+                  onChange={(e) => setLinkForm({ ...linkForm, description: e.target.value })}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!linkForm.target_project_id || !linkForm.description.trim() || createLink.isPending}
+                    onClick={() => {
+                      createLink.mutate(linkForm, {
+                        onSuccess: () => {
+                          setLinkForm({ target_project_id: "", description: "" });
+                          setAddingLink(false);
+                          toast.success("Link created");
+                        },
+                      });
+                    }}
+                  >
+                    {createLink.isPending ? "Adding..." : "Add Link"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setAddingLink(false);
+                      setLinkForm({ target_project_id: "", description: "" });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setAddingLink(true)}
+              >
+                <Plus className="size-3.5 mr-1.5" />
+                Add Link
+              </Button>
+            )}
+          </div>
+
           <div className="pt-2 border-t">
             <label className="text-sm font-medium">Test Credentials</label>
             <p className="text-xs text-muted-foreground mt-1 mb-3">

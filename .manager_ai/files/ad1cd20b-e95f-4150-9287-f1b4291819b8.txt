@@ -1,0 +1,151 @@
+Analisi del Progetto Manager AI
+Architettura Attuale
+Il progetto è un'applicazione full-stack ben strutturata:
+Backend (FastAPI/Python):
+- Storage ibrido: progetti/memorie in SQLite, issue/task in file YAML+markdown
+- Sistema di hook event-driven (HookRegistry + ClaudeCodeExecutor)
+- MCP Server che espone 20+ tools a Claude Code
+- WebSocket per eventi real-time e terminali PTY
+- Service layer con sessioni async per-request
+Frontend (React/TypeScript):
+- Feature-based architecture con TanStack Router + Query
+- WebSocket event provider con auto-reconnect
+Cosa Manca per il Tuo Sistema "Company"
+Attualmente esiste solo:
+- Un singolo agente (Claude Code) che lavora su una issue alla volta
+- Hook post-processing che fire dopo transizioni di stato
+- Task tracking ma nessun execution engine automatico
+- SkillMeta.type ha già "agent" come opzione, ma la logica non è implementata
+---
+Suggerimenti Architetturali per il Sistema Company
+1. Modello Dati - Nuove Entità
+Company
+├── id, name, created_at
+├── employees (1:N)
+└── active_projects (N:N)
+Employee (Agente Specializzato)
+├── id, company_id, name, role
+├── skills: list[str]  # ["frontend", "backend", "testing", "docs"]
+├── max_concurrent_tasks: int
+├── status: "available" | "busy" | "offline"
+├── prompt_template_id: FK  # prompt personalizzato per ruolo
+├── current_task_id: FK (nullable)
+└── performance_metrics: JSON  # tasks completed, avg time, error rate
+TaskAssignment
+├── id, employee_id, task_id
+├── assigned_at, started_at, completed_at
+├── status: "assigned" | "in_progress" | "completed" | "failed"
+└── result_output: text
+2. Orchestrator Pattern (Raccomandato)
+┌─────────────────────────────────────────────────────┐
+│                  ORCHESTRATOR                       │
+│  (Agente principale - "Project Manager AI")         │
+│                                                     │
+│  Responsabilità:                                    │
+│  - Analizza issue incoming                          │
+│  - Decompone in sub-task                            │
+│  - Assegna task agli employee in base a:            │
+│    • skills richieste                               │
+│    • disponibilità                                  │
+│    • carico corrente                                │
+│  - Monitora progresso                               │
+│  - Gestisce fallimenti/retry                        │
+│  - Valuta output prima di completare                │
+└────────┬────────────────────────────────────────────┘
+         │ assegna/monitora
+    ┌────┴────┐
+    ▼         ▼
+┌────────┐ ┌────────┐ ┌────────┐
+│ Dev FE │ │ Dev BE │ │ Tester │  ← Employee Agents
+└────────┘ └────────┘ └────────┘
+3. Componenti Backend da Implementare
+Componente
+OrchestratorService
+EmployeeRegistry
+TaskDispatcher
+AgentExecutor
+QualityGate
+CompanyRouter
+EmployeeRouter
+4. Flusso di Lavoro Proposto
+1. Issue ACCEPTED → OrchestratorService viene notificato (hook)
+2. Orchestrator analizza plan.md e tasks
+3. Per ogni task:
+   a. Determina skill richieste (da metadata o LLM analysis)
+   b. Query EmployeeRegistry per employee disponibile con skill
+   c. Crea TaskAssignment
+   d. AgentExecutor spawn Claude Code con prompt specifico del ruolo
+4. Employee completa task → aggiorna status
+5. QualityGate valida output:
+   - Se OK → task COMPLETED
+   - Se KO → reassign o flag per review
+6. Quando tutti i task sono COMPLETED → Orchestrator completa issue
+5. Pattern "Always Listening"
+L'orchestrator deve essere un background service che:
+# services/orchestrator_service.py
+class OrchestratorService:
+    async def start(self):
+        """Loop principale che ascolta eventi"""
+        self._running = True
+        while self._running:
+            # 1. Controlla issue ACCEPTED senza assegnazioni
+            pending_issues = await self._find_pending_issues()
+            for issue in pending_issues:
+                await self._decompose_and_assign(issue)
+            
+            # 2. Controlla task stuck/in timeout
+            stuck_tasks = await self._find_stuck_tasks()
+            for task in stuck_tasks:
+                await self._handle_stuck_task(task)
+            
+            # 3. Controlla employee offline/busy da troppo
+            await self._check_employee_health()
+            
+            await asyncio.sleep(settings.orchestrator_poll_interval)  # es. 5s
+Alternativa migliore: usa il sistema di eventi esistente invece del polling:
+@hook(ISSUE_ACCEPTED)
+class IssueAcceptedHook(BaseHook):
+    async def execute(self, context):
+        await orchestrator_service.on_issue_accepted(context.issue_id)
+@hook(TASK_COMPLETED)  # nuovo evento
+class TaskCompletedHook(BaseHook):
+    async def execute(self, context):
+        await orchestrator_service.on_task_completed(context.task_id)
+6. Prompt Templates per Ruoli
+Ogni employee ha un prompt template che definisce il suo comportamento:
+# prompt_templates/frontend_developer.yaml
+role: "Frontend Developer"
+system_prompt: |
+  Sei un developer frontend specializzato in React/TypeScript.
+  Lavori solo su file nella cartella frontend/.
+  Devi seguire le convenzioni del progetto.
+  Dopo aver completato, aggiorna lo status del task.
+allowed_tools: ["mcp__ManagerAi__*"]
+allowed_paths: ["frontend/**"]
+skills: ["react", "typescript", "css", "testing"]
+7. Gestione Errori e Resilienza
+- Timeout per task: configurable per ruolo (es. 10min per task semplici, 30min per complessi)
+- Retry logic: max 3 retry con backoff esponenziale
+- Fallback: se un employee fallisce 3 volte, scala a employee con skill superiori
+- Dead letter queue: task che falliscono ripetutamente vanno in review manuale
+8. Integrazione con Esistente
+Il sistema si integra bene con l'architettura attuale:
+- Usa HookRegistry per triggerare l'orchestrator
+- Usa EventService per emettere eventi (employee_assigned, task_started, task_completed)
+- Usa ClaudeCodeExecutor come base per AgentExecutor (con prompt diversi per ruolo)
+- Storage file-based per issue/task rimane invariato
+- Nuove tabelle DB per company/employee/assignments
+9. Dashboard Frontend
+Nuove UI da aggiungere:
+- Company View: lista employee, stato, carico corrente
+- Task Board: Kanban con assegnazioni visive
+- Orchestrator Log: feed in tempo reale delle decisioni dell'orchestrator
+- Performance Metrics: grafici produttività per employee
+---
+Priorità di Implementazione (Suggerita)
+1. Phase 1: Modelli DB + API CRUD (company, employee, assignments)
+2. Phase 2: OrchestratorService base + hook integration
+3. Phase 3: AgentExecutor con prompt templates per ruolo
+4. Phase 4: TaskDispatcher con skill matching
+5. Phase 5: QualityGate + error handling
+6. Phase 6: Frontend dashboard

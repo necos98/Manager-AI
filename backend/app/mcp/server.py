@@ -676,8 +676,9 @@ async def read_project_file(project_id: str, file_id: str, offset: int = 0, max_
 # ── Playwright / Credential tools ──────────────────────────────────────────
 
 from app.services.credential_service import CredentialService
+from app.mcp.catalog import catalog_loader
 from app.mcp.plugin_manager import plugin_manager
-from app.mcp.plugin_config import load_plugins, get_plugin_config
+from app.mcp.plugin_config import load_plugins, get_plugin_config, PluginsFile
 
 
 @mcp.tool(description=_desc["tool.get_project_url.description"])
@@ -739,7 +740,32 @@ async def list_plugins(project_id: str) -> dict:
             project = await ProjectService(session).get_by_id(project_id)
         except AppError as e:
             return {"error": e.message}
-    return {"plugins": plugin_manager.get_status(project_id)}
+
+    statuses = plugin_manager.get_status(project_id)
+    config = load_plugins(project.path) if project else PluginsFile()
+
+    plugins = []
+    for key, cat in catalog_loader.plugins.items():
+        proj_cfg = config.plugins.get(key)
+        running = next((s for s in statuses if s["name"] == key), None)
+        plugins.append({
+            "name": key,
+            "display_name": cat.name,
+            "description": cat.description,
+            "enabled": proj_cfg.enabled if proj_cfg else False,
+            "connected": running["connected"] if running else False,
+            "tool_count": running["tool_count"] if running else 0,
+            "access_level": cat.access_level.value,
+            "catalog": True,
+        })
+
+    return {
+        "plugins": plugins,
+        "catalog_available": [
+            k for k in catalog_loader.plugins
+            if k not in config.plugins or not config.plugins[k].enabled
+        ],
+    }
 
 
 @mcp.tool(description=_desc["tool.get_plugin_config.description"])
@@ -749,19 +775,23 @@ async def get_plugin_config(project_id: str, plugin_name: str) -> dict:
             project = await ProjectService(session).get_by_id(project_id)
         except AppError as e:
             return {"error": e.message}
-    cfg = get_plugin_config(project.path, plugin_name)
-    if cfg is None:
+    proj_cfg = get_plugin_config(project.path, plugin_name)
+    if proj_cfg is None:
         return {"error": f"Plugin {plugin_name} not found"}
+    cat = catalog_loader.get(plugin_name)
     return {
-        "name": cfg.name,
-        "enabled": cfg.enabled,
-        "transport": cfg.transport.value,
-        "command": cfg.command if cfg.transport.value == "stdio" else None,
-        "args": cfg.args if cfg.transport.value == "stdio" else None,
-        "url": cfg.url if cfg.transport.value == "http" else None,
-        "env_keys": list(cfg.env.keys()),
-        "access_level": cfg.access_level.value,
-        "timeout": cfg.timeout,
+        "name": plugin_name,
+        "display_name": cat.name if cat else plugin_name,
+        "description": cat.description if cat else "",
+        "enabled": proj_cfg.enabled,
+        "transport": cat.transport.value if cat else "unknown",
+        "command": cat.command if cat and cat.transport.value == "stdio" else None,
+        "args": cat.args if cat and cat.transport.value == "stdio" else None,
+        "url": cat.url if cat and cat.transport.value == "http" else None,
+        "config_keys": list(proj_cfg.config.keys()),
+        "access_level": cat.access_level.value if cat else "unknown",
+        "timeout": cat.timeout if cat else 30,
+        "catalog": cat is not None,
     }
 
 
@@ -772,6 +802,9 @@ async def enable_plugin(project_id: str, plugin_name: str) -> dict:
             project = await ProjectService(session).get_by_id(project_id)
         except AppError as e:
             return {"error": e.message}
+    cat = catalog_loader.get(plugin_name)
+    if cat is None:
+        return {"error": f"Plugin '{plugin_name}' not found in catalog. Available: {list(catalog_loader.plugins.keys())}"}
     success = await plugin_manager.enable_plugin(
         project_id, project.path, plugin_name, mcp
     )

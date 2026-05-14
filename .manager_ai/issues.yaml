@@ -77,6 +77,48 @@ issues:
   priority: 3
   created_at: '2026-05-04T12:16:01.823152'
   updated_at: '2026-05-04T12:50:12.057695'
+- id: 687f959b-ff21-41b8-a4ca-06cdd4c09dd8
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Dashboard uses list_issues_full() — wastes 4N markdown reads per request
+  status: Finished
+  priority: 1
+  created_at: '2026-05-12T14:18:35.393405'
+  updated_at: '2026-05-12T14:33:47.266497'
+- id: 49b4b5df-6358-41c7-85a2-69acbba5e268
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Cache resource_consistency health check result to avoid redundant I/O
+  status: Finished
+  priority: 1
+  created_at: '2026-05-12T14:18:50.366171'
+  updated_at: '2026-05-12T14:34:03.150787'
+- id: 085e16d8-9346-48b5-861f-c8593e0a7c9d
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Per-project cache invalidation instead of global clear
+  status: Finished
+  priority: 2
+  created_at: '2026-05-12T14:19:00.195979'
+  updated_at: '2026-05-12T14:53:15.831577'
+- id: 892a12b4-f7df-4c6d-946a-be387ab834eb
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Raise ReadCache TTL from 30s to 300s for issue/memory/file caches
+  status: Finished
+  priority: 3
+  created_at: '2026-05-12T14:19:12.463821'
+  updated_at: '2026-05-12T14:43:45.104393'
+- id: b5cf186d-62de-45f7-b0ea-1d45f620c58d
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Cache _resolve_path project_id lookups per request
+  status: Finished
+  priority: 4
+  created_at: '2026-05-12T14:19:27.722408'
+  updated_at: '2026-05-12T14:42:38.098462'
+- id: c15a4e35-560c-4cf7-909a-8c04da1361b2
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Add prewarm_project_cache for batch issue loading
+  status: Finished
+  priority: 5
+  created_at: '2026-05-12T14:19:36.895427'
+  updated_at: '2026-05-12T14:59:00.546294'
 - id: 1d2a2422-6aac-4674-8fca-f5b01774ac76
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Audio-to-text transcription for uploaded files
@@ -93,8 +135,36 @@ issues:
   updated_at: '2026-05-13T08:25:19.676590'
 - id: 4d8536d2-7b1f-444a-9fc2-e69b1227c970
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Project Linking with Relationship Types
+  status: Accepted
+  priority: 3
+  created_at: '2026-05-13T07:34:11.416199'
+  updated_at: '2026-05-14T07:48:46.453300'
+- id: 0df22702-2f93-414d-8f0c-2c3e833b0e1a
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Regenerate issues.yaml and memories.yaml on startup from directory files
+  status: Finished
+  priority: 3
+  created_at: '2026-05-13T09:19:35.360175'
+  updated_at: '2026-05-13T09:37:58.595494'
+- id: 48c90ba2-0998-4f31-8953-2a1eb005d5ef
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Fix cache invalidation and rebuild gaps after index regeneration
+  status: Finished
+  priority: 2
+  created_at: '2026-05-13T13:14:57.693528'
+  updated_at: '2026-05-13T13:54:51.931964'
+- id: 7f575b89-0264-4775-82c3-89999e031c10
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Built-in MCP Plugin Catalog with User-Configurable Options
+  status: Finished
+  priority: 3
+  created_at: '2026-05-14T07:35:37.391125'
+  updated_at: '2026-05-14T08:27:49.669083'
+- id: a82cbe33-bc59-4196-9a8f-72f36af17c86
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: null
   status: New
   priority: 3
-  created_at: '2026-05-13T07:34:11.416199'
-  updated_at: '2026-05-13T07:34:11.416199'
+  created_at: '2026-05-14T07:49:49.700437'
+  updated_at: '2026-05-14T07:49:49.700437'

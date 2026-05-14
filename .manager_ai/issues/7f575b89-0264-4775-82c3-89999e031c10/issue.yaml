@@ -1,0 +1,88 @@
+schema_version: 1
+id: 7f575b89-0264-4775-82c3-89999e031c10
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Built-in MCP Plugin Catalog with User-Configurable Options
+status: Finished
+priority: 3
+created_at: '2026-05-14T07:35:37.391125'
+updated_at: '2026-05-14T08:27:49.669083'
+tasks:
+- id: 973610e3-88ee-4de3-8823-0e9edbe3767e
+  name: 'Task 1: Catalog models + CatalogLoader'
+  status: Completed
+  order: 0
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:07:15'
+- id: 8711a327-8a41-471c-96fe-37a0705050d2
+  name: 'Task 2: Plugin config v2 schema + migration'
+  status: Completed
+  order: 1
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:08:54'
+- id: d18f70b6-04d3-45b7-945d-b186cc90f142
+  name: 'Task 3: PluginManager merge logic'
+  status: Completed
+  order: 2
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:10:13'
+- id: 7fab6e2a-495a-4e71-9a6e-2c98b571be0d
+  name: 'Task 4: API endpoints — catalog + modified plugins'
+  status: Completed
+  order: 3
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:11:57'
+- id: dc48b517-14ac-4db9-bb78-5bedc3e3d471
+  name: 'Task 5: MCP tool updates'
+  status: Completed
+  order: 4
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:13:23'
+- id: c78fcabf-08a1-4417-891b-83250e1a6435
+  name: 'Task 6: Sample plugin manifests'
+  status: Completed
+  order: 5
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:13:53'
+- id: 33e6b501-4289-4f03-9b47-6538c749938c
+  name: 'Task 7: Watcher integration'
+  status: Completed
+  order: 6
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:14:39'
+- id: b70018df-e73b-483e-af67-45545133c03b
+  name: 'Task 8: Frontend API client + types'
+  status: Completed
+  order: 7
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:15:25'
+- id: 42ac9df1-8e01-471f-a5cb-f3bb10982b4c
+  name: 'Task 9: Frontend React Query hooks'
+  status: Completed
+  order: 8
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:16:14'
+- id: 0b198af4-477b-4d31-a748-7da2efa90a25
+  name: 'Task 10: Frontend Plugin catalog UI rewrite'
+  status: Completed
+  order: 9
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:18:23'
+- id: bfd1aabf-88f7-4ecb-9363-a7f81d3e5cab
+  name: 'Task 11: Startup wiring'
+  status: Completed
+  order: 10
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:23:50'
+- id: 413bc524-6b2b-42f4-b02e-a9f317cb2aba
+  name: 'Task 12: Tests'
+  status: Completed
+  order: 11
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:26:31'
+- id: 3c4b9766-7b9a-4281-aea4-09de70efa961
+  name: 'Task 13: Cleanup + final verification'
+  status: Completed
+  order: 12
+  created_at: '2026-05-14T08:05:39'
+  updated_at: '2026-05-14T08:27:17'
+relations: []
