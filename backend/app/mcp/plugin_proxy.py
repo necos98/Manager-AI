@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import logging
 from typing import Any
 
@@ -29,7 +30,7 @@ def register_plugin_tools(
         proxy_name = f"{plugin_key}__{tool.name}"
         description = f"{access_tag} {tool.description or ''}".strip()
 
-        fn = _make_proxy_function(proxy_name, tool.name, client)
+        fn = _make_proxy_function(proxy_name, tool.name, client, tool)
         mcp.add_tool(fn, name=proxy_name, description=description)
         registered += 1
         logger.info("Registered proxy tool: %s", proxy_name)
@@ -41,11 +42,23 @@ def _make_proxy_function(
     proxy_name: str,
     tool_name: str,
     client: PluginClient,
+    tool: Tool,
 ) -> Any:
-    """Generate an async proxy function using **kwargs without annotations."""
+    """Generate an async proxy function with explicit parameters from tool.inputSchema."""
+    props = tool.inputSchema.get("properties", {})
+    required = set(tool.inputSchema.get("required", []))
+
+    params = []
+    for name in props:
+        default = inspect.Parameter.empty if name in required else None
+        params.append(
+            inspect.Parameter(name, inspect.Parameter.KEYWORD_ONLY, default=default)
+        )
+
     async def proxy(**kwargs):
         return await client.call_tool(tool_name, kwargs)
 
+    proxy.__signature__ = inspect.Signature(params)
     proxy.__name__ = proxy_name
     return proxy
 
