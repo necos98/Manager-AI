@@ -122,6 +122,13 @@ class PluginManager:
         async def _pre_connect():
             try:
                 await client.connect()
+                if client._tools:
+                    from app.mcp.plugin_proxy import build_gateway_description, _update_tool_description
+                    proxy_name = f"{key}__call"
+                    new_desc = build_gateway_description(
+                        key, cfg.access_level, (cfg.name or key), client._tools
+                    )
+                    _update_tool_description(mcp_instance, proxy_name, new_desc)
             except BaseException:
                 logger.debug("Plugin %s background pre-connect failed (will retry on first call)", key)
 
@@ -208,6 +215,13 @@ class PluginManager:
             async def _pre_connect():
                 try:
                     await new_client.connect()
+                    if new_client._tools:
+                        from app.mcp.plugin_proxy import build_gateway_description, _update_tool_description
+                        proxy_name = f"{plugin_key}__call"
+                        new_desc = build_gateway_description(
+                            plugin_key, runtime_cfg.access_level, (runtime_cfg.name or plugin_key), new_client._tools
+                        )
+                        _update_tool_description(mcp_instance, proxy_name, new_desc)
                 except BaseException:
                     logger.debug("Plugin %s background pre-connect failed (will retry on first call)", plugin_key)
 

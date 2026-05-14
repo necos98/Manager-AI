@@ -152,6 +152,15 @@ def register_plugin_gateway(
         except BaseException as exc:
             logger.error("Plugin %s connect/ensure failed in gateway: %s", plugin_key, exc)
             return {"error": f"Plugin {plugin_key} connection failed: {exc}"}
+        # Update description with discovered tools on first connect
+        try:
+            if client._tools:
+                new_desc = build_gateway_description(
+                    plugin_key, access_level, plugin_description, client._tools
+                )
+                _update_tool_description(mcp, proxy_name, new_desc)
+        except Exception:
+            pass
         try:
             return await client.call_tool(tool_name, arguments or {})
         except BaseException as exc:
@@ -168,6 +177,58 @@ def register_plugin_gateway(
     client.set_registered_proxy_names([proxy_name])
     logger.info("Registered plugin gateway (lazy): %s", proxy_name)
     return 1
+
+
+def build_gateway_description(
+    plugin_key: str,
+    access_level: AccessLevel,
+    plugin_description: str,
+    tools: list,
+) -> str:
+    """Build gateway tool description with available tools and their parameters."""
+    access_tag = f"[{plugin_key} plugin — {access_level.value}]"
+    base = f"{access_tag} {plugin_description}".strip()
+
+    if not tools:
+        return base
+
+    lines = [base, "", "Available tools:"]
+    for tool in tools:
+        name = tool.name if hasattr(tool, "name") else tool.get("name", "?")
+        desc = (tool.description if hasattr(tool, "description") else tool.get("description", "")) or ""
+
+        schema = (tool.inputSchema if hasattr(tool, "inputSchema") else tool.get("inputSchema", {})) or {}
+        properties = schema.get("properties", {})
+        required = set(schema.get("required", []))
+
+        if properties:
+            param_parts = []
+            for pname, pinfo in properties.items():
+                ptype = pinfo.get("type", "any") if isinstance(pinfo, dict) else "any"
+                req = "required" if pname in required else "optional"
+                pdesc = (pinfo.get("description", "") if isinstance(pinfo, dict) else "")
+                param_str = f"{pname} ({ptype}, {req})"
+                if pdesc:
+                    param_str += f" - {pdesc}"
+                param_parts.append(param_str)
+            params = "; ".join(param_parts)
+        else:
+            params = "(none)"
+
+        tool_line = f"- {name}"
+        if desc:
+            tool_line += f": {desc}"
+        tool_line += f". Parameters: {params}"
+        lines.append(tool_line)
+
+    return "\n".join(lines)
+
+
+def _update_tool_description(mcp: FastMCP, tool_name: str, new_description: str) -> None:
+    """Update the description of an already-registered tool on FastMCP."""
+    tool_mgr = mcp._tool_manager
+    if tool_name in tool_mgr._tools:
+        tool_mgr._tools[tool_name].description = new_description
 
 
 def unregister_plugin_tools(

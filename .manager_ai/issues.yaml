@@ -182,3 +182,17 @@ issues:
   priority: 3
   created_at: '2026-05-14T14:37:55.943438'
   updated_at: '2026-05-14T14:45:23.487827'
+- id: b0a23ae9-feec-4cc5-b7ef-abfdcdba8fd8
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Plugin gateway tool descriptions lack available tool/parameter info
+  status: Finished
+  priority: 3
+  created_at: '2026-05-14T21:14:40.140980'
+  updated_at: '2026-05-14T21:28:22.680241'
+- id: 60d96667-4b16-4270-8a0e-09b9e7dc9226
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: null
+  status: New
+  priority: 3
+  created_at: '2026-05-14T21:15:39.247171'
+  updated_at: '2026-05-14T21:15:39.247171'

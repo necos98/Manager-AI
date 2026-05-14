@@ -1,0 +1,3 @@
+Un agente LLM mi ha detto che non riesce a capire quali tool e quali parametri usare per eseguire una query con l'utilizzo di plugin mcp mysql. Ti incollo la sua risposta " Tool name: non query, ma execute_query. Il nome non era documentato — l'ho scoperto per brute force provando ~15 nomi diversi.
+  2. Param name: il parametro si chiama query, non sql. Primo tentativo con execute_query ha fallito perché usavo {"sql": "..."} invece di
+  {"query": "..."}."
