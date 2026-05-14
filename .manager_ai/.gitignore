@@ -1,3 +1,6 @@
 .cache/
 *.tmp
 .migration_done
+issues.yaml
+memories.yaml
+files.yaml
