@@ -156,7 +156,7 @@ def remove_link(project_path: str, from_id: str, to_id: str, relation: str) -> b
     return True
 
 
-def rebuild_memories_index(project_path: str) -> None:
+def rebuild_memories_index(project_path: str) -> int:
     mem_dir = paths.memories_dir(project_path)
     entries: list[dict[str, Any]] = []
     if mem_dir.exists():
@@ -177,6 +177,7 @@ def rebuild_memories_index(project_path: str) -> None:
     entries.sort(key=lambda e: (e["created_at"], e["id"]))
     atomic.write_yaml(paths.memories_index(project_path), {"schema_version": 1, "memories": entries})
     memory_cache.invalidate(f"{project_path}:__index__")
+    return len(entries)
 
 
 def invalidate_memory_cache(project_path: str) -> None:

@@ -1,0 +1,3 @@
+Data integrity.
+
+Ti spiego cosa succede attualmente. Essendo che le issue e le memories vengono salvate su file del progetto all'interno della cartella ".manager_ai", a volte con git il file "issues.yaml" potrebbe corrompersi, perdendo traccia di alcune issue (mi è già capitato). Vorrei che sia per le issue che per le memories, il file issues.yaml e memories.yaml siano ricreati ogni volta allo startup di Manager AI e quindi di conseguenza non vengano tracciati in git, ma inseriti nel .gitignore. L'unica fonte di verità sono appunto le cartelle con il file issue.yaml.

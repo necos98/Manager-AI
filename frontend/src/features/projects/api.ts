@@ -62,6 +62,16 @@ export interface CodebaseIndexStatus {
   file_count: number;
 }
 
+export interface RebuildIndexResponse {
+  issues: number;
+  memories: number;
+  files: number;
+}
+
+export function rebuildIndex(projectId: string): Promise<RebuildIndexResponse> {
+  return apiPost<RebuildIndexResponse>(`/projects/${projectId}/rebuild-index`);
+}
+
 export function fetchCodebaseIndexStatus(projectId: string): Promise<CodebaseIndexStatus> {
   return apiGet<CodebaseIndexStatus>(`/projects/${projectId}/codebase-index-status`);
 }

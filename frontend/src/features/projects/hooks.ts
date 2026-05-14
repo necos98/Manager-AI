@@ -107,6 +107,18 @@ export function useCodebaseIndexStatus(projectId: string) {
   });
 }
 
+export function useRebuildIndex(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.rebuildIndex(projectId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["projects", projectId, "health"] });
+      toast.success(`Index rebuilt: ${data.issues} issues, ${data.memories} memories, ${data.files} files`);
+    },
+    onError: onMutationError,
+  });
+}
+
 export function useTriggerCodebaseIndex(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({

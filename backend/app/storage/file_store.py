@@ -93,10 +93,11 @@ def write_extracted_text(project_path: str, file_id: str, text: str) -> None:
     file_cache.invalidate(f"{project_path}:{file_id}")
 
 
-def rebuild_files_index(project_path: str) -> None:
+def rebuild_files_index(project_path: str) -> int:
     entries = _load_entries(project_path)
     _write_files_index(project_path, entries)
     file_cache.invalidate(f"{project_path}:__index__")
+    return len(entries)
 
 
 def invalidate_file_cache(project_path: str) -> None:

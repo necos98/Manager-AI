@@ -11,6 +11,7 @@ import {
   useInstallClaudeResources,
   useInstallMcp,
   useInstallPlaywrightMcp,
+  useRebuildIndex,
 } from "@/features/projects/hooks";
 import { terminalKeys } from "@/features/terminals/hooks";
 
@@ -57,6 +58,7 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
   const [reinstallingResources, setReinstallingResources] = useState(false);
   const [reinstallingMcp, setReinstallingMcp] = useState(false);
   const [reinstallingPlaywright, setReinstallingPlaywright] = useState(false);
+  const rebuildIndex = useRebuildIndex(projectId);
 
   const health = healthQuery.data;
 
@@ -259,6 +261,35 @@ export function HealthPanel({ projectId }: HealthPanelProps) {
             </Button>
           }
         />
+      </div>
+
+      <div className="border-t pt-4">
+        <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">Maintenance</p>
+        <div className="rounded-md border p-4">
+          <div className="flex items-start gap-3">
+            <RefreshCw className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-sm">Rebuild Index</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Rebuild issues, memories, and files YAML indexes from directory files.
+                Use if issues are missing from the list after git operations.
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => rebuildIndex.mutate()}
+              disabled={rebuildIndex.isPending}
+            >
+              {rebuildIndex.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              {rebuildIndex.isPending ? "Rebuilding..." : "Rebuild"}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
