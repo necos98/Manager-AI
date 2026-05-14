@@ -203,3 +203,13 @@ memories:
   created_at: '2026-05-14T14:45:36.136796'
   updated_at: '2026-05-14T14:45:36.136796'
   links: []
+- id: 630ab582-adb5-4b9a-860a-1de53b8385de
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Plugin gateway description must include discovered tool list + parameter schemas
+  parent_id: null
+  created_at: '2026-05-14T21:28:42.700456'
+  updated_at: '2026-05-14T21:28:42.700456'
+  links:
+  - to_id: b9e05112-f7a4-479e-838d-49fee1be6f21
+    relation: complements
+    created_at: '2026-05-14T21:28:49.655416'
