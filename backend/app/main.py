@@ -33,7 +33,25 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-mcp_app = mcp.streamable_http_app()
+@asynccontextmanager
+async def _noop_lifespan(_app):
+    """No-op lifespan for the mounted StreamableHTTP Starlette app.
+
+    The real session-manager lifecycle is driven by the main FastAPI lifespan
+    below (via mcp.session_manager.run()).  The mounted app MUST NOT have its
+    own lifespan because Starlette does not enter Mounted-app lifespans and
+    we don't want two callers competing for the single-run session manager.
+    """
+    yield
+
+
+# Create the MCP StreamableHTTP ASGI app so the session manager is initialized.
+_streamable_app = mcp.streamable_http_app()
+# Clear the lifespan on the mounted app — we manage the session manager
+# explicitly in the main lifespan.  Without this, Starlette may try to use
+# the mounted app's lifespan (which also calls session_manager.run()),
+# leading to "can only be called once" errors that tear down the task group.
+_streamable_app.router.lifespan_context = _noop_lifespan
 
 
 @asynccontextmanager
@@ -129,7 +147,7 @@ app.include_router(plugins.catalog_router)
 app.include_router(network.router)
 app.include_router(system.router)
 
-app.mount("/mcp", mcp_app)
+app.mount("/mcp", _streamable_app)
 
 
 @app.get("/health")

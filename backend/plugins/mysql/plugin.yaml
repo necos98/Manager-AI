@@ -24,7 +24,7 @@ options:
   - key: MYSQL_PASSWORD
     label: "Password"
     type: secret
-    required: true
+    required: false
   - key: MYSQL_DATABASE
     label: "Database"
     type: string

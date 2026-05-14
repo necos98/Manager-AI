@@ -52,7 +52,7 @@ class MigrationSummary:
 async def migrate_all_projects(session_factory: Callable[[], AsyncSession]) -> list[MigrationSummary]:
     results: list[MigrationSummary] = []
     async with session_factory() as session:
-        projects = (await session.execute(select(Project))).scalars().all()
+        projects = (await session.execute(select(Project).where(Project.archived_at.is_(None)))).scalars().all()
         for project in projects:
             try:
                 summary = await migrate_project(session, project)
