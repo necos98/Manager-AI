@@ -56,3 +56,10 @@ export function useTogglePlugin(projectId: string) {
     onError: onMutationError,
   });
 }
+
+export function useTestPluginConnection(projectId: string) {
+  return useMutation({
+    mutationFn: ({ key, config }: { key: string; config: Record<string, string> }) =>
+      api.testPluginConnection(projectId, key, config),
+  });
+}

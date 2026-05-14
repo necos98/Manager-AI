@@ -1,0 +1,32 @@
+name: "MySQL Database"
+description: "Read-only SQL queries and schema inspection on MySQL databases"
+transport: stdio
+command: "uvx"
+args:
+  - "mcp-server-mysql"
+access_level: read_only
+timeout: 30
+options:
+  - key: MYSQL_HOST
+    label: "Host"
+    type: string
+    required: true
+    placeholder: "localhost"
+  - key: MYSQL_PORT
+    label: "Port"
+    type: string
+    required: false
+    default: "3306"
+  - key: MYSQL_USER
+    label: "Username"
+    type: string
+    required: true
+  - key: MYSQL_PASSWORD
+    label: "Password"
+    type: secret
+    required: true
+  - key: MYSQL_DATABASE
+    label: "Database"
+    type: string
+    required: true
+    placeholder: "my_database"
