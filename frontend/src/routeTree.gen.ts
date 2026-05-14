@@ -18,6 +18,7 @@ import { Route as ProjectsNewRouteImport } from "./routes/projects/new"
 import { Route as ProjectsArchivedRouteImport } from "./routes/projects/archived"
 import { Route as ProjectsProjectIdRouteImport } from "./routes/projects/$projectId"
 import { Route as ProjectsProjectIdVariablesRouteImport } from "./routes/projects/$projectId/variables"
+import { Route as ProjectsProjectIdPluginsRouteImport } from "./routes/projects/$projectId/plugins"
 import { Route as ProjectsProjectIdMemoriesRouteImport } from "./routes/projects/$projectId/memories"
 import { Route as ProjectsProjectIdLibraryRouteImport } from "./routes/projects/$projectId/library"
 import { Route as ProjectsProjectIdIssuesRouteImport } from "./routes/projects/$projectId/issues"
@@ -73,6 +74,12 @@ const ProjectsProjectIdVariablesRoute =
   ProjectsProjectIdVariablesRouteImport.update({
     id: "/variables",
     path: "/variables",
+    getParentRoute: () => ProjectsProjectIdRoute,
+  } as any)
+const ProjectsProjectIdPluginsRoute =
+  ProjectsProjectIdPluginsRouteImport.update({
+    id: "/plugins",
+    path: "/plugins",
     getParentRoute: () => ProjectsProjectIdRoute,
   } as any)
 const ProjectsProjectIdMemoriesRoute =
@@ -149,6 +156,7 @@ export interface FileRoutesByFullPath {
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
   "/projects/$projectId/memories": typeof ProjectsProjectIdMemoriesRoute
+  "/projects/$projectId/plugins": typeof ProjectsProjectIdPluginsRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
   "/projects/$projectId/issues/": typeof ProjectsProjectIdIssuesIndexRoute
@@ -169,6 +177,7 @@ export interface FileRoutesByTo {
   "/projects/$projectId/health": typeof ProjectsProjectIdHealthRoute
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
   "/projects/$projectId/memories": typeof ProjectsProjectIdMemoriesRoute
+  "/projects/$projectId/plugins": typeof ProjectsProjectIdPluginsRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesIndexRoute
@@ -191,6 +200,7 @@ export interface FileRoutesById {
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
   "/projects/$projectId/memories": typeof ProjectsProjectIdMemoriesRoute
+  "/projects/$projectId/plugins": typeof ProjectsProjectIdPluginsRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
   "/projects/$projectId/issues/": typeof ProjectsProjectIdIssuesIndexRoute
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | "/projects/$projectId/issues"
     | "/projects/$projectId/library"
     | "/projects/$projectId/memories"
+    | "/projects/$projectId/plugins"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
     | "/projects/$projectId/issues/"
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | "/projects/$projectId/health"
     | "/projects/$projectId/library"
     | "/projects/$projectId/memories"
+    | "/projects/$projectId/plugins"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
     | "/projects/$projectId/issues"
@@ -255,6 +267,7 @@ export interface FileRouteTypes {
     | "/projects/$projectId/issues"
     | "/projects/$projectId/library"
     | "/projects/$projectId/memories"
+    | "/projects/$projectId/plugins"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
     | "/projects/$projectId/issues/"
@@ -334,6 +347,13 @@ declare module "@tanstack/react-router" {
       path: "/variables"
       fullPath: "/projects/$projectId/variables"
       preLoaderRoute: typeof ProjectsProjectIdVariablesRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
+    "/projects/$projectId/plugins": {
+      id: "/projects/$projectId/plugins"
+      path: "/plugins"
+      fullPath: "/projects/$projectId/plugins"
+      preLoaderRoute: typeof ProjectsProjectIdPluginsRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
     "/projects/$projectId/memories": {
@@ -434,6 +454,7 @@ interface ProjectsProjectIdRouteChildren {
   ProjectsProjectIdIssuesRoute: typeof ProjectsProjectIdIssuesRouteWithChildren
   ProjectsProjectIdLibraryRoute: typeof ProjectsProjectIdLibraryRoute
   ProjectsProjectIdMemoriesRoute: typeof ProjectsProjectIdMemoriesRoute
+  ProjectsProjectIdPluginsRoute: typeof ProjectsProjectIdPluginsRoute
   ProjectsProjectIdVariablesRoute: typeof ProjectsProjectIdVariablesRoute
 }
 
@@ -446,6 +467,7 @@ const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
   ProjectsProjectIdIssuesRoute: ProjectsProjectIdIssuesRouteWithChildren,
   ProjectsProjectIdLibraryRoute: ProjectsProjectIdLibraryRoute,
   ProjectsProjectIdMemoriesRoute: ProjectsProjectIdMemoriesRoute,
+  ProjectsProjectIdPluginsRoute: ProjectsProjectIdPluginsRoute,
   ProjectsProjectIdVariablesRoute: ProjectsProjectIdVariablesRoute,
 }
 
