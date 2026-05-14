@@ -673,6 +673,33 @@ async def read_project_file(project_id: str, file_id: str, offset: int = 0, max_
 # search_project_files removed — LLM greps .manager_ai/files/*.txt directly.
 
 
+# ── Project Link tools ──────────────────────────────────────────────────────
+
+from app.services.project_link_service import ProjectLinkService
+
+
+@mcp.tool(description=_desc["tool.get_project_links.description"])
+async def get_project_links(project_id: str) -> dict:
+    async with async_session() as session:
+        svc = ProjectLinkService(session)
+        links = await svc.list_for_project(project_id)
+        return {
+            "links": [
+                {
+                    "id": link.id,
+                    "source_project_id": link.source_project_id,
+                    "source_project_name": link.source_project.name,
+                    "target_project_id": link.target_project_id,
+                    "target_project_name": link.target_project.name,
+                    "description": link.description,
+                    "created_at": link.created_at.isoformat() if link.created_at else None,
+                    "updated_at": link.updated_at.isoformat() if link.updated_at else None,
+                }
+                for link in links
+            ]
+        }
+
+
 # ── Playwright / Credential tools ──────────────────────────────────────────
 
 from app.services.credential_service import CredentialService

@@ -2,6 +2,7 @@ Start working on the issue with ID: $ARGUMENTS
 
 1. Call the "Manager_AI" MCP tool `get_issue_details` with the provided issue ID and project_id that you can find in the file "manager.json" in the root of the project to fetch full issue information.
 2. **Memory read (MUST)**. Run `Grep -ri "<3–5 keywords from issue description>" .manager_ai/memories/` on the project root. If there are hits, `Read` the relevant `.manager_ai/memories/<id>.md` files and factor them into spec/plan/implementation. Skip only for trivial issues (typo fix, rename).
+2b. **Project links check (MUST)**. Call `get_project_links` to discover linked projects. If the current project is linked to others, factor those relationships into your analysis: a change here could impact linked projects. This helps understand cross-project impact before writing spec/plan.
 3. Based on the issue's current status, continue the pipeline:
    - **New / Declined**: Analyze the issue, set a name if missing. **You MUST invoke the `superpowers:brainstorming` skill** before writing the specification, then save the result via `create_issue_spec`. **Do NOT create local `.md` files** for the spec — always use the Manager AI MCP tools.
    - **Reasoning**: Review the spec. **You MUST invoke the `superpowers:writing-plans` skill** before creating the implementation plan, then save the result via `create_issue_plan` with atomic tasks (`create_plan_tasks`). **Do NOT create local `.md` files** for the plan — always use the Manager AI MCP tools.

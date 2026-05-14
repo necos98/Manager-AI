@@ -2,10 +2,10 @@ schema_version: 1
 id: 4d8536d2-7b1f-444a-9fc2-e69b1227c970
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Project Linking with Relationship Types
-status: Accepted
+status: Finished
 priority: 3
 created_at: '2026-05-13T07:34:11.416199'
-updated_at: '2026-05-14T07:48:46.453300'
+updated_at: '2026-05-14T08:49:25.264964'
 tasks:
 - id: 7703f01c-b8cd-444a-bea1-5357aa85331e
   name: Create ProjectLink model and migration
@@ -57,8 +57,14 @@ tasks:
   updated_at: '2026-05-14T07:54:48'
 - id: af3a327a-a5d1-44ad-b6e2-6b105c54e317
   name: Integration smoke test
-  status: In Progress
+  status: Completed
   order: 8
   created_at: '2026-05-14T07:48:34'
-  updated_at: '2026-05-14T07:54:50'
+  updated_at: '2026-05-14T08:48:40'
+- id: 3af4ed99-8651-4d28-b016-6512635db773
+  name: Add MCP tool get_project_links and update CLAUDE.md
+  status: Completed
+  order: 9
+  created_at: '2026-05-14T08:48:42'
+  updated_at: '2026-05-14T08:48:58'
 relations: []
