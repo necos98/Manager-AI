@@ -172,3 +172,17 @@ memories:
   created_at: '2026-05-14T08:28:28.215787'
   updated_at: '2026-05-14T08:28:28.215787'
   links: []
+- id: b48b6040-adfc-4102-97cc-ff478745ee74
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Project links are directional, not bidirectional
+  parent_id: null
+  created_at: '2026-05-14T08:49:39.048716'
+  updated_at: '2026-05-14T08:49:39.048716'
+  links: []
+- id: 040a8a96-677b-433c-b683-ab3eeae5ca8f
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: MCP tools must surface cross-project context to LLM
+  parent_id: null
+  created_at: '2026-05-14T08:49:44.707526'
+  updated_at: '2026-05-14T08:49:44.707526'
+  links: []

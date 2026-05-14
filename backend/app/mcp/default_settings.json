@@ -56,5 +56,6 @@
   "tool.list_plugins.description": "List all MCP plugins configured for a project. Returns plugin name, status (running/stopped/error), transport type, access_level, health, and tool count.",
   "tool.get_plugin_config.description": "Get the full configuration of a specific plugin (no secrets). Returns name, transport, command/url, args, env var names (not values), access_level, timeout.",
   "tool.enable_plugin.description": "Enable a plugin and start it. Writes enabled=true to plugins.yaml and spawns the plugin process. Returns success status.",
-  "tool.disable_plugin.description": "Disable a plugin and stop it. Writes enabled=false to plugins.yaml and terminates the plugin process. Returns success status."
+  "tool.disable_plugin.description": "Disable a plugin and stop it. Writes enabled=false to plugins.yaml and terminates the plugin process. Returns success status.",
+  "tool.get_project_links.description": "Get all directional links for a project (both outgoing and incoming). Each link has source_project_id, target_project_id, source_project_name, target_project_name, and description explaining how they relate. Use this to discover which projects might be impacted by changes."
 }

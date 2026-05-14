@@ -136,10 +136,10 @@ issues:
 - id: 4d8536d2-7b1f-444a-9fc2-e69b1227c970
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Project Linking with Relationship Types
-  status: Accepted
+  status: Finished
   priority: 3
   created_at: '2026-05-13T07:34:11.416199'
-  updated_at: '2026-05-14T07:48:46.453300'
+  updated_at: '2026-05-14T08:49:25.264964'
 - id: 0df22702-2f93-414d-8f0c-2c3e833b0e1a
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Regenerate issues.yaml and memories.yaml on startup from directory files
