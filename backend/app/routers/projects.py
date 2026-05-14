@@ -15,6 +15,7 @@ from app.storage.cache import resource_consistency_cache
 from app.schemas.project import DashboardProject, ProjectCreate, ProjectResponse, ProjectUpdate
 from app.schemas.terminal import TerminalResponse
 from app.services.project_service import ProjectService
+from app.services.manager_ai_watcher import manager_ai_watcher
 from app.services.terminal_service import terminal_service
 from app.services.wsl_support import is_wsl_shell, win_to_wsl_path
 
@@ -294,6 +295,11 @@ async def archive_project(project_id: str, db: AsyncSession = Depends(get_db)):
     project = await service.archive(project_id)
     await db.commit()
     await db.refresh(project)
+    # Stop watcher + plugins so archived project doesn't trigger index rebuilds.
+    from app.mcp.server import mcp
+    from app.mcp.plugin_manager import plugin_manager
+    await plugin_manager.stop_plugins_for_project(project_id)
+    await manager_ai_watcher.stop_project(project_id)
     return await _enrich_project(service, project)
 
 
@@ -303,6 +309,13 @@ async def unarchive_project(project_id: str, db: AsyncSession = Depends(get_db))
     project = await service.unarchive(project_id)
     await db.commit()
     await db.refresh(project)
+    # Restart watcher + plugins for the reactivated project.
+    from app.mcp.server import mcp
+    from app.mcp.plugin_manager import plugin_manager
+    await manager_ai_watcher.start_project(
+        project.id, project.path, mcp=mcp, plugin_manager=plugin_manager
+    )
+    await plugin_manager.start_plugins_for_project(project.id, project.path, mcp)
     return await _enrich_project(service, project)
 
 

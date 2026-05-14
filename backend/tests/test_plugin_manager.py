@@ -365,13 +365,12 @@ class TestPluginManagerLifecycle:
         statuses = manager.get_status(project_id)
         assert len(statuses) == 1
         assert statuses[0]["name"] == "dummy"
-        assert statuses[0]["connected"] is True
-        assert statuses[0]["tool_count"] == 2
+        assert statuses[0]["connected"] is False  # lazy: zero connect at startup
+        assert statuses[0]["tool_count"] == 1      # gateway only
 
-        # Verify tools registered on the MCP instance
+        # Verify gateway tool registered on the MCP instance
         tool_names = list(mcp_instance._tool_manager._tools.keys())
-        assert "dummy__echo" in tool_names
-        assert "dummy__add" in tool_names
+        assert "dummy__call" in tool_names
 
         await manager.stop_plugins_for_project(project_id)
         statuses_after = manager.get_status(project_id)
@@ -387,7 +386,7 @@ class TestPluginManagerLifecycle:
         project_path = plugins_yaml_with_dummy
 
         await manager.start_plugins_for_project(project_id, project_path, mcp_instance)
-        assert manager.get_status(project_id)[0]["connected"] is True
+        assert manager.get_status(project_id)[0]["connected"] is False  # lazy
 
         await manager.disable_plugin(project_id, project_path, "dummy", mcp_instance)
         assert manager.get_status(project_id) == []
@@ -411,7 +410,7 @@ class TestPluginManagerLifecycle:
         # Enable via manager
         ok = await manager.enable_plugin(project_id, project_path, "dummy", mcp_instance)
         assert ok is True
-        assert manager.get_status(project_id)[0]["connected"] is True
+        assert manager.get_status(project_id)[0]["connected"] is False  # lazy
 
         # Disable
         ok = await manager.disable_plugin(project_id, project_path, "dummy", mcp_instance)

@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -20,7 +22,36 @@ from app.routers import activity, credentials, events, files, issue_relations, i
 
 logger = logging.getLogger(__name__)
 
-mcp_app = mcp.streamable_http_app()
+if sys.platform == "win32":
+    # Safety net: ensure ProactorEventLoop policy (supports subprocesses for MCP
+    # stdio plugins). The primary fix is a .pth file (installed by start.py) that
+    # patches uvicorn's asyncio_setup before it runs. This call catches the case
+    # where the .pth patch didn't run (e.g. uvicorn started directly without
+    # start.py). The running loop won't change, but future loops use the right policy.
+    try:
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    except Exception:
+        pass
+
+@asynccontextmanager
+async def _noop_lifespan(_app):
+    """No-op lifespan for the mounted StreamableHTTP Starlette app.
+
+    The real session-manager lifecycle is driven by the main FastAPI lifespan
+    below (via mcp.session_manager.run()).  The mounted app MUST NOT have its
+    own lifespan because Starlette does not enter Mounted-app lifespans and
+    we don't want two callers competing for the single-run session manager.
+    """
+    yield
+
+
+# Create the MCP StreamableHTTP ASGI app so the session manager is initialized.
+_streamable_app = mcp.streamable_http_app()
+# Clear the lifespan on the mounted app — we manage the session manager
+# explicitly in the main lifespan.  Without this, Starlette may try to use
+# the mounted app's lifespan (which also calls session_manager.run()),
+# leading to "can only be called once" errors that tear down the task group.
+_streamable_app.router.lifespan_context = _noop_lifespan
 
 
 @asynccontextmanager
@@ -116,7 +147,7 @@ app.include_router(plugins.catalog_router)
 app.include_router(network.router)
 app.include_router(system.router)
 
-app.mount("/mcp", mcp_app)
+app.mount("/mcp", _streamable_app)
 
 
 @app.get("/health")

@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import traceback
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from mcp.server.fastmcp import FastMCP
 
-from app.mcp.plugin_client import PluginClient
+from app.mcp.plugin_client import PluginClient, _extract_error_message
 from app.mcp.plugin_config import (
     AccessLevel,
     PluginConfig,
@@ -15,7 +16,7 @@ from app.mcp.plugin_config import (
     set_plugin_config,
     set_plugin_enabled,
 )
-from app.mcp.plugin_proxy import register_plugin_tools, unregister_plugin_tools
+from app.mcp.plugin_proxy import register_plugin_gateway, register_plugin_tools, register_plugin_tools_from_schemas, unregister_plugin_tools
 from app.mcp.catalog import catalog_loader
 from app.services.event_service import event_service
 
@@ -51,8 +52,8 @@ class PluginManager:
                 "access_level": ps.config.access_level.value,
                 "enabled": ps.config.enabled,
                 "connected": ps.client.connected,
-                "tool_count": len(ps.client.tools),
-                "tool_names": [t.name for t in ps.client.tools],
+                "tool_count": len(ps.client.tool_names),
+                "tool_names": ps.client.tool_names,
             })
         return result
 
@@ -101,24 +102,32 @@ class PluginManager:
         state = _PluginState(client=client, config=cfg)
         self._state.setdefault(project_id, {})[key] = state
 
+        # Register a single gateway tool per plugin — zero process spawn.
+        # The real plugin process starts only on first tool call or Test Connection.
         try:
-            await client.connect()
-        except Exception as exc:
-            logger.error("Plugin %s (project %s) failed to connect: %s", key, project_id, exc)
-            await self._emit_plugin_event(project_id, key, "plugin_failed", str(exc))
-            return
-
-        try:
-            registered = register_plugin_tools(
-                mcp_instance, key, client, cfg.access_level
+            registered = register_plugin_gateway(
+                mcp_instance, key, client, cfg.access_level, (cfg.name or key)
             )
         except Exception as exc:
-            logger.error("Plugin %s (project %s) tool registration failed: %s", key, project_id, exc)
-            await self._emit_plugin_event(project_id, key, "plugin_failed", str(exc))
-            await client.disconnect()
+            error_msg = _extract_error_message(exc)
+            logger.error("Plugin %s (project %s) gateway registration failed: %s\n%s", key, project_id, error_msg, traceback.format_exc())
+            self._state[project_id].pop(key, None)
+            await self._emit_plugin_event(project_id, key, "plugin_failed", error_msg)
             return
 
-        await self._emit_plugin_event(project_id, key, "plugin_started", f"{registered} tools registered")
+        # Pre-connect in background so first tool call is fast.
+        # If we wait for the first call, uvx/npx setup can take 30+s and the
+        # MCP client times out, drops SSE, causing ClosedResourceError on
+        # subsequent requests.
+        async def _pre_connect():
+            try:
+                await client.connect()
+            except BaseException:
+                logger.debug("Plugin %s background pre-connect failed (will retry on first call)", key)
+
+        asyncio.create_task(_pre_connect())
+
+        await self._emit_plugin_event(project_id, key, "plugin_ready", f"{registered} gateway registered (lazy connect)")
 
     async def stop_plugins_for_project(self, project_id: str) -> None:
         entries = self._state.pop(project_id, {})
@@ -167,9 +176,9 @@ class PluginManager:
         except Exception:
             pass
 
-        # Unregister old tools
+        # Unregister old gateway
         try:
-            unregister_plugin_tools(mcp_instance, plugin_key, state.client.tools)
+            unregister_plugin_tools(mcp_instance, plugin_key, state.client.tool_names)
         except Exception:
             pass
 
@@ -194,13 +203,22 @@ class PluginManager:
         state.client = new_client
 
         try:
-            await new_client.connect()
-            register_plugin_tools(mcp_instance, plugin_key, new_client, cfg.access_level)
-            await self._emit_plugin_event(project_id, plugin_key, "plugin_started", "Restarted")
+            register_plugin_gateway(mcp_instance, plugin_key, new_client, runtime_cfg.access_level, runtime_cfg.name or plugin_key)
+
+            async def _pre_connect():
+                try:
+                    await new_client.connect()
+                except BaseException:
+                    logger.debug("Plugin %s background pre-connect failed (will retry on first call)", plugin_key)
+
+            asyncio.create_task(_pre_connect())
+
+            await self._emit_plugin_event(project_id, plugin_key, "plugin_ready", "Restarted (lazy connect)")
             return True
         except Exception as exc:
-            logger.error("Plugin %s restart failed: %s", plugin_key, exc)
-            await self._emit_plugin_event(project_id, plugin_key, "plugin_failed", str(exc))
+            error_msg = _extract_error_message(exc)
+            logger.error("Plugin %s restart failed: %s", plugin_key, error_msg)
+            await self._emit_plugin_event(project_id, plugin_key, "plugin_failed", error_msg)
             return False
 
     async def enable_plugin(

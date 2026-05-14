@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.mcp.plugin_client import PluginClient
+from app.mcp.plugin_client import PluginClient, _extract_error_message
 from app.mcp.plugin_config import load_plugins, save_plugins, set_plugin_config, PluginsFile
 from app.mcp.plugin_manager import plugin_manager
 from app.mcp.catalog import catalog_loader
 from app.mcp.server import mcp
 from app.services.project_service import ProjectService
+
+logger = logging.getLogger(__name__)
 
 
 class TestConnectionBody(BaseModel):
@@ -179,7 +182,17 @@ async def test_plugin_connection(project_id: str, plugin_key: str, data: TestCon
     except asyncio.TimeoutError:
         return {"success": False, "message": f"Connection timed out after {test_timeout} seconds"}
     except Exception as exc:
-        return {"success": False, "message": str(exc)}
+        error_msg = _extract_error_message(exc)
+        logger.warning(
+            "Plugin %s connection test failed | type=%s str=[%s] | extracted=[%s]",
+            plugin_key, type(exc).__name__, str(exc), error_msg,
+        )
+        if not error_msg:
+            error_msg = "Connection failed. Check that the plugin is installed and configuration is correct."
+        return {"success": False, "message": error_msg}
+    except BaseException:
+        logger.exception("Plugin %s connection test: unexpected BaseException", plugin_key)
+        return {"success": False, "message": "Connection failed due to an internal error. Check server logs."}
     finally:
         try:
             await asyncio.wait_for(client.disconnect(), timeout=5)

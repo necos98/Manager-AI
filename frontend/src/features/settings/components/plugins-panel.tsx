@@ -93,8 +93,12 @@ function ConfigModal({
           if (result.success) {
             toast.success(result.message);
           } else {
-            toast.error(result.message);
+            toast.error(result.message || "Connection failed");
           }
+        },
+        onError: (error) => {
+          const message = error instanceof Error ? error.message : "Connection test failed";
+          toast.error(message);
         },
       },
     );
