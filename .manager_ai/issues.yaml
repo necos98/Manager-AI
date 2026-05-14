@@ -175,3 +175,10 @@ issues:
   priority: 3
   created_at: '2026-05-14T09:36:38.376337'
   updated_at: '2026-05-14T09:45:59.699680'
+- id: 64a050ef-1264-4ef9-8807-01103a59909f
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: 'Fix MySQL plugin: convert kwargs-based tools to explicit named parameters'
+  status: Finished
+  priority: 3
+  created_at: '2026-05-14T14:37:55.943438'
+  updated_at: '2026-05-14T14:45:23.487827'

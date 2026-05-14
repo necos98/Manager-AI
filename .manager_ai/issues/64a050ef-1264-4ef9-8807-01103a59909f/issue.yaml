@@ -1,0 +1,16 @@
+schema_version: 1
+id: 64a050ef-1264-4ef9-8807-01103a59909f
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Fix MySQL plugin: convert kwargs-based tools to explicit named parameters'
+status: Finished
+priority: 3
+created_at: '2026-05-14T14:37:55.943438'
+updated_at: '2026-05-14T14:45:23.487827'
+tasks:
+- id: ece3b1b4-3c77-436d-86fd-cef0f0ffe7c9
+  name: Update _make_proxy_function to use explicit signatures from tool.inputSchema instead of **kwargs
+  status: Completed
+  order: 0
+  created_at: '2026-05-14T14:43:44'
+  updated_at: '2026-05-14T14:45:11'
+relations: []
