@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import traceback
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from mcp.server.fastmcp import FastMCP
 
-from app.mcp.plugin_client import PluginClient
+from app.mcp.plugin_client import PluginClient, _extract_error_message
 from app.mcp.plugin_config import (
     AccessLevel,
     PluginConfig,
@@ -104,8 +105,9 @@ class PluginManager:
         try:
             await client.connect()
         except Exception as exc:
-            logger.error("Plugin %s (project %s) failed to connect: %s", key, project_id, exc)
-            await self._emit_plugin_event(project_id, key, "plugin_failed", str(exc))
+            error_msg = _extract_error_message(exc)
+            logger.error("Plugin %s (project %s) failed to connect: %s", key, project_id, error_msg)
+            await self._emit_plugin_event(project_id, key, "plugin_failed", error_msg)
             return
 
         try:
@@ -113,8 +115,9 @@ class PluginManager:
                 mcp_instance, key, client, cfg.access_level
             )
         except Exception as exc:
-            logger.error("Plugin %s (project %s) tool registration failed: %s", key, project_id, exc)
-            await self._emit_plugin_event(project_id, key, "plugin_failed", str(exc))
+            error_msg = _extract_error_message(exc)
+            logger.error("Plugin %s (project %s) tool registration failed: %s\n%s", key, project_id, error_msg, traceback.format_exc())
+            await self._emit_plugin_event(project_id, key, "plugin_failed", error_msg)
             await client.disconnect()
             return
 
@@ -199,8 +202,9 @@ class PluginManager:
             await self._emit_plugin_event(project_id, plugin_key, "plugin_started", "Restarted")
             return True
         except Exception as exc:
-            logger.error("Plugin %s restart failed: %s", plugin_key, exc)
-            await self._emit_plugin_event(project_id, plugin_key, "plugin_failed", str(exc))
+            error_msg = _extract_error_message(exc)
+            logger.error("Plugin %s restart failed: %s", plugin_key, error_msg)
+            await self._emit_plugin_event(project_id, plugin_key, "plugin_failed", error_msg)
             return False
 
     async def enable_plugin(

@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -19,6 +21,17 @@ from app.services.manager_ai_watcher import manager_ai_watcher
 from app.routers import activity, credentials, events, files, issue_relations, issues, library, memories, network, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, system, tasks, terminals, terminal_commands
 
 logger = logging.getLogger(__name__)
+
+if sys.platform == "win32":
+    # Safety net: ensure ProactorEventLoop policy (supports subprocesses for MCP
+    # stdio plugins). The primary fix is a .pth file (installed by start.py) that
+    # patches uvicorn's asyncio_setup before it runs. This call catches the case
+    # where the .pth patch didn't run (e.g. uvicorn started directly without
+    # start.py). The running loop won't change, but future loops use the right policy.
+    try:
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    except Exception:
+        pass
 
 mcp_app = mcp.streamable_http_app()
 

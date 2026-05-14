@@ -1,91 +1,166 @@
-# 🤖 ManagerAI
+# Manager AI
 
-> Automazione intelligente dei tuoi progetti con Claude AI integrato.
+AI-powered project management with Claude Code integration. Issue tracking, terminal emulation, real-time events, and an MCP server that exposes tools to Claude Code — all in a local desktop app.
 
----
+## Architecture
 
-## 🚀 Avvio rapido
-
-### 1. Avvia l'applicazione
-
-**Windows** — fai doppio clic su **`start.bat`**, oppure da terminale:
-
-```bat
-start.bat
+```
+manager-ai/
+├── backend/          # FastAPI + SQLAlchemy async (Python)
+│   ├── app/
+│   │   ├── mcp/      # MCP server, plugin system, catalog
+│   │   ├── routers/  # REST endpoints
+│   │   ├── services/ # Business logic
+│   │   ├── models/   # SQLAlchemy ORM models
+│   │   ├── schemas/  # Pydantic v2 validation
+│   │   ├── hooks/    # Event-driven hook system
+│   │   └── storage/  # File/memory stores
+│   └── plugins/      # Built-in MCP plugin catalog
+│       ├── filesystem/
+│       ├── memory/
+│       └── mysql/
+├── frontend/         # React + Vite + Tailwind
+│   └── src/
+│       ├── features/ # Domain modules (issues, terminals, memories...)
+│       ├── routes/   # TanStack Router pages
+│       └── shared/   # UI components, contexts
+└── start.py          # Launcher: venv bootstrap, deps, desktop window
 ```
 
-**Linux/macOS** — da terminale:
+**Stack:** FastAPI (Python) | React + Vite + Tailwind (TypeScript) | SQLite + aiosqlite | pywebview (desktop)
+
+## Features
+
+### Issue Lifecycle & Kanban
+Issues flow through a defined state machine: **NEW → REASONING → PLANNED → ACCEPTED/DECLINED → FINISHED**. Each issue holds a specification, implementation plan, task breakdown, and recap. A drag-and-drop Kanban board visualizes the pipeline.
+
+### Claude Code Integration (MCP Server)
+A FastMCP server exposes tools to Claude Code: `get_issue_details`, `get_issue_status`, `get_project_context`, memory search, and more. Claude can inspect project state, read specs, and act on issues directly from its CLI.
+
+### MCP Plugin System
+Pluggable MCP servers per project. Built-in catalog includes read-only **filesystem**, **memory**, and **MySQL** plugins. Supports stdio and HTTP transports with per-plugin configuration. Plugins are started/stopped with project lifecycle.
+
+### Integrated Terminal
+Multi-tab PTY terminal (pywinpty on Windows) with WebSocket streaming. Supports variable resolution (`$issue_id`, `$project_id`), predefined command templates, environment injection, and **WSL** distro selection (`wsl.exe -d <distro>`).
+
+### Voice & Transcription
+Built-in speech-to-text: record audio from the browser, transcribe via backend, and insert text into terminals or issue fields.
+
+### Memory System
+Project-scoped persistent memory stored as markdown files under `.manager_ai/memories/`. Hierarchical, graph-linked, full-text searchable. Memories survive across sessions and are written/queried via MCP tools.
+
+### Project Links
+Cross-reference projects — link related repositories together and navigate between them.
+
+### Real-Time Events
+WebSocket-based event stream (`EventProvider` context). Activity timeline shows issue state changes, hook executions, memory updates.
+
+### Health Checks
+Built-in health dashboard detects resource consistency issues (e.g., `project_id` mismatches between `manager.json` and the database).
+
+### Desktop App
+Wrapped in a native desktop window via pywebview (1400×900). Single `python start.py` launches everything.
+
+## Quick Start
+
+### Prerequisites
+- **Python 3.11+**
+- **Node.js + npm**
+- **[Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code/overview)** (for AI features)
+
+### 1. Launch
 
 ```bash
-chmod +x start.sh   # solo la prima volta
-./start.sh
+python start.py
 ```
 
-Attendi il completamento dell'installazione automatica delle dipendenze.
+This bootstraps a venv, installs backend/frontend dependencies, runs database migrations, builds the frontend, and opens the desktop window. Backend runs on `http://localhost:8000`, frontend on `http://localhost:4173`.
 
----
+### 2. Create a Project
 
-## ⚙️ Configurazione iniziale
+From the main interface, create a new project pointing to a local directory.
 
-### 2. Configura il terminale integrato
+### 3. Set Up Claude Resources
 
-Al primo avvio, vai in **`Settings`** → **`Terminal`** e aggiungi il seguente comando:
+In the project **Summary** tab, run these in order:
 
-```
-claude "/run-issue $issue_id" --dangerously-skip-permissions
-```
+1. **Install manager.json** — writes project config into the target repo
+2. **Install Claude Resources** — copies CLAUDE.md and skills into the project
+3. **MCP Setup** — generates the MCP connection command
 
----
+### 4. Connect Claude Code
 
-## 📦 Setup del progetto
-
-### 3. Crea il tuo progetto
-
-Crea un nuovo progetto dall'interfaccia principale.
-
-### 4. Installa le risorse necessarie
-
-Vai nella sezione **`Summary`** ed esegui nell'ordine:
-
-1. Clicca **`Install manager.json`**
-2. Clicca **`Install Claude Resources`**
-3. Clicca **`MCP Setup`**
-
-### 5. Collega il server MCP
-
-Dopo aver cliccato su **`MCP Setup`**, copia il comando mostrato:
+Copy the MCP command shown in the setup dialog and run it in your project's terminal:
 
 ```bash
 claude mcp add --transport http ManagerAi http://localhost:8000/mcp/
 ```
 
-Aprì la **CLI del tuo progetto**, incolla il comando e premi invio.
+Claude can now call Manager AI tools to read/write issues, search memories, and inspect project state.
 
-> 💡 **Nota:** Questa procedura verrà automatizzata nelle versioni future.
+### 5. Configure the Terminal (Optional)
 
----
+In **Settings → Terminal**, add a command like:
 
-## 📋 Riepilogo passaggi
+```
+claude "/run-issue $issue_id" --dangerously-skip-permissions
+```
 
-| # | Step | Dove |
-|---|------|------|
-| 1 | Avvia `start.bat` (Win) / `start.sh` (Linux) | Root del progetto |
-| 2 | Aggiungi comando al terminale | `Settings` → `Terminal` |
-| 3 | Crea il progetto | Interfaccia principale |
-| 4 | Install `manager.json` | `Summary` |
-| 5 | Install Claude Resources | `Summary` |
-| 6 | MCP Setup + CLI | `Summary` → CLI progetto |
+Select an issue, click this command, and Claude starts working on it in the integrated terminal.
 
----
+## Development
 
-## 🛠️ Requisiti
+```bash
+# Backend only (with hot reload)
+cd backend
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
-- Windows (per `start.bat`) o Linux/macOS (per `start.sh`)
-- [Claude CLI](https://docs.anthropic.com/en/docs/claude-code/overview) installato e configurato
-- Connessione internet per il download delle dipendenze
+# Frontend only (with HMR)
+cd frontend
+npm run dev
 
----
+# Run tests
+cd backend
+python -m pytest
+```
 
-## 📄 Licenza
+### Database Migrations
 
-Distribuito sotto licenza MIT. Vedi `LICENSE` per maggiori informazioni.
+```bash
+cd backend
+python -m alembic upgrade head              # Apply
+python -m alembic revision --autogenerate -m "description"  # Create new
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BACKEND_PORT` | `8000` | Backend listen port |
+| `FRONTEND_PORT` | `4173` | Frontend dev server port |
+| `MANAGER_AI_DEV` | _(empty)_ | Set to `1` for debug mode (webview devtools) |
+
+Copy `.env.example` to `.env` to customize.
+
+## Plugins
+
+Built-in MCP plugin catalog lives in `backend/plugins/`. Each plugin is a directory with a `plugin.yaml`:
+
+```yaml
+name: MySQL (read-only)
+description: Query MySQL databases with read-only access
+transport: stdio
+command: npx
+args: ["-y", "mysql-mcp-server"]
+access_level: read_only
+options:
+  - key: MYSQL_HOST
+    label: Host
+    required: true
+```
+
+Plugins are configurable per project from the **Plugins** panel.
+
+## License
+
+MIT — see `LICENSE`.

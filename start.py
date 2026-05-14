@@ -52,6 +52,43 @@ def _install_backend_deps():
     print("[ok] Backend dependencies up to date")
 
 
+def _ensure_pth_patch():
+    """Create a .pth file in the venv's site-packages so Python runs our
+    event-loop patch at startup — before uvicorn has a chance to set
+    WindowsSelectorEventLoopPolicy (which breaks subprocess support).
+
+    .pth files are processed by Python's site module at interpreter startup,
+    including for multiprocessing worker processes.  This is the only hook
+    that runs early enough to beat uvicorn's setup_event_loop().
+    """
+    site_packages = None
+    for p in sys.path:
+        if p.endswith("site-packages") and VENV_DIR.resolve() in Path(p).resolve().parents:
+            site_packages = Path(p)
+            break
+    if site_packages is None:
+        # Fallback: guess the standard venv layout
+        candidate = VENV_DIR / ("Lib" if IS_WINDOWS else "lib") / "site-packages"
+        if candidate.exists():
+            site_packages = candidate
+
+    if site_packages is None:
+        print("[!] Could not locate venv site-packages; .pth patch not installed")
+        return
+
+    pth_path = site_packages / "_manager_ai_proactor.pth"
+    backend_path = str(BACKEND_DIR.resolve())
+
+    # Path line adds backend to sys.path; import line runs the patcher.
+    content = f"{backend_path}\nimport app._ensure_proactor\n"
+
+    if pth_path.exists() and pth_path.read_text() == content:
+        return
+
+    pth_path.write_text(content)
+    print("[ok] .pth patch installed for ProactorEventLoop")
+
+
 def _bootstrap_venv_and_reexec():
     """Create venv, install deps, then re-exec this script under venv python.
 
@@ -63,6 +100,7 @@ def _bootstrap_venv_and_reexec():
         print("[ok] Virtual environment created")
 
     _install_backend_deps()
+    _ensure_pth_patch()
 
     # execv on Windows doesn't replace process cleanly in some shells; spawn+exit is safer.
     if IS_WINDOWS:
@@ -78,6 +116,7 @@ else:
     # Already in venv (re-exec or direct invoke): still verify deps every run
     # so newly-added requirements get installed without needing to nuke venv.
     _install_backend_deps()
+    _ensure_pth_patch()
 
 try:
     from dotenv import load_dotenv
