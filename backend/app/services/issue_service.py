@@ -89,7 +89,7 @@ class IssueService:
 
     async def get_by_id(self, issue_id: str) -> IssueRecord | None:
         """Scan across all projects — needed when project_id unknown."""
-        for project in await ProjectService(self.session).list_all(archived=None):
+        for project in await ProjectService(self.session).list_all(archived=False):
             rec = issue_store.load_issue(project.path, issue_id)
             if rec is not None:
                 return rec

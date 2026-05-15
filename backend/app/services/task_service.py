@@ -28,7 +28,7 @@ class TaskService:
         self.session = session
 
     async def _project_path_for_issue(self, issue_id: str) -> str:
-        projects = await ProjectService(self.session).list_all(archived=None)
+        projects = await ProjectService(self.session).list_all(archived=False)
         for project in projects:
             if issue_store.issue_exists(project.path, issue_id):
                 return project.path
@@ -74,7 +74,7 @@ class TaskService:
         return records
 
     async def get_by_id(self, task_id: str) -> TaskRecord:
-        projects = await ProjectService(self.session).list_all(archived=None)
+        projects = await ProjectService(self.session).list_all(archived=False)
         for project in projects:
             found = issue_store.find_task(project.path, task_id)
             if found is not None:
@@ -82,7 +82,7 @@ class TaskService:
         raise NotFoundError("Task not found")
 
     async def update(self, task_id: str, **kwargs) -> TaskRecord:
-        projects = await ProjectService(self.session).list_all(archived=None)
+        projects = await ProjectService(self.session).list_all(archived=False)
         for project in projects:
             found = issue_store.find_task(project.path, task_id)
             if found is None:
@@ -106,7 +106,7 @@ class TaskService:
         raise NotFoundError("Task not found")
 
     async def delete(self, task_id: str) -> bool:
-        projects = await ProjectService(self.session).list_all(archived=None)
+        projects = await ProjectService(self.session).list_all(archived=False)
         for project in projects:
             found = issue_store.find_task(project.path, task_id)
             if found is None:
