@@ -202,7 +202,7 @@ class PluginManager:
             logger.warning("Plugin %s no longer in catalog, cannot restart", plugin_key)
             return False
         state.config = runtime_cfg
-        connect_timeout = min(runtime_cfg.timeout, 20) if runtime_cfg.timeout else 20
+        connect_timeout = runtime_cfg.connect_timeout
         new_client = PluginClient(
             plugin_name=runtime_cfg.name or plugin_key,
             transport=runtime_cfg.transport.value,
