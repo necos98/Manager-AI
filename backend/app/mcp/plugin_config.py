@@ -30,6 +30,7 @@ class PluginConfig(BaseModel):
     env: dict[str, str] = Field(default_factory=dict)
     access_level: AccessLevel = AccessLevel.read_only
     timeout: int = 30
+    connect_timeout: int = 20
 
     @model_validator(mode="after")
     def _validate_transport_fields(self) -> "PluginConfig":

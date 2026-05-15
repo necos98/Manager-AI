@@ -90,6 +90,10 @@ class PluginManager:
         cfg: PluginConfig,
         mcp_instance: FastMCP,
     ) -> None:
+        # Keep connect_timeout well under the MCP client's SSE timeout (~60s)
+        # so we return a friendly error instead of crashing with
+        # ClosedResourceError when the client disconnects first.
+        connect_timeout = cfg.connect_timeout
         client = PluginClient(
             plugin_name=cfg.name or key,
             transport=cfg.transport.value,
@@ -98,6 +102,7 @@ class PluginManager:
             url=cfg.url,
             env=cfg.env,
             timeout=cfg.timeout,
+            connect_timeout=connect_timeout,
         )
         state = _PluginState(client=client, config=cfg)
         self._state.setdefault(project_id, {})[key] = state
@@ -116,9 +121,8 @@ class PluginManager:
             return
 
         # Pre-connect in background so first tool call is fast.
-        # If we wait for the first call, uvx/npx setup can take 30+s and the
-        # MCP client times out, drops SSE, causing ClosedResourceError on
-        # subsequent requests.
+        # Save the task so ensure_connected() can await it instead of
+        # starting a duplicate connection.
         async def _pre_connect():
             try:
                 await client.connect()
@@ -132,7 +136,7 @@ class PluginManager:
             except BaseException:
                 logger.debug("Plugin %s background pre-connect failed (will retry on first call)", key)
 
-        asyncio.create_task(_pre_connect())
+        client._pre_connect_task = asyncio.create_task(_pre_connect())
 
         await self._emit_plugin_event(project_id, key, "plugin_ready", f"{registered} gateway registered (lazy connect)")
 
@@ -198,6 +202,7 @@ class PluginManager:
             logger.warning("Plugin %s no longer in catalog, cannot restart", plugin_key)
             return False
         state.config = runtime_cfg
+        connect_timeout = min(runtime_cfg.timeout, 20) if runtime_cfg.timeout else 20
         new_client = PluginClient(
             plugin_name=runtime_cfg.name or plugin_key,
             transport=runtime_cfg.transport.value,
@@ -206,6 +211,7 @@ class PluginManager:
             url=runtime_cfg.url,
             env=runtime_cfg.env,
             timeout=runtime_cfg.timeout,
+            connect_timeout=connect_timeout,
         )
         state.client = new_client
 
@@ -225,7 +231,7 @@ class PluginManager:
                 except BaseException:
                     logger.debug("Plugin %s background pre-connect failed (will retry on first call)", plugin_key)
 
-            asyncio.create_task(_pre_connect())
+            new_client._pre_connect_task = asyncio.create_task(_pre_connect())
 
             await self._emit_plugin_event(project_id, plugin_key, "plugin_ready", "Restarted (lazy connect)")
             return True

@@ -39,6 +39,7 @@ class CatalogPlugin(BaseModel):
     url: str = ""
     access_level: AccessLevel = AccessLevel.read_only
     timeout: int = 30
+    connect_timeout: int = 20
     options: list[OptionDef] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -103,6 +104,7 @@ class CatalogLoader:
             env=user_config,
             access_level=cat.access_level,
             timeout=cat.timeout,
+            connect_timeout=cat.connect_timeout,
         )
 
 
