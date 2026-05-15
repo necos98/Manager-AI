@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import os
 import tempfile
@@ -416,3 +417,99 @@ class TestPluginManagerLifecycle:
         ok = await manager.disable_plugin(project_id, project_path, "dummy", mcp_instance)
         assert ok is True
         assert manager.get_status(project_id) == []
+
+
+# ── ensure_connected coordination tests ────────────────────────────────────────
+
+
+class TestEnsureConnectedCoordination:
+    @pytest.mark.asyncio
+    async def test_returns_immediately_when_already_connected(self):
+        """_connected=True -> ensure_connected() returns without waiting."""
+        client = PluginClient(
+            plugin_name="test",
+            transport="stdio",
+            command="echo",
+            connect_timeout=5,
+        )
+        client._connected = True
+        client._connect_ready.set()
+        client._connect_done.set()
+
+        # Should return immediately — no exception, no delay
+        await asyncio.wait_for(client.ensure_connected(), timeout=1.0)
+
+    @pytest.mark.asyncio
+    async def test_raises_when_pre_connect_still_running(self):
+        """Pre-connect task not done -> RuntimeError, no crash."""
+        client = PluginClient(
+            plugin_name="test",
+            transport="stdio",
+            command="echo",
+            connect_timeout=1,  # short so test is fast
+        )
+        # Simulate pre-connect task that never finishes
+        async def never_finish():
+            await asyncio.Event().wait()
+        client._pre_connect_task = asyncio.create_task(never_finish())
+
+        with pytest.raises(RuntimeError, match="still initializing"):
+            await client.ensure_connected()
+
+        # Cleanup: cancel the never-finishing task
+        client._pre_connect_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await client._pre_connect_task
+
+    @pytest.mark.asyncio
+    async def test_own_connect_when_pre_connect_failed(self):
+        """Pre-connect task done (failed) -> tries own connect()."""
+        client = PluginClient(
+            plugin_name="test",
+            transport="stdio",
+            command="echo",
+            connect_timeout=0.5,
+        )
+        # Simulate failed pre-connect: task done with exception
+        async def fail():
+            raise RuntimeError("boom")
+        task = asyncio.create_task(fail())
+        with contextlib.suppress(RuntimeError):
+            await task
+        client._pre_connect_task = task
+
+        # Mock connect to verify it's called (instead of relying on
+        # real connect which depends on OS-specific subprocess behavior).
+        connect_called = False
+
+        async def mock_connect():
+            nonlocal connect_called
+            connect_called = True
+            client._connected = True
+            client._connect_ready.set()
+
+        client.connect = mock_connect  # type: ignore[method-assign]
+
+        await client.ensure_connected()
+        assert connect_called, "own connect() should have been called after pre-connect failure"
+        assert client._connected is True
+
+    @pytest.mark.asyncio
+    async def test_connect_timeout_raises_runtime_error(self):
+        """connect() takes > connect_timeout -> RuntimeError."""
+        client = PluginClient(
+            plugin_name="test",
+            transport="stdio",
+            command="echo",
+            connect_timeout=0.2,
+        )
+        # Mock connect to hang forever.  Assigning a plain function to
+        # client.connect means self.connect() calls it without implicit
+        # self — no binding issues.
+        async def slow_connect():
+            await asyncio.Event().wait()
+
+        client.connect = slow_connect  # type: ignore[method-assign]
+
+        with pytest.raises(RuntimeError, match="connection timed out"):
+            await client.ensure_connected()
