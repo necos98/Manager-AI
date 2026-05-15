@@ -65,6 +65,7 @@ class PluginClient:
     _connect_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False, init=False)
     _pre_connect_task: asyncio.Task | None = field(default=None, repr=False, init=False)
     _connect_ready: asyncio.Event = field(default_factory=asyncio.Event, repr=False, init=False)
+    _connect_done: asyncio.Event = field(default_factory=asyncio.Event, repr=False, init=False)
 
     @property
     def connected(self) -> bool:
@@ -105,13 +106,12 @@ class PluginClient:
         if self._connected:
             return
 
-        # Wait for the connect_ready event — set by any successful connect().
-        # If a pre-connect task already holds _connect_lock we must NOT try
-        # to acquire the lock ourselves (we'd block behind it and defeat the
-        # timeout).  Waiting on the event is lock-free.
+        # Wait for _connect_done — set in connect()'s finally block, so it
+        # fires on both success and failure.  This avoids wasting the full
+        # connect_timeout when the pre-connect fails quickly.
         try:
             await asyncio.wait_for(
-                self._connect_ready.wait(),
+                self._connect_done.wait(),
                 timeout=self.connect_timeout,
             )
         except asyncio.TimeoutError:
@@ -177,6 +177,8 @@ class PluginClient:
             logger.exception("Plugin %s connect failed", self.plugin_name)
             await self._cleanup_on_connect_failure()
             raise
+        finally:
+            self._connect_done.set()
 
     async def _connect_stdio(self) -> None:
         server_params = StdioServerParameters(
@@ -297,12 +299,14 @@ class PluginClient:
         """Clean up state after a failed connect() attempt."""
         self._connected = False
         self._connect_ready.clear()
+        self._connect_done.clear()
         await self._exit_transport()
         self._cleanup_stderr_file()
 
     async def disconnect(self) -> None:
         self._connected = False
         self._connect_ready.clear()
+        self._connect_done.clear()
         await self._exit_transport()
         self._cleanup_stderr_file()
         self._tools.clear()
