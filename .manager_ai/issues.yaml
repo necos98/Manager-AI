@@ -196,3 +196,31 @@ issues:
   priority: 3
   created_at: '2026-05-14T21:15:39.247171'
   updated_at: '2026-05-14T21:15:39.247171'
+- id: 7cb7e74e-6bbc-4b28-bd1a-af1185b46271
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Rimuovere plugin MCP ridondanti (memory, filesystem) dal catalog
+  status: Finished
+  priority: 3
+  created_at: '2026-05-15T07:19:18.297682'
+  updated_at: '2026-05-15T07:19:18.297682'
+- id: 21578a99-ed99-4404-8240-6802b9d46309
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: null
+  status: New
+  priority: 3
+  created_at: '2026-05-15T07:23:54.164999'
+  updated_at: '2026-05-15T07:23:54.164999'
+- id: 21b7f956-cdac-4265-9c98-32a0929c5b6a
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: null
+  status: New
+  priority: 3
+  created_at: '2026-05-15T07:24:22.011150'
+  updated_at: '2026-05-15T07:25:15.737785'
+- id: 01a3d02a-3a99-48d8-a97d-b1582d98a28e
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: null
+  status: New
+  priority: 3
+  created_at: '2026-05-15T07:32:36.844822'
+  updated_at: '2026-05-15T07:32:36.844822'

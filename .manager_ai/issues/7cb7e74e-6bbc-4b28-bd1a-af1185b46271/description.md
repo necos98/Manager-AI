@@ -1,0 +1,1 @@
+Attualmente come plugin MCP ci sono quello della memory e il file system. Perchè hai creato questi due, che senso ha? E' possibile toglierli per cortesia dato che, per me, non servono a niente. Potresti fare una ricerca e capire a cosa servono?
