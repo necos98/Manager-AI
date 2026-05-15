@@ -50,6 +50,7 @@ class PluginClient:
     url: str = ""
     env: dict[str, str] = field(default_factory=dict)
     timeout: int = 30
+    connect_timeout: int = 20
 
     _session: ClientSession | None = field(default=None, repr=False, init=False)
     _tools: list[Tool] = field(default_factory=list, repr=False, init=False)
@@ -62,6 +63,8 @@ class PluginClient:
     _stderr_file: Any = field(default=None, repr=False, init=False)
     _stderr_path: str | None = field(default=None, repr=False, init=False)
     _connect_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False, init=False)
+    _pre_connect_task: asyncio.Task | None = field(default=None, repr=False, init=False)
+    _connect_ready: asyncio.Event = field(default_factory=asyncio.Event, repr=False, init=False)
 
     @property
     def connected(self) -> bool:
@@ -88,13 +91,62 @@ class PluginClient:
         self._registered_proxy_names = names
 
     async def ensure_connected(self) -> None:
-        """Connect if not already connected. Locked — safe under concurrent calls."""
+        """Connect if not already connected.
+
+        Waits for a background pre-connect task (if one exists) up to
+        *connect_timeout* seconds.  If the pre-connect hasn't finished by
+        then, or if there is no pre-connect task, we start our own
+        time-bounded connect.
+
+        The deadline is deliberately shorter than the MCP client's SSE
+        timeout (~60 s) so we can return a friendly error instead of
+        crashing with ClosedResourceError when the client disconnects first.
+        """
         if self._connected:
             return
-        async with self._connect_lock:
-            if self._connected:
-                return
-            await self.connect()
+
+        # Wait for the connect_ready event — set by any successful connect().
+        # If a pre-connect task already holds _connect_lock we must NOT try
+        # to acquire the lock ourselves (we'd block behind it and defeat the
+        # timeout).  Waiting on the event is lock-free.
+        try:
+            await asyncio.wait_for(
+                self._connect_ready.wait(),
+                timeout=self.connect_timeout,
+            )
+        except asyncio.TimeoutError:
+            pass
+
+        if self._connected:
+            return
+
+        # Only start our own connect when no pre-connect task is still
+        # running.  If one is in flight we let it finish on its own — the
+        # next call will pick up the result.
+        pre_connect_running = (
+            self._pre_connect_task is not None
+            and not self._pre_connect_task.done()
+        )
+
+        if not pre_connect_running:
+            async with self._connect_lock:
+                if self._connected:
+                    return
+                try:
+                    await asyncio.wait_for(
+                        self.connect(),
+                        timeout=self.connect_timeout,
+                    )
+                except asyncio.TimeoutError:
+                    raise RuntimeError(
+                        f"Plugin {self.plugin_name} connection timed out "
+                        f"after {self.connect_timeout}s"
+                    )
+        else:
+            raise RuntimeError(
+                f"Plugin {self.plugin_name} still initializing — "
+                "pre-connect in progress, retry shortly"
+            )
 
     async def discover_and_disconnect(self) -> list[dict]:
         """Connect, discover tools, store schemas, then disconnect.
@@ -212,6 +264,7 @@ class PluginClient:
         result = await self._session.list_tools()
         self._tools = list(result.tools) if result.tools else []
         self._connected = True
+        self._connect_ready.set()
         logger.info(
             "Plugin %s connected with %d tools: %s",
             self.plugin_name,
@@ -243,11 +296,13 @@ class PluginClient:
     async def _cleanup_on_connect_failure(self) -> None:
         """Clean up state after a failed connect() attempt."""
         self._connected = False
+        self._connect_ready.clear()
         await self._exit_transport()
         self._cleanup_stderr_file()
 
     async def disconnect(self) -> None:
         self._connected = False
+        self._connect_ready.clear()
         await self._exit_transport()
         self._cleanup_stderr_file()
         self._tools.clear()
@@ -270,6 +325,7 @@ class PluginClient:
             # Exception, so a plain 'except Exception' misses it.
             if _is_anyio_closed_error(exc):
                 self._connected = False
+                self._connect_ready.clear()
                 return {"error": f"Plugin {self.plugin_name} connection lost: subprocess exited"}
             logger.warning(
                 "Plugin %s call_tool(%s) unexpected error: %s",
