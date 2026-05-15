@@ -386,7 +386,7 @@ async def update_task_status(task_id: str, status: str) -> dict:
             # file-backed TaskService returns TaskRecord without issue_id — find it via IssueService
             issue_rec = None
             task_issue_id = ""
-            for project in await ProjectService(session).list_all(archived=None):
+            for project in await ProjectService(session).list_all(archived=False):
                 from app.storage import issue_store as _is
                 found = _is.find_task(project.path, task_id)
                 if found is not None:
@@ -442,7 +442,7 @@ async def update_task_name(task_id: str, name: str) -> dict:
             task = await task_service.update(task_id, name=name)
             issue = None
             task_issue_id = ""
-            for project in await ProjectService(session).list_all(archived=None):
+            for project in await ProjectService(session).list_all(archived=False):
                 from app.storage import issue_store as _is
                 found = _is.find_task(project.path, task_id)
                 if found is not None:
@@ -473,7 +473,7 @@ async def delete_task(task_id: str) -> dict:
             # Find owning issue before deletion
             issue = None
             task_issue_id = ""
-            for project in await ProjectService(session).list_all(archived=None):
+            for project in await ProjectService(session).list_all(archived=False):
                 from app.storage import issue_store as _is
                 found = _is.find_task(project.path, task_id)
                 if found is not None:

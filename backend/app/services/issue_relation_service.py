@@ -39,7 +39,7 @@ class IssueRelationService:
         self.session = session
 
     async def _all_paths(self) -> list[str]:
-        projects = await ProjectService(self.session).list_all(archived=None)
+        projects = await ProjectService(self.session).list_all(archived=False)
         return [p.path for p in projects]
 
     async def _find_issue_path(self, issue_id: str) -> str | None:

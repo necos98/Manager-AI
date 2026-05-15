@@ -34,7 +34,7 @@ class MemoryService:
         return project.path
 
     async def _locate_memory(self, memory_id: str) -> tuple[str, MemoryRecord] | None:
-        for project in await ProjectService(self.session).list_all(archived=None):
+        for project in await ProjectService(self.session).list_all(archived=False):
             rec = memory_store.load_memory(project.path, memory_id)
             if rec is not None:
                 return project.path, rec

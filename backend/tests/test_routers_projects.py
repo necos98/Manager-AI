@@ -444,3 +444,59 @@ async def test_health_playwright_mcp_installed_via_project_mcp(client, tmp_path)
     data = response.json()
     assert data["playwright_mcp"]["installed"] is True
     assert ".mcp.json" in data["playwright_mcp"]["location"]
+
+
+# ---------------------------------------------------------------------------
+# rebuild-index endpoint
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_rebuild_index_active_project(client, tmp_path):
+    """rebuild-index on an active project returns counts."""
+    root = str(tmp_path)
+    mgr = os.path.join(root, ".manager_ai")
+    os.makedirs(mgr, exist_ok=True)
+    # Create minimal index files so rebuild has something to read
+    _write(os.path.join(mgr, "issues.yaml"), yaml.safe_dump({
+        "schema_version": 1, "issues": [],
+    }))
+    _write(os.path.join(mgr, "memories.yaml"), yaml.safe_dump({
+        "schema_version": 1, "memories": [],
+    }))
+    _write(os.path.join(mgr, "files.yaml"), yaml.safe_dump({
+        "schema_version": 1, "files": [],
+    }))
+
+    create_resp = await client.post("/api/projects", json={
+        "name": "rebuild-active", "path": root,
+    })
+    project_id = create_resp.json()["id"]
+
+    response = await client.post(f"/api/projects/{project_id}/rebuild-index")
+    assert response.status_code == 200
+    data = response.json()
+    assert "issues" in data
+    assert "memories" in data
+    assert "files" in data
+
+
+@pytest.mark.asyncio
+async def test_rebuild_index_archived_project_returns_400(client, tmp_path):
+    """rebuild-index on an archived project returns 400."""
+    root = str(tmp_path)
+    mgr = os.path.join(root, ".manager_ai")
+    os.makedirs(mgr, exist_ok=True)
+
+    create_resp = await client.post("/api/projects", json={
+        "name": "rebuild-archived", "path": root,
+    })
+    project_id = create_resp.json()["id"]
+
+    # Archive the project
+    archive_resp = await client.post(f"/api/projects/{project_id}/archive")
+    assert archive_resp.status_code == 200
+
+    # Try rebuild-index on archived project
+    response = await client.post(f"/api/projects/{project_id}/rebuild-index")
+    assert response.status_code == 400
+    assert "archived" in response.json()["detail"].lower()

@@ -413,6 +413,8 @@ async def rebuild_index(project_id: str, db: AsyncSession = Depends(get_db)):
     """
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
+    if project.archived_at is not None:
+        raise HTTPException(status_code=400, detail="Cannot rebuild index for archived project")
     logger.info("Manual rebuild triggered for project %s", project_id)
     issue_count = issue_store.rebuild_issues_index(project.path)
     issue_store.invalidate_issue_cache(project.path)
