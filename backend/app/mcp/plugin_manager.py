@@ -133,7 +133,7 @@ class PluginManager:
                         key, cfg.access_level, (cfg.name or key), client._tools
                     )
                     _update_tool_description(mcp_instance, proxy_name, new_desc)
-            except BaseException:
+            except Exception:
                 logger.debug("Plugin %s background pre-connect failed (will retry on first call)", key)
 
         client._pre_connect_task = asyncio.create_task(_pre_connect())
@@ -228,7 +228,7 @@ class PluginManager:
                             plugin_key, runtime_cfg.access_level, (runtime_cfg.name or plugin_key), new_client._tools
                         )
                         _update_tool_description(mcp_instance, proxy_name, new_desc)
-                except BaseException:
+                except Exception:
                     logger.debug("Plugin %s background pre-connect failed (will retry on first call)", plugin_key)
 
             new_client._pre_connect_task = asyncio.create_task(_pre_connect())
