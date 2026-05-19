@@ -220,3 +220,10 @@ memories:
   - to_id: b9e05112-f7a4-479e-838d-49fee1be6f21
     relation: complements
     created_at: '2026-05-14T21:28:49.655416'
+- id: 8fca0950-1149-4a99-9d3d-c66b9f6bcece
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Cross-project scans must exclude archived projects
+  parent_id: null
+  created_at: '2026-05-15T09:31:52.041308'
+  updated_at: '2026-05-15T09:31:52.041308'
+  links: []

@@ -1,0 +1,1 @@
+mi sapresti dire perchè quando avvio una issue, l'llm mi dice "Memory tools limited — skipping search."??? non dovrebbe manualmente leggere le memorie dai file? perchè non può farlo?

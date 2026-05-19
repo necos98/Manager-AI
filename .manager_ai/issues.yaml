@@ -220,7 +220,14 @@ issues:
 - id: 01a3d02a-3a99-48d8-a97d-b1582d98a28e
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Exclude archived projects from all cache/index operations
-  status: Accepted
+  status: Finished
   priority: 3
   created_at: '2026-05-15T07:32:36.844822'
-  updated_at: '2026-05-15T09:00:05.013205'
+  updated_at: '2026-05-15T09:31:28.360090'
+- id: a8bfb33d-b62c-4e03-8aad-b1cf06438268
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: LLM skips memory search during run-issue — "Memory tools limited" message
+  status: Finished
+  priority: 3
+  created_at: '2026-05-15T10:31:38.980373'
+  updated_at: '2026-05-15T12:20:25.281394'

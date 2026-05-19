@@ -2,10 +2,10 @@ schema_version: 1
 id: 01a3d02a-3a99-48d8-a97d-b1582d98a28e
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Exclude archived projects from all cache/index operations
-status: Accepted
+status: Finished
 priority: 3
 created_at: '2026-05-15T07:32:36.844822'
-updated_at: '2026-05-15T09:00:05.013205'
+updated_at: '2026-05-15T09:31:28.360090'
 tasks:
 - id: 298d1a93-9f60-4c1e-81e0-22cff282bc91
   name: Fix cross-project scans in services — change archived=None to archived=False in issue_service, memory_service, task_service, issue_relation_service
@@ -27,14 +27,14 @@ tasks:
   updated_at: '2026-05-15T09:01:36'
 - id: 84ccf089-bb68-4779-82cb-d040d5bb7ddc
   name: Add/update tests for archived exclusion
-  status: In Progress
+  status: Completed
   order: 3
   created_at: '2026-05-15T08:59:58'
-  updated_at: '2026-05-15T09:01:21'
+  updated_at: '2026-05-15T09:27:24'
 - id: 3e13f8af-027d-4205-83b2-846696a5ee9c
   name: Run full test suite to verify no regressions
-  status: Pending
+  status: Completed
   order: 4
   created_at: '2026-05-15T08:59:58'
-  updated_at: '2026-05-15T08:59:58'
+  updated_at: '2026-05-15T09:31:12'
 relations: []
