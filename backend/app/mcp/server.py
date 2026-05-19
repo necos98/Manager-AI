@@ -9,8 +9,15 @@ from datetime import datetime, timezone
 
 from app.database import async_session
 from app.exceptions import AppError
+from app.models.agent import Agent
+from app.models.agent_message import AgentMessage
+from app.models.pipeline import AgentStepRun, AgentStepStatus, Pipeline, PipelineRun, PipelineRunStatus
+from app.schemas.agent import AgentCreate, AgentUpdate, AgentResponse
+from app.schemas.agent_message import AgentMessageCreate, AgentMessageResponse
+from app.schemas.pipeline import PipelineCreate, PipelineUpdate, PipelineResponse, PipelineRunFullResponse, PipelineRunResponse, AgentStepRunResponse
 from app.services.event_service import event_service
 from app.services.issue_service import IssueService
+from app.services.orchestrator_service import OrchestratorService
 from app.services.project_service import ProjectService
 from app.models.task import TaskStatus
 from app.services.task_service import TaskService
@@ -283,7 +290,23 @@ async def accept_issue(project_id: str, issue_id: str) -> dict:
                 "issue_name": issue_name_val,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
-            return {"id": issue_id, "status": issue_status}
+
+            # Auto-start default pipeline
+            try:
+                orchestrator = OrchestratorService(session)
+                pipeline_run = await orchestrator.start_pipeline(
+                    trigger_type="issue_accepted", issue_id=issue_id
+                )
+                result: dict = {"id": issue_id, "status": issue_status}
+                if pipeline_run:
+                    result["pipeline_run_id"] = pipeline_run.id
+                return result
+            except Exception:
+                logger.warning(
+                    "Failed to auto-start pipeline for issue %s", issue_id, exc_info=True
+                )
+                return {"id": issue_id, "status": issue_status}
+
         except AppError as e:
             return {"error": e.message}
 
@@ -849,3 +872,287 @@ async def disable_plugin(project_id: str, plugin_name: str) -> dict:
         project_id, project.path, plugin_name, mcp
     )
     return {"success": success}
+
+
+# ── Agent tools ──────────────────────────────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.list_agents.description"])
+async def list_agents(project_id: str) -> dict:
+    async with async_session() as session:
+        orch = OrchestratorService(session)
+        agents = await orch.ensure_default_agents(project_id)
+        return {"agents": [AgentResponse.from_model(a).model_dump(mode="json") for a in agents]}
+
+
+@mcp.tool(description=_desc["tool.create_agent.description"])
+async def create_agent(project_id: str, name: str, role_key: str, system_prompt: str = "") -> dict:
+    data = AgentCreate(name=name, role_key=role_key, system_prompt=system_prompt)
+    async with async_session() as session:
+        agent = Agent(
+            project_id=project_id,
+            name=data.name,
+            role_key=data.role_key,
+            system_prompt=data.system_prompt,
+        )
+        session.add(agent)
+        await session.commit()
+        await session.refresh(agent)
+        await event_service.emit({
+            "type": "agent_created",
+            "project_id": project_id,
+            "agent_id": agent.id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return AgentResponse.from_model(agent).model_dump(mode="json")
+
+
+@mcp.tool(description=_desc["tool.update_agent.description"])
+async def update_agent(agent_id: str, name: str | None = None, system_prompt: str | None = None, enabled: bool | None = None) -> dict:
+    async with async_session() as session:
+        agent = await session.get(Agent, agent_id)
+        if agent is None:
+            return {"error": "Agent not found"}
+        if name is not None:
+            agent.name = name
+        if system_prompt is not None:
+            agent.system_prompt = system_prompt
+        if enabled is not None:
+            agent.enabled = enabled
+        await session.commit()
+        await session.refresh(agent)
+        await event_service.emit({
+            "type": "agent_updated",
+            "project_id": agent.project_id,
+            "agent_id": agent.id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return AgentResponse.from_model(agent).model_dump(mode="json")
+
+
+@mcp.tool(description=_desc["tool.delete_agent.description"])
+async def delete_agent(agent_id: str) -> dict:
+    async with async_session() as session:
+        agent = await session.get(Agent, agent_id)
+        if agent is None:
+            return {"error": "Agent not found"}
+        project_id = agent.project_id
+        await session.delete(agent)
+        await session.commit()
+        await event_service.emit({
+            "type": "agent_deleted",
+            "project_id": project_id,
+            "agent_id": agent_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return {"deleted": True}
+
+
+# ── Pipeline tools ───────────────────────────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.list_pipelines.description"])
+async def list_pipelines(project_id: str) -> dict:
+    async with async_session() as session:
+        from sqlalchemy import select
+        import json as _json
+        result = await session.execute(
+            select(Pipeline).where(Pipeline.project_id == project_id).order_by(Pipeline.name)
+        )
+        pipelines = result.scalars().all()
+        return {
+            "pipelines": [
+                {
+                    "id": p.id,
+                    "project_id": p.project_id,
+                    "name": p.name,
+                    "steps": _json.loads(p.steps) if p.steps else [],
+                    "is_default": p.is_default,
+                    "trigger_type": p.trigger_type,
+                    "created_at": p.created_at.isoformat() if p.created_at else None,
+                    "updated_at": p.updated_at.isoformat() if p.updated_at else None,
+                }
+                for p in pipelines
+            ]
+        }
+
+
+@mcp.tool(description=_desc["tool.create_pipeline.description"])
+async def create_pipeline(project_id: str, name: str, steps: list[dict], is_default: bool = False, trigger_type: str = "issue_accepted") -> dict:
+    import json as _json
+    from sqlalchemy import update
+    async with async_session() as session:
+        if is_default:
+            await session.execute(
+                update(Pipeline)
+                .where(Pipeline.project_id == project_id, Pipeline.is_default == True)
+                .values(is_default=False)
+            )
+        pipeline = Pipeline(
+            project_id=project_id,
+            name=name,
+            steps=_json.dumps(steps),
+            is_default=is_default,
+            trigger_type=trigger_type,
+        )
+        session.add(pipeline)
+        await session.commit()
+        await session.refresh(pipeline)
+        await event_service.emit({
+            "type": "pipeline_created",
+            "project_id": project_id,
+            "pipeline_id": pipeline.id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return {
+            "id": pipeline.id,
+            "project_id": pipeline.project_id,
+            "name": pipeline.name,
+            "steps": _json.loads(pipeline.steps),
+            "is_default": pipeline.is_default,
+            "trigger_type": pipeline.trigger_type,
+        }
+
+
+@mcp.tool(description=_desc["tool.update_pipeline.description"])
+async def update_pipeline(pipeline_id: str, name: str | None = None, steps: list[dict] | None = None, is_default: bool | None = None, trigger_type: str | None = None) -> dict:
+    import json as _json
+    from sqlalchemy import update
+    async with async_session() as session:
+        pipeline = await session.get(Pipeline, pipeline_id)
+        if pipeline is None:
+            return {"error": "Pipeline not found"}
+        if name is not None:
+            pipeline.name = name
+        if steps is not None:
+            pipeline.steps = _json.dumps(steps)
+        if trigger_type is not None:
+            pipeline.trigger_type = trigger_type
+        if is_default is True:
+            await session.execute(
+                update(Pipeline)
+                .where(Pipeline.project_id == pipeline.project_id, Pipeline.is_default == True)
+                .values(is_default=False)
+            )
+            pipeline.is_default = True
+        elif is_default is not None:
+            pipeline.is_default = is_default
+        await session.commit()
+        await session.refresh(pipeline)
+        await event_service.emit({
+            "type": "pipeline_updated",
+            "project_id": pipeline.project_id,
+            "pipeline_id": pipeline.id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return {
+            "id": pipeline.id,
+            "project_id": pipeline.project_id,
+            "name": pipeline.name,
+            "steps": _json.loads(pipeline.steps),
+            "is_default": pipeline.is_default,
+            "trigger_type": pipeline.trigger_type,
+        }
+
+
+@mcp.tool(description=_desc["tool.delete_pipeline.description"])
+async def delete_pipeline(pipeline_id: str) -> dict:
+    async with async_session() as session:
+        pipeline = await session.get(Pipeline, pipeline_id)
+        if pipeline is None:
+            return {"error": "Pipeline not found"}
+        project_id = pipeline.project_id
+        await session.delete(pipeline)
+        await session.commit()
+        await event_service.emit({
+            "type": "pipeline_deleted",
+            "project_id": project_id,
+            "pipeline_id": pipeline_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return {"deleted": True}
+
+
+# ── Agent Chat tools ─────────────────────────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.send_agent_message.description"])
+async def send_agent_message(issue_id: str, content: str, message_type: str = "context") -> dict:
+    if message_type not in ("context", "decision", "question", "answer", "status"):
+        return {"error": "message_type must be one of: context, decision, question, answer, status"}
+    async with async_session() as session:
+        msg = AgentMessage(
+            issue_id=issue_id,
+            agent_name="agent",
+            agent_role="unknown",
+            content=content,
+            message_type=message_type,
+        )
+        session.add(msg)
+        await session.commit()
+        await session.refresh(msg)
+        await event_service.emit({
+            "type": "agent_message_added",
+            "issue_id": issue_id,
+            "message": {
+                "id": msg.id,
+                "issue_id": msg.issue_id,
+                "agent_name": msg.agent_name,
+                "agent_role": msg.agent_role,
+                "content": msg.content,
+                "message_type": msg.message_type,
+                "created_at": msg.created_at.isoformat() if msg.created_at else None,
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return AgentMessageResponse.model_validate(msg).model_dump(mode="json")
+
+
+@mcp.tool(description=_desc["tool.get_agent_messages.description"])
+async def get_agent_messages(issue_id: str) -> dict:
+    async with async_session() as session:
+        result = await session.execute(
+            select(AgentMessage)
+            .where(AgentMessage.issue_id == issue_id)
+            .order_by(AgentMessage.created_at)
+        )
+        messages = result.scalars().all()
+        return {
+            "messages": [
+                AgentMessageResponse.model_validate(m).model_dump(mode="json")
+                for m in messages
+            ]
+        }
+
+
+# ── Pipeline Execution tools ────────────────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.complete_agent_step.description"])
+async def complete_agent_step(pipeline_run_id: str, summary: str = "") -> dict:
+    async with async_session() as session:
+        orch = OrchestratorService(session)
+        return await orch.complete_agent_step(pipeline_run_id, summary)
+
+
+@mcp.tool(description=_desc["tool.get_pipeline_status.description"])
+async def get_pipeline_status(pipeline_run_id: str) -> dict:
+    async with async_session() as session:
+        orch = OrchestratorService(session)
+        return await orch.get_pipeline_status(pipeline_run_id)
+
+
+@mcp.tool(description=_desc["tool.start_pipeline.description"])
+async def start_pipeline(issue_id: str) -> dict:
+    async with async_session() as session:
+        orch = OrchestratorService(session)
+        pipeline_run = await orch.start_pipeline(
+            trigger_type="manual", issue_id=issue_id
+        )
+        if pipeline_run is None:
+            return {"error": "No default pipeline found for this project"}
+        return {
+            "pipeline_run_id": pipeline_run.id,
+            "status": pipeline_run.status.value,
+            "trigger_type": pipeline_run.trigger_type,
+        }
