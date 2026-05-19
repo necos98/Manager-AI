@@ -27,6 +27,8 @@ import { useDeleteIssue, useUpdateIssue } from "@/features/issues/hooks";
 import { useKillTerminal } from "@/features/terminals/hooks";
 import type { Issue } from "@/shared/types";
 import { IssueRelationsTab } from "./issue-relations-tab";
+import { AgentChat } from "@/features/agents/components/agent-chat";
+import { PipelineProgress } from "@/features/agents/components/pipeline-progress";
 
 interface IssueDetailProps {
   issue: Issue;
@@ -53,6 +55,8 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
     { value: "plan", label: "Plan", available: !!issue.plan },
     { value: "tasks", label: "Tasks", available: true },
     { value: "relations", label: "Relations", available: true },
+    { value: "chat", label: "Agent Chat", available: true },
+    { value: "pipeline", label: "Pipeline", available: true },
     { value: "recap", label: "Recap", available: !!issue.recap },
   ], [issue.specification, issue.plan, issue.recap]);
 
@@ -195,6 +199,14 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
 
         <TabsContent value="relations">
           <IssueRelationsTab issue={issue} projectId={projectId} />
+        </TabsContent>
+
+        <TabsContent value="chat" className="mt-4">
+          <AgentChat issueId={issue.id} />
+        </TabsContent>
+
+        <TabsContent value="pipeline" className="mt-4">
+          <PipelineProgress projectId={projectId} issueId={issue.id} />
         </TabsContent>
 
         {issue.recap && (

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Archive, ArrowRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
+import { AgentsSection } from "@/features/agents/components/agents-section";
+import { PipelinesSection } from "@/features/agents/components/pipelines-section";
 import {
   Dialog,
   DialogContent,
@@ -476,6 +478,14 @@ export function ProjectSettingsDialog({
                 Add Credential
               </Button>
             )}
+          </div>
+
+          <div className="pt-2 border-t">
+            <AgentsSection projectId={project.id} />
+          </div>
+
+          <div className="pt-2 border-t">
+            <PipelinesSection projectId={project.id} />
           </div>
 
           <div className="pt-2 border-t">

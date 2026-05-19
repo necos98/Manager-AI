@@ -57,5 +57,18 @@
   "tool.get_plugin_config.description": "Get the full configuration of a specific plugin (no secrets). Returns name, transport, command/url, args, env var names (not values), access_level, timeout.",
   "tool.enable_plugin.description": "Enable a plugin and start it. Writes enabled=true to plugins.yaml and spawns the plugin process. Returns success status.",
   "tool.disable_plugin.description": "Disable a plugin and stop it. Writes enabled=false to plugins.yaml and terminates the plugin process. Returns success status.",
-  "tool.get_project_links.description": "Get all directional links for a project (both outgoing and incoming). Each link has source_project_id, target_project_id, source_project_name, target_project_name, and description explaining how they relate. Use this to discover which projects might be impacted by changes."
+  "tool.get_project_links.description": "Get all directional links for a project (both outgoing and incoming). Each link has source_project_id, target_project_id, source_project_name, target_project_name, and description explaining how they relate. Use this to discover which projects might be impacted by changes.",
+  "tool.list_agents.description": "List all agents for a project. Returns id, name, role_key, system_prompt, enabled, created_at, updated_at.",
+  "tool.create_agent.description": "Create a new agent for a project. Parameters: project_id (required), name (required), role_key (required), system_prompt (optional, default empty). Returns the created agent.",
+  "tool.update_agent.description": "Update an existing agent. Parameters: agent_id (required), name (optional), system_prompt (optional), enabled (optional). Only updates fields that are provided.",
+  "tool.delete_agent.description": "Delete an agent by ID.",
+  "tool.list_pipelines.description": "List all pipelines for a project. Returns id, name, steps (JSON array of {agent_id, order}), is_default, trigger_type.",
+  "tool.create_pipeline.description": "Create a new pipeline for a project. Parameters: project_id (required), name (required), steps (list of {agent_id, order}), is_default (optional), trigger_type (optional, default 'issue_accepted').",
+  "tool.update_pipeline.description": "Update an existing pipeline. Parameters: pipeline_id (required), name (optional), steps (optional), is_default (optional), trigger_type (optional).",
+  "tool.delete_pipeline.description": "Delete a pipeline by ID.",
+  "tool.send_agent_message.description": "Send a message to the agent chat for an issue. Parameters: issue_id (required), content (required), message_type (optional, one of: context, decision, question, answer, status). The agent name and role are auto-detected from the calling context.",
+  "tool.get_agent_messages.description": "Get all agent chat messages for an issue, ordered by creation time. Use this to read context from other agents before making decisions.",
+  "tool.complete_agent_step.description": "Signal that the current agent has completed its work. Parameters: pipeline_run_id (required), summary (required). Marks the running step as completed so the orchestrator can proceed to the next agent.",
+  "tool.get_pipeline_status.description": "Get the current status of a pipeline run, including all step statuses. Use this to check pipeline progress.",
+  "tool.start_pipeline.description": "Manually start a pipeline for an issue. Parameters: issue_id (required). Finds the default pipeline and begins execution. Returns the created pipeline run."
 }

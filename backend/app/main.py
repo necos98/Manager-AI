@@ -18,7 +18,7 @@ from app.mcp.plugin_manager import plugin_manager
 from app.migration.db_to_files import migrate_all_projects
 from app.services.file_service import recover_pending_transcriptions
 from app.services.manager_ai_watcher import manager_ai_watcher
-from app.routers import activity, credentials, events, files, issue_relations, issues, library, memories, network, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, system, tasks, terminals, terminal_commands
+from app.routers import activity, agents, credentials, events, files, issue_relations, issues, library, memories, network, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, system, tasks, terminals, terminal_commands
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +136,8 @@ app.include_router(settings_router.router)
 app.include_router(terminals.router)
 app.include_router(terminal_commands.router)
 app.include_router(project_variables.router)
+app.include_router(agents.router)
+app.include_router(pipelines.router)
 app.include_router(events.router)
 app.include_router(activity.router)
 app.include_router(library.router)
