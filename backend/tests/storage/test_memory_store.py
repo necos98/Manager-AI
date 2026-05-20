@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from app.storage import atomic, memory_store, paths
+from app.storage.cache import flush_pending_writes
 from app.storage.memory_store import MemoryLinkRecord, MemoryRecord
 
 
@@ -51,6 +52,7 @@ def test_load_missing_memory_returns_none(proj):
 
 def test_create_memory_writes_frontmatter(proj):
     memory_store.create_memory(proj, _new_memory("mf", title="X", description="hello"))
+    flush_pending_writes()
     content = paths.memory_md(proj, "mf").read_text(encoding="utf-8")
     assert "---" in content
     assert "id: mf" in content
@@ -61,6 +63,7 @@ def test_create_memory_writes_frontmatter(proj):
 def test_create_memory_registers_in_index(proj):
     memory_store.create_memory(proj, _new_memory("m1", created_at="2026-04-01T10:00:00"))
     memory_store.create_memory(proj, _new_memory("m2", created_at="2026-04-02T10:00:00"))
+    flush_pending_writes()
     index = atomic.read_yaml(paths.memories_index(proj))
     assert [e["id"] for e in index["memories"]] == ["m1", "m2"]
 
@@ -69,6 +72,7 @@ def test_index_sorted_by_created_at_then_id(proj):
     memory_store.create_memory(proj, _new_memory("late", created_at="2026-04-05T10:00:00"))
     memory_store.create_memory(proj, _new_memory("early", created_at="2026-04-01T10:00:00"))
     memory_store.create_memory(proj, _new_memory("mid", created_at="2026-04-03T10:00:00"))
+    flush_pending_writes()
     index = atomic.read_yaml(paths.memories_index(proj))
     assert [e["id"] for e in index["memories"]] == ["early", "mid", "late"]
 
@@ -89,6 +93,7 @@ def test_delete_memory_removes_file_and_index(proj):
     memory_store.create_memory(proj, _new_memory("d1"))
     memory_store.create_memory(proj, _new_memory("d2"))
     memory_store.delete_memory(proj, "d1")
+    flush_pending_writes()
 
     assert not paths.memory_md(proj, "d1").exists()
     index = atomic.read_yaml(paths.memories_index(proj))
@@ -172,6 +177,7 @@ def test_links_persisted_in_frontmatter(proj):
     memory_store.create_memory(proj, _new_memory("a"))
     memory_store.create_memory(proj, _new_memory("b"))
     memory_store.add_link(proj, "a", MemoryLinkRecord(to_id="b", relation="see_also", created_at="2026-04-01T10:00:00"))
+    flush_pending_writes()
 
     # Reload index reflects the link
     index = atomic.read_yaml(paths.memories_index(proj))
@@ -182,6 +188,7 @@ def test_links_persisted_in_frontmatter(proj):
 def test_rebuild_memories_index(proj):
     memory_store.create_memory(proj, _new_memory("m1", created_at="2026-04-01T10:00:00"))
     memory_store.create_memory(proj, _new_memory("m2", created_at="2026-04-02T10:00:00"))
+    flush_pending_writes()
     paths.memories_index(proj).unlink()
     memory_store.rebuild_memories_index(proj)
     index = atomic.read_yaml(paths.memories_index(proj))

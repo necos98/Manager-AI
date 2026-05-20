@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from app.storage import atomic, issue_store, paths
+from app.storage.cache import flush_pending_writes
 from app.storage.issue_store import (
     FeedbackRecord,
     IssueRecord,
@@ -51,6 +52,7 @@ def proj(tmp_path: Path) -> str:
 def test_create_issue_writes_yaml_and_description(proj):
     rec = _new_record("a1", description="desc for a1")
     issue_store.create_issue(proj, rec)
+    flush_pending_writes()
 
     assert paths.issue_yaml(proj, "a1").exists()
     assert paths.issue_md(proj, "a1", "description").exists()
@@ -74,6 +76,7 @@ def test_create_issue_writes_optional_md_when_present(proj):
 def test_create_issue_skips_missing_optional_md(proj):
     rec = _new_record("a3", specification=None, plan=None, recap=None)
     issue_store.create_issue(proj, rec)
+    flush_pending_writes()
     assert not paths.issue_md(proj, "a3", "specification").exists()
     assert not paths.issue_md(proj, "a3", "plan").exists()
     assert not paths.issue_md(proj, "a3", "recap").exists()
@@ -82,6 +85,7 @@ def test_create_issue_skips_missing_optional_md(proj):
 def test_create_issue_registers_in_root_index(proj):
     issue_store.create_issue(proj, _new_record("a1"))
     issue_store.create_issue(proj, _new_record("a2", created_at="2026-04-02T10:00:00"))
+    flush_pending_writes()
     index_data = atomic.read_yaml(paths.issues_index(proj))
     ids = [e["id"] for e in index_data["issues"]]
     assert ids == ["a1", "a2"]
@@ -91,6 +95,7 @@ def test_index_sorted_by_created_at_then_id(proj):
     issue_store.create_issue(proj, _new_record("later", created_at="2026-04-05T10:00:00"))
     issue_store.create_issue(proj, _new_record("earlier", created_at="2026-04-01T10:00:00"))
     issue_store.create_issue(proj, _new_record("middle", created_at="2026-04-03T10:00:00"))
+    flush_pending_writes()
     index_data = atomic.read_yaml(paths.issues_index(proj))
     assert [e["id"] for e in index_data["issues"]] == ["earlier", "middle", "later"]
 
@@ -113,11 +118,13 @@ def test_update_issue_rewrites_markdown_fields(proj):
 def test_update_issue_removes_optional_md_set_to_none(proj):
     rec = _new_record("u2", specification="start", plan="start")
     issue_store.create_issue(proj, rec)
+    flush_pending_writes()
     assert paths.issue_md(proj, "u2", "specification").exists()
 
     rec.specification = None
     rec.plan = None
     issue_store.update_issue(proj, rec)
+    flush_pending_writes()
 
     assert not paths.issue_md(proj, "u2", "specification").exists()
     assert not paths.issue_md(proj, "u2", "plan").exists()
@@ -127,6 +134,7 @@ def test_delete_issue_removes_folder_and_index_entry(proj):
     issue_store.create_issue(proj, _new_record("d1"))
     issue_store.create_issue(proj, _new_record("d2"))
     issue_store.delete_issue(proj, "d1")
+    flush_pending_writes()
 
     assert not paths.issue_dir(proj, "d1").exists()
     index_data = atomic.read_yaml(paths.issues_index(proj))
@@ -243,6 +251,7 @@ def test_remove_relation(proj):
 def test_rebuild_issues_index_reflects_filesystem(proj):
     issue_store.create_issue(proj, _new_record("r1", created_at="2026-04-01T10:00:00"))
     issue_store.create_issue(proj, _new_record("r2", created_at="2026-04-02T10:00:00"))
+    flush_pending_writes()
     # Tamper: delete index on disk
     paths.issues_index(proj).unlink()
     issue_store.rebuild_issues_index(proj)

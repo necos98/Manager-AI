@@ -227,3 +227,37 @@ memories:
   created_at: '2026-05-15T09:31:52.041308'
   updated_at: '2026-05-15T09:31:52.041308'
   links: []
+- id: b99aba66-4a93-460a-90e8-cac4442c16e8
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: 'Textarea wrapping: use overflow-wrap-anywhere, not break-words, for pasted content'
+  parent_id: null
+  created_at: '2026-05-20T13:58:29.975596'
+  updated_at: '2026-05-20T13:58:29.975596'
+  links: []
+- id: f1a0c392-8db4-4c67-a2ea-98c5775c03e7
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: 'RAM-first storage architecture: MemoryStore → WriteQueue → BackgroundWriter → disk'
+  parent_id: null
+  created_at: '2026-05-20T16:40:01.107291'
+  updated_at: '2026-05-20T16:40:01.107291'
+  links:
+  - to_id: 20e00014-c1d0-43c6-8f27-0a9b703400e3
+    relation: replaces
+    created_at: '2026-05-20T16:40:26.339851'
+  - to_id: afaa9cc4-e629-4012-b979-47a4e206b750
+    relation: see_also
+    created_at: '2026-05-20T16:40:23.044011'
+- id: afaa9cc4-e629-4012-b979-47a4e206b750
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Store modules keep disk fallback in load_/list_ functions for backward compat
+  parent_id: null
+  created_at: '2026-05-20T16:40:08.196016'
+  updated_at: '2026-05-20T16:40:08.196016'
+  links: []
+- id: aff755eb-4dd2-445e-86e3-5aa26fcf0639
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: 'Python 3.14 sqlite3: set row_factory=sqlite3.Row for dict-like row access'
+  parent_id: null
+  created_at: '2026-05-20T16:40:14.181519'
+  updated_at: '2026-05-20T16:40:14.181519'
+  links: []
