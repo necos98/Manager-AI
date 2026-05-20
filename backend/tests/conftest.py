@@ -14,12 +14,27 @@ from app.models.project_variable import ProjectVariable  # noqa: F401
 
 
 @pytest.fixture(autouse=True)
-def _clear_store_caches():
-    """Reset storage caches before and after each test."""
-    from app.storage.cache import clear_all_caches
+def _clear_store_caches(tmp_path_factory):
+    """Reset RAM store and flush pending writes before and after each test."""
+    import tempfile
+    from app.storage.cache import clear_all_caches, flush_pending_writes, set_write_queue
+    from app.storage.write_queue import WriteQueue
+    from app.storage.background_writer import flush_all_pending
+    from app.storage import memory_store as mem_mod
+    from app.storage import issue_store as iss_mod
+    from app.storage import file_store as file_mod
+
+    q = WriteQueue(tempfile.mktemp(suffix=".db"))
+    set_write_queue(q)
+    mem_mod.inject_write_queue(q)
+    iss_mod.inject_write_queue(q)
+    file_mod.inject_write_queue(q)
+
     clear_all_caches()
     yield
+    flush_all_pending(q)
     clear_all_caches()
+    q.close()
 
 
 @pytest_asyncio.fixture

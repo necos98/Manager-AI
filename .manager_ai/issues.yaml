@@ -238,3 +238,17 @@ issues:
   priority: 3
   created_at: '2026-05-19T12:39:43.146092'
   updated_at: '2026-05-19T13:10:17.841648'
+- id: f603be88-705a-49f5-ac62-59d0429e34d1
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Fix textarea overflow when pasting formatted text in New Issue dialog
+  status: Finished
+  priority: 3
+  created_at: '2026-05-20T13:55:11.807453'
+  updated_at: '2026-05-20T13:57:45.784049'
+- id: bb35a709-a59f-4926-9603-ba0ce6486ef0
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: 'Async memory layer: RAM-first architecture with non-blocking disk writes'
+  status: Finished
+  priority: 3
+  created_at: '2026-05-20T14:18:07.000645'
+  updated_at: '2026-05-20T16:39:33.194991'

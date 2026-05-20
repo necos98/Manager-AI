@@ -11,11 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.storage import file_store, issue_store, memory_store, paths
-from app.storage.cache import resource_consistency_cache
+from app.storage.cache import clear_all_caches
 from app.schemas.project import DashboardProject, ProjectCreate, ProjectResponse, ProjectUpdate
 from app.schemas.terminal import TerminalResponse
 from app.services.project_service import ProjectService
-from app.services.manager_ai_watcher import manager_ai_watcher
+from app.storage.memory_store_core import memory_store as _global_store
 from app.services.terminal_service import terminal_service
 from app.services.wsl_support import is_wsl_shell, win_to_wsl_path
 
@@ -295,11 +295,10 @@ async def archive_project(project_id: str, db: AsyncSession = Depends(get_db)):
     project = await service.archive(project_id)
     await db.commit()
     await db.refresh(project)
-    # Stop watcher + plugins so archived project doesn't trigger index rebuilds.
-    from app.mcp.server import mcp
+    # Stop plugins so archived project doesn't consume resources.
     from app.mcp.plugin_manager import plugin_manager
     await plugin_manager.stop_plugins_for_project(project_id)
-    await manager_ai_watcher.stop_project(project_id)
+    _global_store.remove_project(project.path)
     return await _enrich_project(service, project)
 
 
@@ -309,12 +308,11 @@ async def unarchive_project(project_id: str, db: AsyncSession = Depends(get_db))
     project = await service.unarchive(project_id)
     await db.commit()
     await db.refresh(project)
-    # Restart watcher + plugins for the reactivated project.
+    # Load project data into RAM and restart plugins.
     from app.mcp.server import mcp
     from app.mcp.plugin_manager import plugin_manager
-    await manager_ai_watcher.start_project(
-        project.id, project.path, mcp=mcp, plugin_manager=plugin_manager
-    )
+    from app.main import _load_project_into_memory
+    _load_project_into_memory(project.path, _global_store)
     await plugin_manager.start_plugins_for_project(project.id, project.path, mcp)
     return await _enrich_project(service, project)
 
@@ -352,7 +350,7 @@ async def install_manager_json(project_id: str, db: AsyncSession = Depends(get_d
     dest = os.path.join(project.path, "manager.json")
     with open(dest, "w", encoding="utf-8") as f:
         json.dump({"project_id": project.id}, f, indent=2)
-    resource_consistency_cache.clear()
+    clear_all_caches()
     return {"path": dest}
 
 
@@ -388,13 +386,7 @@ async def install_claude_resources(project_id: str, db: AsyncSession = Depends(g
 async def project_health(project_id: str, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
-    cache_key = f"health:{project.id}"
-    cached = resource_consistency_cache.get(cache_key)
-    if cached is not None:
-        consistency = cached
-    else:
-        consistency = _check_resource_consistency(project)
-        resource_consistency_cache.set(cache_key, consistency)
+    consistency = _check_resource_consistency(project)
     return {
         "manager_json": _check_manager_json(project),
         "claude_resources": _check_claude_resources(project),
@@ -406,22 +398,22 @@ async def project_health(project_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.post("/{project_id}/rebuild-index")
 async def rebuild_index(project_id: str, db: AsyncSession = Depends(get_db)):
-    """Rebuild all index YAML files from directory files and clear caches.
+    """Reload all project data from disk into RAM and rebuild index YAML files.
 
-    Does the same rebuild that happens at server startup via start_project().
-    Useful for recovering lost issues/memories/files without a restart.
+    Useful for recovering from external file modifications (git pull, manual edits).
     """
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
     if project.archived_at is not None:
         raise HTTPException(status_code=400, detail="Cannot rebuild index for archived project")
     logger.info("Manual rebuild triggered for project %s", project_id)
+    from app.main import _load_project_into_memory
+    _global_store.remove_project(project.path)
+    _load_project_into_memory(project.path, _global_store)
+    # Also trigger disk index rebuild
     issue_count = issue_store.rebuild_issues_index(project.path)
-    issue_store.invalidate_issue_cache(project.path)
     memory_count = memory_store.rebuild_memories_index(project.path)
-    memory_store.invalidate_memory_cache(project.path)
     file_count = file_store.rebuild_files_index(project.path)
-    file_store.invalidate_file_cache(project.path)
     logger.info(
         "Manual rebuild done for project %s: %d issues, %d memories, %d files",
         project_id, issue_count, memory_count, file_count,

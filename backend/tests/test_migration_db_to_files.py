@@ -15,6 +15,7 @@ from app.models.project import Project
 from app.models.project_file import ProjectFile
 from app.models.task import Task, TaskStatus
 from app.storage import atomic, paths
+from app.storage.cache import flush_pending_writes
 
 
 @pytest_asyncio.fixture
@@ -67,6 +68,7 @@ async def test_migrate_issue_with_tasks_and_feedback(db_session, project):
 
     summary = await migrate_project(db_session, project)
     assert summary.issues == 1
+    flush_pending_writes()
 
     assert paths.issue_yaml(project.path, "i1").exists()
     data = atomic.read_yaml(paths.issue_yaml(project.path, "i1"))
@@ -97,6 +99,7 @@ async def test_migrate_issue_relations(db_session, project):
     await db_session.commit()
 
     await migrate_project(db_session, project)
+    flush_pending_writes()
     src_data = atomic.read_yaml(paths.issue_yaml(project.path, "src"))
     assert len(src_data["relations"]) == 1
     assert src_data["relations"][0] == {"target_id": "tgt", "type": "blocks", "created_at": src_data["relations"][0]["created_at"]}
@@ -116,6 +119,7 @@ async def test_migrate_memories_with_hierarchy_and_links(db_session, project):
 
     summary = await migrate_project(db_session, project)
     assert summary.memories == 3
+    flush_pending_writes()
 
     child_path = paths.memory_md(project.path, "child")
     assert "parent_id: root" in child_path.read_text(encoding="utf-8")
@@ -160,6 +164,7 @@ async def test_migrate_files_with_extracted_text(db_session, project):
 
     summary = await migrate_project(db_session, project)
     assert summary.files == 2
+    flush_pending_writes()
 
     index = atomic.read_yaml(paths.files_index(project.path))
     ids = {e["id"] for e in index["files"]}
