@@ -2,6 +2,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Terminal } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
+import { Badge } from "@/shared/components/ui/badge";
 import { Card } from "@/shared/components/ui/card";
 import { StatusBadge } from "./status-badge";
 import type { Issue } from "@/shared/types";
@@ -70,6 +71,9 @@ export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId }:
                 <span className="text-xs bg-destructive/15 text-destructive px-1.5 py-0.5 rounded font-medium flex-shrink-0">
                   Blocked
                 </span>
+              )}
+              {issue.category && (
+                <Badge variant="secondary" className="text-[10px] px-1 py-0 leading-snug">{issue.category}</Badge>
               )}
             </div>
             <p className="text-sm font-medium truncate mt-0.5">

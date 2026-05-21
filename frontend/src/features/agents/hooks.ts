@@ -11,6 +11,7 @@ import {
   deletePipeline,
   fetchPipelineRun,
   fetchPipelineRunsForIssue,
+  startPipeline,
   type AgentData,
 } from "./api";
 
@@ -121,5 +122,17 @@ export function usePipelineRunsForIssue(projectId: string, issueId: string | nul
     queryKey: ["projects", projectId, "issues", issueId, "pipeline-runs"],
     queryFn: () => fetchPipelineRunsForIssue(projectId, issueId!),
     enabled: !!projectId && !!issueId,
+  });
+}
+
+export function useStartPipeline(projectId: string, issueId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => startPipeline(projectId, issueId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["projects", projectId, "issues", issueId, "pipeline-runs"] });
+      toast.success("Pipeline started");
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 }

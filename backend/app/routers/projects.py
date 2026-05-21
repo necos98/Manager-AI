@@ -31,6 +31,29 @@ def _claude_resources_source() -> str:
     )
 
 
+def install_claude_resources_to(project_path: str) -> dict:
+    src = _claude_resources_source()
+    if not os.path.isdir(src):
+        raise HTTPException(status_code=404, detail="claude_resources folder not found")
+
+    dest = os.path.join(project_path, ".claude")
+    os.makedirs(dest, exist_ok=True)
+
+    copied = []
+    for item in os.listdir(src):
+        if item.startswith("."):
+            continue
+        s = os.path.join(src, item)
+        d = os.path.join(dest, item)
+        if os.path.isdir(s):
+            shutil.copytree(s, d, dirs_exist_ok=True)
+        else:
+            shutil.copy2(s, d)
+        copied.append(item)
+
+    return {"path": dest, "copied": copied}
+
+
 def _check_manager_json(project) -> dict:
     path = os.path.join(project.path, "manager.json")
     if not os.path.isfile(path):
@@ -359,27 +382,7 @@ async def install_claude_resources(project_id: str, db: AsyncSession = Depends(g
     service = ProjectService(db)
     project = await service.get_by_id(project_id)
     _require_valid_project_dir(project)
-
-    src = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "claude_resources")
-    if not os.path.isdir(src):
-        raise HTTPException(status_code=404, detail="claude_resources folder not found")
-
-    dest = os.path.join(project.path, ".claude")
-    os.makedirs(dest, exist_ok=True)
-
-    copied = []
-    for item in os.listdir(src):
-        if item.startswith("."):
-            continue
-        s = os.path.join(src, item)
-        d = os.path.join(dest, item)
-        if os.path.isdir(s):
-            shutil.copytree(s, d, dirs_exist_ok=True)
-        else:
-            shutil.copy2(s, d)
-        copied.append(item)
-
-    return {"path": dest, "copied": copied}
+    return install_claude_resources_to(project.path)
 
 
 @router.get("/{project_id}/health")

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Terminal } from "lucide-react";
+import { Badge } from "@/shared/components/ui/badge";
 import { Card } from "@/shared/components/ui/card";
 import { StatusBadge } from "./status-badge";
 import type { Issue } from "@/shared/types";
@@ -83,6 +84,9 @@ export function IssueList({ issues, projectId, activeTerminalIssueIds }: IssueLi
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {issue.category && (
+                    <Badge variant="secondary" className="text-xs">{issue.category}</Badge>
+                  )}
                   <span className="text-xs text-muted-foreground">P{issue.priority}</span>
                   <StatusBadge status={issue.status} />
                 </div>
