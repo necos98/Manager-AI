@@ -62,6 +62,7 @@ class AgentStepRunResponse(BaseModel):
     status: AgentStepStatus
     summary: str | None = None
     error: str | None = None
+    terminal_id: str | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None
 

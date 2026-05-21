@@ -8,6 +8,7 @@ from app.models.issue_relation import IssueRelation
 from app.models.memory import Memory, MemoryLink
 from app.models.pipeline import AgentStepRun, Pipeline, PipelineRun
 from app.models.project import Project
+from app.models.credential_preset import CredentialPreset
 from app.models.project_credential import ProjectCredential
 from app.models.project_link import ProjectLink
 from app.models.project_file import ProjectFile
@@ -20,8 +21,9 @@ from app.models.task import Task
 from app.models.terminal_command import TerminalCommand
 
 __all__ = [
-    "ActivityLog", "Agent", "AgentMessage", "AgentStepRun", "Base", "Issue", "IssueFeedback",
-    "IssueRelation", "Memory", "MemoryLink", "Pipeline", "PipelineRun", "Project",
-    "ProjectCredential", "ProjectFile", "ProjectLink", "ProjectSkill", "ProjectVariable",
+    "ActivityLog", "Agent", "AgentMessage", "AgentStepRun", "Base", "CredentialPreset",
+    "Issue", "IssueFeedback", "IssueRelation", "Memory", "MemoryLink", "Pipeline",
+    "PipelineRun", "Project", "ProjectCredential", "ProjectFile", "ProjectLink",
+    "ProjectSkill", "ProjectVariable",
     "PromptTemplate", "Question", "Setting", "Task", "TerminalCommand",
 ]

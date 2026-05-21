@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
@@ -39,6 +39,7 @@ import { IssueRelationsTab } from "./issue-relations-tab";
 import { AgentChat } from "@/features/agents/components/agent-chat";
 import { PipelineProgress } from "@/features/agents/components/pipeline-progress";
 import { usePipelineRunsForIssue, usePipelineRun } from "@/features/agents/hooks";
+import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
 
 interface IssueDetailProps {
   issue: Issue;
