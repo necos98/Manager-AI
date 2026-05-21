@@ -27,3 +27,4 @@ project_resources/
 
 # Git worktrees
 .worktrees/
+frontend/src/routeTree.gen.ts
