@@ -17,14 +17,18 @@ _PLAN_MAX = 500_000
 class IssueCreate(BaseModel):
     description: str = Field(..., min_length=1, max_length=_DESCRIPTION_MAX)
     priority: int = Field(default=3, ge=1, le=5)
+    category: str | None = Field(None, max_length=50)
+    tags: list[str] | None = None
 
 
 class IssueUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=500)
     description: str | None = Field(None, min_length=1, max_length=_DESCRIPTION_MAX)
     priority: int | None = Field(None, ge=1, le=5)
+    category: str | None = Field(None, max_length=50)
     spec: str | None = Field(None, max_length=_SPEC_MAX)
     plan: str | None = Field(None, max_length=_PLAN_MAX)
+    tags: list[str] | None = None
 
 
 class IssueStatusUpdate(BaseModel):
@@ -42,10 +46,12 @@ class IssueResponse(BaseModel):
     description: str
     status: IssueStatus
     priority: int
+    category: str | None = None
     plan: str | None
     specification: str | None = None
     recap: str | None
     tasks: list[TaskResponse] = []
+    tags: list[str] = []
     created_at: datetime
     updated_at: datetime
 
@@ -58,10 +64,12 @@ class IssueResponse(BaseModel):
             description=record.description or "",
             status=IssueStatus(record.status),
             priority=record.priority,
+            category=record.category,
             plan=record.plan,
             specification=record.specification,
             recap=record.recap,
             tasks=[TaskResponse.from_record(t, issue_id=record.id) for t in (record.tasks or [])],
+            tags=record.tags if hasattr(record, 'tags') else [],
             created_at=_parse_dt(record.created_at),
             updated_at=_parse_dt(record.updated_at),
         )

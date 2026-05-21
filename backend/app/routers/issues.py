@@ -13,6 +13,7 @@ from app.schemas.issue import (
     IssueUpdate,
 )
 from app.services.issue_service import IssueService
+from app.services.orchestrator_service import OrchestratorService
 
 router = APIRouter(prefix="/api/projects/{project_id}/issues", tags=["issues"])
 
@@ -20,7 +21,7 @@ router = APIRouter(prefix="/api/projects/{project_id}/issues", tags=["issues"])
 @router.post("", response_model=IssueResponse, status_code=201)
 async def create_issue(project_id: str, data: IssueCreate, db: AsyncSession = Depends(get_db)):
     service = IssueService(db)
-    record = await service.create(project_id=project_id, description=data.description, priority=data.priority)
+    record = await service.create(project_id=project_id, description=data.description, priority=data.priority, category=data.category, tags=data.tags)
     await db.commit()
     return IssueResponse.from_record(record)
 
@@ -30,11 +31,18 @@ async def list_issues(
     project_id: str,
     status: IssueStatus | None = Query(None),
     search: str | None = Query(None),
+    tag: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     service = IssueService(db)
-    records = await service.list_by_project(project_id, status=status, search=search)
+    records = await service.list_by_project(project_id, status=status, search=search, tag=tag)
     return [IssueResponse.from_record(r) for r in records]
+
+
+@router.get("/tags", response_model=list[str])
+async def list_project_tags(project_id: str, db: AsyncSession = Depends(get_db)):
+    service = IssueService(db)
+    return await service.get_project_tags(project_id)
 
 
 @router.get("/{issue_id}", response_model=IssueResponse)
@@ -110,6 +118,21 @@ async def complete_issue(
     record = await service.complete_issue(issue_id, project_id, recap=data.recap)
     await db.commit()
     return IssueResponse.from_record(record)
+
+
+@router.post("/{issue_id}/start-pipeline")
+async def start_pipeline_for_issue(
+    project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
+):
+    orch = OrchestratorService(db)
+    pipeline_run = await orch.start_pipeline(trigger_type="manual", issue_id=issue_id)
+    if pipeline_run is None:
+        return {"error": "Could not start pipeline — no default pipeline or already running"}
+    return {
+        "pipeline_run_id": pipeline_run.id,
+        "status": pipeline_run.status.value,
+        "trigger_type": pipeline_run.trigger_type,
+    }
 
 
 @router.get("/{issue_id}/feedback", response_model=list[IssueFeedbackResponse])
