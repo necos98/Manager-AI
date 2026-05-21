@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { CheckCircle, XCircle, Loader2, Play } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Play, GitBranch } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -17,6 +17,7 @@ import {
   useCompleteIssue,
 } from "@/features/issues/hooks";
 import { useCreateTerminal } from "@/features/terminals/hooks";
+import { useStartPipeline, usePipelineRunsForIssue } from "@/features/agents/hooks";
 import type { Issue } from "@/shared/types";
 
 interface IssueActionsProps {
@@ -52,13 +53,17 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
   const acceptIssue = useAcceptIssue(projectId, issue.id);
   const cancelIssue = useCancelIssue(projectId, issue.id);
   const completeIssue = useCompleteIssue(projectId, issue.id);
+  const createTerminal = useCreateTerminal();
+  const startPipeline = useStartPipeline(projectId, issue.id);
+  const { data: pipelineRuns } = usePipelineRunsForIssue(projectId, issue.id);
 
   const isPending =
     acceptIssue.isPending ||
     cancelIssue.isPending ||
-    completeIssue.isPending;
+    completeIssue.isPending ||
+    startPipeline.isPending;
 
-  const createTerminal = useCreateTerminal();
+  const hasRunningPipeline = (pipelineRuns?.runs ?? []).some(r => r.status === "running");
 
   const handleRunIssue = () => {
     createTerminal.mutate({ issue_id: issue.id, project_id: projectId });
@@ -102,6 +107,16 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
             Mark as Complete
           </Button>
         )}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => startPipeline.mutate()}
+          disabled={isPending || startPipeline.isPending || hasRunningPipeline}
+          aria-label="Start agent pipeline"
+        >
+          <GitBranch className="size-4 mr-1" />
+          {startPipeline.isPending ? "Starting..." : hasRunningPipeline ? "Pipeline Running" : "Start Pipeline"}
+        </Button>
         <Button
           size="sm"
           variant="outline"

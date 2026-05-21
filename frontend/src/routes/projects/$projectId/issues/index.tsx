@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
-import { useIssues } from "@/features/issues/hooks";
+import { useIssues, useProjectTags } from "@/features/issues/hooks";
 import { NewIssueDialog } from "@/features/issues/components/new-issue-dialog";
 import { useBlockedIssueIds } from "@/features/issues/hooks-relations";
 import { useProject } from "@/features/projects/hooks";
@@ -24,10 +24,27 @@ function IssuesPage() {
     document.title = project ? `Issues - ${project.name}` : "Issues";
   }, [project]);
 
-  const { data: issues, isLoading } = useIssues(projectId);
+  const searchParams = useSearch({ strict: false }) as { tag?: string };
+  const tag = searchParams?.tag ?? "all";
+
+  const { data: issues, isLoading } = useIssues(
+    projectId,
+    undefined,
+    undefined,
+    tag !== "all" ? tag : undefined,
+  );
   const { data: terminals } = useTerminals(projectId);
   const activeTerminalIssueIds = terminals?.map((t) => t.issue_id) ?? [];
   const blockedIssueIds = useBlockedIssueIds(issues ?? []);
+  const { data: availableTags } = useProjectTags(projectId);
+  const navigate = useNavigate();
+  const handleTagChange = (newTag: string) => {
+    navigate({
+      to: "/projects/$projectId/issues",
+      params: { projectId },
+      search: newTag !== "all" ? { tag: newTag } : {},
+    });
+  };
 
   if (isLoading) {
     return (
@@ -55,6 +72,9 @@ function IssuesPage() {
           projectId={projectId}
           activeTerminalIssueIds={activeTerminalIssueIds}
           blockedIssueIds={blockedIssueIds}
+          tag={tag}
+          onTagChange={handleTagChange}
+          availableTags={availableTags ?? []}
         />
       </ErrorBoundary>
       <NewIssueDialog

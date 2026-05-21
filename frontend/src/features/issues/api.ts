@@ -16,11 +16,13 @@ import type {
 export function fetchIssues(
   projectId: string,
   status?: IssueStatus,
-  search?: string
+  search?: string,
+  tag?: string
 ): Promise<Issue[]> {
   const params = new URLSearchParams();
   if (status) params.set("status", status);
   if (search) params.set("search", search);
+  if (tag) params.set("tag", tag);
   const qs = params.toString();
   return apiGet<Issue[]>(`/projects/${projectId}/issues${qs ? `?${qs}` : ""}`);
 }
@@ -84,4 +86,8 @@ export function fetchFeedback(projectId: string, issueId: string): Promise<Issue
 
 export function addFeedback(projectId: string, issueId: string, data: IssueFeedbackCreate): Promise<IssueFeedback> {
   return apiPost<IssueFeedback>(`/projects/${projectId}/issues/${issueId}/feedback`, data);
+}
+
+export function fetchProjectTags(projectId: string): Promise<string[]> {
+  return apiGet<string[]>(`/projects/${projectId}/issues/tags`);
 }

@@ -1,7 +1,7 @@
 """add questions table
 
 Revision ID: 04f837ab5823
-Revises: 6fbb705de97e
+Revises: 9a752a193fcf
 Create Date: 2026-05-21 11:21:08.463144
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import sqlite
 
 # revision identifiers, used by Alembic.
 revision: str = '04f837ab5823'
-down_revision: Union[str, None] = '6fbb705de97e'
+down_revision: Union[str, None] = '9a752a193fcf'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

@@ -1,0 +1,1 @@
+Quando avvio il software vorrei che in tutti i progetti fossero ricaricate tutte le "claude_resources", come se cliccassi "Reinstall" sulle "claude_resources". Facendo questo ogni progetto ha sempre le risorse fresche. Potresti farlo?

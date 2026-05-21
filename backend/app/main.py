@@ -25,6 +25,7 @@ from app.storage import memory_store as memory_store_module
 from app.storage import issue_store as issue_store_module
 from app.storage import file_store as file_store_module
 from app.routers import activity, agents, credentials, events, files, issue_relations, issues, library, memories, network, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, questions, settings as settings_router, system, tasks, terminals, terminal_commands
+from app.routers.projects import install_claude_resources_to
 
 logger = logging.getLogger(__name__)
 
@@ -343,6 +344,16 @@ async def lifespan(app):
                 await plugin_manager.start_plugins_for_project(p.id, p.path, mcp)
         except Exception:
             logger.exception("Failed to start MCP plugins; continuing startup")
+
+        try:
+            for p in rows:
+                try:
+                    result = install_claude_resources_to(p.path)
+                    logger.info("Installed claude_resources to %s: %s", p.path, result.get("copied"))
+                except Exception:
+                    logger.warning("Failed to install claude_resources to %s", p.path, exc_info=True)
+        except Exception:
+            logger.exception("Failed to install claude_resources; continuing startup")
 
     async with mcp.session_manager.run():
         try:

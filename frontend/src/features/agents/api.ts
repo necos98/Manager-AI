@@ -102,3 +102,7 @@ export function fetchPipelineRun(runId: string): Promise<PipelineRunFullData> {
 export function fetchPipelineRunsForIssue(projectId: string, issueId: string): Promise<{ runs: PipelineRunData[] }> {
   return apiGet<{ runs: PipelineRunData[] }>(`/projects/${projectId}/pipelines/runs/by-issue/${issueId}`);
 }
+
+export function startPipeline(projectId: string, issueId: string): Promise<{ pipeline_run_id: string; status: string; trigger_type: string }> {
+  return apiPost<{ pipeline_run_id: string; status: string; trigger_type: string }>(`/projects/${projectId}/issues/${issueId}/start-pipeline`);
+}

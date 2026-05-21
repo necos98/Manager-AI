@@ -25,6 +25,11 @@ VALID_TRANSITIONS = {
     (IssueStatus.ACCEPTED, IssueStatus.FINISHED),
 }
 
+ALLOWED_CATEGORIES = {
+    "Bug", "Feature", "Improvement", "Documentation",
+    "Refactor", "Security", "Performance", "UI/UX",
+}
+
 
 class Issue(Base):
     __tablename__ = "issues"
@@ -35,6 +40,7 @@ class Issue(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[IssueStatus] = mapped_column(Enum(IssueStatus), nullable=False, default=IssueStatus.NEW)
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     plan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     specification: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     recap: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

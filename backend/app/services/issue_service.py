@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import InvalidTransitionError, NotFoundError, ValidationError
 from app.hooks.registry import HookContext, HookEvent, hook_registry
-from app.models.issue import VALID_TRANSITIONS, IssueStatus
+from app.models.issue import ALLOWED_CATEGORIES, VALID_TRANSITIONS, IssueStatus
 from app.models.task import TaskStatus
 from app.services.activity_service import ActivityService
 from app.services.project_service import ProjectService
@@ -31,6 +31,9 @@ from app.storage.issue_store import (
     TaskRecord,
 )
 
+TAG_MAX_LEN = 50
+TAG_MAX_COUNT = 20
+
 # Per-issue locks for complete_issue race guard.
 _issue_completion_locks: dict[str, asyncio.Lock] = {}
 
@@ -38,6 +41,18 @@ _issue_completion_locks: dict[str, asyncio.Lock] = {}
 def _now_iso() -> str:
     # Microsecond resolution so sequential writes remain strictly ordered.
     return datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep="T", timespec="microseconds")
+
+
+def _normalize_tags(raw: list[str] | None) -> list[str]:
+    if not raw:
+        return []
+    out: list[str] = []
+    for t in raw[:TAG_MAX_COUNT]:
+        t = t.strip().lower()
+        if t and len(t) <= TAG_MAX_LEN:
+            if t not in out:
+                out.append(t)
+    return out
 
 
 class IssueService:
@@ -51,7 +66,9 @@ class IssueService:
             self._path_cache[project_id] = project.path
         return self._path_cache[project_id]
 
-    async def create(self, project_id: str, description: str, priority: int = 3) -> IssueRecord:
+    async def create(self, project_id: str, description: str, priority: int = 3, category: str | None = None, tags: list[str] | None = None) -> IssueRecord:
+        if category is not None and category not in ALLOWED_CATEGORIES:
+            raise ValidationError(f"Invalid category: {category}. Allowed: {sorted(ALLOWED_CATEGORIES)}")
         project = await ProjectService(self.session).get_by_id(project_id)
         now = _now_iso()
         record = IssueRecord(
@@ -60,6 +77,7 @@ class IssueService:
             name=None,
             status=IssueStatus.NEW.value,
             priority=priority,
+            category=category,
             description=description,
             specification=None,
             plan=None,
@@ -69,6 +87,8 @@ class IssueService:
             tasks=[],
             relations=[],
         )
+        if tags:
+            record.tags = _normalize_tags(tags)
         issue_store.create_issue(project.path, record)
         await hook_registry.fire(
             HookEvent.ISSUE_CREATED,
@@ -107,6 +127,7 @@ class IssueService:
         project_id: str,
         status: IssueStatus | None = None,
         search: str | None = None,
+        tag: str | None = None,
     ) -> list[IssueRecord]:
         path = await self._resolve_path(project_id)
         records = issue_store.list_issues_full(path)
@@ -121,6 +142,9 @@ class IssueService:
                 for r in records
                 if term in (r.description or "").lower() or term in (r.name or "").lower()
             ]
+        if tag:
+            tag_lower = tag.strip().lower()
+            records = [r for r in records if tag_lower in (getattr(r, 'tags', []) or [])]
         records.sort(key=lambda r: (r.priority, r.created_at))
         return records
 
@@ -165,6 +189,13 @@ class IssueService:
 
     async def update_fields(self, issue_id: str, project_id: str, **kwargs: Any) -> IssueRecord:
         rec = await self.get_for_project(issue_id, project_id)
+        if "category" in kwargs:
+            cat = kwargs.pop("category")
+            if cat is not None and cat not in ALLOWED_CATEGORIES:
+                raise ValidationError(f"Invalid category: {cat}. Allowed: {sorted(ALLOWED_CATEGORIES)}")
+            rec.category = cat
+        if "tags" in kwargs and kwargs["tags"] is not None:
+            kwargs["tags"] = _normalize_tags(kwargs["tags"])
         for key, value in kwargs.items():
             if value is None:
                 continue
@@ -374,3 +405,12 @@ class IssueService:
     async def list_feedback(self, issue_id: str, project_id: str) -> list[FeedbackRecord]:
         await self.get_for_project(issue_id, project_id)
         return issue_store.load_feedback(await self._resolve_path(project_id), issue_id)
+
+    async def get_project_tags(self, project_id: str) -> list[str]:
+        path = await self._resolve_path(project_id)
+        records = issue_store.list_issues_full(path)
+        tags = set()
+        for r in records:
+            for t in getattr(r, 'tags', []) or []:
+                tags.add(t)
+        return sorted(tags)

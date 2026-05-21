@@ -1,10 +1,46 @@
 schema_version: 1
 id: f053c14a-8bd3-4e89-83d9-a56eb700d352
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: New
+name: Issue Categorization System
+status: Finished
 priority: 3
 created_at: '2026-05-21T08:27:04.570243'
-updated_at: '2026-05-21T08:27:04.570243'
-tasks: []
+updated_at: '2026-05-21T13:25:46.922012'
+tasks:
+- id: 7aa88c72-fc93-4e84-a9ee-6570d6e6acb9
+  name: 'Backend model + storage layer: add category to Issue model, IssueRecord, index, payload, disk write, rebuild, migration'
+  status: Completed
+  order: 0
+  created_at: '2026-05-21T13:12:59'
+  updated_at: '2026-05-21T13:18:18'
+- id: e5d6bbcf-e04b-4118-af65-3317a35f0248
+  name: 'Backend schemas + service validation: add category to IssueCreate/Update/Response, validate in service, pass in router'
+  status: Completed
+  order: 1
+  created_at: '2026-05-21T13:12:59'
+  updated_at: '2026-05-21T13:20:07'
+- id: b86c3845-3443-4a3e-b57d-059b8a5a8f86
+  name: 'Frontend types + API: add category to Issue/IssueCreate/IssueUpdate types, update createIssue/updateIssue'
+  status: Completed
+  order: 2
+  created_at: '2026-05-21T13:12:59'
+  updated_at: '2026-05-21T13:20:39'
+- id: 355ddf5b-e815-4409-af3b-5e721b9035c8
+  name: 'Frontend UI: category dropdown in NewIssueDialog, category badge + inline edit in IssueDetail'
+  status: Completed
+  order: 3
+  created_at: '2026-05-21T13:12:59'
+  updated_at: '2026-05-21T13:22:34'
+- id: 2115bd92-6a46-4d30-bb5b-c3648920b58a
+  name: 'Frontend UI: category badge in issue list and kanban cards'
+  status: Completed
+  order: 4
+  created_at: '2026-05-21T13:12:59'
+  updated_at: '2026-05-21T13:23:36'
+- id: 0cc68af8-93bb-443d-ac11-4ea337fa4eb4
+  name: Migration run + tests + build verification
+  status: Completed
+  order: 5
+  created_at: '2026-05-21T13:12:59'
+  updated_at: '2026-05-21T13:25:24'
 relations: []
