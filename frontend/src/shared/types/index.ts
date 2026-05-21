@@ -176,6 +176,12 @@ export interface AskTerminalCreate {
   project_id: string;
 }
 
+export interface LogTerminalCreate {
+  project_id: string;
+  issue_id: string;
+  label?: string;
+}
+
 // ── Terminal Command ──
 
 export interface TerminalCommand {

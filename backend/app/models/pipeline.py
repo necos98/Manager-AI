@@ -64,5 +64,6 @@ class AgentStepRun(Base):
     )
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    terminal_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, default=None)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

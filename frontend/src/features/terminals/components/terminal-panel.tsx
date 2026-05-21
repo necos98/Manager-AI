@@ -17,11 +17,12 @@ import "xterm/css/xterm.css";
 interface TerminalPanelProps {
   terminalId: string;
   projectId: string;
+  readOnly?: boolean;
   onSessionEnd?: () => void;
   onDownloadRecording?: () => void;
 }
 
-export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadRecording }: TerminalPanelProps) {
+export function TerminalPanel({ terminalId, projectId, readOnly = false, onSessionEnd, onDownloadRecording }: TerminalPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const onSessionEndRef = useRef(onSessionEnd);
@@ -182,11 +183,13 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
       ws.onerror = () => {};
     }
 
-    term.onData((data) => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(data);
-      }
-    });
+    if (!readOnly) {
+      term.onData((data) => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(data);
+        }
+      });
+    }
 
     term.attachCustomKeyEventHandler((e) => {
       if (e.type !== "keydown") return true;
@@ -275,28 +278,32 @@ export function TerminalPanel({ terminalId, projectId, onSessionEnd, onDownloadR
       onFocusCapture={markActive}
     >
       <div className="flex items-center justify-end gap-1 px-2 py-1 bg-zinc-800/40 border-b border-zinc-700">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 text-xs text-zinc-200 hover:text-zinc-200 px-2"
-          onClick={() => setGalleryOpen(true)}
-          title="Open file gallery"
-          aria-label="Open file gallery"
-        >
-          <Images className="size-3 mr-1" />
-          Files
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 text-xs text-zinc-200 hover:text-zinc-200 px-2"
-          onClick={() => setSpeechOpen(true)}
-          title="Voice input"
-          aria-label="Voice input"
-        >
-          <Mic className="size-3 mr-1" />
-          Voice
-        </Button>
+        {!readOnly && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs text-zinc-200 hover:text-zinc-200 px-2"
+            onClick={() => setGalleryOpen(true)}
+            title="Open file gallery"
+            aria-label="Open file gallery"
+          >
+            <Images className="size-3 mr-1" />
+            Files
+          </Button>
+        )}
+        {!readOnly && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs text-zinc-200 hover:text-zinc-200 px-2"
+            onClick={() => setSpeechOpen(true)}
+            title="Voice input"
+            aria-label="Voice input"
+          >
+            <Mic className="size-3 mr-1" />
+            Voice
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"

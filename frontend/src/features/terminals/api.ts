@@ -1,5 +1,5 @@
 import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/api/client";
-import type { AskTerminalCreate, Terminal, TerminalCommand, TerminalCommandCreate, TerminalCommandTemplate, TerminalCommandUpdate, TerminalCommandVariable, TerminalCreate, TerminalListItem } from "@/shared/types";
+import type { AskTerminalCreate, LogTerminalCreate, Terminal, TerminalCommand, TerminalCommandCreate, TerminalCommandTemplate, TerminalCommandUpdate, TerminalCommandVariable, TerminalCreate, TerminalListItem } from "@/shared/types";
 
 export function fetchTerminals(projectId?: string, issueId?: string): Promise<TerminalListItem[]> {
   const params = new URLSearchParams();
@@ -15,6 +15,10 @@ export function createTerminal(data: TerminalCreate): Promise<Terminal> {
 
 export function createAskTerminal(data: AskTerminalCreate): Promise<Terminal> {
   return apiPost<Terminal>("/terminals/ask", data);
+}
+
+export function createLogTerminal(data: LogTerminalCreate): Promise<Terminal> {
+  return apiPost<Terminal>("/terminals/log", data);
 }
 
 export function fetchAskTerminals(projectId: string): Promise<TerminalListItem[]> {

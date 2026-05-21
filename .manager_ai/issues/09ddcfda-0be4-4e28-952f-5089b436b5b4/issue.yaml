@@ -1,0 +1,77 @@
+schema_version: 1
+id: 09ddcfda-0be4-4e28-952f-5089b436b5b4
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Agent output terminal: streaming live dell''output degli agenti via xterm.js'
+status: Accepted
+priority: 3
+category: Improvement
+created_at: '2026-05-21T15:47:59.212031'
+updated_at: '2026-05-21T16:04:50.940791'
+tasks:
+- id: 978bdede-9edd-4604-932b-43da3260bcf5
+  name: TerminalService — create_log, push_output, destroy_log, _to_response con mode/label
+  status: Completed
+  order: 0
+  created_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T16:06:09'
+- id: 2d8f396a-c96a-49af-b3fb-e0802f9d0255
+  name: _terminal_reader — supporto log mode (legge da asyncio.Queue)
+  status: Completed
+  order: 1
+  created_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T16:06:53'
+- id: 5b7d2ced-d1b2-465f-9d48-c2a1c040279d
+  name: ClaudeCodeExecutor.run_streaming() — stdout linea-per-linea con callback
+  status: Completed
+  order: 2
+  created_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T16:07:55'
+- id: 51cea4f4-238c-43ea-9c76-bd1701e75fc9
+  name: AgentStepRun model — aggiungere colonna terminal_id + migration Alembic
+  status: Completed
+  order: 3
+  created_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T16:08:37'
+- id: 5133a247-7c6c-467b-8a04-20285f6021d4
+  name: AgentStepRunResponse schema — aggiungere campo terminal_id
+  status: Completed
+  order: 4
+  created_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T16:08:56'
+- id: 1e579360-4c87-4cfa-94bb-389a57673363
+  name: POST /api/terminals/log endpoint + schema LogTerminalCreate
+  status: Completed
+  order: 5
+  created_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T16:09:45'
+- id: bddf0842-93d7-4fb5-b4d2-75f85266ddbd
+  name: OrchestratorService._run_agent_step() — integrazione log terminal + run_streaming
+  status: Completed
+  order: 6
+  created_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T16:10:58'
+- id: fb2c50c2-4cf3-4d24-a675-e472ea3612e0
+  name: TerminalPanel — prop readOnly (niente input, nasconde Files/Voice)
+  status: Completed
+  order: 7
+  created_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T16:11:49'
+- id: 9af88921-5a5a-4e95-b1af-0cd3c9e7f05d
+  name: Frontend API hook useCreateLogTerminal
+  status: Completed
+  order: 8
+  created_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T16:13:29'
+- id: 65369448-1fc5-49f0-8d25-16827e82b165
+  name: IssueDetail — tab Agent Terminal con TerminalPanel readOnly
+  status: In Progress
+  order: 9
+  created_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T16:13:30'
+- id: 125cb05b-043f-444a-a259-bff3a2569d1a
+  name: EventContext — handler agent_terminal_created + query invalidation
+  status: Pending
+  order: 10
+  created_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T16:04:39'
+relations: []

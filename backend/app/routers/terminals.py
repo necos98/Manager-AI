@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings as app_settings
 from app.database import get_db
 from app.models.project import Project
-from app.schemas.terminal import AskTerminalCreate, TerminalCreate, TerminalListResponse, TerminalResponse
+from app.schemas.terminal import AskTerminalCreate, LogTerminalCreate, TerminalCreate, TerminalListResponse, TerminalResponse
 from app.services.terminal_service import TerminalService, terminal_service
 from app.services.terminal_command_service import TerminalCommandService
 from app.services.terminal_condition import UnknownConditionError, evaluate_condition
@@ -50,37 +50,71 @@ _terminal_ws: dict[str, WebSocket] = {}
 
 
 async def _terminal_reader(terminal_id: str, service: TerminalService) -> None:
-    """Persistent reader: buffers PTY output and forwards to a connected WebSocket."""
+    """Persistent reader: buffers PTY or log-queue output and forwards to a connected WebSocket."""
     loop = asyncio.get_running_loop()
-    try:
-        pty = service.get_pty(terminal_id)
-    except KeyError:
+    with service._lock:
+        entry = service._terminals.get(terminal_id)
+    if entry is None:
         return
+
+    is_log = entry.get("mode") == "log"
+
     try:
-        while True:
-            data = await loop.run_in_executor(
-                _pty_executor, lambda: pty.read(blocking=True)
-            )
-            if not data:
-                # PTY EOF — process exited
-                buf = service.get_buffered_output(terminal_id)
-                _save_recording(terminal_id, buf)
-                service.mark_closed(terminal_id)
-                ws = _terminal_ws.pop(terminal_id, None)
+        if is_log:
+            with service._lock:
+                q = service._queues.get(terminal_id)
+            if q is None:
+                return
+            while True:
+                data = await q.get()
+                if data is None:
+                    # EOF sentinel — log terminal destroyed
+                    buf = service.get_buffered_output(terminal_id)
+                    _save_recording(terminal_id, buf)
+                    service.mark_closed(terminal_id)
+                    ws = _terminal_ws.pop(terminal_id, None)
+                    if ws:
+                        try:
+                            await ws.close(code=1000, reason="Terminal session ended")
+                        except Exception:
+                            pass
+                    break
+                service.append_output(terminal_id, data)
+                ws = _terminal_ws.get(terminal_id)
                 if ws:
                     try:
-                        await ws.close(code=1000, reason="Terminal session ended")
+                        await ws.send_text(data)
                     except Exception:
-                        pass
-                break
-            service.append_output(terminal_id, data)
-            ws = _terminal_ws.get(terminal_id)
-            if ws:
-                try:
-                    await ws.send_text(data)
-                except Exception:
-                    # WebSocket gone — stop forwarding, but keep buffering
-                    _terminal_ws.pop(terminal_id, None)
+                        _terminal_ws.pop(terminal_id, None)
+        else:
+            try:
+                pty = service.get_pty(terminal_id)
+            except KeyError:
+                return
+            while True:
+                data = await loop.run_in_executor(
+                    _pty_executor, lambda: pty.read(blocking=True)
+                )
+                if not data:
+                    # PTY EOF — process exited
+                    buf = service.get_buffered_output(terminal_id)
+                    _save_recording(terminal_id, buf)
+                    service.mark_closed(terminal_id)
+                    ws = _terminal_ws.pop(terminal_id, None)
+                    if ws:
+                        try:
+                            await ws.close(code=1000, reason="Terminal session ended")
+                        except Exception:
+                            pass
+                    break
+                service.append_output(terminal_id, data)
+                ws = _terminal_ws.get(terminal_id)
+                if ws:
+                    try:
+                        await ws.send_text(data)
+                    except Exception:
+                        # WebSocket gone — stop forwarding, but keep buffering
+                        _terminal_ws.pop(terminal_id, None)
     except asyncio.CancelledError:
         pass
     except Exception:
@@ -382,6 +416,27 @@ async def create_ask_terminal(
     except Exception:
         logger.warning("Failed to inject ask command for terminal %s", terminal["id"], exc_info=True)
 
+    return TerminalResponse(**terminal)
+
+
+@router.post("/log", response_model=TerminalResponse, status_code=201)
+async def create_log_terminal(
+    data: LogTerminalCreate,
+    db: AsyncSession = Depends(get_db),
+    service: TerminalService = Depends(get_terminal_service),
+):
+    try:
+        project_path = await get_project_path(data.project_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    terminal = await service.create_log(
+        project_id=data.project_id,
+        issue_id=data.issue_id,
+        project_path=project_path,
+        label=data.label,
+    )
+    _ensure_reader(terminal["id"], service)
     return TerminalResponse(**terminal)
 
 

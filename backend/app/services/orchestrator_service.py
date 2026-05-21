@@ -16,6 +16,7 @@ from app.models.issue import Issue, IssueStatus
 from app.models.pipeline import AgentStepRun, AgentStepStatus, Pipeline, PipelineRun, PipelineRunStatus
 from app.services.event_service import event_service
 from app.services.project_service import ProjectService
+from app.services.terminal_service import terminal_service
 
 logger = logging.getLogger(__name__)
 
@@ -338,16 +339,35 @@ class OrchestratorService:
 
         await self._emit("agent_step_started", pipeline_run, step, project_id=resolved_project_id)
 
+        project_path = project.path if project else ""
+        log_term = await terminal_service.create_log(
+            project_id=resolved_project_id,
+            issue_id=pipeline_run.issue_id or "",
+            project_path=project_path,
+            label=agent.name,
+        )
+        step.terminal_id = log_term["id"]
+        await self._commit()
+
+        await self._emit("agent_terminal_created", pipeline_run, step, project_id=resolved_project_id)
+
         prompt = self._build_prompt(agent, issue, pipeline_run)
-        result = await self.executor.run(
+
+        async def on_output(text: str) -> None:
+            await terminal_service.push_output(log_term["id"], text)
+
+        result = await self.executor.run_streaming(
             prompt=prompt,
-            project_path=project.path,
+            project_path=project_path,
             env_vars={
                 "MANAGER_AI_PROJECT_ID": agent.project_id,
                 "MANAGER_AI_AGENT_NAME": agent.name,
                 "MANAGER_AI_AGENT_ROLE": agent.role_key,
             },
+            on_output=on_output,
         )
+
+        await terminal_service.destroy_log(log_term["id"])
 
         await self.session.refresh(step)
 
@@ -484,6 +504,8 @@ class OrchestratorService:
                     "agent_role": step.agent_role,
                     "step_order": step.step_order,
                 })
+                if step.terminal_id:
+                    payload["terminal_id"] = step.terminal_id
                 if event_type == "agent_step_completed":
                     payload["summary"] = step.summary
                 elif event_type == "agent_step_failed":

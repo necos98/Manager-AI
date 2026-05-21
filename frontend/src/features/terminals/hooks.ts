@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as api from "./api";
-import type { AskTerminalCreate, TerminalCreate, TerminalCommandUpdate } from "@/shared/types";
+import type { AskTerminalCreate, LogTerminalCreate, TerminalCreate, TerminalCommandUpdate } from "@/shared/types";
 
 const onMutationError = (e: unknown) => {
   toast.error(e instanceof Error ? e.message : "Operation failed");
@@ -55,6 +55,18 @@ export function useCreateAskTerminal() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: AskTerminalCreate) => api.createAskTerminal(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: terminalKeys.all });
+      queryClient.invalidateQueries({ queryKey: terminalKeys.count });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useCreateLogTerminal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: LogTerminalCreate) => api.createLogTerminal(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: terminalKeys.all });
       queryClient.invalidateQueries({ queryKey: terminalKeys.count });

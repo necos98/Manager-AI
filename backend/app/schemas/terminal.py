@@ -9,6 +9,12 @@ class TerminalCreate(BaseModel):
     run_commands: bool = True
 
 
+class LogTerminalCreate(BaseModel):
+    project_id: str
+    issue_id: str
+    label: str = ""
+
+
 class AskTerminalCreate(BaseModel):
     project_id: str
 
