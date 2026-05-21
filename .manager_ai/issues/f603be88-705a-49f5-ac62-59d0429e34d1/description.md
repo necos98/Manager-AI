@@ -1,0 +1,1 @@
+Quando si incollano dei testi provenienti da altri software all'interno della textarea della schermata "NEW ISSUE" succede che la textarea si espande verso destra rendendo impossibile cliccare il tasto "Create", questo è un bug che è sempre stato e che non è mai stato risolto, risolvere a tutti i costi!

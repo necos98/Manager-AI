@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from typing import Any
 
 import yaml
 
 from app.storage import atomic, paths
-from app.storage.cache import memory_cache
-from app.storage.issue_store import _parse_frontmatter
+from app.storage.memory_store_core import memory_store as _core
 
 
 @dataclass
@@ -29,26 +30,77 @@ class MemoryRecord:
     links: list[MemoryLinkRecord] = field(default_factory=list)
 
 
+# Module-level references — injected at startup by main.py
+_write_queue: Any = None
+
+
+def _now_iso() -> str:
+    return (
+        datetime.now(timezone.utc)
+        .replace(tzinfo=None)
+        .isoformat(sep="T", timespec="microseconds")
+    )
+
+
+def inject_write_queue(queue: Any) -> None:
+    global _write_queue
+    _write_queue = queue
+
+
+# ---- index entry helpers ----
+
+
+def _to_index_entry(record: MemoryRecord) -> dict[str, Any]:
+    return {
+        "id": record.id,
+        "project_id": record.project_id,
+        "title": record.title,
+        "parent_id": record.parent_id,
+        "created_at": record.created_at,
+        "updated_at": record.updated_at,
+        "links": [asdict(l) for l in sorted(record.links, key=lambda l: (l.to_id, l.relation))],
+    }
+
+
+def _index_to_record(entry: dict[str, Any]) -> MemoryRecord:
+    return MemoryRecord(
+        id=str(entry.get("id", "")),
+        project_id=str(entry.get("project_id", "")),
+        title=str(entry.get("title", "")),
+        parent_id=_opt_str(entry.get("parent_id")),
+        description="",
+        created_at=_as_str(entry.get("created_at")),
+        updated_at=_as_str(entry.get("updated_at")),
+        links=[_link_from_dict(l) for l in (entry.get("links") or [])],
+    )
+
+
+# ---- public CRUD ----
+
+
 def create_memory(project_path: str, record: MemoryRecord) -> None:
-    _write_memory_file(project_path, record)
-    rebuild_memories_index(project_path)
-    memory_cache.set(f"{project_path}:{record.id}", record)
-    memory_cache.invalidate(f"{project_path}:__index__")
+    _core.upsert(project_path, "memories", record.id, record, _to_index_entry(record))
+    if _write_queue is not None:
+        _write_queue.enqueue(
+            project_path, "memories", record.id, "upsert",
+            _record_to_payload(record), _now_iso(),
+        )
 
 
 def update_memory(project_path: str, record: MemoryRecord) -> None:
-    _write_memory_file(project_path, record)
-    rebuild_memories_index(project_path)
-    memory_cache.set(f"{project_path}:{record.id}", record)
-    memory_cache.invalidate(f"{project_path}:__index__")
+    _core.upsert(project_path, "memories", record.id, record, _to_index_entry(record))
+    if _write_queue is not None:
+        _write_queue.enqueue(
+            project_path, "memories", record.id, "upsert",
+            _record_to_payload(record), _now_iso(),
+        )
 
 
 def load_memory(project_path: str, memory_id: str) -> MemoryRecord | None:
-    cache_key = f"{project_path}:{memory_id}"
-    cached = memory_cache.get(cache_key)
-    if cached is not None:
-        return cached
-
+    rec = _core.get(project_path, "memories", memory_id)
+    if rec is not None:
+        return rec
+    # Fallback: load from disk (handles externally-added files)
     path = paths.memory_md(project_path, memory_id)
     if not path.exists():
         return None
@@ -65,59 +117,62 @@ def load_memory(project_path: str, memory_id: str) -> MemoryRecord | None:
         updated_at=_as_str(meta.get("updated_at")),
         links=[_link_from_dict(l) for l in (meta.get("links") or [])],
     )
-    memory_cache.set(cache_key, record)
+    _core.upsert(project_path, "memories", memory_id, record, _to_index_entry(record))
     return record
 
 
 def delete_memory(project_path: str, memory_id: str) -> None:
+    rec = _core.get(project_path, "memories", memory_id)
     # Detach children
     affected: set[str] = set()
-    for other in list_memories_full(project_path):
+    for other in _core.list_all(project_path, "memories"):
         if other.parent_id == memory_id:
             other.parent_id = None
-            _write_memory_file(project_path, other)
+            _core.upsert(project_path, "memories", other.id, other, _to_index_entry(other))
+            if _write_queue is not None:
+                _write_queue.enqueue(
+                    project_path, "memories", other.id, "upsert",
+                    _record_to_payload(other), _now_iso(),
+                )
             affected.add(other.id)
     # Strip inbound links
-    for other in list_memories_full(project_path):
+    for other in _core.list_all(project_path, "memories"):
         new_links = [l for l in other.links if l.to_id != memory_id]
-        if new_links != other.links:
+        if len(new_links) != len(other.links):
             other.links = new_links
-            _write_memory_file(project_path, other)
+            _core.upsert(project_path, "memories", other.id, other, _to_index_entry(other))
+            if _write_queue is not None:
+                _write_queue.enqueue(
+                    project_path, "memories", other.id, "upsert",
+                    _record_to_payload(other), _now_iso(),
+                )
             affected.add(other.id)
-    atomic.remove_if_exists(paths.memory_md(project_path, memory_id))
-    rebuild_memories_index(project_path)
-    memory_cache.invalidate(f"{project_path}:{memory_id}")
-    memory_cache.invalidate(f"{project_path}:__index__")
-    for other_id in affected:
-        memory_cache.invalidate(f"{project_path}:{other_id}")
+
+    _core.delete(project_path, "memories", memory_id)
+    if _write_queue is not None:
+        _write_queue.enqueue(
+            project_path, "memories", memory_id, "delete", None, _now_iso(),
+        )
 
 
 def list_memories(project_path: str) -> list[MemoryRecord]:
-    cache_key = f"{project_path}:__index__"
-    cached = memory_cache.get(cache_key)
-    if cached is not None:
-        return cached
-
+    entries = _core.list_index(project_path, "memories")
+    if entries:
+        return [_index_to_record(e) for e in entries]
+    # Fallback: read from disk index
     data = atomic.read_yaml(paths.memories_index(project_path)) or {}
-    entries = data.get("memories") or []
-    out = [
-        MemoryRecord(
-            id=str(e.get("id", "")),
-            project_id=str(e.get("project_id", "")),
-            title=str(e.get("title", "")),
-            parent_id=_opt_str(e.get("parent_id")),
-            description="",
-            created_at=_as_str(e.get("created_at")),
-            updated_at=_as_str(e.get("updated_at")),
-            links=[_link_from_dict(l) for l in (e.get("links") or [])],
-        )
-        for e in entries
-    ]
-    memory_cache.set(cache_key, out)
-    return out
+    disk_entries = data.get("memories") or []
+    # Store index entries only (None records) so load_memory hits its disk fallback
+    for e in disk_entries:
+        _core.upsert(project_path, "memories", e.get("id", ""), None, e)
+    return [_index_to_record(e) for e in disk_entries]
 
 
 def list_memories_full(project_path: str) -> list[MemoryRecord]:
+    all_records = _core.list_all(project_path, "memories")
+    if all_records:
+        return list(all_records)
+    # Fallback: load from disk via light index + individual loads
     light = list_memories(project_path)
     out: list[MemoryRecord] = []
     for m in light:
@@ -128,32 +183,43 @@ def list_memories_full(project_path: str) -> list[MemoryRecord]:
 
 
 def add_link(project_path: str, from_id: str, link: MemoryLinkRecord) -> None:
-    record = load_memory(project_path, from_id)
+    record = _core.get(project_path, "memories", from_id)
     if record is None:
         raise ValueError(f"Memory {from_id} not found")
     existing = [l for l in record.links if not (l.to_id == link.to_id and l.relation == link.relation)]
     existing.append(link)
     existing.sort(key=lambda l: (l.to_id, l.relation))
     record.links = existing
-    _write_memory_file(project_path, record)
-    rebuild_memories_index(project_path)
-    memory_cache.set(f"{project_path}:{from_id}", record)
-    memory_cache.invalidate(f"{project_path}:__index__")
+    _core.upsert(project_path, "memories", from_id, record, _to_index_entry(record))
+    if _write_queue is not None:
+        _write_queue.enqueue(
+            project_path, "memories", from_id, "upsert",
+            _record_to_payload(record), _now_iso(),
+        )
 
 
 def remove_link(project_path: str, from_id: str, to_id: str, relation: str) -> bool:
-    record = load_memory(project_path, from_id)
+    record = _core.get(project_path, "memories", from_id)
     if record is None:
         return False
     before = len(record.links)
     record.links = [l for l in record.links if not (l.to_id == to_id and l.relation == relation)]
     if len(record.links) == before:
         return False
-    _write_memory_file(project_path, record)
-    rebuild_memories_index(project_path)
-    memory_cache.set(f"{project_path}:{from_id}", record)
-    memory_cache.invalidate(f"{project_path}:__index__")
+    _core.upsert(project_path, "memories", from_id, record, _to_index_entry(record))
+    if _write_queue is not None:
+        _write_queue.enqueue(
+            project_path, "memories", from_id, "upsert",
+            _record_to_payload(record), _now_iso(),
+        )
     return True
+
+
+def invalidate_memory_cache(project_path: str) -> None:
+    pass  # RAM-first: no cache to invalidate
+
+
+# ---- index rebuild (called by BackgroundWriter) ----
 
 
 def rebuild_memories_index(project_path: str) -> int:
@@ -176,28 +242,56 @@ def rebuild_memories_index(project_path: str) -> int:
             )
     entries.sort(key=lambda e: (e["created_at"], e["id"]))
     atomic.write_yaml(paths.memories_index(project_path), {"schema_version": 1, "memories": entries})
-    memory_cache.invalidate(f"{project_path}:__index__")
     return len(entries)
 
 
-def invalidate_memory_cache(project_path: str) -> None:
-    """Clear all cached memory data for a project. Called by watcher."""
-    memory_cache.invalidate_prefix(f"{project_path}:")
+# ---- disk write (called by BackgroundWriter) ----
 
 
-def _write_memory_file(project_path: str, record: MemoryRecord) -> None:
+def _write_memory_record(project_path: str, payload: dict[str, Any]) -> None:
+    """Write a single .md file from a payload dict. Called by BackgroundWriter."""
     frontmatter: dict[str, Any] = {
+        "id": payload.get("id", ""),
+        "project_id": payload.get("project_id", ""),
+        "title": payload.get("title", ""),
+        "parent_id": payload.get("parent_id"),
+        "created_at": payload.get("created_at", ""),
+        "updated_at": payload.get("updated_at", ""),
+        "links": payload.get("links", []),
+    }
+    fm_yaml = yaml.safe_dump(frontmatter, sort_keys=False, allow_unicode=True, width=4096).rstrip("\n")
+    content = f"---\n{fm_yaml}\n---\n{payload.get('description', '')}"
+    atomic.write_text(paths.memory_md(project_path, payload.get("id", "")), content)
+
+
+# ---- helpers ----
+
+
+def _record_to_payload(record: MemoryRecord) -> dict[str, Any]:
+    return {
         "id": record.id,
         "project_id": record.project_id,
         "title": record.title,
         "parent_id": record.parent_id,
+        "description": record.description,
         "created_at": record.created_at,
         "updated_at": record.updated_at,
         "links": [asdict(l) for l in sorted(record.links, key=lambda l: (l.to_id, l.relation))],
     }
-    fm_yaml = yaml.safe_dump(frontmatter, sort_keys=False, allow_unicode=True, width=4096).rstrip("\n")
-    content = f"---\n{fm_yaml}\n---\n{record.description or ''}"
-    atomic.write_text(paths.memory_md(project_path, record.id), content)
+
+
+def _parse_frontmatter(text: str) -> dict[str, Any]:
+    import re
+
+    _FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?(.*)$", re.DOTALL)
+    if not text:
+        return {"meta": {}, "body": ""}
+    match = _FRONTMATTER_RE.match(text)
+    if not match:
+        return {"meta": {}, "body": text}
+    meta = yaml.safe_load(match.group(1)) or {}
+    body = match.group(2)
+    return {"meta": meta, "body": body}
 
 
 def _link_from_dict(d: dict) -> MemoryLinkRecord:
