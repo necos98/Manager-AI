@@ -294,24 +294,7 @@ async def accept_issue(project_id: str, issue_id: str) -> dict:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
 
-            # Auto-start default pipeline
-            try:
-                orchestrator = OrchestratorService(session)
-                pipeline_run = await orchestrator.start_pipeline(
-                    trigger_type="issue_accepted",
-                    issue_id=issue_id,
-                    project_id=project_id,
-                    issue_status=issue_status,
-                )
-                result: dict = {"id": issue_id, "status": issue_status}
-                if pipeline_run:
-                    result["pipeline_run_id"] = pipeline_run.id
-                return result
-            except Exception:
-                logger.warning(
-                    "Failed to auto-start pipeline for issue %s", issue_id, exc_info=True
-                )
-                return {"id": issue_id, "status": issue_status}
+            return {"id": issue_id, "status": issue_status}
 
         except AppError as e:
             return {"error": e.message}
