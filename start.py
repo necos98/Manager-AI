@@ -211,7 +211,6 @@ def main():
         [
             str(VENV_PYTHON), "-m", "uvicorn",
             "app.main:app",
-            "--reload",
             "--host", "0.0.0.0",
             "--port", str(backend_port),
         ],
