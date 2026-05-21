@@ -1,0 +1,53 @@
+schema_version: 1
+id: 9211b625-c27f-4c46-ba20-1fb24794dcea
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Pipeline visual feedback: step stepper + real-time progress + agent identity'
+status: Finished
+priority: 4
+category: null
+created_at: '2026-05-21T14:55:45.048389'
+updated_at: '2026-05-21T15:10:19.765206'
+tasks:
+- id: 5f10dfeb-321c-47fd-8222-e8edc3ea53fb
+  name: 'Backend: Add project_id to _emit() and all call sites in orchestrator_service.py'
+  status: Completed
+  order: 0
+  created_at: '2026-05-21T15:00:59'
+  updated_at: '2026-05-21T15:02:57'
+- id: 23d906b4-7cdc-45a6-93e6-9ac4afc20258
+  name: 'Backend: Pass agent identity env vars from _run_agent_step, read in send_agent_message'
+  status: Completed
+  order: 1
+  created_at: '2026-05-21T15:00:59'
+  updated_at: '2026-05-21T15:03:53'
+- id: f636690d-a2b0-4d4f-bd86-5065d544b65a
+  name: 'Frontend: Add refetchInterval to usePipelineRunsForIssue hook'
+  status: Completed
+  order: 2
+  created_at: '2026-05-21T15:00:59'
+  updated_at: '2026-05-21T15:04:14'
+- id: 8ad7da10-b405-4f59-add0-83b7db5fde97
+  name: 'Frontend: Build step stepper UI in PipelineProgress component'
+  status: Completed
+  order: 3
+  created_at: '2026-05-21T15:00:59'
+  updated_at: '2026-05-21T15:05:14'
+- id: 7a7172de-526c-44a5-9baa-54aeb2f0db83
+  name: 'Frontend: Add step lifecycle event subscription to AgentChat'
+  status: Completed
+  order: 4
+  created_at: '2026-05-21T15:00:59'
+  updated_at: '2026-05-21T15:06:23'
+- id: 38170b67-0349-48d4-82df-bd520e84df06
+  name: 'Frontend: Add inline pipeline status badge above tabs in issue-detail.tsx'
+  status: Completed
+  order: 5
+  created_at: '2026-05-21T15:00:59'
+  updated_at: '2026-05-21T15:07:36'
+- id: 962dba98-a666-4588-9d5a-fc013d9208bf
+  name: 'Frontend: Add pipeline event types to silent case block in EventProvider'
+  status: Completed
+  order: 6
+  created_at: '2026-05-21T15:00:59'
+  updated_at: '2026-05-21T15:08:13'
+relations: []

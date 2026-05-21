@@ -122,6 +122,7 @@ export function usePipelineRunsForIssue(projectId: string, issueId: string | nul
     queryKey: ["projects", projectId, "issues", issueId, "pipeline-runs"],
     queryFn: () => fetchPipelineRunsForIssue(projectId, issueId!),
     enabled: !!projectId && !!issueId,
+    refetchInterval: 3000,
   });
 }
 
