@@ -16,10 +16,17 @@ interface AgentChatProps {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  architect: "#7c3aed",
-  developer: "#2563eb",
-  reviewer: "#059669",
-  qa: "#ea580c",
+  architect: "border-l-purple-500",
+  developer: "border-l-blue-500",
+  reviewer: "border-l-emerald-500",
+  qa: "border-l-orange-500",
+};
+
+const ROLE_DOT_COLORS: Record<string, string> = {
+  architect: "bg-purple-500",
+  developer: "bg-blue-500",
+  reviewer: "bg-emerald-500",
+  qa: "bg-orange-500",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -80,13 +87,11 @@ export function AgentChat({ issueId }: AgentChatProps) {
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className="rounded-lg border p-3 text-sm"
-              style={{ borderLeftColor: ROLE_COLORS[msg.agent_role] || "#6b7280", borderLeftWidth: 3 }}
+              className={`rounded-lg border p-3 text-sm border-l-[3px] ${ROLE_COLORS[msg.agent_role] || "border-l-gray-500"}`}
             >
               <div className="flex items-center gap-2 mb-1">
                 <span
-                  className="size-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: ROLE_COLORS[msg.agent_role] || "#6b7280" }}
+                  className={`size-2.5 rounded-full shrink-0 ${ROLE_DOT_COLORS[msg.agent_role] || "bg-gray-500"}`}
                 />
                 <span className="font-medium">{msg.agent_name}</span>
                 <span className="text-xs text-muted-foreground">{msg.agent_role}</span>

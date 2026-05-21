@@ -51,10 +51,10 @@ export function AgentsSection({ projectId }: AgentsSectionProps) {
   }
 
   const ROLE_COLORS: Record<string, string> = {
-    architect: "#7c3aed",
-    developer: "#2563eb",
-    reviewer: "#059669",
-    qa: "#ea580c",
+    architect: "bg-purple-500",
+    developer: "bg-blue-500",
+    reviewer: "bg-emerald-500",
+    qa: "bg-orange-500",
   };
 
   return (
@@ -75,8 +75,7 @@ export function AgentsSection({ projectId }: AgentsSectionProps) {
             <div key={a.id} className="flex items-center justify-between rounded border px-3 py-2 text-sm">
               <div className="flex items-center gap-2 min-w-0">
                 <span
-                  className="size-3 rounded-full shrink-0"
-                  style={{ backgroundColor: ROLE_COLORS[a.role_key] || "#6b7280" }}
+                  className={`size-3 rounded-full shrink-0 ${ROLE_COLORS[a.role_key] || "bg-gray-500"}`}
                 />
                 <span className="font-medium">{a.name}</span>
                 <span className="text-xs text-muted-foreground">{a.role_key}</span>

@@ -110,7 +110,7 @@ function ConfigModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span>{plugin.name}</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${accessLevelColors[plugin.access_level] ?? "bg-gray-100 text-gray-700"}`}>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${accessLevelColors[plugin.access_level] ?? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"}`}>
               {plugin.access_level}
             </span>
           </DialogTitle>
@@ -129,7 +129,7 @@ function ConfigModal({
               aria-label={enabled ? "Disable" : "Enable"}
             >
               {enabled ? (
-                <ToggleRight className="size-5 text-green-600" />
+                <ToggleRight className="size-5 text-green-600 dark:text-green-400" />
               ) : (
                 <ToggleLeft className="size-5" />
               )}
@@ -144,7 +144,7 @@ function ConfigModal({
                 <div key={opt.key}>
                   <label className="text-xs font-medium">
                     {opt.label}
-                    {opt.required && <span className="text-red-500 ml-0.5">*</span>}
+                    {opt.required && <span className="text-red-500 dark:text-red-400 ml-0.5">*</span>}
                   </label>
                   {opt.type === "boolean" ? (
                     <Button
@@ -154,7 +154,7 @@ function ConfigModal({
                       onClick={() => setConfig((c) => ({ ...c, [opt.key]: c[opt.key] === "true" ? "false" : "true" }))}
                     >
                       {config[opt.key] === "true" ? (
-                        <ToggleRight className="size-4 text-green-600 mr-1" />
+                        <ToggleRight className="size-4 text-green-600 dark:text-green-400 mr-1" />
                       ) : (
                         <ToggleLeft className="size-4 mr-1" />
                       )}
@@ -267,13 +267,13 @@ export function PluginsPanel({ projectId }: PluginsPanelProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm truncate">{p.name}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${accessLevelColors[p.access_level] ?? "bg-gray-100 text-gray-700"}`}>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${accessLevelColors[p.access_level] ?? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"}`}>
                     {p.access_level}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                   <span className="flex items-center gap-1">
-                    <Circle className={`size-1.5 fill-current ${p.connected ? "text-green-500" : "text-red-500"}`} />
+                    <Circle className={`size-1.5 fill-current ${p.connected ? "text-green-500 dark:text-green-400" : "text-red-500 dark:text-red-400"}`} />
                     {p.connected ? `${p.tool_count} tools` : "stopped"}
                   </span>
                 </div>
@@ -298,7 +298,7 @@ export function PluginsPanel({ projectId }: PluginsPanelProps) {
                 aria-label="Disable"
                 title="Disable"
               >
-                <ToggleRight className="size-5 text-green-600" />
+                <ToggleRight className="size-5 text-green-600 dark:text-green-400" />
               </Button>
             </div>
           ))}
@@ -327,7 +327,7 @@ export function PluginsPanel({ projectId }: PluginsPanelProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm truncate">{cat.name}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${accessLevelColors[cat.access_level] ?? "bg-gray-100 text-gray-700"}`}>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${accessLevelColors[cat.access_level] ?? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"}`}>
                     {cat.access_level}
                   </span>
                 </div>
@@ -368,7 +368,7 @@ export function PluginsPanel({ projectId }: PluginsPanelProps) {
               <div className="flex-1 min-w-0">
                 <span className="font-medium text-sm truncate">{p.name}</span>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                  <span className={p.connected ? "text-green-600" : "text-red-500"}>
+                  <span className={p.connected ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}>
                     {p.connected ? `${p.tool_count} tools` : "stopped"}
                   </span>
                 </div>
@@ -381,7 +381,7 @@ export function PluginsPanel({ projectId }: PluginsPanelProps) {
                   aria-label="Disable"
                   title="Disable"
                 >
-                  <ToggleRight className="size-5 text-green-600" />
+                  <ToggleRight className="size-5 text-green-600 dark:text-green-400" />
                 </Button>
               )}
               <Button

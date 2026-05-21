@@ -101,7 +101,7 @@ export function InlineEditField({
         <div className="flex gap-1 mt-1">
           <button
             onMouseDown={(e) => { e.preventDefault(); handleSave(); }}
-            className="text-emerald-600 hover:text-emerald-700"
+            className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
           >
             <Check className="size-3.5" />
           </button>

@@ -7,10 +7,10 @@ interface PipelineProgressProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "#9ca3af",
-  running: "#3b82f6",
-  completed: "#22c55e",
-  failed: "#ef4444",
+  pending: "bg-gray-400",
+  running: "bg-blue-500",
+  completed: "bg-green-500",
+  failed: "bg-red-500",
 };
 
 export function PipelineProgress({ projectId, issueId }: PipelineProgressProps) {
@@ -52,8 +52,7 @@ export function PipelineProgress({ projectId, issueId }: PipelineProgressProps) 
             </h3>
             <div className="flex items-center gap-2">
               <span
-                className="size-2.5 rounded-full"
-                style={{ backgroundColor: STATUS_COLORS[latestRun.status] || "#6b7280" }}
+                className={`size-2.5 rounded-full ${STATUS_COLORS[latestRun.status] || "bg-gray-500"}`}
               />
               <span className="text-xs font-medium capitalize">{latestRun.status}</span>
               <span className="text-xs text-muted-foreground">{latestRun.trigger_type}</span>
@@ -66,8 +65,7 @@ export function PipelineProgress({ projectId, issueId }: PipelineProgressProps) 
               {runs.slice(1).map((r) => (
                 <div key={r.id} className="flex items-center gap-2 text-xs py-1">
                   <span
-                    className="size-2 rounded-full"
-                    style={{ backgroundColor: STATUS_COLORS[r.status] || "#6b7280" }}
+                    className={`size-2 rounded-full ${STATUS_COLORS[r.status] || "bg-gray-500"}`}
                   />
                   <span className="capitalize">{r.status}</span>
                   <span className="text-muted-foreground">

@@ -14,15 +14,15 @@ import {
 import type { ActivityLog } from "@/shared/types";
 
 const EVENT_CONFIG: Record<string, { label: string; Icon: ElementType; className: string }> = {
-  spec_created:      { label: "Spec written",      Icon: FileText,   className: "text-blue-500" },
-  plan_created:      { label: "Plan written",       Icon: GitBranch,  className: "text-purple-500" },
-  issue_accepted:    { label: "Plan accepted",      Icon: CheckCircle,className: "text-green-500" },
-  issue_completed:   { label: "Issue completed",    Icon: CheckCircle,className: "text-green-600" },
-  issue_canceled:    { label: "Issue canceled",     Icon: XCircle,    className: "text-gray-400" },
-  analysis_started:  { label: "Analysis started",   Icon: PlayCircle, className: "text-indigo-500" },
-  hook_completed:    { label: "Hook completed",     Icon: Zap,        className: "text-green-500" },
-  hook_failed:       { label: "Hook failed",        Icon: ZapOff,     className: "text-red-500" },
-  notification:      { label: "Notification",       Icon: Bell,       className: "text-blue-400" },
+  spec_created:      { label: "Spec written",      Icon: FileText,   className: "text-blue-500 dark:text-blue-400" },
+  plan_created:      { label: "Plan written",       Icon: GitBranch,  className: "text-purple-500 dark:text-purple-400" },
+  issue_accepted:    { label: "Plan accepted",      Icon: CheckCircle,className: "text-green-500 dark:text-green-400" },
+  issue_completed:   { label: "Issue completed",    Icon: CheckCircle,className: "text-green-600 dark:text-green-400" },
+  issue_canceled:    { label: "Issue canceled",     Icon: XCircle,    className: "text-gray-400 dark:text-gray-500" },
+  analysis_started:  { label: "Analysis started",   Icon: PlayCircle, className: "text-indigo-500 dark:text-indigo-400" },
+  hook_completed:    { label: "Hook completed",     Icon: Zap,        className: "text-green-500 dark:text-green-400" },
+  hook_failed:       { label: "Hook failed",        Icon: ZapOff,     className: "text-red-500 dark:text-red-400" },
+  notification:      { label: "Notification",       Icon: Bell,       className: "text-blue-400 dark:text-blue-300" },
 };
 
 function getConfig(eventType: string) {
@@ -69,7 +69,7 @@ export function ActivityTimeline({ logs }: ActivityTimelineProps) {
                 <div className="text-xs text-muted-foreground truncate">{issueName}</div>
               )}
               {errorMsg && (
-                <div className="text-xs text-red-500 truncate">{errorMsg}</div>
+                <div className="text-xs text-red-500 dark:text-red-400 truncate">{errorMsg}</div>
               )}
             </div>
           </div>

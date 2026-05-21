@@ -52,11 +52,11 @@ function SortableTaskItem({
 
   const statusIcon =
     task.status === "Completed" ? (
-      <Check className="size-4 text-emerald-500" />
+      <Check className="size-4 text-emerald-500 dark:text-emerald-400" />
     ) : task.status === "In Progress" ? (
-      <Clock className="size-4 text-amber-500" />
+      <Clock className="size-4 text-amber-500 dark:text-amber-400" />
     ) : (
-      <Circle className="size-4 text-slate-400" />
+      <Circle className="size-4 text-slate-400 dark:text-slate-500" />
     );
 
   return (

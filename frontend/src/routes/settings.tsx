@@ -120,13 +120,13 @@ function SettingsPage() {
       </div>
 
       {activeTab === "Server" && (
-        <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-800 flex items-start gap-2">
+        <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-800 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-300 flex items-start gap-2">
           <AlertTriangle className="size-4 mt-0.5 flex-shrink-0" />
           Server name changes take effect after restarting the backend.
         </div>
       )}
       {activeTab === "Tool Descriptions" && (
-        <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-800 flex items-start gap-2">
+        <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-800 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-300 flex items-start gap-2">
           <AlertTriangle className="size-4 mt-0.5 flex-shrink-0" />
           Tool description changes take effect after restarting the backend.
         </div>
@@ -134,7 +134,7 @@ function SettingsPage() {
 
       {activeTab === "Terminal" ? (
         <div>
-          <div className="mb-5 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800">
+          <div className="mb-5 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300">
             These commands run automatically when opening a terminal. They apply only when a project has no project-specific commands.
           </div>
           <TerminalCommandsEditor projectId={null} />

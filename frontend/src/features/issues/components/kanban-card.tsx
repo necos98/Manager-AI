@@ -64,7 +64,7 @@ export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId }:
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               {hasTerminal && (
-                <Terminal className="size-3 text-green-500 flex-shrink-0" style={{ filter: "drop-shadow(0 0 4px #4ade80)" }} />
+                <Terminal className="size-3 text-green-500 dark:text-green-400 flex-shrink-0 drop-shadow-[0_0_4px_rgba(74,222,128,0.5)]" />
               )}
               {isBlocked && (
                 <span className="text-xs bg-destructive/15 text-destructive px-1.5 py-0.5 rounded font-medium flex-shrink-0">

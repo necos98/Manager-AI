@@ -75,8 +75,8 @@ export function McpSetupDialog({ projectId, open, onOpenChange }: McpSetupDialog
             </code>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 dark:bg-blue-900/30 dark:border-blue-800">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
               <span className="font-medium">Tip:</span> Use the "Install manager.json" action to automatically place the project ID file in your project root.
             </p>
           </div>

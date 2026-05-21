@@ -34,8 +34,7 @@ export function TerminalGrid({ terminals, onKill }: TerminalGridProps) {
           <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/30 flex-shrink-0">
             <div className="flex items-center gap-2 min-w-0">
               <span
-                className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"
-                style={{ boxShadow: "0 0 4px #4ade80" }}
+                className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 shadow-[0_0_4px_rgba(74,222,128,0.5)]"
               />
               <span className="text-sm font-medium truncate">{term.issue_name || term.issue_id}</span>
               <span className="text-xs text-muted-foreground flex-shrink-0">{term.project_name}</span>

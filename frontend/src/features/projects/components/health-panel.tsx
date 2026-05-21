@@ -30,7 +30,7 @@ function StatusRow({ title, installed, detail, action }: StatusRowProps) {
   return (
     <div className="flex items-start gap-3 rounded-md border p-4">
       {installed ? (
-        <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
       ) : (
         <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
       )}

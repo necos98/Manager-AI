@@ -69,8 +69,7 @@ export function IssueList({ issues, projectId, activeTerminalIssueIds }: IssueLi
                   <div className="flex items-center gap-2">
                     {hasTerminal && (
                       <Terminal
-                        className="size-3.5 text-green-500 flex-shrink-0"
-                        style={{ filter: "drop-shadow(0 0 4px #4ade80)" }}
+                        className="size-3.5 text-green-500 dark:text-green-400 flex-shrink-0 drop-shadow-[0_0_4px_rgba(74,222,128,0.5)]"
                       />
                     )}
                     <p className="font-medium truncate">
