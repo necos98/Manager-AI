@@ -1,10 +1,11 @@
 schema_version: 1
 id: ed1de8cb-480d-4cbd-bed7-4da30148e58d
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: New
+name: 'Fix hook scripts: relative path resolves to wrong directory'
+status: Reasoning
 priority: 3
+category: null
 created_at: '2026-05-21T12:44:01.863934'
-updated_at: '2026-05-21T12:44:01.863934'
+updated_at: '2026-05-21T14:48:06.366171'
 tasks: []
 relations: []

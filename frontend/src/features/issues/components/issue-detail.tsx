@@ -38,6 +38,7 @@ import type { Issue } from "@/shared/types";
 import { IssueRelationsTab } from "./issue-relations-tab";
 import { AgentChat } from "@/features/agents/components/agent-chat";
 import { PipelineProgress } from "@/features/agents/components/pipeline-progress";
+import { usePipelineRunsForIssue, usePipelineRun } from "@/features/agents/hooks";
 
 interface IssueDetailProps {
   issue: Issue;
@@ -59,6 +60,18 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
   const updateIssue = useUpdateIssue(projectId, issue.id);
   const { data: availableTags } = useProjectTags(projectId);
   const [showTagInput, setShowTagInput] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("");
+
+  const { data: pipelineRunsData } = usePipelineRunsForIssue(projectId, issue.id);
+  const latestRun = pipelineRunsData?.runs?.[0];
+  const { data: runDetail } = usePipelineRun(latestRun?.id ?? null);
+  const steps = runDetail?.steps ?? [];
+  const runningStep = steps.find((s) => s.status === "running");
+  const pipelineLabel = latestRun
+    ? latestRun.status === "running" && runningStep
+      ? `Pipeline: Running (Step ${runningStep.step_order + 1}/${steps.length} — ${runningStep.agent_name})`
+      : `Pipeline: ${latestRun.status.charAt(0).toUpperCase() + latestRun.status.slice(1)}`
+    : null;
 
   const tabs = useMemo<TabDef[]>(() => [
     { value: "description", label: "Description", available: true },
@@ -73,6 +86,7 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
 
   const availableTabs = tabs.filter((t) => t.available);
   const defaultTab = availableTabs[0]?.value ?? "description";
+  const currentTab = activeTab || defaultTab;
 
   const handleDelete = async () => {
     if (terminalId) {
@@ -211,8 +225,18 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
       {/* Action buttons */}
       <IssueActions issue={issue} projectId={projectId} />
 
+      {/* Pipeline status badge */}
+      {pipelineLabel && (
+        <button
+          className="w-full text-left px-3 py-1.5 rounded-md bg-muted/50 border text-xs font-medium hover:bg-muted transition-colors"
+          onClick={() => setActiveTab("pipeline")}
+        >
+          {pipelineLabel}
+        </button>
+      )}
+
       {/* Tabbed content */}
-      <Tabs defaultValue={defaultTab} className="w-full">
+      <Tabs value={currentTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           {availableTabs.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>

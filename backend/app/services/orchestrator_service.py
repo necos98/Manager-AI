@@ -291,27 +291,30 @@ class OrchestratorService:
 
     async def _run_pipeline(self, pipeline_run: PipelineRun) -> None:
         """Execute steps sequentially. Each step spawns a Claude Code subprocess."""
+        pipeline = await self.session.get(Pipeline, pipeline_run.pipeline_id)
+        project_id = pipeline.project_id if pipeline else ""
+
         pipeline_run.status = PipelineRunStatus.RUNNING
         await self._commit()
 
         steps = await self._get_step_runs(pipeline_run.id)
 
         for step in steps:
-            success = await self._run_agent_step(pipeline_run, step)
+            success = await self._run_agent_step(pipeline_run, step, project_id=project_id)
             if not success:
                 pipeline_run.status = PipelineRunStatus.PAUSED
                 pipeline_run.completed_at = datetime.now(timezone.utc)
                 await self._commit()
-                await self._emit("pipeline_paused", pipeline_run)
+                await self._emit("pipeline_paused", pipeline_run, project_id=project_id)
                 return
 
         pipeline_run.status = PipelineRunStatus.COMPLETED
         pipeline_run.completed_at = datetime.now(timezone.utc)
         await self._commit()
-        await self._emit("pipeline_completed", pipeline_run)
+        await self._emit("pipeline_completed", pipeline_run, project_id=project_id)
 
     async def _run_agent_step(
-        self, pipeline_run: PipelineRun, step: AgentStepRun
+        self, pipeline_run: PipelineRun, step: AgentStepRun, *, project_id: str = ""
     ) -> bool:
         agent = await self.session.get(Agent, step.agent_id)
         if agent is None or not agent.enabled:
@@ -319,6 +322,8 @@ class OrchestratorService:
             step.error = "Agent not found or disabled"
             await self._commit()
             return False
+
+        resolved_project_id = project_id or agent.project_id
 
         project = await ProjectService(self.session).get_by_id(agent.project_id)
         issue = (
@@ -331,26 +336,30 @@ class OrchestratorService:
         step.started_at = datetime.now(timezone.utc)
         await self._commit()
 
-        await self._emit("agent_step_started", pipeline_run, step)
+        await self._emit("agent_step_started", pipeline_run, step, project_id=resolved_project_id)
 
         prompt = self._build_prompt(agent, issue, pipeline_run)
         result = await self.executor.run(
             prompt=prompt,
             project_path=project.path,
-            env_vars={"MANAGER_AI_PROJECT_ID": agent.project_id},
+            env_vars={
+                "MANAGER_AI_PROJECT_ID": agent.project_id,
+                "MANAGER_AI_AGENT_NAME": agent.name,
+                "MANAGER_AI_AGENT_ROLE": agent.role_key,
+            },
         )
 
         await self.session.refresh(step)
 
         if step.status == AgentStepStatus.COMPLETED:
-            await self._emit("agent_step_completed", pipeline_run, step)
+            await self._emit("agent_step_completed", pipeline_run, step, project_id=resolved_project_id)
             return True
 
         step.status = AgentStepStatus.FAILED
         step.error = result.error or f"Exit code non-zero"
         step.completed_at = datetime.now(timezone.utc)
         await self._commit()
-        await self._emit("agent_step_failed", pipeline_run, step)
+        await self._emit("agent_step_failed", pipeline_run, step, project_id=resolved_project_id)
         return False
 
     def _build_prompt(
@@ -458,11 +467,12 @@ class OrchestratorService:
             await self.session.rollback()
 
     async def _emit(
-        self, event_type: str, pipeline_run: PipelineRun, step: AgentStepRun | None = None
+        self, event_type: str, pipeline_run: PipelineRun, step: AgentStepRun | None = None, *, project_id: str
     ) -> None:
         try:
             payload: dict = {
                 "type": event_type,
+                "project_id": project_id,
                 "pipeline_run_id": pipeline_run.id,
                 "issue_id": pipeline_run.issue_id,
                 "timestamp": datetime.now(timezone.utc).isoformat(),

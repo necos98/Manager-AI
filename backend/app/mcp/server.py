@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import json
+import os
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -1085,11 +1086,14 @@ async def delete_pipeline(pipeline_id: str) -> dict:
 async def send_agent_message(issue_id: str, content: str, message_type: str = "context") -> dict:
     if message_type not in ("context", "decision", "question", "answer", "status"):
         return {"error": "message_type must be one of: context, decision, question, answer, status"}
+    agent_name = os.environ.get("MANAGER_AI_AGENT_NAME", "agent")
+    agent_role = os.environ.get("MANAGER_AI_AGENT_ROLE", "unknown")
+    project_id = os.environ.get("MANAGER_AI_PROJECT_ID", "")
     async with async_session() as session:
         msg = AgentMessage(
             issue_id=issue_id,
-            agent_name="agent",
-            agent_role="unknown",
+            agent_name=agent_name,
+            agent_role=agent_role,
             content=content,
             message_type=message_type,
         )
@@ -1098,6 +1102,7 @@ async def send_agent_message(issue_id: str, content: str, message_type: str = "c
         await session.refresh(msg)
         await event_service.emit({
             "type": "agent_message_added",
+            "project_id": project_id,
             "issue_id": issue_id,
             "message": {
                 "id": msg.id,

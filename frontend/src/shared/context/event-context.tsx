@@ -186,6 +186,11 @@ function buildToastContent(data: WsEventData): ToastContent {
     case "file_updated":
     case "question_asked":
     case "question_answered":
+    case "agent_step_started":
+    case "agent_step_completed":
+    case "agent_step_failed":
+    case "pipeline_completed":
+    case "pipeline_paused":
       return { title: "", message: "", variant: "default", silent: true };
 
     default:
