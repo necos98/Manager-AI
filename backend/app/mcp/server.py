@@ -7,6 +7,8 @@ from mcp.server.fastmcp import FastMCP
 
 from datetime import datetime, timezone
 
+from sqlalchemy import select
+
 from app.database import async_session
 from app.exceptions import AppError
 from app.models.agent import Agent

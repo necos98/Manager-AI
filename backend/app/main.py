@@ -38,6 +38,21 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+    def _suppress_windows_accept_noise(loop, context):
+        """Demote known Windows IOCP accept noise to DEBUG level.
+
+        WinError 64  — network name no longer available (client disconnected mid-handshake)
+        WinError 121 — semaphore timeout (legitimate timeout, not a crash)
+        WinError 122 — data area passed to system call is too small
+        WinError 995 — I/O operation aborted (socket closed during accept)
+        WinError 1236 — network connection aborted by local system
+        """
+        exc = context.get("exception")
+        if isinstance(exc, OSError) and getattr(exc, "winerror", None) in (64, 121, 122, 995, 1236):
+            logger.debug("Suppressed Windows accept noise: %r", exc)
+            return
+        loop.default_exception_handler(context)
+
 @asynccontextmanager
 async def _noop_lifespan(_app):
     """No-op lifespan for the mounted StreamableHTTP Starlette app.
@@ -277,6 +292,9 @@ def _relation_from_dict(d: dict) -> Any:
 
 @asynccontextmanager
 async def lifespan(app):
+    if sys.platform == "win32":
+        asyncio.get_running_loop().set_exception_handler(_suppress_windows_accept_noise)
+
     logger.info("Hook registry: %d event(s) registered", len(hook_registry._hooks))
     for event_type, hooks in hook_registry._hooks.items():
         for h in hooks:
