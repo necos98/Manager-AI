@@ -10,7 +10,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useCreateIssue } from "@/features/issues/hooks";
+import { useCreateIssue, useProjectTags } from "@/features/issues/hooks";
+import { TagInput } from "./tag-input";
 import { FileGalleryModal } from "@/features/files/components/file-gallery-modal";
 import {
   Dialog,
@@ -43,6 +44,11 @@ const PRIORITIES: { value: PriorityLevel; label: string; Icon: LucideIcon }[] = 
 
 const DESCRIPTION_MAX = 50_000;
 
+const CATEGORIES = [
+  "Bug", "Feature", "Improvement", "Documentation",
+  "Refactor", "Security", "Performance", "UI/UX",
+];
+
 type Props = {
   projectId: string;
   open: boolean;
@@ -52,13 +58,18 @@ type Props = {
 export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState(3);
+  const [tags, setTags] = useState<string[]>([]);
+  const [category, setCategory] = useState<string | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const createIssue = useCreateIssue(projectId);
+  const { data: availableTags } = useProjectTags(projectId);
 
   const reset = () => {
     setDescription("");
     setPriority(3);
+    setTags([]);
+    setCategory(null);
   };
 
   const handleFileSelect = useCallback((file: ProjectFile) => {
@@ -92,7 +103,7 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
     e.preventDefault();
     if (disabled) return;
     createIssue.mutate(
-      { description, priority },
+      { description, priority, category, tags },
       {
         onSuccess: () => {
           reset();
@@ -172,6 +183,35 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
                       <Icon className="size-4 text-muted-foreground" />
                       {label}
                     </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Tags</label>
+            <TagInput
+              tags={tags}
+              onChange={setTags}
+              availableTags={availableTags ?? []}
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Category</label>
+            <Select
+              value={category ?? "none"}
+              onValueChange={(v) => setCategory(v === "none" ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="No category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No category</SelectItem>
+                {CATEGORIES.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
                   </SelectItem>
                 ))}
               </SelectContent>
