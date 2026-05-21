@@ -1,8 +1,16 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { Trash2 } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Plus, Trash2, X } from "lucide-react";
+import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
 import {
   Tabs,
   TabsContent,
@@ -23,7 +31,8 @@ import { IssueActions } from "./issue-actions";
 import { PlanFeedback } from "./plan-feedback";
 import { EditableTaskList } from "./editable-task-list";
 import { InlineEditField } from "./inline-edit-field";
-import { useDeleteIssue, useUpdateIssue } from "@/features/issues/hooks";
+import { TagInput } from "./tag-input";
+import { useDeleteIssue, useUpdateIssue, useProjectTags } from "@/features/issues/hooks";
 import { useKillTerminal } from "@/features/terminals/hooks";
 import type { Issue } from "@/shared/types";
 import { IssueRelationsTab } from "./issue-relations-tab";
@@ -48,6 +57,8 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
   const deleteIssue = useDeleteIssue(projectId);
   const killTerminal = useKillTerminal();
   const updateIssue = useUpdateIssue(projectId, issue.id);
+  const { data: availableTags } = useProjectTags(projectId);
+  const [showTagInput, setShowTagInput] = useState(false);
 
   const tabs = useMemo<TabDef[]>(() => [
     { value: "description", label: "Description", available: true },
@@ -115,6 +126,58 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
               )}
             />
             <StatusBadge status={issue.status} />
+            <Select
+              value={issue.category ?? "none"}
+              onValueChange={(v) => updateIssue.mutate({ category: v === "none" ? null : v })}
+              disabled={isTerminalState}
+            >
+              <SelectTrigger className="h-6 w-fit gap-1 border-0 px-2 text-xs font-medium">
+                <SelectValue placeholder="No category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No category</SelectItem>
+                {["Bug","Feature","Improvement","Documentation","Refactor","Security","Performance","UI/UX"].map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {issue.tags && issue.tags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1">
+                {issue.tags.map(tag => (
+                  <Link
+                    key={tag}
+                    to="/projects/$projectId/issues"
+                    params={{ projectId }}
+                    search={{ tag }}
+                  >
+                    <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80 gap-1 pr-1">
+                      {tag}
+                      {!isTerminalState && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const newTags = (issue.tags || []).filter(t => t !== tag);
+                            updateIssue.mutate({ tags: newTags });
+                          }}
+                          className="hover:text-destructive"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      )}
+                    </Badge>
+                  </Link>
+                ))}
+              </div>
+            )}
+            {!isTerminalState && (
+              <button
+                onClick={() => setShowTagInput(!showTagInput)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Plus className="size-4" />
+              </button>
+            )}
           </div>
         </div>
         <Button
@@ -128,6 +191,22 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
           Delete
         </Button>
       </div>
+
+      {showTagInput && (
+        <div className="mt-2 max-w-sm">
+          <TagInput
+            tags={issue.tags || []}
+            onChange={(newTags) => {
+              updateIssue.mutate({ tags: newTags });
+              if (newTags.length <= (issue.tags || []).length) {
+                setShowTagInput(false);
+              }
+            }}
+            availableTags={availableTags ?? []}
+            placeholder="Add or remove tags..."
+          />
+        </div>
+      )}
 
       {/* Action buttons */}
       <IssueActions issue={issue} projectId={projectId} />
