@@ -438,3 +438,23 @@ export interface CredentialUpsert {
   url: string;
   fields: Record<string, string>;
 }
+
+// ── Question ──
+
+export interface Question {
+  id: string;
+  project_id: string;
+  issue_id: string;
+  question: string;
+  options: string[] | null;
+  status: "pending" | "answered" | "timed_out";
+  answer: string | null;
+  selected_option: string | null;
+  created_at: string | null;
+  answered_at: string | null;
+}
+
+export interface QuestionAnswer {
+  answer: string;
+  selected_option: string | null;
+}

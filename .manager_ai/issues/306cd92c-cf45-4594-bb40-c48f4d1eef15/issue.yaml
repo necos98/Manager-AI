@@ -1,0 +1,40 @@
+schema_version: 1
+id: 306cd92c-cf45-4594-bb40-c48f4d1eef15
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix Claude Code hook execution with internal Python scripts
+status: Finished
+priority: 3
+created_at: '2026-05-21T07:43:36.237014'
+updated_at: '2026-05-21T08:24:38.347118'
+tasks:
+- id: f19f65f7-afcf-4286-abd9-7da5fee3bca7
+  name: Delete old PS1 and bat scripts from claude_resources/scripts/
+  status: Completed
+  order: 0
+  created_at: '2026-05-21T08:19:11'
+  updated_at: '2026-05-21T08:19:51'
+- id: d627717b-b63c-4587-9322-a8a82b23ffc0
+  name: Create notify-hook.py
+  status: Completed
+  order: 1
+  created_at: '2026-05-21T08:19:11'
+  updated_at: '2026-05-21T08:20:51'
+- id: c0bedfbe-8ecd-4aea-848a-32162d32e2d2
+  name: Create tts-hook.py
+  status: Completed
+  order: 2
+  created_at: '2026-05-21T08:19:11'
+  updated_at: '2026-05-21T08:22:16'
+- id: 8b6853d1-6b55-4c81-91c3-79c0b14fa11b
+  name: Update settings.json hook commands
+  status: Completed
+  order: 3
+  created_at: '2026-05-21T08:19:11'
+  updated_at: '2026-05-21T08:23:32'
+- id: fc7aae63-bd2c-4344-8340-6fc2934f81cd
+  name: Manual verification of scripts
+  status: Completed
+  order: 4
+  created_at: '2026-05-21T08:19:11'
+  updated_at: '2026-05-21T08:24:15'
+relations: []

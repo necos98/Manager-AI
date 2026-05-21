@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from app.storage import atomic, file_store, paths
+from app.storage.cache import flush_pending_writes
 from app.storage.file_store import FileRecord
 
 
@@ -91,6 +92,7 @@ def test_index_sorted_by_created_at_then_id(proj):
     file_store.create_file(proj, _new_file("late", created_at="2026-04-05T10:00:00"))
     file_store.create_file(proj, _new_file("early", created_at="2026-04-01T10:00:00"))
     file_store.create_file(proj, _new_file("mid", created_at="2026-04-03T10:00:00"))
+    flush_pending_writes()
     index = atomic.read_yaml(paths.files_index(proj))
     assert [e["id"] for e in index["files"]] == ["early", "mid", "late"]
 
@@ -116,6 +118,7 @@ def test_update_file_clears_text_when_set_none(proj):
     rec.extracted_text = None
     rec.extraction_status = "failed"
     file_store.update_file(proj, rec)
+    flush_pending_writes()
     assert not paths.file_text_cache(proj, "u2").exists()
 
 
@@ -150,6 +153,7 @@ def test_rebuild_files_index_is_idempotent_sort(proj):
     # files.yaml is the source of truth for metadata — rebuild just re-sorts it.
     file_store.create_file(proj, _new_file("r1", created_at="2026-04-01T10:00:00"))
     file_store.create_file(proj, _new_file("r2", created_at="2026-04-02T10:00:00"))
+    flush_pending_writes()
     file_store.rebuild_files_index(proj)
     index = atomic.read_yaml(paths.files_index(proj))
     assert [e["id"] for e in index["files"]] == ["r1", "r2"]

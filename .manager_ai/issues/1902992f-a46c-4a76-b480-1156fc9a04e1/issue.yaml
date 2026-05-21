@@ -1,0 +1,76 @@
+schema_version: 1
+id: 1902992f-a46c-4a76-b480-1156fc9a04e1
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Agent Orchestration & Multi-Agent Chat System
+status: Finished
+priority: 3
+created_at: '2026-05-19T12:39:43.146092'
+updated_at: '2026-05-20T18:15:39.963003'
+tasks:
+- id: 754d6aff-9fff-434f-811c-60190237dacc
+  name: DB Models + Migration — Create Agent, Pipeline, PipelineRun, AgentStepRun, AgentMessage models. Update __init__.py. Run alembic migration.
+  status: Completed
+  order: 0
+  created_at: '2026-05-19T13:09:12'
+  updated_at: '2026-05-19T13:12:10'
+- id: 1bdd56da-de6f-4c44-9f22-793ad3864588
+  name: Pydantic Schemas — Create AgentCreate/Update/Response, PipelineCreate/Update/Response, AgentMessageCreate/Response schemas.
+  status: Completed
+  order: 1
+  created_at: '2026-05-19T13:09:12'
+  updated_at: '2026-05-19T13:13:10'
+- id: 93237555-bc24-4952-a284-0a72faad0a5a
+  name: Agent + Pipeline CRUD MCP Tools — Add tool descriptions to default_settings.json. Implement list/create/update/delete for agents and pipelines in server.py.
+  status: Completed
+  order: 2
+  created_at: '2026-05-19T13:09:12'
+  updated_at: '2026-05-19T13:15:24'
+- id: bf71b0aa-d481-4d74-b71d-6a0717ec1fdf
+  name: OrchestratorService — Core service for pipeline execution. start_pipeline, _run_pipeline, _run_agent_step, build_prompt, complete_agent_step.
+  status: Completed
+  order: 3
+  created_at: '2026-05-19T13:09:12'
+  updated_at: '2026-05-19T13:18:09'
+- id: 374d5d10-b3d0-4728-9278-02d788c77dfb
+  name: Chat + Execution MCP Tools — send_agent_message, get_agent_messages, complete_agent_step, get_pipeline_status, start_pipeline tools in server.py.
+  status: Completed
+  order: 4
+  created_at: '2026-05-19T13:09:12'
+  updated_at: '2026-05-19T13:19:55'
+- id: 50fc0de2-3bfd-40e5-a02a-a517db0e8eda
+  name: Integrate accept_issue → auto-start pipeline. After issue accepted, auto-trigger default pipeline with trigger_type=issue_accepted.
+  status: Completed
+  order: 5
+  created_at: '2026-05-19T13:09:12'
+  updated_at: '2026-05-19T13:21:11'
+- id: 8b16b760-9914-43c7-b0ac-6a8f1158501e
+  name: 'WebSocket Events — New event types: agent_step_started/completed/failed, agent_message_added, pipeline_completed. Emit from OrchestratorService.'
+  status: Completed
+  order: 6
+  created_at: '2026-05-19T13:09:12'
+  updated_at: '2026-05-19T13:21:28'
+- id: a3891f13-0549-4fc9-bf75-f94f57df4f3d
+  name: Frontend AgentsTab + PipelinesTab — Agent definitions table/edit/create. Pipeline list/edit/create with drag-reorder steps.
+  status: Completed
+  order: 7
+  created_at: '2026-05-19T13:09:12'
+  updated_at: '2026-05-19T13:28:43'
+- id: e8aedf16-d8f8-4752-a240-c30b6916b98a
+  name: Frontend AgentChat + PipelineProgress — Chat panel on issue detail. Pipeline stepper component. WebSocket integration for real-time updates.
+  status: Completed
+  order: 8
+  created_at: '2026-05-19T13:09:12'
+  updated_at: '2026-05-19T13:30:41'
+- id: a8685aba-fb4d-44c7-962e-2e0135bbdf85
+  name: Default Agents Seeding — Auto-create 4 default agents + default pipeline on first project access. Idempotent.
+  status: Completed
+  order: 9
+  created_at: '2026-05-19T13:09:12'
+  updated_at: '2026-05-19T13:33:07'
+- id: 1518ac0e-578e-481a-881b-f5610fe32080
+  name: Testing — pytest tests for agents CRUD, pipeline CRUD, orchestrator flow, chat messages, pipeline completion, auto-trigger on accept.
+  status: Completed
+  order: 10
+  created_at: '2026-05-19T13:09:12'
+  updated_at: '2026-05-20T18:15:14'
+relations: []

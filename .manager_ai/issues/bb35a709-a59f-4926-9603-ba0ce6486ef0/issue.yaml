@@ -1,0 +1,76 @@
+schema_version: 1
+id: bb35a709-a59f-4926-9603-ba0ce6486ef0
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Async memory layer: RAM-first architecture with non-blocking disk writes'
+status: Finished
+priority: 3
+created_at: '2026-05-20T14:18:07.000645'
+updated_at: '2026-05-20T16:39:33.194991'
+tasks:
+- id: d1e979f2-593f-4bfa-841c-1121595f65d9
+  name: Create MemoryStore core (memory_store_core.py)
+  status: Completed
+  order: 0
+  created_at: '2026-05-20T15:52:04'
+  updated_at: '2026-05-20T15:52:55'
+- id: 9220f891-994a-44b0-97d9-52d6325c59f9
+  name: Create WriteQueue (write_queue.py)
+  status: Completed
+  order: 1
+  created_at: '2026-05-20T15:52:04'
+  updated_at: '2026-05-20T15:53:32'
+- id: 0531dc34-86b4-4fe2-b502-291a7b452345
+  name: Create BackgroundWriter (background_writer.py)
+  status: Completed
+  order: 2
+  created_at: '2026-05-20T15:52:04'
+  updated_at: '2026-05-20T15:55:26'
+- id: 206fba4f-06b2-482e-834a-884d624ba242
+  name: Rewrite memory_store.py to delegate to MemoryStore + WriteQueue
+  status: Completed
+  order: 3
+  created_at: '2026-05-20T15:52:04'
+  updated_at: '2026-05-20T15:57:07'
+- id: 890b4908-3cb4-4e67-bf05-6e3cc2d753a2
+  name: Rewrite issue_store.py to delegate to MemoryStore + WriteQueue
+  status: Completed
+  order: 4
+  created_at: '2026-05-20T15:52:04'
+  updated_at: '2026-05-20T15:58:59'
+- id: f81f09ac-f83b-4fe3-af86-dcc4bf7b2711
+  name: Rewrite file_store.py to delegate to MemoryStore + WriteQueue
+  status: Completed
+  order: 5
+  created_at: '2026-05-20T15:52:04'
+  updated_at: '2026-05-20T16:00:20'
+- id: fa7bfc62-e002-42a8-947b-f408528c9477
+  name: Update main.py lifespan — replace watcher with new startup
+  status: Completed
+  order: 6
+  created_at: '2026-05-20T15:52:04'
+  updated_at: '2026-05-20T16:02:36'
+- id: 93d4f7e7-708e-4a49-82c8-f133a57aba03
+  name: Update routers/projects.py — remove watcher calls
+  status: Completed
+  order: 7
+  created_at: '2026-05-20T15:52:04'
+  updated_at: '2026-05-20T16:04:09'
+- id: e3326565-e446-44e8-9d2f-23d32d496e39
+  name: 'Clean up: cache.py, __init__.py, pyproject.toml, event_service'
+  status: Completed
+  order: 8
+  created_at: '2026-05-20T15:52:04'
+  updated_at: '2026-05-20T16:05:24'
+- id: af8e6ebb-f878-40b2-aec4-451fe144f598
+  name: Remove watcher file, update conftest.py and existing tests
+  status: Completed
+  order: 9
+  created_at: '2026-05-20T15:52:04'
+  updated_at: '2026-05-20T16:09:06'
+- id: 8f6a090b-2c03-4eb8-96e9-90d06b9fecb9
+  name: 'Create new tests: memory_store_core, write_queue, background_writer'
+  status: Completed
+  order: 10
+  created_at: '2026-05-20T15:52:04'
+  updated_at: '2026-05-20T16:34:06'
+relations: []

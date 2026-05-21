@@ -1,0 +1,406 @@
+"""OrchestratorService: manages agent pipeline execution for issues."""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+from datetime import datetime, timezone
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.hooks.executor import ClaudeCodeExecutor
+from app.models.agent import Agent
+from app.models.agent_message import AgentMessage
+from app.models.issue import Issue
+from app.models.pipeline import AgentStepRun, AgentStepStatus, Pipeline, PipelineRun, PipelineRunStatus
+from app.services.event_service import event_service
+from app.services.project_service import ProjectService
+
+logger = logging.getLogger(__name__)
+
+
+class OrchestratorService:
+    """Manages agent pipeline lifecycle: start, step execution, completion."""
+
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.executor = ClaudeCodeExecutor()
+
+    DEFAULT_AGENTS = [
+        {
+            "name": "Architect",
+            "role_key": "architect",
+            "system_prompt": (
+                "You are a Software Architect. Analyze requirements, design system architecture, "
+                "and write technical specifications. Output concise, actionable specs. "
+                "When done, call complete_agent_step with your architectural decisions."
+            ),
+        },
+        {
+            "name": "Developer",
+            "role_key": "developer",
+            "system_prompt": (
+                "You are a Senior Developer. Implement code following the specification. "
+                "Write tests. Keep code clean and follow existing patterns. "
+                "When done, call complete_agent_step with implementation summary."
+            ),
+        },
+        {
+            "name": "Reviewer",
+            "role_key": "reviewer",
+            "system_prompt": (
+                "You are a Code Reviewer. Review the implementation for bugs, security issues, "
+                "and code quality. Check adherence to spec. "
+                "When done, call complete_agent_step with review findings."
+            ),
+        },
+        {
+            "name": "QA",
+            "role_key": "qa",
+            "system_prompt": (
+                "You are a QA Engineer. Verify the implementation meets requirements. "
+                "Run tests, check edge cases, validate acceptance criteria. "
+                "When done, call complete_agent_step with test results."
+            ),
+        },
+    ]
+
+    async def ensure_default_agents(self, project_id: str) -> list[Agent]:
+        """Create default agents if none exist for the project. Idempotent."""
+        result = await self.session.execute(
+            select(func.count()).select_from(Agent).where(Agent.project_id == project_id)
+        )
+        count = result.scalar() or 0
+        if count > 0:
+            result = await self.session.execute(
+                select(Agent).where(Agent.project_id == project_id).order_by(Agent.name)
+            )
+            return list(result.scalars().all())
+
+        agents = []
+        for data in self.DEFAULT_AGENTS:
+            agent = Agent(
+                project_id=project_id,
+                name=data["name"],
+                role_key=data["role_key"],
+                system_prompt=data["system_prompt"],
+            )
+            self.session.add(agent)
+            agents.append(agent)
+        await self.session.commit()
+        return agents
+
+    async def ensure_default_pipeline(self, project_id: str) -> Pipeline | None:
+        """Create default pipeline if none exist for the project. Idempotent.
+
+        Requires agents to exist first (call ensure_default_agents before this).
+        """
+        result = await self.session.execute(
+            select(func.count()).select_from(Pipeline).where(Pipeline.project_id == project_id)
+        )
+        count = result.scalar() or 0
+        if count > 0:
+            result = await self.session.execute(
+                select(Pipeline).where(
+                    Pipeline.project_id == project_id,
+                    Pipeline.is_default == True,
+                )
+            )
+            return result.scalar_one_or_none()
+
+        agents_result = await self.session.execute(
+            select(Agent).where(Agent.project_id == project_id).order_by(Agent.name)
+        )
+        agents = agents_result.scalars().all()
+        if not agents:
+            return None
+
+        role_order = ["architect", "developer", "reviewer", "qa"]
+        steps = []
+        for i, role_key in enumerate(role_order):
+            agent = next((a for a in agents if a.role_key == role_key), None)
+            if agent:
+                steps.append({"agent_id": agent.id, "order": i})
+
+        pipeline = Pipeline(
+            project_id=project_id,
+            name="Default",
+            steps=json.dumps(steps),
+            is_default=True,
+            trigger_type="issue_accepted",
+        )
+        self.session.add(pipeline)
+        await self.session.commit()
+        return pipeline
+
+    async def start_pipeline(
+        self, trigger_type: str = "issue_accepted", issue_id: str | None = None
+    ) -> PipelineRun | None:
+        """Create PipelineRun + AgentStepRuns and begin background execution.
+
+        Returns the PipelineRun immediately. Pipeline executes asynchronously.
+        """
+        project_id: str
+        if issue_id:
+            issue = await self.session.get(Issue, issue_id)
+            if issue is None:
+                logger.warning("Issue %s not found, cannot start pipeline", issue_id)
+                return None
+            project_id = issue.project_id
+        else:
+            logger.warning("start_pipeline requires issue_id")
+            return None
+
+        pipeline = await self._get_default_pipeline(project_id)
+        if pipeline is None:
+            logger.info("No default pipeline for project %s", project_id)
+            return None
+
+        steps = json.loads(pipeline.steps) if pipeline.steps else []
+        if not steps:
+            logger.info("Pipeline %s has no steps", pipeline.id)
+            return None
+
+        pipeline_run = PipelineRun(
+            pipeline_id=pipeline.id,
+            issue_id=issue_id,
+            trigger_type=trigger_type,
+            status=PipelineRunStatus.RUNNING,
+        )
+        self.session.add(pipeline_run)
+        await self.session.flush()
+
+        for i, step_def in enumerate(steps):
+            agent = await self.session.get(Agent, step_def.get("agent_id", ""))
+            if agent is None:
+                # Try lookup by role_key
+                result = await self.session.execute(
+                    select(Agent).where(
+                        Agent.project_id == project_id,
+                        Agent.role_key == step_def.get("agent_role", ""),
+                        Agent.enabled == True,
+                    )
+                )
+                agent = result.scalar_one_or_none()
+            if agent is None:
+                logger.warning("Agent not found for step %s", step_def)
+                continue
+
+            step_run = AgentStepRun(
+                pipeline_run_id=pipeline_run.id,
+                agent_id=agent.id,
+                agent_name=agent.name,
+                agent_role=agent.role_key,
+                step_order=i,
+                status=AgentStepStatus.PENDING,
+            )
+            self.session.add(step_run)
+
+        await self.session.commit()
+        await self.session.refresh(pipeline_run)
+
+        asyncio.create_task(self._run_pipeline(pipeline_run))
+        return pipeline_run
+
+    async def _get_default_pipeline(self, project_id: str) -> Pipeline | None:
+        result = await self.session.execute(
+            select(Pipeline).where(
+                Pipeline.project_id == project_id,
+                Pipeline.is_default == True,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def _run_pipeline(self, pipeline_run: PipelineRun) -> None:
+        """Execute steps sequentially. Each step spawns a Claude Code subprocess."""
+        pipeline_run.status = PipelineRunStatus.RUNNING
+        await self._commit()
+
+        steps = await self._get_step_runs(pipeline_run.id)
+
+        for step in steps:
+            success = await self._run_agent_step(pipeline_run, step)
+            if not success:
+                pipeline_run.status = PipelineRunStatus.PAUSED
+                pipeline_run.completed_at = datetime.now(timezone.utc)
+                await self._commit()
+                await self._emit("pipeline_paused", pipeline_run)
+                return
+
+        pipeline_run.status = PipelineRunStatus.COMPLETED
+        pipeline_run.completed_at = datetime.now(timezone.utc)
+        await self._commit()
+        await self._emit("pipeline_completed", pipeline_run)
+
+    async def _run_agent_step(
+        self, pipeline_run: PipelineRun, step: AgentStepRun
+    ) -> bool:
+        agent = await self.session.get(Agent, step.agent_id)
+        if agent is None or not agent.enabled:
+            step.status = AgentStepStatus.FAILED
+            step.error = "Agent not found or disabled"
+            await self._commit()
+            return False
+
+        project = await ProjectService(self.session).get_by_id(agent.project_id)
+        issue = (
+            await self.session.get(Issue, pipeline_run.issue_id)
+            if pipeline_run.issue_id
+            else None
+        )
+
+        step.status = AgentStepStatus.RUNNING
+        step.started_at = datetime.now(timezone.utc)
+        await self._commit()
+
+        await self._emit("agent_step_started", pipeline_run, step)
+
+        prompt = self._build_prompt(agent, issue, pipeline_run)
+        result = await self.executor.run(
+            prompt=prompt,
+            project_path=project.path,
+            env_vars={"MANAGER_AI_PROJECT_ID": agent.project_id},
+        )
+
+        await self.session.refresh(step)
+
+        if step.status == AgentStepStatus.COMPLETED:
+            await self._emit("agent_step_completed", pipeline_run, step)
+            return True
+
+        step.status = AgentStepStatus.FAILED
+        step.error = result.error or f"Exit code non-zero"
+        step.completed_at = datetime.now(timezone.utc)
+        await self._commit()
+        await self._emit("agent_step_failed", pipeline_run, step)
+        return False
+
+    def _build_prompt(
+        self, agent: Agent, issue: Issue | None, pipeline_run: PipelineRun
+    ) -> str:
+        parts = [agent.system_prompt or f"You are the {agent.name} agent."]
+
+        parts.append(
+            f"\n## Pipeline Info\n"
+            f"Pipeline run ID: {pipeline_run.id}\n"
+            f"Agent: {agent.name} ({agent.role_key})"
+        )
+
+        if issue:
+            parts.append(f"\n## Issue: {issue.name or '(unnamed)'}")
+            parts.append(f"Description: {issue.description}")
+            if issue.specification:
+                parts.append(f"\n### Specification\n{issue.specification}")
+            if issue.plan:
+                parts.append(f"\n### Plan\n{issue.plan}")
+
+        parts.append(
+            "\n## Communication\n"
+            "Use `send_agent_message` to write to the agent chat.\n"
+            "Use `get_agent_messages` to read chat history.\n"
+            "When your work is complete, call `complete_agent_step` with a summary."
+        )
+
+        return "\n".join(parts)
+
+    async def complete_agent_step(self, pipeline_run_id: str, summary: str = "") -> dict:
+        """Mark the current running step as completed."""
+        result = await self.session.execute(
+            select(AgentStepRun)
+            .where(
+                AgentStepRun.pipeline_run_id == pipeline_run_id,
+                AgentStepRun.status == AgentStepStatus.RUNNING,
+            )
+            .order_by(AgentStepRun.step_order)
+            .limit(1)
+        )
+        step = result.scalar_one_or_none()
+        if step is None:
+            return {"error": "No running step found for this pipeline run"}
+
+        step.status = AgentStepStatus.COMPLETED
+        step.summary = summary
+        step.completed_at = datetime.now(timezone.utc)
+        await self._commit()
+        return {
+            "completed": True,
+            "step_id": step.id,
+            "agent_name": step.agent_name,
+            "agent_role": step.agent_role,
+        }
+
+    async def get_pipeline_status(self, pipeline_run_id: str) -> dict:
+        """Return full pipeline state with all step statuses."""
+        pipeline_run = await self.session.get(PipelineRun, pipeline_run_id)
+        if pipeline_run is None:
+            return {"error": "Pipeline run not found"}
+
+        steps = await self._get_step_runs(pipeline_run_id)
+
+        return {
+            "pipeline_run": {
+                "id": pipeline_run.id,
+                "pipeline_id": pipeline_run.pipeline_id,
+                "issue_id": pipeline_run.issue_id,
+                "trigger_type": pipeline_run.trigger_type,
+                "status": pipeline_run.status.value,
+                "started_at": pipeline_run.started_at.isoformat() if pipeline_run.started_at else None,
+                "completed_at": pipeline_run.completed_at.isoformat() if pipeline_run.completed_at else None,
+            },
+            "steps": [
+                {
+                    "id": s.id,
+                    "agent_id": s.agent_id,
+                    "agent_name": s.agent_name,
+                    "agent_role": s.agent_role,
+                    "step_order": s.step_order,
+                    "status": s.status.value,
+                    "summary": s.summary,
+                    "error": s.error,
+                    "started_at": s.started_at.isoformat() if s.started_at else None,
+                    "completed_at": s.completed_at.isoformat() if s.completed_at else None,
+                }
+                for s in steps
+            ],
+        }
+
+    async def _get_step_runs(self, pipeline_run_id: str) -> list[AgentStepRun]:
+        result = await self.session.execute(
+            select(AgentStepRun)
+            .where(AgentStepRun.pipeline_run_id == pipeline_run_id)
+            .order_by(AgentStepRun.step_order)
+        )
+        return list(result.scalars().all())
+
+    async def _commit(self) -> None:
+        try:
+            await self.session.commit()
+        except Exception as exc:
+            logger.error("Orchestrator commit failed: %s", exc)
+            await self.session.rollback()
+
+    async def _emit(
+        self, event_type: str, pipeline_run: PipelineRun, step: AgentStepRun | None = None
+    ) -> None:
+        try:
+            payload: dict = {
+                "type": event_type,
+                "pipeline_run_id": pipeline_run.id,
+                "issue_id": pipeline_run.issue_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            if step:
+                payload.update({
+                    "step_id": step.id,
+                    "agent_name": step.agent_name,
+                    "agent_role": step.agent_role,
+                    "step_order": step.step_order,
+                })
+                if event_type == "agent_step_completed":
+                    payload["summary"] = step.summary
+                elif event_type == "agent_step_failed":
+                    payload["error"] = step.error
+            await event_service.emit(payload)
+        except Exception as exc:
+            logger.warning("Failed to emit pipeline event: %s", exc)
