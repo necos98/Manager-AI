@@ -124,8 +124,15 @@ async def complete_issue(
 async def start_pipeline_for_issue(
     project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
 ):
+    issue_svc = IssueService(db)
+    issue = await issue_svc.get_for_project(issue_id, project_id)
     orch = OrchestratorService(db)
-    pipeline_run = await orch.start_pipeline(trigger_type="manual", issue_id=issue_id)
+    pipeline_run = await orch.start_pipeline(
+        trigger_type="manual",
+        issue_id=issue_id,
+        project_id=project_id,
+        issue_status=issue.status,
+    )
     if pipeline_run is None:
         return {"error": "Could not start pipeline — no default pipeline or already running"}
     return {

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.hooks.executor import ClaudeCodeExecutor
 from app.models.agent import Agent
 from app.models.agent_message import AgentMessage
-from app.models.issue import Issue
+from app.models.issue import Issue, IssueStatus
 from app.models.pipeline import AgentStepRun, AgentStepStatus, Pipeline, PipelineRun, PipelineRunStatus
 from app.services.event_service import event_service
 from app.services.project_service import ProjectService
@@ -155,23 +155,43 @@ class OrchestratorService:
         return pipeline
 
     async def start_pipeline(
-        self, trigger_type: str = "issue_accepted", issue_id: str | None = None
+        self,
+        trigger_type: str = "issue_accepted",
+        issue_id: str | None = None,
+        project_id: str | None = None,
+        issue_status: str | None = None,
     ) -> PipelineRun | None:
         """Create PipelineRun + AgentStepRuns and begin background execution.
 
         Returns the PipelineRun immediately. Pipeline executes asynchronously.
         Supports starting from any issue state by skipping already-completed steps.
+
+        Callers SHOULD pass project_id + issue_status to avoid a DB lookup
+        (issues are stored on disk, not in the SQLAlchemy issue table).
         """
-        project_id: str
-        if issue_id:
+        if not issue_id:
+            logger.warning("start_pipeline requires issue_id")
+            return None
+
+        if project_id and issue_status is not None:
+            # Issue resolved from file store — ensure shadow DB row for FK constraints
+            issue = await self.session.get(Issue, issue_id)
+            if issue is None:
+                issue = Issue(
+                    id=issue_id,
+                    project_id=project_id,
+                    description="",
+                    status=IssueStatus(issue_status),
+                )
+                self.session.add(issue)
+                await self.session.flush()
+        else:
             issue = await self.session.get(Issue, issue_id)
             if issue is None:
                 logger.warning("Issue %s not found, cannot start pipeline", issue_id)
                 return None
             project_id = issue.project_id
-        else:
-            logger.warning("start_pipeline requires issue_id")
-            return None
+            issue_status = issue.status.value if hasattr(issue.status, 'value') else str(issue.status)
 
         # Prevent duplicate runs
         existing = await self.session.execute(
@@ -195,7 +215,7 @@ class OrchestratorService:
             return None
 
         # Determine starting step based on issue state
-        start_idx = self._get_starting_step_index(issue)
+        start_idx = self._get_starting_step_index(issue_status=issue_status)
 
         pipeline_run = PipelineRun(
             pipeline_id=pipeline.id,
@@ -243,16 +263,19 @@ class OrchestratorService:
 
     ROLE_ORDER = ["spec_writer", "architect", "developer", "reviewer", "qa"]
 
-    def _get_starting_step_index(self, issue: Issue) -> int:
+    def _get_starting_step_index(self, issue: Issue | None = None, issue_status: str | None = None) -> int:
         """Determine which step to start from based on issue state.
 
         - NEW: start from spec_writer (index 0)
         - REASONING: skip spec_writer, start from architect (index 1)
         - PLANNED/ACCEPTED: skip spec_writer+architect, start from developer (index 2)
         """
-        if issue.status in ("Planned", "Accepted"):
+        status = issue_status
+        if issue is not None:
+            status = issue.status.value if hasattr(issue.status, 'value') else str(issue.status)
+        if status in ("Planned", "Accepted"):
             return 2
-        elif issue.status == "Reasoning":
+        elif status == "Reasoning":
             return 1
         else:
             return 0

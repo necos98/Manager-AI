@@ -297,7 +297,10 @@ async def accept_issue(project_id: str, issue_id: str) -> dict:
             try:
                 orchestrator = OrchestratorService(session)
                 pipeline_run = await orchestrator.start_pipeline(
-                    trigger_type="issue_accepted", issue_id=issue_id
+                    trigger_type="issue_accepted",
+                    issue_id=issue_id,
+                    project_id=project_id,
+                    issue_status=issue_status,
                 )
                 result: dict = {"id": issue_id, "status": issue_status}
                 if pipeline_run:
@@ -1147,9 +1150,16 @@ async def get_pipeline_status(pipeline_run_id: str) -> dict:
 @mcp.tool(description=_desc["tool.start_pipeline.description"])
 async def start_pipeline(issue_id: str) -> dict:
     async with async_session() as session:
+        issue_svc = IssueService(session)
+        issue = await issue_svc.get_by_id(issue_id)
+        if issue is None:
+            return {"error": f"Issue {issue_id} not found"}
         orch = OrchestratorService(session)
         pipeline_run = await orch.start_pipeline(
-            trigger_type="manual", issue_id=issue_id
+            trigger_type="manual",
+            issue_id=issue_id,
+            project_id=issue.project_id,
+            issue_status=issue.status,
         )
         if pipeline_run is None:
             return {"error": "No default pipeline found for this project"}
