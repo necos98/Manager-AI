@@ -42,13 +42,13 @@ class IssueRecord:
     name: str | None
     status: str
     priority: int
-    category: str | None = None
     description: str
     specification: str | None
     plan: str | None
     recap: str | None
     created_at: str
     updated_at: str
+    category: str | None = None
     tasks: list[TaskRecord] = field(default_factory=list)
     relations: list[RelationRecord] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)

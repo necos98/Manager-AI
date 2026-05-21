@@ -730,10 +730,8 @@ async def test_mcp_start_pipeline(db_session, tmp_path):
     await orch.ensure_default_agents(project.id)
     await orch.ensure_default_pipeline(project.id)
 
-    issue = Issue(project_id=project.id, description="Test", priority=3)
-    db_session.add(issue)
-    await db_session.commit()
-    await db_session.refresh(issue)
+    issue_svc = IssueService(db_session)
+    issue = await issue_svc.create(project_id=project.id, description="Test", priority=3)
 
     @asynccontextmanager
     async def fake_session():
