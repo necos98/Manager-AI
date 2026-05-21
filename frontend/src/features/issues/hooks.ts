@@ -13,10 +13,10 @@ export const issueKeys = {
   tasks: (projectId: string, issueId: string) => ["projects", projectId, "issues", issueId, "tasks"] as const,
 };
 
-export function useIssues(projectId: string, status?: IssueStatus, search?: string) {
+export function useIssues(projectId: string, status?: IssueStatus, search?: string, tag?: string) {
   return useQuery({
-    queryKey: [...issueKeys.all(projectId), "list", { status, search }],
-    queryFn: () => api.fetchIssues(projectId, status, search),
+    queryKey: [...issueKeys.all(projectId), "list", { status, search, tag }],
+    queryFn: () => api.fetchIssues(projectId, status, search, tag),
   });
 }
 
@@ -130,6 +130,14 @@ export function useAddFeedback(projectId: string, issueId: string) {
       queryClient.invalidateQueries({ queryKey: feedbackKeys.all(projectId, issueId) });
     },
     onError: onMutationError,
+  });
+}
+
+export function useProjectTags(projectId: string) {
+  return useQuery({
+    queryKey: [...issueKeys.all(projectId), "tags"],
+    queryFn: () => api.fetchProjectTags(projectId),
+    staleTime: 60_000,
   });
 }
 

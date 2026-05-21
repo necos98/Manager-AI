@@ -1,1 +1,0 @@
-Quando incollo dei testi che hanno tanti caratteri, o comunque testi strani che sono "larghi". La modale di "New Issue" si rompe, allargando verso destra la textarea, e verso il basso la textarea, nascondendo i bottoni di azione come "Cancel" e "Create". Fai in modo che questo non accada, al massimo rendi scrollabile la textarea.

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/ui/card";
+import { MarkdownViewer } from "@/shared/components/markdown-viewer";
 import { useAnswerQuestion } from "@/features/questions/hooks";
 import type { Question } from "@/shared/types";
 
@@ -28,7 +29,7 @@ export function QuestionCard({ question }: QuestionCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{question.question}</CardTitle>
+        <MarkdownViewer content={question.question} />
       </CardHeader>
       <CardContent className="space-y-3">
         {question.options && question.options.length > 0 && (

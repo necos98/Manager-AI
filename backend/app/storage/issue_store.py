@@ -42,6 +42,7 @@ class IssueRecord:
     name: str | None
     status: str
     priority: int
+    category: str | None = None
     description: str
     specification: str | None
     plan: str | None
@@ -50,6 +51,7 @@ class IssueRecord:
     updated_at: str
     tasks: list[TaskRecord] = field(default_factory=list)
     relations: list[RelationRecord] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
 
 
 _FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?(.*)$", re.DOTALL)
@@ -82,6 +84,7 @@ def _to_index_entry(record: IssueRecord) -> dict[str, Any]:
         "name": record.name,
         "status": record.status,
         "priority": record.priority,
+        "category": record.category,
         "created_at": record.created_at,
         "updated_at": record.updated_at,
     }
@@ -94,6 +97,7 @@ def _index_to_light_record(entry: dict[str, Any]) -> IssueRecord:
         name=entry.get("name"),
         status=entry.get("status", "New"),
         priority=int(entry.get("priority", 3)),
+        category=entry.get("category"),
         description="",
         specification=None,
         plan=None,
@@ -131,10 +135,12 @@ def load_issue(project_path: str, issue_id: str) -> IssueRecord | None:
         name=data.get("name"),
         status=data.get("status", "New"),
         priority=int(data.get("priority", 3)),
+        category=data.get("category"),
         description=description,
         specification=specification,
         plan=plan,
         recap=recap,
+        tags=data.get("tags") or [],
         created_at=_as_iso(data.get("created_at")),
         updated_at=_as_iso(data.get("updated_at")),
         tasks=[_task_from_dict(t) for t in (data.get("tasks") or [])],
@@ -315,6 +321,7 @@ def rebuild_issues_index(project_path: str) -> int:
                     "name": data.get("name"),
                     "status": data.get("status", "New"),
                     "priority": int(data.get("priority", 3)),
+                    "category": data.get("category"),
                     "created_at": _as_iso(data.get("created_at")),
                     "updated_at": _as_iso(data.get("updated_at")),
                 }
@@ -338,6 +345,7 @@ def _write_issue_record(project_path: str, payload: dict[str, Any]) -> None:
         "name": payload.get("name"),
         "status": payload.get("status", "New"),
         "priority": int(payload.get("priority", 3)),
+        "category": payload.get("category"),
         "created_at": payload.get("created_at", ""),
         "updated_at": payload.get("updated_at", ""),
         "tasks": payload.get("tasks", []),
@@ -364,6 +372,7 @@ def _record_to_payload(record: IssueRecord) -> dict[str, Any]:
         "name": record.name,
         "status": record.status,
         "priority": record.priority,
+        "category": record.category,
         "description": record.description,
         "specification": record.specification,
         "plan": record.plan,
@@ -372,6 +381,7 @@ def _record_to_payload(record: IssueRecord) -> dict[str, Any]:
         "updated_at": record.updated_at,
         "tasks": [asdict(t) for t in sorted(record.tasks, key=lambda t: (t.order, t.id))],
         "relations": [asdict(r) for r in sorted(record.relations, key=lambda r: (r.type, r.target_id))],
+        "tags": record.tags,
     }
 
 

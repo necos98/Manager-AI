@@ -29,6 +29,26 @@ class OrchestratorService:
 
     DEFAULT_AGENTS = [
         {
+            "name": "SpecWriter",
+            "role_key": "spec_writer",
+            "system_prompt": (
+                "You are a Technical Specification Writer. Your job is to analyze issue requirements "
+                "and produce a clear, detailed specification and implementation plan.\n\n"
+                "## Workflow\n"
+                "1. Read the issue description carefully\n"
+                "2. Call `create_issue_spec` to write the specification (moves issue NEW → REASONING)\n"
+                "3. Call `create_issue_plan` to write the implementation plan (moves REASONING → PLANNED)\n"
+                "4. Call `create_plan_tasks` to break the plan into atomic tasks\n"
+                "5. Call `send_agent_message` with type='decision' summarizing key architectural choices\n"
+                "6. Call `complete_agent_step` with a summary of what you produced\n\n"
+                "## Guidelines\n"
+                "- Specs should be detailed, covering architecture, data flow, edge cases\n"
+                "- Plans should be actionable with specific files, functions, and patterns\n"
+                "- Tasks should be atomic (1-2 files each) and ordered by dependency\n"
+                "- Communicate decisions to the next agents via send_agent_message"
+            ),
+        },
+        {
             "name": "Architect",
             "role_key": "architect",
             "system_prompt": (
@@ -116,7 +136,7 @@ class OrchestratorService:
         if not agents:
             return None
 
-        role_order = ["architect", "developer", "reviewer", "qa"]
+        role_order = ["spec_writer", "architect", "developer", "reviewer", "qa"]
         steps = []
         for i, role_key in enumerate(role_order):
             agent = next((a for a in agents if a.role_key == role_key), None)
@@ -140,6 +160,7 @@ class OrchestratorService:
         """Create PipelineRun + AgentStepRuns and begin background execution.
 
         Returns the PipelineRun immediately. Pipeline executes asynchronously.
+        Supports starting from any issue state by skipping already-completed steps.
         """
         project_id: str
         if issue_id:
@@ -152,6 +173,17 @@ class OrchestratorService:
             logger.warning("start_pipeline requires issue_id")
             return None
 
+        # Prevent duplicate runs
+        existing = await self.session.execute(
+            select(PipelineRun).where(
+                PipelineRun.issue_id == issue_id,
+                PipelineRun.status == PipelineRunStatus.RUNNING,
+            )
+        )
+        if existing.scalar_one_or_none() is not None:
+            logger.info("Pipeline already running for issue %s", issue_id)
+            return None
+
         pipeline = await self._get_default_pipeline(project_id)
         if pipeline is None:
             logger.info("No default pipeline for project %s", project_id)
@@ -161,6 +193,9 @@ class OrchestratorService:
         if not steps:
             logger.info("Pipeline %s has no steps", pipeline.id)
             return None
+
+        # Determine starting step based on issue state
+        start_idx = self._get_starting_step_index(issue)
 
         pipeline_run = PipelineRun(
             pipeline_id=pipeline.id,
@@ -172,9 +207,12 @@ class OrchestratorService:
         await self.session.flush()
 
         for i, step_def in enumerate(steps):
+            if i < start_idx:
+                logger.debug("Skipping step %d (%s) — already covered by issue state", i, step_def.get("agent_role", ""))
+                continue
+
             agent = await self.session.get(Agent, step_def.get("agent_id", ""))
             if agent is None:
-                # Try lookup by role_key
                 result = await self.session.execute(
                     select(Agent).where(
                         Agent.project_id == project_id,
@@ -202,6 +240,22 @@ class OrchestratorService:
 
         asyncio.create_task(self._run_pipeline(pipeline_run))
         return pipeline_run
+
+    ROLE_ORDER = ["spec_writer", "architect", "developer", "reviewer", "qa"]
+
+    def _get_starting_step_index(self, issue: Issue) -> int:
+        """Determine which step to start from based on issue state.
+
+        - NEW: start from spec_writer (index 0)
+        - REASONING: skip spec_writer, start from architect (index 1)
+        - PLANNED/ACCEPTED: skip spec_writer+architect, start from developer (index 2)
+        """
+        if issue.status in ("Planned", "Accepted"):
+            return 2
+        elif issue.status == "Reasoning":
+            return 1
+        else:
+            return 0
 
     async def _get_default_pipeline(self, project_id: str) -> Pipeline | None:
         result = await self.session.execute(

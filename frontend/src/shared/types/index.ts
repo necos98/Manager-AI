@@ -15,9 +15,11 @@ export interface Issue {
   description: string;
   status: IssueStatus;
   priority: number;
+  category: string | null;
   plan: string | null;
   specification: string | null;
   recap: string | null;
+  tags: string[];
   tasks: Task[];
   created_at: string;
   updated_at: string;
@@ -26,12 +28,16 @@ export interface Issue {
 export interface IssueCreate {
   description: string;
   priority?: number;
+  category?: string | null;
+  tags?: string[];
 }
 
 export interface IssueUpdate {
   name?: string;
   description?: string;
   priority?: number;
+  category?: string | null;
+  tags?: string[];
 }
 
 export interface IssueStatusUpdate {

@@ -26,13 +26,13 @@ async def test_ensure_default_agents(db_session, tmp_path):
 
     orch = OrchestratorService(db_session)
     agents = await orch.ensure_default_agents(project.id)
-    assert len(agents) == 4
+    assert len(agents) == 5
     role_keys = {a.role_key for a in agents}
-    assert role_keys == {"architect", "developer", "reviewer", "qa"}
+    assert role_keys == {"spec_writer", "architect", "developer", "reviewer", "qa"}
 
     # Idempotent: second call returns same count
     agents2 = await orch.ensure_default_agents(project.id)
-    assert len(agents2) == 4
+    assert len(agents2) == 5
 
 
 @pytest.mark.asyncio
@@ -51,7 +51,7 @@ async def test_ensure_default_pipeline(db_session, tmp_path):
     assert pipeline.trigger_type == "issue_accepted"
     import json
     steps = json.loads(pipeline.steps)
-    assert len(steps) == 4
+    assert len(steps) == 5
 
 
 @pytest.mark.asyncio
@@ -235,7 +235,7 @@ async def test_pipeline_completion(db_session, tmp_path):
         select(AgentStepRun).where(AgentStepRun.pipeline_run_id == pipeline_run.id)
     )
     steps = result.scalars().all()
-    assert len(steps) == 4
+    assert len(steps) == 5
     assert all(s.status == AgentStepStatus.COMPLETED for s in steps)
 
 
@@ -377,9 +377,9 @@ async def test_mcp_list_agents(db_session, tmp_path):
         result = await mcp_server.list_agents(project_id=project.id)
 
     assert "agents" in result
-    assert len(result["agents"]) == 4  # default agents seeded
+    assert len(result["agents"]) == 5  # default agents seeded
     role_keys = {a["role_key"] for a in result["agents"]}
-    assert role_keys == {"architect", "developer", "reviewer", "qa"}
+    assert role_keys == {"spec_writer", "architect", "developer", "reviewer", "qa"}
 
 
 @pytest.mark.asyncio
@@ -684,7 +684,7 @@ async def test_start_pipeline_manual(db_session, tmp_path):
         ).order_by(AgentStepRun.step_order)
     )
     steps = steps_result.scalars().all()
-    assert len(steps) == 4
+    assert len(steps) == 5
     assert all(s.status == AgentStepStatus.PENDING for s in steps)
 
 
@@ -959,14 +959,16 @@ async def test_mcp_accept_issue_triggers_pipeline(db_session, tmp_path):
     assert pipeline_run.trigger_type == "issue_accepted"
     assert pipeline_run.issue_id == issue.id
 
-    # Verify AgentStepRuns created
+    # Verify AgentStepRuns created — issue is Planned/Accepted, so starts from developer (3 steps)
     steps_result = await db_session.execute(
         select(AgentStepRun).where(
             AgentStepRun.pipeline_run_id == pipeline_run.id
         ).order_by(AgentStepRun.step_order)
     )
     steps = steps_result.scalars().all()
-    assert len(steps) == 4
+    assert len(steps) == 3
+    role_order = [s.agent_role for s in steps]
+    assert role_order == ["developer", "reviewer", "qa"]
 
 
 @pytest.mark.asyncio
@@ -1067,3 +1069,149 @@ async def test_mcp_complete_agent_step_no_running_step(db_session, tmp_path):
         )
 
     assert result == {"error": "No running step found for this pipeline run"}
+
+
+# ── Any-state pipeline start tests ──────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_start_pipeline_from_new_state(db_session, tmp_path):
+    """Issue NEW → all 5 steps created (spec_writer through qa)."""
+    project = await ProjectService(db_session).create(
+        name="Test", path=str(tmp_path), description="", tech_stack=""
+    )
+    await db_session.commit()
+
+    orch = OrchestratorService(db_session)
+    await orch.ensure_default_agents(project.id)
+    await orch.ensure_default_pipeline(project.id)
+
+    issue = Issue(project_id=project.id, description="New issue", priority=3, status="New")
+    db_session.add(issue)
+    await db_session.commit()
+    await db_session.refresh(issue)
+
+    with patch.object(OrchestratorService, "_run_pipeline", return_value=None):
+        pipeline_run = await orch.start_pipeline(trigger_type="manual", issue_id=issue.id)
+
+    assert pipeline_run is not None
+
+    steps_result = await db_session.execute(
+        select(AgentStepRun).where(
+            AgentStepRun.pipeline_run_id == pipeline_run.id
+        ).order_by(AgentStepRun.step_order)
+    )
+    steps = steps_result.scalars().all()
+    assert len(steps) == 5
+    role_order = [s.agent_role for s in steps]
+    assert role_order == ["spec_writer", "architect", "developer", "reviewer", "qa"]
+
+
+@pytest.mark.asyncio
+async def test_start_pipeline_from_reasoning_state(db_session, tmp_path):
+    """Issue REASONING → skip spec_writer, 4 steps created."""
+    project = await ProjectService(db_session).create(
+        name="Test", path=str(tmp_path), description="", tech_stack=""
+    )
+    await db_session.commit()
+
+    orch = OrchestratorService(db_session)
+    await orch.ensure_default_agents(project.id)
+    await orch.ensure_default_pipeline(project.id)
+
+    issue = Issue(project_id=project.id, description="Reasoning issue", priority=3, status="Reasoning")
+    db_session.add(issue)
+    await db_session.commit()
+    await db_session.refresh(issue)
+
+    with patch.object(OrchestratorService, "_run_pipeline", return_value=None):
+        pipeline_run = await orch.start_pipeline(trigger_type="manual", issue_id=issue.id)
+
+    assert pipeline_run is not None
+
+    steps_result = await db_session.execute(
+        select(AgentStepRun).where(
+            AgentStepRun.pipeline_run_id == pipeline_run.id
+        ).order_by(AgentStepRun.step_order)
+    )
+    steps = steps_result.scalars().all()
+    assert len(steps) == 4
+    role_order = [s.agent_role for s in steps]
+    assert role_order == ["architect", "developer", "reviewer", "qa"]
+
+
+@pytest.mark.asyncio
+async def test_start_pipeline_from_planned_state(db_session, tmp_path):
+    """Issue PLANNED → skip spec_writer + architect, 3 steps created."""
+    project = await ProjectService(db_session).create(
+        name="Test", path=str(tmp_path), description="", tech_stack=""
+    )
+    await db_session.commit()
+
+    orch = OrchestratorService(db_session)
+    await orch.ensure_default_agents(project.id)
+    await orch.ensure_default_pipeline(project.id)
+
+    issue = Issue(project_id=project.id, description="Planned issue", priority=3, status="Planned")
+    db_session.add(issue)
+    await db_session.commit()
+    await db_session.refresh(issue)
+
+    with patch.object(OrchestratorService, "_run_pipeline", return_value=None):
+        pipeline_run = await orch.start_pipeline(trigger_type="manual", issue_id=issue.id)
+
+    assert pipeline_run is not None
+
+    steps_result = await db_session.execute(
+        select(AgentStepRun).where(
+            AgentStepRun.pipeline_run_id == pipeline_run.id
+        ).order_by(AgentStepRun.step_order)
+    )
+    steps = steps_result.scalars().all()
+    assert len(steps) == 3
+    role_order = [s.agent_role for s in steps]
+    assert role_order == ["developer", "reviewer", "qa"]
+
+
+@pytest.mark.asyncio
+async def test_start_pipeline_duplicate_prevented(db_session, tmp_path):
+    """Second start_pipeline returns None while one is RUNNING."""
+    project = await ProjectService(db_session).create(
+        name="Test", path=str(tmp_path), description="", tech_stack=""
+    )
+    await db_session.commit()
+
+    orch = OrchestratorService(db_session)
+    await orch.ensure_default_agents(project.id)
+    await orch.ensure_default_pipeline(project.id)
+
+    issue = Issue(project_id=project.id, description="Dup test", priority=3)
+    db_session.add(issue)
+    await db_session.commit()
+    await db_session.refresh(issue)
+
+    with patch.object(OrchestratorService, "_run_pipeline", return_value=None):
+        run1 = await orch.start_pipeline(trigger_type="manual", issue_id=issue.id)
+        run2 = await orch.start_pipeline(trigger_type="manual", issue_id=issue.id)
+
+    assert run1 is not None
+    assert run2 is None  # duplicate prevented
+
+
+@pytest.mark.asyncio
+async def test_spec_writer_system_prompt(db_session, tmp_path):
+    """SpecWriter agent has correct system prompt with create_issue_spec/plan instructions."""
+    project = await ProjectService(db_session).create(
+        name="Test", path=str(tmp_path), description="", tech_stack=""
+    )
+    await db_session.commit()
+
+    orch = OrchestratorService(db_session)
+    agents = await orch.ensure_default_agents(project.id)
+
+    spec_writer = next((a for a in agents if a.role_key == "spec_writer"), None)
+    assert spec_writer is not None
+    assert "create_issue_spec" in spec_writer.system_prompt
+    assert "create_issue_plan" in spec_writer.system_prompt
+    assert "create_plan_tasks" in spec_writer.system_prompt
+    assert "complete_agent_step" in spec_writer.system_prompt

@@ -1,0 +1,64 @@
+schema_version: 1
+id: 2c428272-e102-4943-a0d3-d7aacde72012
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Issue Tagging & Grouping
+status: Finished
+priority: 1
+created_at: '2026-05-21T12:55:25.982162'
+updated_at: '2026-05-21T13:50:16.723488'
+tasks:
+- id: 714223c0-8364-49e7-bf49-faf5c6cf98e3
+  name: 'Backend: Add tags to IssueRecord + serialization (issue_store.py)'
+  status: Completed
+  order: 0
+  created_at: '2026-05-21T13:20:58'
+  updated_at: '2026-05-21T13:38:55'
+- id: f1063a30-2098-4a8d-a0a4-09ee5f7ff3bb
+  name: 'Backend: Add tags to Pydantic schemas (schemas/issue.py)'
+  status: Completed
+  order: 1
+  created_at: '2026-05-21T13:20:58'
+  updated_at: '2026-05-21T13:38:58'
+- id: 8e4f1add-0cc1-4004-b01f-bbd2b947d854
+  name: 'Backend: Tag normalization + aggregation + filter in service layer (issue_service.py)'
+  status: Completed
+  order: 2
+  created_at: '2026-05-21T13:20:58'
+  updated_at: '2026-05-21T13:39:00'
+- id: fab441bd-7c7c-4077-afac-affbf6ab88b9
+  name: 'Backend: New /tags endpoint + tag query param in router (issues.py)'
+  status: Completed
+  order: 3
+  created_at: '2026-05-21T13:20:58'
+  updated_at: '2026-05-21T13:39:03'
+- id: f187ced6-7278-43c4-9426-d0e226942a72
+  name: 'Frontend: Update TypeScript types + API + hooks'
+  status: Completed
+  order: 4
+  created_at: '2026-05-21T13:20:58'
+  updated_at: '2026-05-21T13:40:23'
+- id: 00905faa-b921-43a1-90d6-39c524fd4f4e
+  name: 'Frontend: Create TagInput autocomplete component'
+  status: Completed
+  order: 5
+  created_at: '2026-05-21T13:20:58'
+  updated_at: '2026-05-21T13:43:08'
+- id: cc128406-05dc-4180-8250-68bc343e493b
+  name: 'Frontend: Add tag input to NewIssueDialog'
+  status: Completed
+  order: 6
+  created_at: '2026-05-21T13:20:58'
+  updated_at: '2026-05-21T13:44:38'
+- id: 5b00230a-5675-4b7a-a322-8eb475008306
+  name: 'Frontend: Add tag chips + inline add to IssueDetail'
+  status: Completed
+  order: 7
+  created_at: '2026-05-21T13:20:58'
+  updated_at: '2026-05-21T13:46:36'
+- id: 2ac97708-882b-451a-9a42-6858ab0d5123
+  name: 'Frontend: Add tag filter dropdown to IssueList + route'
+  status: Completed
+  order: 8
+  created_at: '2026-05-21T13:20:58'
+  updated_at: '2026-05-21T13:49:08'
+relations: []

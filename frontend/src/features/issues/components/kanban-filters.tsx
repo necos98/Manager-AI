@@ -11,9 +11,12 @@ interface KanbanFiltersProps {
   onPriorityChange: (v: string) => void;
   sort: SortKey;
   onSortChange: (v: SortKey) => void;
+  tag: string;
+  onTagChange: (v: string) => void;
+  availableTags: string[];
 }
 
-export function KanbanFilters({ search, onSearchChange, priority, onPriorityChange, sort, onSortChange }: KanbanFiltersProps) {
+export function KanbanFilters({ search, onSearchChange, priority, onPriorityChange, sort, onSortChange, tag, onTagChange, availableTags }: KanbanFiltersProps) {
   return (
     <div className="flex gap-2 flex-wrap mb-4">
       <div className="relative flex-1 min-w-[180px]">
@@ -36,6 +39,17 @@ export function KanbanFilters({ search, onSearchChange, priority, onPriorityChan
           <SelectItem value="3">P3</SelectItem>
           <SelectItem value="4">P4</SelectItem>
           <SelectItem value="5">P5</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={tag} onValueChange={onTagChange}>
+        <SelectTrigger className="w-[150px] h-8 text-sm">
+          <SelectValue placeholder="All tags" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All tags</SelectItem>
+          {availableTags.map((t) => (
+            <SelectItem key={t} value={t}>{t}</SelectItem>
+          ))}
         </SelectContent>
       </Select>
       <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>

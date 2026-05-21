@@ -1,0 +1,46 @@
+schema_version: 1
+id: 09ccceec-e771-4fdf-924d-d7ef1f98672b
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Pipeline full-lifecycle: SpecWriter agent + Start Pipeline button + any-state trigger'
+status: Finished
+priority: 3
+created_at: '2026-05-21T12:51:57.012505'
+updated_at: '2026-05-21T13:24:17.742983'
+tasks:
+- id: 98789298-81d9-4a1e-987d-a06ee9a8f79d
+  name: Add SpecWriter to DEFAULT_AGENTS + update default pipeline to 5 steps in OrchestratorService
+  status: Completed
+  order: 0
+  created_at: '2026-05-21T12:54:13'
+  updated_at: '2026-05-21T13:06:06'
+- id: d9a2ec49-8581-4e4c-a068-bc9e87aae749
+  name: Enable start_pipeline from any issue state with _get_starting_step_index() logic
+  status: Completed
+  order: 1
+  created_at: '2026-05-21T12:54:13'
+  updated_at: '2026-05-21T13:07:16'
+- id: 3cfd9723-cd7f-4925-a8f0-4a0731e34d56
+  name: Prevent duplicate pipeline runs — check for existing RUNNING pipeline before creating new
+  status: Completed
+  order: 2
+  created_at: '2026-05-21T12:54:13'
+  updated_at: '2026-05-21T13:07:36'
+- id: 846c6c1d-874c-4729-94c5-72845677cee9
+  name: Add Start Pipeline button to frontend (IssueActions + API + hook) + backend endpoint
+  status: Completed
+  order: 3
+  created_at: '2026-05-21T12:54:13'
+  updated_at: '2026-05-21T13:10:16'
+- id: a6ed92db-fd90-41b8-b900-c2e6ae6efb9a
+  name: Clean up orphaned broken migration 6fbb705de97e
+  status: Completed
+  order: 4
+  created_at: '2026-05-21T12:54:13'
+  updated_at: '2026-05-21T13:12:45'
+- id: 9b1288e6-4368-4558-83ce-5b32951514f2
+  name: Testing — update test_orchestrator.py for 5 agents, any-state start, duplicate prevention
+  status: Completed
+  order: 5
+  created_at: '2026-05-21T12:54:13'
+  updated_at: '2026-05-21T13:23:50'
+relations: []

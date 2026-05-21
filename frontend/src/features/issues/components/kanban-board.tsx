@@ -31,9 +31,12 @@ interface KanbanBoardProps {
   projectId: string;
   activeTerminalIssueIds: string[];
   blockedIssueIds?: Set<string>;
+  tag: string;
+  onTagChange: (tag: string) => void;
+  availableTags: string[];
 }
 
-export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blockedIssueIds = new Set() }: KanbanBoardProps) {
+export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blockedIssueIds = new Set(), tag, onTagChange, availableTags }: KanbanBoardProps) {
   const [search, setSearch] = useState("");
   const [priority, setPriority] = useState("all");
   const [sort, setSort] = useState<SortKey>("priority");
@@ -96,6 +99,9 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
         onPriorityChange={setPriority}
         sort={sort}
         onSortChange={setSort}
+        tag={tag}
+        onTagChange={onTagChange}
+        availableTags={availableTags}
       />
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
