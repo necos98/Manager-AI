@@ -58,6 +58,7 @@ export interface PipelineStepRunData {
   error: string | null;
   started_at: string | null;
   completed_at: string | null;
+  terminal_id: string | null;
 }
 
 // Agents

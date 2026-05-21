@@ -899,11 +899,12 @@ async def test_mcp_get_pipeline_status_not_found(db_session):
     assert result == {"error": "Pipeline run not found"}
 
 
-# ── accept_issue → auto-start pipeline test ────────────────────────────────
+# ── accept_issue does NOT auto-start pipeline ───────────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_mcp_accept_issue_triggers_pipeline(db_session, tmp_path):
+async def test_mcp_accept_issue_does_not_auto_start_pipeline(db_session, tmp_path):
+    """Pipeline must be started manually via start_pipeline, not auto-triggered on accept."""
     project = await ProjectService(db_session).create(
         name="Test", path=str(tmp_path), description="", tech_stack=""
     )
@@ -914,19 +915,17 @@ async def test_mcp_accept_issue_triggers_pipeline(db_session, tmp_path):
     await orch.ensure_default_agents(project.id)
     await orch.ensure_default_pipeline(project.id)
 
-    # Create issue in both YAML (IssueService) AND SQLAlchemy (Issue model)
-    # IssueService handles YAML store, OrchestratorService reads from DB
     issue_service = IssueService(db_session)
-    issue_record = await issue_service.create(project_id=project.id, description="Auto-trigger test", priority=2)
+    issue_record = await issue_service.create(project_id=project.id, description="No-auto-trigger test", priority=2)
     await issue_service.create_spec(issue_record.id, project.id, "# Spec")
     await issue_service.create_plan(issue_record.id, project.id, "# Plan")
     await db_session.commit()
 
-    # Also persist a SQLAlchemy Issue so OrchestratorService can find it
+    # Persist a SQLAlchemy Issue so OrchestratorService can find it
     issue = Issue(
         id=issue_record.id,
         project_id=project.id,
-        description="Auto-trigger test",
+        description="No-auto-trigger test",
         priority=2,
         status="Planned",
     )
@@ -942,31 +941,19 @@ async def test_mcp_accept_issue_triggers_pipeline(db_session, tmp_path):
             return fake_session()
 
     with patch("app.mcp.server.async_session", MockSessionmaker()):
-        with patch.object(OrchestratorService, "_run_pipeline", return_value=None):
-            result = await mcp_server.accept_issue(
-                project_id=project.id, issue_id=issue.id
-            )
+        result = await mcp_server.accept_issue(
+            project_id=project.id, issue_id=issue.id
+        )
 
     assert result["id"] == issue.id
     assert result["status"] == IssueStatus.ACCEPTED.value
-    assert "pipeline_run_id" in result
+    assert "pipeline_run_id" not in result
 
-    # Verify PipelineRun exists
-    pipeline_run = await db_session.get(PipelineRun, result["pipeline_run_id"])
-    assert pipeline_run is not None
-    assert pipeline_run.trigger_type == "issue_accepted"
-    assert pipeline_run.issue_id == issue.id
-
-    # Verify AgentStepRuns created — issue is Planned/Accepted, so starts from developer (3 steps)
-    steps_result = await db_session.execute(
-        select(AgentStepRun).where(
-            AgentStepRun.pipeline_run_id == pipeline_run.id
-        ).order_by(AgentStepRun.step_order)
+    # Verify no PipelineRun was created
+    runs_result = await db_session.execute(
+        select(PipelineRun).where(PipelineRun.issue_id == issue.id)
     )
-    steps = steps_result.scalars().all()
-    assert len(steps) == 3
-    role_order = [s.agent_role for s in steps]
-    assert role_order == ["developer", "reviewer", "qa"]
+    assert runs_result.scalars().all() == []
 
 
 @pytest.mark.asyncio
