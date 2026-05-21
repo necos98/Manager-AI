@@ -82,12 +82,19 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
     { value: "relations", label: "Relations", available: true },
     { value: "chat", label: "Agent Chat", available: true },
     { value: "pipeline", label: "Pipeline", available: true },
+    { value: "agent-terminal", label: "Agent Terminal", available: !!runningStep?.terminal_id },
     { value: "recap", label: "Recap", available: !!issue.recap },
-  ], [issue.specification, issue.plan, issue.recap]);
+  ], [issue.specification, issue.plan, issue.recap, runningStep?.terminal_id]);
 
   const availableTabs = tabs.filter((t) => t.available);
   const defaultTab = availableTabs[0]?.value ?? "description";
   const currentTab = activeTab || defaultTab;
+
+  useEffect(() => {
+    if (runningStep?.terminal_id) {
+      setActiveTab("agent-terminal");
+    }
+  }, [runningStep?.terminal_id]);
 
   const handleDelete = async () => {
     if (terminalId) {
@@ -312,6 +319,18 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
         <TabsContent value="pipeline" className="mt-4">
           <PipelineProgress projectId={projectId} issueId={issue.id} />
         </TabsContent>
+
+        {runningStep?.terminal_id && (
+          <TabsContent value="agent-terminal" className="mt-4">
+            <div className="h-[500px] border border-zinc-700 rounded-md overflow-hidden">
+              <TerminalPanel
+                readOnly={true}
+                terminalId={runningStep.terminal_id}
+                projectId={projectId}
+              />
+            </div>
+          </TabsContent>
+        )}
 
         {issue.recap && (
           <TabsContent value="recap" className="mt-4">

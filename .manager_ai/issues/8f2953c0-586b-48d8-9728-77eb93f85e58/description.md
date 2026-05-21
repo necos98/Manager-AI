@@ -1,0 +1,1 @@
+non avviare automaticamente la pipeline, l'utente deve cliccare manualmente su "run pipeline"

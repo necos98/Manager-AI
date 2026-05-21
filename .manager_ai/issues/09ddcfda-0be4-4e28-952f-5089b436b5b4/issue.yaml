@@ -2,11 +2,11 @@ schema_version: 1
 id: 09ddcfda-0be4-4e28-952f-5089b436b5b4
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: 'Agent output terminal: streaming live dell''output degli agenti via xterm.js'
-status: Accepted
+status: Finished
 priority: 3
-category: Improvement
+category: null
 created_at: '2026-05-21T15:47:59.212031'
-updated_at: '2026-05-21T16:04:50.940791'
+updated_at: '2026-05-21T18:16:17.374750'
 tasks:
 - id: 978bdede-9edd-4604-932b-43da3260bcf5
   name: TerminalService — create_log, push_output, destroy_log, _to_response con mode/label
@@ -64,14 +64,14 @@ tasks:
   updated_at: '2026-05-21T16:13:29'
 - id: 65369448-1fc5-49f0-8d25-16827e82b165
   name: IssueDetail — tab Agent Terminal con TerminalPanel readOnly
-  status: In Progress
+  status: Completed
   order: 9
   created_at: '2026-05-21T16:04:39'
-  updated_at: '2026-05-21T16:13:30'
+  updated_at: '2026-05-21T18:15:30'
 - id: 125cb05b-043f-444a-a259-bff3a2569d1a
   name: EventContext — handler agent_terminal_created + query invalidation
-  status: Pending
+  status: Completed
   order: 10
   created_at: '2026-05-21T16:04:39'
-  updated_at: '2026-05-21T16:04:39'
+  updated_at: '2026-05-21T18:15:42'
 relations: []
