@@ -24,7 +24,7 @@ from app.storage.background_writer import BackgroundWriter
 from app.storage import memory_store as memory_store_module
 from app.storage import issue_store as issue_store_module
 from app.storage import file_store as file_store_module
-from app.routers import activity, agents, credentials, events, files, issue_relations, issues, library, memories, network, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, settings as settings_router, system, tasks, terminals, terminal_commands
+from app.routers import activity, agents, credentials, events, files, issue_relations, issues, library, memories, network, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, questions, settings as settings_router, system, tasks, terminals, terminal_commands
 
 logger = logging.getLogger(__name__)
 
@@ -399,6 +399,7 @@ app.include_router(project_skills.router)
 app.include_router(plugins.router)
 app.include_router(plugins.catalog_router)
 app.include_router(network.router)
+app.include_router(questions.router)
 app.include_router(system.router)
 
 app.mount("/mcp", _streamable_app)
