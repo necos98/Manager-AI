@@ -4,6 +4,7 @@ import {
   CircleDot,
   FileText,
   HeartPulse,
+  HelpCircle,
   LayoutDashboard,
   MessageSquare,
   MoreHorizontal,
@@ -40,7 +41,9 @@ import { ProjectSwitcher } from "@/features/projects/components/project-switcher
 import { ProjectSettingsDialog } from "@/features/projects/components/project-settings-dialog";
 import { McpSetupDialog } from "@/features/projects/components/mcp-setup-dialog";
 import { SmartphoneQrDialog } from "@/shared/components/smartphone-qr-dialog";
+import { ThemeToggle } from "@/shared/components/theme-toggle";
 import { useTerminalCount } from "@/features/terminals/hooks";
+import { usePendingCount } from "@/features/questions/hooks";
 import type { Project } from "@/shared/types";
 
 interface AppSidebarProps {
@@ -50,6 +53,8 @@ interface AppSidebarProps {
 export function AppSidebar({ activeProject }: AppSidebarProps) {
   const { data: countData } = useTerminalCount();
   const terminalCount = countData?.count ?? 0;
+  const { data: pendingQuestionsCount } = usePendingCount();
+  const questionsPendingCount = pendingQuestionsCount?.count ?? 0;
   const matchRoute = useMatchRoute();
 
   const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
@@ -196,6 +201,20 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
+                    isActive={!!matchRoute({ to: "/questions", fuzzy: true })}
+                  >
+                    <Link to="/questions">
+                      <HelpCircle />
+                      <span>Questions</span>
+                    </Link>
+                  </SidebarMenuButton>
+                  {questionsPendingCount > 0 && (
+                    <SidebarMenuBadge>{questionsPendingCount}</SidebarMenuBadge>
+                  )}
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
                     isActive={!!matchRoute({ to: "/settings", fuzzy: true })}
                   >
                     <Link to="/settings">
@@ -216,6 +235,9 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
                 <Smartphone className="h-4 w-4" />
                 <span className="text-xs">Show on Smartphone</span>
               </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <ThemeToggle />
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>

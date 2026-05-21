@@ -6,11 +6,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$(cygpath -w \"$(pwd)\")\\.claude\\scripts\\notify-hook.ps1\" -DefaultTitle \"Claude finished\" -DefaultMessage \"Response complete\""
+            "command": "python -I .claude/scripts/notify-hook.py --default-title \"Claude finished\" --default-message \"Response complete\""
           },
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$(cygpath -w \"$(pwd)\")\\.claude\\scripts\\tts-hook.ps1\""
+            "command": "python -I .claude/scripts/tts-hook.py"
           }
         ]
       }
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$(cygpath -w \"$(pwd)\")\\.claude\\scripts\\notify-hook.ps1\" -DefaultTitle \"Claude attention\" -DefaultMessage \"Awaiting input\""
+            "command": "python -I .claude/scripts/notify-hook.py --default-title \"Claude attention\" --default-message \"Awaiting input\""
           }
         ]
       }

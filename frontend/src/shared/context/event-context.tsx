@@ -20,6 +20,7 @@ export type WsEventData = Record<string, unknown> & {
   from_id?: string;
   to_id?: string;
   relation?: string;
+  question_id?: string;
   text?: string;
   voice?: string;
   rate?: number;
@@ -183,6 +184,8 @@ function buildToastContent(data: WsEventData): ToastContent {
     case "memory_unlinked":
     case "issue_updated":
     case "file_updated":
+    case "question_asked":
+    case "question_answered":
       return { title: "", message: "", variant: "default", silent: true };
 
     default:
@@ -285,6 +288,11 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
           if (typeof data.memory_id === "string") {
             queryClient.invalidateQueries({ queryKey: ["memories", data.memory_id, "detail"] });
           }
+        }
+
+        // Invalidate question queries
+        if (data.type === "question_asked" || data.type === "question_answered") {
+          queryClient.invalidateQueries({ queryKey: ["questions"] });
         }
 
         // Invalidate relevant queries for real-time updates
