@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from "./routes/__root"
 import { Route as TerminalsRouteImport } from "./routes/terminals"
 import { Route as SettingsRouteImport } from "./routes/settings"
+import { Route as QuestionsRouteImport } from "./routes/questions"
 import { Route as LibraryRouteImport } from "./routes/library"
 import { Route as DashboardRouteImport } from "./routes/dashboard"
 import { Route as IndexRouteImport } from "./routes/index"
@@ -38,6 +39,11 @@ const TerminalsRoute = TerminalsRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: "/settings",
   path: "/settings",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuestionsRoute = QuestionsRouteImport.update({
+  id: "/questions",
+  path: "/questions",
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibraryRoute = LibraryRouteImport.update({
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/dashboard": typeof DashboardRoute
   "/library": typeof LibraryRoute
+  "/questions": typeof QuestionsRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -165,6 +172,7 @@ export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/dashboard": typeof DashboardRoute
   "/library": typeof LibraryRoute
+  "/questions": typeof QuestionsRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   "/": typeof IndexRoute
   "/dashboard": typeof DashboardRoute
   "/library": typeof LibraryRoute
+  "/questions": typeof QuestionsRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | "/"
     | "/dashboard"
     | "/library"
+    | "/questions"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | "/"
     | "/dashboard"
     | "/library"
+    | "/questions"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | "/"
     | "/dashboard"
     | "/library"
+    | "/questions"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -277,6 +289,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   LibraryRoute: typeof LibraryRoute
+  QuestionsRoute: typeof QuestionsRoute
   SettingsRoute: typeof SettingsRoute
   TerminalsRoute: typeof TerminalsRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
@@ -298,6 +311,13 @@ declare module "@tanstack/react-router" {
       path: "/settings"
       fullPath: "/settings"
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/questions": {
+      id: "/questions"
+      path: "/questions"
+      fullPath: "/questions"
+      preLoaderRoute: typeof QuestionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/library": {
@@ -478,6 +498,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   LibraryRoute: LibraryRoute,
+  QuestionsRoute: QuestionsRoute,
   SettingsRoute: SettingsRoute,
   TerminalsRoute: TerminalsRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,

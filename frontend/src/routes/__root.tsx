@@ -1,6 +1,7 @@
 import { createRootRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { ThemeProvider, useTheme } from "next-themes";
 import { queryClient } from "@/shared/lib/query-client";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { AppSidebar } from "@/shared/components/app-sidebar";
@@ -15,17 +16,31 @@ function GlobalPasteBridge() {
   return null;
 }
 
+function ThemeToaster() {
+  const { theme } = useTheme();
+  return (
+    <Toaster
+      position="bottom-right"
+      richColors
+      closeButton
+      theme={theme as "light" | "dark" | "system" | undefined}
+    />
+  );
+}
+
 function RootComponent() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TerminalProvider>
-        <GlobalPasteBridge />
-        <EventProvider>
-          <RootLayout />
-          <Toaster position="bottom-right" richColors closeButton />
-        </EventProvider>
-      </TerminalProvider>
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <QueryClientProvider client={queryClient}>
+        <TerminalProvider>
+          <GlobalPasteBridge />
+          <EventProvider>
+            <RootLayout />
+            <ThemeToaster />
+          </EventProvider>
+        </TerminalProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

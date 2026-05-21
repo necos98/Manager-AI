@@ -7,6 +7,8 @@ from mcp.server.fastmcp import FastMCP
 
 from datetime import datetime, timezone
 
+from sqlalchemy import select
+
 from app.database import async_session
 from app.exceptions import AppError
 from app.models.agent import Agent
@@ -1156,3 +1158,69 @@ async def start_pipeline(issue_id: str) -> dict:
             "status": pipeline_run.status.value,
             "trigger_type": pipeline_run.trigger_type,
         }
+
+
+# ── Question tools ───────────────────────────────────────────────────────────
+
+from app.services.question_service import QuestionService, question_store
+
+
+@mcp.tool(description=_desc["tool.ask_user_question.description"])
+async def ask_user_question(issue_id: str, question: str, options: list[str] | None = None, timeout_seconds: int = 300) -> dict:
+    if not question.strip():
+        return {"error": "Question text cannot be empty"}
+    if timeout_seconds < 5 or timeout_seconds > 3600:
+        return {"error": "Timeout must be between 5 and 3600 seconds"}
+
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.get_by_id(issue_id)
+            project_id = issue.project_id
+        except AppError:
+            return {"error": "Issue not found"}
+
+        qsvc = QuestionService(session)
+        q = await qsvc.create(
+            project_id=project_id,
+            issue_id=issue_id,
+            question=question,
+            options=options,
+        )
+
+        await event_service.emit({
+            "type": "question_asked",
+            "question_id": q.id,
+            "project_id": project_id,
+            "issue_id": issue_id,
+            "question": q.question,
+            "options": q.options,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+
+    event = question_store.wait(q.id)
+    if event is None:
+        return {"error": "Question not found in store"}
+
+    try:
+        await asyncio.wait_for(event.wait(), timeout=timeout_seconds)
+    except asyncio.TimeoutError:
+        async with async_session() as session:
+            await QuestionService(session).timeout(q.id)
+        await event_service.emit({
+            "type": "question_answered",
+            "question_id": q.id,
+            "project_id": project_id,
+            "issue_id": issue_id,
+            "status": "timed_out",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return {"timed_out": True, "question_id": q.id}
+
+    updated = question_store.get(q.id)
+    return {
+        "question_id": q.id,
+        "answer": updated.answer if updated else None,
+        "selected_option": updated.selected_option if updated else None,
+        "timed_out": False,
+    }

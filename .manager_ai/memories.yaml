@@ -227,3 +227,31 @@ memories:
   created_at: '2026-05-15T09:31:52.041308'
   updated_at: '2026-05-15T09:31:52.041308'
   links: []
+- id: 261c1ede-b518-4aa5-b549-e9d5ae57ecbc
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: accept_issue auto-starts pipeline non-blocking
+  parent_id: null
+  created_at: '2026-05-20T18:16:11.747187'
+  updated_at: '2026-05-20T18:16:11.747187'
+  links: []
+- id: 986658bb-9cdb-43e8-80a8-0f8b9d0193dd
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: 'Dark mode: next-themes + Tailwind v4 dark variant + shadcn CSS variables architecture'
+  parent_id: null
+  created_at: '2026-05-21T08:08:35.065547'
+  updated_at: '2026-05-21T08:08:35.065547'
+  links: []
+- id: c9ec6146-2aa9-4f16-a7fb-13d6340f4e8a
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: Claude Code hook scripts use Python in claude_resources/, injected via install_claude_resources
+  parent_id: null
+  created_at: '2026-05-21T08:25:14.488062'
+  updated_at: '2026-05-21T08:25:14.488062'
+  links: []
+- id: c22f4ea4-bbc8-43b3-bff3-e11f9ef55130
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  title: 'Blocking MCP tools: asyncio.Event pattern for user-input wait'
+  parent_id: null
+  created_at: '2026-05-21T09:23:12.317361'
+  updated_at: '2026-05-21T09:23:12.317361'
+  links: []

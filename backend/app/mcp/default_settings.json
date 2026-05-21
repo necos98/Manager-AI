@@ -70,5 +70,6 @@
   "tool.get_agent_messages.description": "Get all agent chat messages for an issue, ordered by creation time. Use this to read context from other agents before making decisions.",
   "tool.complete_agent_step.description": "Signal that the current agent has completed its work. Parameters: pipeline_run_id (required), summary (required). Marks the running step as completed so the orchestrator can proceed to the next agent.",
   "tool.get_pipeline_status.description": "Get the current status of a pipeline run, including all step statuses. Use this to check pipeline progress.",
-  "tool.start_pipeline.description": "Manually start a pipeline for an issue. Parameters: issue_id (required). Finds the default pipeline and begins execution. Returns the created pipeline run."
+  "tool.start_pipeline.description": "Manually start a pipeline for an issue. Parameters: issue_id (required). Finds the default pipeline and begins execution. Returns the created pipeline run.",
+  "tool.ask_user_question.description": "Ask the user a question through the Manager AI interface. Use this EVERY time you need user input — never use inline text questions or AskUserQuestion. The question appears in the Issue page and the global Questions page. The user can pick an option or write a custom answer. This tool blocks until the user answers or the timeout expires. Parameters: issue_id (required), question (required), options (optional list of strings), timeout_seconds (optional int, default 300)."
 }

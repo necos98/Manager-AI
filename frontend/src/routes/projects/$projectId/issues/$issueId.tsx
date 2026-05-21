@@ -8,6 +8,8 @@ import { useTerminals, useCreateTerminal, useKillTerminal, useTerminalCount, use
 import { IssueDetail } from "@/features/issues/components/issue-detail";
 import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
 import { ErrorBoundary } from "@/shared/components/error-boundary";
+import { usePendingQuestions } from "@/features/questions/hooks";
+import { QuestionCard } from "@/features/questions/components/question-card";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -38,6 +40,7 @@ function IssueDetailPage() {
   const killTerminal = useKillTerminal();
   const { data: countData } = useTerminalCount();
   const { data: configData } = useTerminalConfig();
+  const { data: pendingQuestions } = usePendingQuestions(projectId, issueId);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
@@ -114,6 +117,16 @@ function IssueDetailPage() {
         <ScrollArea className="flex-1">
           <ErrorBoundary>
             <IssueDetail issue={issue} projectId={projectId} terminalId={null} />
+            {pendingQuestions && pendingQuestions.length > 0 && (
+              <div className="border-t mt-6 pt-6 px-4">
+                <h3 className="text-sm font-medium mb-3">Pending Questions</h3>
+                <div className="space-y-3">
+                  {pendingQuestions.map((q) => (
+                    <QuestionCard key={q.id} question={q} />
+                  ))}
+                </div>
+              </div>
+            )}
           </ErrorBoundary>
         </ScrollArea>
       ) : (
@@ -122,6 +135,16 @@ function IssueDetailPage() {
             <ScrollArea className="h-full">
               <ErrorBoundary>
                 <IssueDetail issue={issue} projectId={projectId} terminalId={terminal1?.id ?? null} />
+                {pendingQuestions && pendingQuestions.length > 0 && (
+                  <div className="border-t mt-6 pt-6 px-4">
+                    <h3 className="text-sm font-medium mb-3">Pending Questions</h3>
+                    <div className="space-y-3">
+                      {pendingQuestions.map((q) => (
+                        <QuestionCard key={q.id} question={q} />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </ErrorBoundary>
             </ScrollArea>
           </ResizablePanel>

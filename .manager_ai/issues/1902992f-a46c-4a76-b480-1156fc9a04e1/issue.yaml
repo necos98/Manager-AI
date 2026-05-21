@@ -2,10 +2,10 @@ schema_version: 1
 id: 1902992f-a46c-4a76-b480-1156fc9a04e1
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Agent Orchestration & Multi-Agent Chat System
-status: Accepted
+status: Finished
 priority: 3
 created_at: '2026-05-19T12:39:43.146092'
-updated_at: '2026-05-19T13:10:17.841648'
+updated_at: '2026-05-20T18:15:39.963003'
 tasks:
 - id: 754d6aff-9fff-434f-811c-60190237dacc
   name: DB Models + Migration — Create Agent, Pipeline, PipelineRun, AgentStepRun, AgentMessage models. Update __init__.py. Run alembic migration.
@@ -69,8 +69,8 @@ tasks:
   updated_at: '2026-05-19T13:33:07'
 - id: 1518ac0e-578e-481a-881b-f5610fe32080
   name: Testing — pytest tests for agents CRUD, pipeline CRUD, orchestrator flow, chat messages, pipeline completion, auto-trigger on accept.
-  status: In Progress
+  status: Completed
   order: 10
   created_at: '2026-05-19T13:09:12'
-  updated_at: '2026-05-19T13:33:10'
+  updated_at: '2026-05-20T18:15:14'
 relations: []

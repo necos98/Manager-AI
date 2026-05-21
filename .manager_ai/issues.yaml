@@ -191,11 +191,11 @@ issues:
   updated_at: '2026-05-14T21:28:22.680241'
 - id: 60d96667-4b16-4270-8a0e-09b9e7dc9226
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-  name: null
-  status: New
+  name: Add Dark Mode / Night Mode
+  status: Finished
   priority: 3
   created_at: '2026-05-14T21:15:39.247171'
-  updated_at: '2026-05-14T21:15:39.247171'
+  updated_at: '2026-05-21T08:07:40.240235'
 - id: 7cb7e74e-6bbc-4b28-bd1a-af1185b46271
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Rimuovere plugin MCP ridondanti (memory, filesystem) dal catalog
@@ -205,18 +205,11 @@ issues:
   updated_at: '2026-05-15T07:19:18.297682'
 - id: 21578a99-ed99-4404-8240-6802b9d46309
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-  name: null
+  name: Fix New Issue modal textarea overflow on long/wide pasted text
   status: New
   priority: 3
   created_at: '2026-05-15T07:23:54.164999'
-  updated_at: '2026-05-15T07:23:54.164999'
-- id: 21b7f956-cdac-4265-9c98-32a0929c5b6a
-  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-  name: null
-  status: New
-  priority: 3
-  created_at: '2026-05-15T07:24:22.011150'
-  updated_at: '2026-05-15T07:25:15.737785'
+  updated_at: '2026-05-20T17:57:13.486282'
 - id: 01a3d02a-3a99-48d8-a97d-b1582d98a28e
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Exclude archived projects from all cache/index operations
@@ -234,7 +227,35 @@ issues:
 - id: 1902992f-a46c-4a76-b480-1156fc9a04e1
   project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
   name: Agent Orchestration & Multi-Agent Chat System
-  status: Accepted
+  status: Finished
   priority: 3
   created_at: '2026-05-19T12:39:43.146092'
-  updated_at: '2026-05-19T13:10:17.841648'
+  updated_at: '2026-05-20T18:15:39.963003'
+- id: 306cd92c-cf45-4594-bb40-c48f4d1eef15
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Fix Claude Code hook execution with internal Python scripts
+  status: Finished
+  priority: 3
+  created_at: '2026-05-21T07:43:36.237014'
+  updated_at: '2026-05-21T08:24:38.347118'
+- id: 0672f214-2556-449a-b2af-433b8b4dda47
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: Structured Question/Answer MCP + Global Questions UI
+  status: Finished
+  priority: 1
+  created_at: '2026-05-21T08:26:23.193589'
+  updated_at: '2026-05-21T09:22:48.260306'
+- id: f053c14a-8bd3-4e89-83d9-a56eb700d352
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: null
+  status: New
+  priority: 3
+  created_at: '2026-05-21T08:27:04.570243'
+  updated_at: '2026-05-21T08:27:04.570243'
+- id: c538c118-73c7-4ce5-a59b-9ed4b907d7ea
+  project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+  name: null
+  status: New
+  priority: 3
+  created_at: '2026-05-21T08:48:00.726752'
+  updated_at: '2026-05-21T08:48:00.726752'
