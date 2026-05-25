@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import traceback
+
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -115,7 +115,8 @@ class PluginManager:
             )
         except Exception as exc:
             error_msg = _extract_error_message(exc)
-            logger.error("Plugin %s (project %s) gateway registration failed: %s\n%s", key, project_id, error_msg, traceback.format_exc())
+            logger.error("Plugin %s (project %s) gateway registration failed: %s", key, project_id, error_msg)
+            logger.debug("Plugin %s gateway registration traceback", exc_info=True)
             self._state[project_id].pop(key, None)
             await self._emit_plugin_event(project_id, key, "plugin_failed", error_msg)
             return

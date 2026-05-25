@@ -1,0 +1,29 @@
+schema_version: 1
+id: ca741370-7842-48be-a52b-5ffd47162de3
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Suppress plugin connection error stack traces in console
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-25T09:56:05.622874'
+updated_at: '2026-05-25T10:11:57.265160'
+tasks:
+- id: 51c9a3df-6641-4cb2-9d6e-51fb33e71439
+  name: Fix plugin_client.py — replace logger.exception() with logger.error() + logger.debug(exc_info=True) in 4 locations
+  status: Completed
+  order: 0
+  created_at: '2026-05-25T10:04:23'
+  updated_at: '2026-05-25T10:06:50'
+- id: d9dac3e1-8010-4774-b61a-a83fd3dfce4c
+  name: Fix plugin_manager.py — remove traceback.format_exc(), use clean logger.error()
+  status: Completed
+  order: 1
+  created_at: '2026-05-25T10:04:23'
+  updated_at: '2026-05-25T10:07:08'
+- id: 51e9cf87-cb0a-4a82-9014-dc8ea1205738
+  name: Verify — run backend tests, confirm no traceback leakage
+  status: Completed
+  order: 2
+  created_at: '2026-05-25T10:04:23'
+  updated_at: '2026-05-25T10:08:37'
+relations: []

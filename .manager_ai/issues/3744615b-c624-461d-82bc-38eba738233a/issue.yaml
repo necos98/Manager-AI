@@ -1,0 +1,17 @@
+schema_version: 1
+id: 3744615b-c624-461d-82bc-38eba738233a
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Suppress stack trace on corrupted memory file load
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-25T10:01:26.765381'
+updated_at: '2026-05-25T10:18:46.154890'
+tasks:
+- id: 1dc49e0a-5484-471c-9730-bb014bc61cb2
+  name: Remove exc_info=True from 3 corrupted-file logger.warning calls in backend/app/main.py — lines 148, 198, 243. Keep line 363 unchanged.
+  status: Completed
+  order: 0
+  created_at: '2026-05-25T10:16:21'
+  updated_at: '2026-05-25T10:17:56'
+relations: []

@@ -1,0 +1,2 @@
+"Plugin MySQL Database connect failed". 
+Esce questo errore quando un applicativo ha configurato un server MCP Mysql, ma per qualche motivo il server non è raggiungibile. Vorrei che non comparisse tutto lo stack trace all'interno della console, ma che semplicemente esca "Plugin MySQL Database connect failed" e basta. E' fattibile?

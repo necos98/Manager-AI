@@ -6,11 +6,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -I .claude/scripts/notify-hook.py --default-title \"Claude finished\" --default-message \"Response complete\""
+            "command": "python -I \"$env:CLAUDE_PROJECT_DIR\\.claude\\scripts\\notify-hook.py\" --default-title \"Claude finished\" --default-message \"Response complete\""
           },
           {
             "type": "command",
-            "command": "python -I .claude/scripts/tts-hook.py"
+            "command": "python -I \"$env:CLAUDE_PROJECT_DIR\\.claude\\scripts\\tts-hook.py\""
           }
         ]
       }
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -I .claude/scripts/notify-hook.py --default-title \"Claude attention\" --default-message \"Awaiting input\""
+            "command": "python -I \"$env:CLAUDE_PROJECT_DIR\\.claude\\scripts\\notify-hook.py\" --default-title \"Claude attention\" --default-message \"Awaiting input\""
           }
         ]
       }

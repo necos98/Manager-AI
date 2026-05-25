@@ -145,7 +145,7 @@ def _load_project_into_memory(project_path: str, store: Any) -> None:
                     "links": list(meta.get("links") or []),
                 })
             except Exception:
-                logger.warning("Skipping corrupted memory file: %s", md_file, exc_info=True)
+                logger.warning("Skipping corrupted memory file: %s", md_file)
     mem_index.sort(key=lambda e: (e["created_at"], e["id"]))
     store.init_project(project_path, "memories", mem_records, mem_index)
 
@@ -195,7 +195,7 @@ def _load_project_into_memory(project_path: str, store: Any) -> None:
                     "updated_at": _as_iso(data.get("updated_at")),
                 })
             except Exception:
-                logger.warning("Skipping corrupted issue: %s", issue_folder, exc_info=True)
+                logger.warning("Skipping corrupted issue: %s", issue_folder)
     issue_index.sort(key=lambda e: (e["created_at"], e["id"]))
     store.init_project(project_path, "issues", issue_records, issue_index)
 
@@ -240,7 +240,7 @@ def _load_project_into_memory(project_path: str, store: Any) -> None:
                     "metadata": e.get("metadata"),
                 })
         except Exception:
-            logger.warning("Skipping corrupted files index: %s", files_index_path, exc_info=True)
+            logger.warning("Skipping corrupted files index: %s", files_index_path)
     store.init_project(project_path, "files", file_records, file_index)
 
     logger.info(
