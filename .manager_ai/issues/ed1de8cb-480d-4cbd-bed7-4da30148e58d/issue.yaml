@@ -2,10 +2,22 @@ schema_version: 1
 id: ed1de8cb-480d-4cbd-bed7-4da30148e58d
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: 'Fix hook scripts: relative path resolves to wrong directory'
-status: Reasoning
+status: Finished
 priority: 3
 category: null
 created_at: '2026-05-21T12:44:01.863934'
-updated_at: '2026-05-21T14:48:06.366171'
-tasks: []
+updated_at: '2026-05-25T10:15:55.474544'
+tasks:
+- id: a712bfab-708b-4d4e-a817-5edc17fcba36
+  name: Update claude_resources/settings.json — fix 3 hook command paths to use $env:CLAUDE_PROJECT_DIR
+  status: Completed
+  order: 0
+  created_at: '2026-05-25T10:14:10'
+  updated_at: '2026-05-25T10:15:31'
+- id: ae76f308-2185-42c3-a25d-a0de2e20ac27
+  name: Verify .claude/settings.json regenerates correctly after app restart
+  status: Completed
+  order: 1
+  created_at: '2026-05-25T10:14:10'
+  updated_at: '2026-05-25T10:15:46'
 relations: []

@@ -174,7 +174,8 @@ class PluginClient:
             else:
                 raise ValueError(f"Unsupported transport: {self.transport}")
         except BaseException:
-            logger.exception("Plugin %s connect failed", self.plugin_name)
+            logger.error("Plugin %s connect failed", self.plugin_name)
+            logger.debug("Plugin %s connect traceback", exc_info=True)
             await self._cleanup_on_connect_failure()
             raise
         finally:
@@ -194,7 +195,8 @@ class PluginClient:
         try:
             read_stream, write_stream = await self._transport_ctx.__aenter__()
         except BaseException:
-            logger.exception("Plugin %s __aenter__ failed", self.plugin_name)
+            logger.error("Plugin %s __aenter__ failed", self.plugin_name)
+            logger.debug("Plugin %s __aenter__ traceback", exc_info=True)
             self._transport_ctx = None
             self._cleanup_stderr_file()
             raise
@@ -247,7 +249,8 @@ class PluginClient:
         try:
             read_stream, write_stream = await self._transport_ctx.__aenter__()
         except BaseException:
-            logger.exception("Plugin %s SSE __aenter__ failed", self.plugin_name)
+            logger.error("Plugin %s SSE __aenter__ failed", self.plugin_name)
+            logger.debug("Plugin %s SSE __aenter__ traceback", exc_info=True)
             self._transport_ctx = None
             raise
         self._read_stream = read_stream
@@ -255,7 +258,8 @@ class PluginClient:
         try:
             await self._init_session(read_stream, write_stream)
         except BaseException:
-            logger.exception("Plugin %s SSE _init_session failed", self.plugin_name)
+            logger.error("Plugin %s SSE _init_session failed", self.plugin_name)
+            logger.debug("Plugin %s SSE _init_session traceback", exc_info=True)
             await self._exit_transport()
             raise
 

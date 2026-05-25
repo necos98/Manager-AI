@@ -1,0 +1,1 @@
+Quando c'è un file corrotto "Skipping corrupted memory file", questo compare, ma compare anche tutto lo stack trace, potresti non farlo comparire?
