@@ -5,12 +5,7 @@ import asyncio
 import json
 import logging
 import os
-import shlex
-import tempfile
-import uuid
 from datetime import datetime, timezone
-from pathlib import Path
-
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,8 +16,8 @@ from app.models.pipeline import AgentStepRun, AgentStepStatus, Pipeline, Pipelin
 from app.services.event_service import event_service
 from app.services.project_service import ProjectService
 from app.services.terminal_service import terminal_service
-from app.services.wsl_support import is_wsl_shell, win_to_wsl_path
-from app.routers.terminals import _ensure_reader, _inject_env_vars
+from app.hooks.executor import ClaudeCodeExecutor
+from app.routers.terminals import _ensure_reader
 
 logger = logging.getLogger(__name__)
 
@@ -355,17 +350,11 @@ class OrchestratorService:
 
         project_path = project.path if project else ""
 
-        project_shell = project.shell if project else None
-        project_wsl_distro = project.wsl_distro if project else None
-        is_wsl = is_wsl_shell(project_shell)
-
-        # Create real PTY terminal (like Run Issue / ask terminal)
-        term = terminal_service.create(
-            issue_id=pipeline_run.issue_id or "",
+        term = await terminal_service.create_log(
             project_id=resolved_project_id,
+            issue_id=pipeline_run.issue_id or "",
             project_path=project_path,
-            shell=project_shell,
-            wsl_distro=project_wsl_distro,
+            label=f"Agent: {agent.name}",
         )
         _ensure_reader(term["id"], terminal_service)
         step.terminal_id = term["id"]
@@ -373,84 +362,30 @@ class OrchestratorService:
 
         await self._emit("agent_terminal_created", pipeline_run, step, project_id=resolved_project_id)
 
-        pty = terminal_service.get_pty(term["id"])
+        env_vars = {
+            "MANAGER_AI_TERMINAL_ID": term["id"],
+            "MANAGER_AI_ISSUE_ID": pipeline_run.issue_id or "",
+            "MANAGER_AI_PROJECT_ID": resolved_project_id,
+            "MANAGER_AI_AGENT_NAME": agent.name,
+            "MANAGER_AI_AGENT_ROLE": agent.role_key,
+            "MANAGER_AI_BASE_URL": f'http://localhost:{os.environ.get("BACKEND_PORT", "8000")}',
+        }
 
-        # Set up project context (cd for WSL, like ask terminal)
-        if is_wsl:
-            cwd_wsl = win_to_wsl_path(project_path)
-            pty.write(f"cd {shlex.quote(cwd_wsl)}\r\n")
-
-        # Inject env vars (like ask terminal)
-        try:
-            env_vars = {
-                "MANAGER_AI_TERMINAL_ID": term["id"],
-                "MANAGER_AI_ISSUE_ID": pipeline_run.issue_id or "",
-                "MANAGER_AI_PROJECT_ID": resolved_project_id,
-                "MANAGER_AI_AGENT_NAME": agent.name,
-                "MANAGER_AI_AGENT_ROLE": agent.role_key,
-            }
-            if is_wsl:
-                _inject_env_vars(pty, env_vars, is_wsl=True)
-                pty.write(
-                    f'export MANAGER_AI_BASE_URL='
-                    f'"http://localhost:{os.environ.get("BACKEND_PORT", "8000")}"\r\n'
-                )
-            else:
-                env_vars["MANAGER_AI_BASE_URL"] = (
-                    f'http://localhost:{os.environ.get("BACKEND_PORT", "8000")}'
-                )
-                _inject_env_vars(pty, env_vars, is_wsl=False)
-        except Exception:
-            logger.warning("Failed to inject env vars for pipeline terminal %s", term["id"], exc_info=True)
-
-        # Build prompt, write to temp file, launch claude -p
         prompt = self._build_prompt(agent, issue, pipeline_run)
-        success_marker = f"__STEP_SUCCESS_{uuid.uuid4().hex}__"
-        fail_marker = f"__STEP_FAILED_{uuid.uuid4().hex}__"
-        prompt_file = None
-        try:
-            fd, prompt_file = tempfile.mkstemp(suffix=".txt", prefix="pipeline_prompt_")
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                f.write(prompt)
 
-            if is_wsl:
-                wsl_path = win_to_wsl_path(prompt_file)
-                cmd = (
-                    f"cat {shlex.quote(wsl_path)}"
-                    f" | claude -p --allowedTools \"mcp__ManagerAi__*\""
-                    f" && echo {success_marker} || echo {fail_marker}"
-                )
-            else:
-                prompt_file_resolved = str(Path(prompt_file).resolve())
-                cmd = (
-                    f"type {shlex.quote(prompt_file_resolved)}"
-                    f" | claude -p --allowedTools \"mcp__ManagerAi__*\""
-                    f" && echo {success_marker} || echo {fail_marker}"
-                )
+        executor = ClaudeCodeExecutor()
 
-            pty.write(cmd + "\r\n")
+        async def on_output(text: str) -> None:
+            await terminal_service.push_output(term["id"], text)
 
-            # Poll terminal buffer for completion marker
-            success = False
-            while True:
-                await asyncio.sleep(1)
-                buf = terminal_service.get_buffered_output(term["id"])
-                if success_marker in buf:
-                    success = True
-                    break
-                if fail_marker in buf:
-                    success = False
-                    break
-                if not terminal_service.is_alive(term["id"]):
-                    success = False
-                    logger.warning("Pipeline terminal %s closed before marker", term["id"])
-                    break
-        finally:
-            if prompt_file:
-                try:
-                    os.unlink(prompt_file)
-                except OSError:
-                    pass
+        result = await executor.run_streaming(
+            prompt=prompt,
+            project_path=project_path,
+            env_vars=env_vars,
+            on_output=on_output,
+        )
+
+        await terminal_service.destroy_log(term["id"])
 
         await self.session.refresh(step)
 
@@ -459,7 +394,7 @@ class OrchestratorService:
             return True
 
         step.completed_at = datetime.now(timezone.utc)
-        if success:
+        if result.success:
             step.status = AgentStepStatus.COMPLETED
             step.summary = f"Agent {agent.name} completed successfully."
             await self._commit()
@@ -467,7 +402,7 @@ class OrchestratorService:
             return True
         else:
             step.status = AgentStepStatus.FAILED
-            step.error = "Claude process exited with non-zero code or terminal closed"
+            step.error = result.error or "Claude process failed"
             await self._commit()
             await self._emit("agent_step_failed", pipeline_run, step, project_id=resolved_project_id)
             return False

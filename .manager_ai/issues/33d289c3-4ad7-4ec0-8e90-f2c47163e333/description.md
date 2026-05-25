@@ -1,0 +1,1 @@
+Possibilità di copiare porzioni di testo all'interno dei tab spec, plan ecc

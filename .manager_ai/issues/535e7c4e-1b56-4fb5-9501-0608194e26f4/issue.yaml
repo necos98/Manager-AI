@@ -1,0 +1,35 @@
+schema_version: 1
+id: 535e7c4e-1b56-4fb5-9501-0608194e26f4
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Replace PTY with direct subprocess for agent step execution
+status: Finished
+priority: 5
+category: null
+created_at: '2026-05-25T10:48:38.449350'
+updated_at: '2026-05-25T11:59:09.582472'
+tasks:
+- id: c78faa51-aee9-4b1b-aa33-8189507751ea
+  name: 'Update imports: remove shlex, tempfile, uuid, Path, WSL imports, _inject_env_vars; add ClaudeCodeExecutor'
+  status: Completed
+  order: 0
+  created_at: '2026-05-25T10:56:57'
+  updated_at: '2026-05-25T10:58:13'
+- id: 007d0da0-6509-47d6-a0e6-45b550094ccb
+  name: Replace PTY creation (terminal_service.create) with log terminal (terminal_service.create_log) in _run_agent_step()
+  status: Completed
+  order: 1
+  created_at: '2026-05-25T10:56:57'
+  updated_at: '2026-05-25T10:58:59'
+- id: 3ac86e4f-73b4-49ce-ae5b-96f835d02065
+  name: Replace temp file + pipe command + marker polling with ClaudeCodeExecutor.run_streaming()
+  status: Completed
+  order: 2
+  created_at: '2026-05-25T10:56:57'
+  updated_at: '2026-05-25T10:59:15'
+- id: f3a4d666-d3c7-4593-a9e1-d1bc6d38d996
+  name: Run existing tests to verify no regressions
+  status: Completed
+  order: 3
+  created_at: '2026-05-25T10:56:57'
+  updated_at: '2026-05-25T10:59:16'
+relations: []
