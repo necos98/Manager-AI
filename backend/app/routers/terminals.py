@@ -570,6 +570,8 @@ async def terminal_ws(
     buffered = service.get_buffered_output(terminal_id)
     if buffered:
         await websocket.send_text(buffered)
+    elif pty is None:
+        await websocket.send_text("\x1b[90mConnected to agent output stream...\x1b[0m\r\n")
 
     # Register this WS and ensure the persistent reader is running
     _terminal_ws[terminal_id] = websocket
@@ -587,7 +589,8 @@ async def terminal_ws(
                         continue
                 except (json.JSONDecodeError, KeyError):
                     pass
-            pty.write(message)
+            if pty is not None:
+                pty.write(message)
     except (WebSocketDisconnect, RuntimeError):
         pass
     except Exception:

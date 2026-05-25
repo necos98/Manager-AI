@@ -287,7 +287,8 @@ class TerminalService:
             entry["cols"] = cols
             entry["rows"] = rows
             pty = entry["pty"]
-        pty.set_size(cols, rows)
+        if pty is not None:
+            pty.set_size(cols, rows)
 
     def _to_response(self, entry: dict) -> dict:
         return {
