@@ -36,12 +36,12 @@ class SkillLibraryService:
         self.session = session
         self._library_path = Path(settings.claude_library_path)
 
-    def _dir(self, type: str) -> Path:
-        return self._library_path / ("skills" if type == "skill" else "agents")
+    def _dir(self) -> Path:
+        return self._library_path / "skills"
 
-    def list_available(self, type: str = "skill") -> list[SkillMeta]:
-        """Read skill/agent files from the filesystem library."""
-        directory = self._dir(type)
+    def list_available(self) -> list[SkillMeta]:
+        """Read skill files from the filesystem library."""
+        directory = self._dir()
         if not directory.exists():
             return []
         result = []
@@ -54,16 +54,16 @@ class SkillLibraryService:
                     category=meta.get("category", ""),
                     description=meta.get("description", ""),
                     built_in=bool(meta.get("built_in", False)),
-                    type=type,
+                    type="skill",
                 )
             )
         return result
 
-    def get_content(self, name: str, type: str) -> SkillDetail:
+    def get_content(self, name: str) -> SkillDetail:
         """Return full skill detail including content."""
-        path = self._dir(type) / f"{name}.md"
+        path = self._dir() / f"{name}.md"
         if not path.exists():
-            raise NotFoundError(f"{type} '{name}' not found in library")
+            raise NotFoundError(f"skill '{name}' not found in library")
         content = path.read_text(encoding="utf-8")
         meta, body = _parse_frontmatter(content)
         return SkillDetail(
@@ -71,17 +71,17 @@ class SkillLibraryService:
             category=meta.get("category", ""),
             description=meta.get("description", ""),
             built_in=bool(meta.get("built_in", False)),
-            type=type,
+            type="skill",
             content=body,
         )
 
-    def create(self, data: SkillCreate, type: str) -> SkillMeta:
-        """Create a new user-defined skill/agent file."""
-        directory = self._dir(type)
+    def create(self, data: SkillCreate) -> SkillMeta:
+        """Create a new user-defined skill file."""
+        directory = self._dir()
         directory.mkdir(parents=True, exist_ok=True)
         path = directory / f"{data.name}.md"
         if path.exists():
-            raise AppError(f"{type} '{data.name}' already exists", status_code=409)
+            raise AppError(f"skill '{data.name}' already exists", status_code=409)
         frontmatter = (
             f"---\nname: {data.name}\ncategory: {data.category}\n"
             f"description: {data.description}\nbuilt_in: false\n---\n"
@@ -92,18 +92,18 @@ class SkillLibraryService:
             category=data.category,
             description=data.description,
             built_in=False,
-            type=type,
+            type="skill",
         )
 
-    def update_content(self, name: str, type: str, content: str) -> None:
+    def update_content(self, name: str, content: str) -> None:
         """Update the body of a user-created skill (preserves frontmatter)."""
-        path = self._dir(type) / f"{name}.md"
+        path = self._dir() / f"{name}.md"
         if not path.exists():
-            raise NotFoundError(f"{type} '{name}' not found")
+            raise NotFoundError(f"skill '{name}' not found")
         existing = path.read_text(encoding="utf-8")
         meta, _ = _parse_frontmatter(existing)
         if meta.get("built_in"):
-            raise AppError(f"Built-in {type} '{name}' cannot be edited via API", status_code=403)
+            raise AppError(f"Built-in skill '{name}' cannot be edited via API", status_code=403)
         frontmatter = (
             f"---\nname: {meta.get('name', name)}\ncategory: {meta.get('category', '')}\n"
             f"description: {meta.get('description', '')}\nbuilt_in: false\n---\n"
@@ -116,47 +116,47 @@ class SkillLibraryService:
         )
         return list(result.scalars().all())
 
-    async def assign(self, project_id: str, project_path: str, name: str, type: str) -> ProjectSkill:
+    async def assign(self, project_id: str, project_path: str, name: str) -> ProjectSkill:
         """Assign a skill to a project: DB record + file copy + CLAUDE.md update."""
-        src = self._dir(type) / f"{name}.md"
+        src = self._dir() / f"{name}.md"
         if not src.exists():
-            raise NotFoundError(f"{type} '{name}' not found in library")
+            raise NotFoundError(f"skill '{name}' not found in library")
 
         existing = await self.session.execute(
             select(ProjectSkill).where(
                 ProjectSkill.project_id == project_id,
                 ProjectSkill.name == name,
-                ProjectSkill.type == type,
+                ProjectSkill.type == "skill",
             )
         )
         if existing.scalar_one_or_none():
-            raise AppError(f"{type} '{name}' already assigned to this project", status_code=409)
+            raise AppError(f"skill '{name}' already assigned to this project", status_code=409)
 
-        dest_dir = Path(project_path) / ".claude" / ("skills" if type == "skill" else "agents")
+        dest_dir = Path(project_path) / ".claude" / "skills"
         dest_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dest_dir / f"{name}.md")
 
         self._update_claude_md(project_path)
 
-        skill = ProjectSkill(project_id=project_id, name=name, type=type)
+        skill = ProjectSkill(project_id=project_id, name=name, type="skill")
         self.session.add(skill)
         await self.session.flush()
         return skill
 
-    async def unassign(self, project_id: str, project_path: str, name: str, type: str) -> None:
+    async def unassign(self, project_id: str, project_path: str, name: str) -> None:
         """Remove skill assignment: delete DB record + file + update CLAUDE.md."""
         result = await self.session.execute(
             select(ProjectSkill).where(
                 ProjectSkill.project_id == project_id,
                 ProjectSkill.name == name,
-                ProjectSkill.type == type,
+                ProjectSkill.type == "skill",
             )
         )
         skill = result.scalar_one_or_none()
         if not skill:
-            raise NotFoundError(f"{type} '{name}' not assigned to this project")
+            raise NotFoundError(f"skill '{name}' not assigned to this project")
 
-        dest = Path(project_path) / ".claude" / ("skills" if type == "skill" else "agents") / f"{name}.md"
+        dest = Path(project_path) / ".claude" / "skills" / f"{name}.md"
         if dest.exists():
             dest.unlink()
 
@@ -170,7 +170,6 @@ class SkillLibraryService:
         claude_md = Path(project_path) / "CLAUDE.md"
 
         skills_dir = Path(project_path) / ".claude" / "skills"
-        agents_dir = Path(project_path) / ".claude" / "agents"
 
         skill_lines = []
         if skills_dir.exists():
@@ -180,19 +179,9 @@ class SkillLibraryService:
                 desc = meta.get("description", "")
                 skill_lines.append(f"- {f.stem}: {desc}")
 
-        agent_lines = []
-        if agents_dir.exists():
-            for f in sorted(agents_dir.glob("*.md")):
-                content = f.read_text(encoding="utf-8")
-                meta, _ = _parse_frontmatter(content)
-                desc = meta.get("description", "")
-                agent_lines.append(f"- {f.stem}: {desc}")
-
         section_parts = []
         if skill_lines:
             section_parts.append("## Active Skills\n" + "\n".join(skill_lines))
-        if agent_lines:
-            section_parts.append("## Active Agents\n" + "\n".join(agent_lines))
 
         if section_parts:
             new_section = (
@@ -226,7 +215,6 @@ class SkillLibraryService:
     def get_skills_context(self, project_path: str) -> str:
         """Return a summary string of active skills for use in prompt templates."""
         skills_dir = Path(project_path) / ".claude" / "skills"
-        agents_dir = Path(project_path) / ".claude" / "agents"
         lines = []
 
         if skills_dir.exists():
@@ -235,12 +223,6 @@ class SkillLibraryService:
                 meta, _ = _parse_frontmatter(content)
                 lines.append(f"- Skill '{f.stem}': {meta.get('description', '')}")
 
-        if agents_dir.exists():
-            for f in sorted(agents_dir.glob("*.md")):
-                content = f.read_text(encoding="utf-8")
-                meta, _ = _parse_frontmatter(content)
-                lines.append(f"- Agent '{f.stem}': {meta.get('description', '')}")
-
         if not lines:
             return ""
-        return "\nActive project skills and agents:\n" + "\n".join(lines)
+        return "\nActive project skills:\n" + "\n".join(lines)

@@ -5,21 +5,14 @@ export function fetchSkills(): Promise<SkillMeta[]> {
   return apiGet<SkillMeta[]>("/library/skills");
 }
 
-export function fetchAgents(): Promise<SkillMeta[]> {
-  return apiGet<SkillMeta[]>("/library/agents");
-}
-
-export function fetchSkill(name: string, type: string): Promise<SkillDetail> {
-  const endpoint = type === "agent" ? `/library/agents/${name}` : `/library/skills/${name}`;
-  return apiGet<SkillDetail>(endpoint);
+export function fetchSkill(name: string): Promise<SkillDetail> {
+  return apiGet<SkillDetail>(`/library/skills/${name}`);
 }
 
 export function createSkill(data: SkillCreate): Promise<SkillMeta> {
-  const endpoint = data.type === "agent" ? "/library/agents" : "/library/skills";
-  return apiPost<SkillMeta>(endpoint, data);
+  return apiPost<SkillMeta>("/library/skills", data);
 }
 
-export function updateSkill(name: string, type: string, content: string): Promise<null> {
-  const endpoint = type === "agent" ? `/library/agents/${name}` : `/library/skills/${name}`;
-  return apiPut<null>(endpoint, { content });
+export function updateSkill(name: string, content: string): Promise<null> {
+  return apiPut<null>(`/library/skills/${name}`, { content });
 }

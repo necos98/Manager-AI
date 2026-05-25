@@ -1,6 +1,8 @@
 """EnrichProjectContext hook: updates project context after a issue is completed."""
 
-from app.hooks.executor import ClaudeCodeExecutor
+import asyncio
+import os
+
 from app.hooks.registry import BaseHook, HookContext, HookEvent, HookResult, hook
 
 
@@ -44,16 +46,32 @@ Non aggiungere dettagli specifici di singole issue."""
                 context.project_id
             )
 
-        executor = ClaudeCodeExecutor()
-        result = await executor.run(
-            prompt=prompt,
-            project_path=project_path,
-            env_vars={"MANAGER_AI_PROJECT_ID": context.project_id},
-            tool_guidance=tool_guidance,
-        )
+        env = os.environ.copy()
+        env["MANAGER_AI_PROJECT_ID"] = context.project_id
+
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "claude",
+                "-p",
+                prompt,
+                "--tool-guidance", tool_guidance,
+                "--output-format", "text",
+                cwd=project_path,
+                env=env,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await proc.communicate()
+            success = proc.returncode == 0
+            output = stdout.decode("utf-8", errors="replace") if stdout else ""
+            error = stderr.decode("utf-8", errors="replace") if stderr and proc.returncode != 0 else None
+        except Exception as e:
+            success = False
+            output = ""
+            error = str(e)
 
         return HookResult(
-            success=result.success,
-            output=result.output,
-            error=result.error,
+            success=success,
+            output=output,
+            error=error,
         )

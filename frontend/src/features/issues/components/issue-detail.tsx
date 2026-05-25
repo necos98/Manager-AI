@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
@@ -36,10 +36,6 @@ import { useDeleteIssue, useUpdateIssue, useProjectTags } from "@/features/issue
 import { useKillTerminal } from "@/features/terminals/hooks";
 import type { Issue } from "@/shared/types";
 import { IssueRelationsTab } from "./issue-relations-tab";
-import { AgentChat } from "@/features/agents/components/agent-chat";
-import { PipelineProgress } from "@/features/agents/components/pipeline-progress";
-import { usePipelineRunsForIssue, usePipelineRun } from "@/features/agents/hooks";
-import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
 
 interface IssueDetailProps {
   issue: Issue;
@@ -63,38 +59,18 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
   const [showTagInput, setShowTagInput] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("");
 
-  const { data: pipelineRunsData } = usePipelineRunsForIssue(projectId, issue.id);
-  const latestRun = pipelineRunsData?.runs?.[0];
-  const { data: runDetail } = usePipelineRun(latestRun?.id ?? null);
-  const steps = runDetail?.steps ?? [];
-  const runningStep = steps.find((s) => s.status === "running");
-  const pipelineLabel = latestRun
-    ? latestRun.status === "running" && runningStep
-      ? `Pipeline: Running (Step ${runningStep.step_order + 1}/${steps.length} — ${runningStep.agent_name})`
-      : `Pipeline: ${latestRun.status.charAt(0).toUpperCase() + latestRun.status.slice(1)}`
-    : null;
-
   const tabs = useMemo<TabDef[]>(() => [
     { value: "description", label: "Description", available: true },
     { value: "specification", label: "Specification", available: !!issue.specification },
     { value: "plan", label: "Plan", available: !!issue.plan },
     { value: "tasks", label: "Tasks", available: true },
     { value: "relations", label: "Relations", available: true },
-    { value: "chat", label: "Agent Chat", available: true },
-    { value: "pipeline", label: "Pipeline", available: true },
-    { value: "agent-terminal", label: "Agent Terminal", available: !!runningStep?.terminal_id },
     { value: "recap", label: "Recap", available: !!issue.recap },
-  ], [issue.specification, issue.plan, issue.recap, runningStep?.terminal_id]);
+  ], [issue.specification, issue.plan, issue.recap]);
 
   const availableTabs = tabs.filter((t) => t.available);
   const defaultTab = availableTabs[0]?.value ?? "description";
   const currentTab = activeTab || defaultTab;
-
-  useEffect(() => {
-    if (runningStep?.terminal_id) {
-      setActiveTab("agent-terminal");
-    }
-  }, [runningStep?.terminal_id]);
 
   const handleDelete = async () => {
     if (terminalId) {
@@ -233,16 +209,6 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
       {/* Action buttons */}
       <IssueActions issue={issue} projectId={projectId} />
 
-      {/* Pipeline status badge */}
-      {pipelineLabel && (
-        <button
-          className="w-full text-left px-3 py-1.5 rounded-md bg-muted/50 border text-xs font-medium hover:bg-muted transition-colors"
-          onClick={() => setActiveTab("pipeline")}
-        >
-          {pipelineLabel}
-        </button>
-      )}
-
       {/* Tabbed content */}
       <Tabs value={currentTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
@@ -311,26 +277,6 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
         <TabsContent value="relations">
           <IssueRelationsTab issue={issue} projectId={projectId} />
         </TabsContent>
-
-        <TabsContent value="chat" className="mt-4">
-          <AgentChat issueId={issue.id} />
-        </TabsContent>
-
-        <TabsContent value="pipeline" className="mt-4">
-          <PipelineProgress projectId={projectId} issueId={issue.id} />
-        </TabsContent>
-
-        {runningStep?.terminal_id && (
-          <TabsContent value="agent-terminal" className="mt-4">
-            <div className="h-[500px] border border-zinc-700 rounded-md overflow-hidden">
-              <TerminalPanel
-                readOnly={true}
-                terminalId={runningStep.terminal_id}
-                projectId={projectId}
-              />
-            </div>
-          </TabsContent>
-        )}
 
         {issue.recap && (
           <TabsContent value="recap" className="mt-4">

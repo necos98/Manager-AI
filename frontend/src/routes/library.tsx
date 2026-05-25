@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useSkills, useAgents, useSkillDetail, useCreateSkill } from "@/features/library/hooks";
+import { useSkills, useSkillDetail, useCreateSkill } from "@/features/library/hooks";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -55,13 +55,12 @@ function SkillCard({ skill, selected, onClick }: SkillCardProps) {
 
 interface CreateSkillDialogProps {
   open: boolean;
-  type: string;
   onOpenChange: (open: boolean) => void;
   onCreate: (data: SkillCreate) => void;
   isPending: boolean;
 }
 
-function CreateSkillDialog({ open, type, onOpenChange, onCreate, isPending }: CreateSkillDialogProps) {
+function CreateSkillDialog({ open, onOpenChange, onCreate, isPending }: CreateSkillDialogProps) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -69,7 +68,7 @@ function CreateSkillDialog({ open, type, onOpenChange, onCreate, isPending }: Cr
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onCreate({ name, category, description, content, type });
+    onCreate({ name, category, description, content, type: "skill" });
   }
 
   function handleOpenChange(value: boolean) {
@@ -82,13 +81,11 @@ function CreateSkillDialog({ open, type, onOpenChange, onCreate, isPending }: Cr
     onOpenChange(value);
   }
 
-  const label = type === "agent" ? "Agent" : "Skill";
-
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>New {label}</DialogTitle>
+          <DialogTitle>New Skill</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -96,7 +93,7 @@ function CreateSkillDialog({ open, type, onOpenChange, onCreate, isPending }: Cr
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={`my-${type}`}
+              placeholder="my-skill"
               required
             />
           </div>
@@ -133,7 +130,7 @@ function CreateSkillDialog({ open, type, onOpenChange, onCreate, isPending }: Cr
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Creating..." : `Create ${label}`}
+              {isPending ? "Creating..." : "Create Skill"}
             </Button>
           </DialogFooter>
         </form>
@@ -145,21 +142,18 @@ function CreateSkillDialog({ open, type, onOpenChange, onCreate, isPending }: Cr
 // ── LibraryPage ──────────────────────────────────────────────────────────────
 
 function LibraryPage() {
-  const { data: skills = [], isLoading: loadingSkills } = useSkills();
-  const { data: agents = [], isLoading: loadingAgents } = useAgents();
+  const { data: skills = [], isLoading } = useSkills();
   const createSkill = useCreateSkill();
 
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selected, setSelected] = useState<SkillMeta | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [createType, setCreateType] = useState<string>("skill");
 
-  const allItems: SkillMeta[] = [...skills, ...agents];
+  const allItems: SkillMeta[] = skills;
   const categories = ["all", ...Array.from(new Set(allItems.map((s) => s.category))).sort()];
 
   const { data: detail, isLoading: loadingDetail } = useSkillDetail(
     selected?.name ?? "",
-    selected?.type ?? "skill",
   );
 
   const filtered =
@@ -167,34 +161,21 @@ function LibraryPage() {
       ? allItems
       : allItems.filter((s) => s.category === categoryFilter);
 
-  function openCreate(type: string) {
-    setCreateType(type);
-    setDialogOpen(true);
-  }
-
   function handleCreate(data: SkillCreate) {
-    createSkill.mutate(
-      { ...data, type: createType },
-      {
-        onSuccess: () => {
-          setDialogOpen(false);
-        },
+    createSkill.mutate(data, {
+      onSuccess: () => {
+        setDialogOpen(false);
       },
-    );
+    });
   }
-
-  const isLoading = loadingSkills || loadingAgents;
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold">Library</h1>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => openCreate("skill")}>
+          <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
             New Skill
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => openCreate("agent")}>
-            New Agent
           </Button>
         </div>
       </div>
@@ -225,9 +206,9 @@ function LibraryPage() {
           ) : (
             filtered.map((skill) => (
               <SkillCard
-                key={`${skill.type}:${skill.name}`}
+                key={skill.name}
                 skill={skill}
-                selected={selected?.name === skill.name && selected?.type === skill.type}
+                selected={selected?.name === skill.name}
                 onClick={() => setSelected(skill)}
               />
             ))
@@ -268,9 +249,8 @@ function LibraryPage() {
       </div>
 
       <CreateSkillDialog
-        key={`${createType}-${String(dialogOpen)}`}
+        key={String(dialogOpen)}
         open={dialogOpen}
-        type={createType}
         onOpenChange={setDialogOpen}
         onCreate={handleCreate}
         isPending={createSkill.isPending}

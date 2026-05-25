@@ -1,7 +1,7 @@
 // frontend/src/features/projects/components/library-tab.tsx
 import { useState } from "react";
 import { toast } from "sonner";
-import { useSkills, useAgents } from "@/features/library/hooks";
+import { useSkills } from "@/features/library/hooks";
 import { useProjectSkills, useAssignSkill, useUnassignSkill } from "@/features/projects/hooks-skills";
 import { useProjectTemplates, useSaveTemplate, useDeleteTemplate } from "@/features/projects/hooks-templates";
 import type { TemplateInfo } from "@/shared/types";
@@ -13,7 +13,6 @@ import { Textarea } from "@/shared/components/ui/textarea";
 
 function SkillsSection({ projectId }: { projectId: string }) {
   const { data: allSkills = [] } = useSkills();
-  const { data: allAgents = [] } = useAgents();
   const { data: assigned = [] } = useProjectSkills(projectId);
   const assign = useAssignSkill(projectId);
   const unassign = useUnassignSkill(projectId);
@@ -23,10 +22,7 @@ function SkillsSection({ projectId }: { projectId: string }) {
 
   const assignedNames = new Set(assigned.map(s => `${s.type}:${s.name}`));
 
-  const available = [
-    ...allSkills.map(s => ({ ...s, type: "skill" as const })),
-    ...allAgents.map(a => ({ ...a, type: "agent" as const })),
-  ];
+  const available = allSkills.map(s => ({ ...s, type: "skill" as const }));
 
   const assignedItems = assigned.map(a => {
     const meta = available.find(s => s.name === a.name && s.type === a.type);
@@ -35,7 +31,7 @@ function SkillsSection({ projectId }: { projectId: string }) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold">Skills &amp; Agents</h3>
+      <h3 className="text-sm font-semibold">Skills</h3>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <p className="text-xs text-muted-foreground mb-2">Available in library</p>
@@ -193,14 +189,14 @@ function TemplateRow({ tpl, projectId }: { tpl: TemplateInfo; projectId: string 
                 )
               }
             >
-              {save.isPending ? "Saving…" : "Save"}
+              {save.isPending ? "Saving..." : "Save"}
             </Button>
             <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
           </div>
         </div>
       ) : (
         <pre className="text-xs bg-muted rounded p-2 max-h-24 overflow-hidden whitespace-pre-wrap text-muted-foreground">
-          {tpl.content.slice(0, 200)}{tpl.content.length > 200 ? "…" : ""}
+          {tpl.content.slice(0, 200)}{tpl.content.length > 200 ? "..." : ""}
         </pre>
       )}
     </div>
@@ -233,7 +229,7 @@ export function LibraryTab({ projectId }: { projectId: string }) {
           size="sm"
           onClick={() => setSection("skills")}
         >
-          Skills &amp; Agents
+          Skills
         </Button>
         <Button
           variant={section === "templates" ? "default" : "ghost"}

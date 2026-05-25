@@ -29,16 +29,6 @@ async def test_list_skills_returns_list(client):
 
 
 @pytest.mark.asyncio
-async def test_list_agents_returns_list(client):
-    response = await client.get("/api/library/agents")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-    names = [a["name"] for a in data]
-    assert "backend-architect" in names
-
-
-@pytest.mark.asyncio
 async def test_get_skill_not_found(client):
     response = await client.get("/api/library/skills/nonexistent-skill-xyz")
     assert response.status_code == 404

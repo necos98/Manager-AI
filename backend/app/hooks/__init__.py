@@ -1,6 +1,5 @@
 """Hooks package: event-driven hook system for Manager AI issue lifecycle events."""
 
-from app.hooks.executor import ClaudeCodeExecutor, ExecutorResult
 from app.hooks.registry import (
     BaseHook,
     HookContext,
@@ -17,6 +16,4 @@ __all__ = [
     "HookResult",
     "BaseHook",
     "hook",
-    "ClaudeCodeExecutor",
-    "ExecutorResult",
 ]

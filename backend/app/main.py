@@ -24,7 +24,7 @@ from app.storage.background_writer import BackgroundWriter
 from app.storage import memory_store as memory_store_module
 from app.storage import issue_store as issue_store_module
 from app.storage import file_store as file_store_module
-from app.routers import activity, agents, credentials, events, files, issue_relations, issues, library, memories, network, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, questions, settings as settings_router, system, tasks, terminals, terminal_commands
+from app.routers import activity, credentials, events, files, issue_relations, issues, library, memories, network, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, questions, settings as settings_router, system, tasks, terminals, terminal_commands
 from app.routers.projects import install_claude_resources_to
 
 logger = logging.getLogger(__name__)
@@ -307,15 +307,6 @@ async def lifespan(app):
     except Exception:
         logger.exception("DB → .manager_ai/ migration failed; continuing startup")
 
-    try:
-        from app.services.orchestrator_service import OrchestratorService
-        async with async_session() as session:
-            count = await OrchestratorService.cleanup_zombie_runs(session)
-            if count:
-                logger.info("Startup: marked %d zombie pipeline runs as failed", count)
-    except Exception:
-        logger.exception("Failed to clean up zombie pipeline runs; continuing startup")
-
     # Init write queue and background writer
     write_queue = WriteQueue("data/pending_writes.db")
     background_writer = BackgroundWriter(write_queue)
@@ -408,8 +399,6 @@ app.include_router(settings_router.router)
 app.include_router(terminals.router)
 app.include_router(terminal_commands.router)
 app.include_router(project_variables.router)
-app.include_router(agents.router)
-app.include_router(pipelines.router)
 app.include_router(events.router)
 app.include_router(activity.router)
 app.include_router(library.router)

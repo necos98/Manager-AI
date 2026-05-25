@@ -13,7 +13,6 @@ from app.schemas.issue import (
     IssueUpdate,
 )
 from app.services.issue_service import IssueService
-from app.services.orchestrator_service import OrchestratorService
 
 router = APIRouter(prefix="/api/projects/{project_id}/issues", tags=["issues"])
 
@@ -118,28 +117,6 @@ async def complete_issue(
     record = await service.complete_issue(issue_id, project_id, recap=data.recap)
     await db.commit()
     return IssueResponse.from_record(record)
-
-
-@router.post("/{issue_id}/start-pipeline")
-async def start_pipeline_for_issue(
-    project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)
-):
-    issue_svc = IssueService(db)
-    issue = await issue_svc.get_for_project(issue_id, project_id)
-    orch = OrchestratorService(db)
-    pipeline_run = await orch.start_pipeline(
-        trigger_type="manual",
-        issue_id=issue_id,
-        project_id=project_id,
-        issue_status=issue.status,
-    )
-    if pipeline_run is None:
-        return {"error": "Could not start pipeline — no default pipeline or already running"}
-    return {
-        "pipeline_run_id": pipeline_run.id,
-        "status": pipeline_run.status.value,
-        "trigger_type": pipeline_run.trigger_type,
-    }
 
 
 @router.get("/{issue_id}/feedback", response_model=list[IssueFeedbackResponse])
