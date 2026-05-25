@@ -156,6 +156,24 @@ async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
 
+            from app.hooks.registry import HookContext, HookEvent, hook_registry
+            await hook_registry.fire(
+                HookEvent.ISSUE_COMPLETED,
+                HookContext(
+                    project_id=project_id,
+                    issue_id=issue_id_val,
+                    event=HookEvent.ISSUE_COMPLETED,
+                    metadata={
+                        "issue_name": issue_name,
+                        "recap": recap,
+                        "project_name": project_name,
+                        "project_path": project.path if project else "",
+                        "project_description": project.description if project else "",
+                        "tech_stack": project.tech_stack if project else "",
+                    },
+                ),
+            )
+
             return {"id": issue_id_val, "status": issue_status, "recap": issue.recap}
         except AppError as e:
             return {"error": e.message}
