@@ -113,7 +113,11 @@ export function usePipelineRun(runId: string | null) {
     queryKey: ["pipeline-runs", runId],
     queryFn: () => fetchPipelineRun(runId!),
     enabled: !!runId,
-    refetchInterval: 3000,
+    refetchInterval: (query) => {
+      const data = query.state.data as PipelineRunFullData | undefined;
+      if (!data) return false;
+      return data.run.status === "running" ? 3000 : false;
+    },
   });
 }
 
@@ -122,7 +126,11 @@ export function usePipelineRunsForIssue(projectId: string, issueId: string | nul
     queryKey: ["projects", projectId, "issues", issueId, "pipeline-runs"],
     queryFn: () => fetchPipelineRunsForIssue(projectId, issueId!),
     enabled: !!projectId && !!issueId,
-    refetchInterval: 3000,
+    refetchInterval: (query) => {
+      const data = query.state.data as { runs: PipelineRunData[] } | undefined;
+      if (!data) return false;
+      return data.runs.some((r) => r.status === "running") ? 3000 : false;
+    },
   });
 }
 

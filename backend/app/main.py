@@ -307,6 +307,15 @@ async def lifespan(app):
     except Exception:
         logger.exception("DB → .manager_ai/ migration failed; continuing startup")
 
+    try:
+        from app.services.orchestrator_service import OrchestratorService
+        async with async_session() as session:
+            count = await OrchestratorService.cleanup_zombie_runs(session)
+            if count:
+                logger.info("Startup: marked %d zombie pipeline runs as failed", count)
+    except Exception:
+        logger.exception("Failed to clean up zombie pipeline runs; continuing startup")
+
     # Init write queue and background writer
     write_queue = WriteQueue("data/pending_writes.db")
     background_writer = BackgroundWriter(write_queue)
