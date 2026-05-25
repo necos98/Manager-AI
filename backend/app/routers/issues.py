@@ -116,6 +116,29 @@ async def complete_issue(
     service = IssueService(db)
     record = await service.complete_issue(issue_id, project_id, recap=data.recap)
     await db.commit()
+
+    from app.database import async_session
+    from app.hooks.registry import HookContext, HookEvent, hook_registry
+    from app.services.project_service import ProjectService
+    async with async_session() as session:
+        project = await ProjectService(session).get_by_id(project_id)
+    await hook_registry.fire(
+        HookEvent.ISSUE_COMPLETED,
+        HookContext(
+            project_id=project_id,
+            issue_id=issue_id,
+            event=HookEvent.ISSUE_COMPLETED,
+            metadata={
+                "issue_name": record.name or (record.description or "")[:50] or "",
+                "recap": data.recap,
+                "project_name": project.name if project else "",
+                "project_path": project.path if project else "",
+                "project_description": project.description if project else "",
+                "tech_stack": project.tech_stack if project else "",
+            },
+        ),
+    )
+
     return IssueResponse.from_record(record)
 
 
