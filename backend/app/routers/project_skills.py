@@ -9,12 +9,11 @@ from app.services.skill_library_service import SkillLibraryService
 router = APIRouter(prefix="/api/projects/{project_id}/skills", tags=["project-skills"])
 
 
-def _skill_file_synced(project_path: str | None, name: str, type: str) -> bool:
+def _skill_file_synced(project_path: str | None, name: str) -> bool:
     if not project_path:
         return False
     from pathlib import Path
-    subdir = "skills" if type == "skill" else "agents"
-    return (Path(project_path) / ".claude" / subdir / f"{name}.md").exists()
+    return (Path(project_path) / ".claude" / "skills" / f"{name}.md").exists()
 
 
 @router.get("", response_model=list[ProjectSkillOut])
@@ -29,7 +28,7 @@ async def list_project_skills(project_id: str, db: AsyncSession = Depends(get_db
             name=s.name,
             type=s.type,
             assigned_at=s.assigned_at.isoformat(),
-            file_synced=_skill_file_synced(project.path, s.name, s.type),
+            file_synced=_skill_file_synced(project.path, s.name),
         )
         for s in skills
     ]
@@ -41,7 +40,7 @@ async def assign_skill(
 ):
     project = await ProjectService(db).get_by_id(project_id)
     svc = SkillLibraryService(db)
-    skill = await svc.assign(project_id, project.path, data.name, data.type)
+    skill = await svc.assign(project_id, project.path, data.name)
     await db.commit()
     return ProjectSkillOut(
         id=skill.id,
@@ -49,15 +48,15 @@ async def assign_skill(
         name=skill.name,
         type=skill.type,
         assigned_at=skill.assigned_at.isoformat(),
-        file_synced=_skill_file_synced(project.path, skill.name, skill.type),
+        file_synced=_skill_file_synced(project.path, skill.name),
     )
 
 
-@router.delete("/{type}/{name}", status_code=204)
+@router.delete("/skills/{name}", status_code=204)
 async def unassign_skill(
-    project_id: str, type: str, name: str, db: AsyncSession = Depends(get_db)
+    project_id: str, name: str, db: AsyncSession = Depends(get_db)
 ):
     project = await ProjectService(db).get_by_id(project_id)
     svc = SkillLibraryService(db)
-    await svc.unassign(project_id, project.path, name, type)
+    await svc.unassign(project_id, project.path, name)
     await db.commit()

@@ -1,0 +1,1 @@
+Quando elimino una issue non si elimina al primo colpo.

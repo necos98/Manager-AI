@@ -186,12 +186,6 @@ function buildToastContent(data: WsEventData): ToastContent {
     case "file_updated":
     case "question_asked":
     case "question_answered":
-    case "agent_step_started":
-    case "agent_step_completed":
-    case "agent_step_failed":
-    case "agent_terminal_created":
-    case "pipeline_completed":
-    case "pipeline_paused":
       return { title: "", message: "", variant: "default", silent: true };
 
     default:
@@ -279,13 +273,6 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         // Invalidate terminal queries when a new terminal is spawned
         if (data.type === "terminal_created") {
           queryClient.invalidateQueries({ queryKey: ["terminals"] });
-        }
-
-        // Invalidate pipeline-run queries when a new log terminal is created
-        if (data.type === "agent_terminal_created" && data.project_id && data.issue_id) {
-          queryClient.invalidateQueries({
-            queryKey: ["projects", data.project_id, "issues", data.issue_id, "pipeline-runs"],
-          });
         }
 
         if (
