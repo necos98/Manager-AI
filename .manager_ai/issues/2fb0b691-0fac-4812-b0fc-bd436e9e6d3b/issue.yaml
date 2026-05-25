@@ -1,0 +1,17 @@
+schema_version: 1
+id: 2fb0b691-0fac-4812-b0fc-bd436e9e6d3b
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Notify user when model asks a question via ask_user_question tool
+status: Accepted
+priority: 3
+category: Improvement
+created_at: '2026-05-25T08:23:32.256136'
+updated_at: '2026-05-25T08:38:25.958279'
+tasks:
+- id: f6490135-3096-46e0-bdcc-1eb28bf51e21
+  name: Add notification event emit inside ask_user_question in server.py
+  status: Completed
+  order: 0
+  created_at: '2026-05-25T08:29:50'
+  updated_at: '2026-05-25T08:39:15'
+relations: []

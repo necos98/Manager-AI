@@ -1196,6 +1196,20 @@ async def ask_user_question(issue_id: str, question: str, options: list[str] | N
             "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
+        issue_name = issue.name or (issue.description or "")[:50] or "Untitled issue"
+        project = await ProjectService(session).get_by_id(project_id)
+        project_name = project.name if project else ""
+        await event_service.emit({
+            "type": "notification",
+            "title": "New question from AI",
+            "message": q.question,
+            "project_id": project_id,
+            "issue_id": issue_id,
+            "issue_name": issue_name,
+            "project_name": project_name,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+
     event = question_store.wait(q.id)
     if event is None:
         return {"error": "Question not found in store"}

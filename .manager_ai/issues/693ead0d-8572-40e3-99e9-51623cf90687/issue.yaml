@@ -1,0 +1,29 @@
+schema_version: 1
+id: 693ead0d-8572-40e3-99e9-51623cf90687
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Optimize Claude Code worktree usage
+status: Finished
+priority: 3
+category: Improvement
+created_at: '2026-05-25T09:02:41.637927'
+updated_at: '2026-05-25T09:15:00.552558'
+tasks:
+- id: 027336f4-b9dc-4365-a59b-3ef95984c8bc
+  name: Add .claude/worktrees/ to .gitignore
+  status: Completed
+  order: 0
+  created_at: '2026-05-25T09:12:12'
+  updated_at: '2026-05-25T09:14:08'
+- id: 5251cdeb-5777-4bd8-9775-357d8e95df18
+  name: Create .worktreeinclude with .env pattern
+  status: Completed
+  order: 1
+  created_at: '2026-05-25T09:12:12'
+  updated_at: '2026-05-25T09:14:12'
+- id: a1a33912-52ed-4733-81cc-948ec36ac4dc
+  name: Update CLAUDE.md with worktree documentation
+  status: Completed
+  order: 2
+  created_at: '2026-05-25T09:12:12'
+  updated_at: '2026-05-25T09:14:31'
+relations: []

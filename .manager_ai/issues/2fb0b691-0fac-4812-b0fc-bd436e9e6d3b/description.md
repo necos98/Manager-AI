@@ -1,0 +1,1 @@
+Inviare una notifica (come già avviene per altri trigger) quando il modello pone una domanda all'utente tramite il tool delle questions.
