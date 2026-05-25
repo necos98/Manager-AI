@@ -99,3 +99,30 @@ Project-scoped memory is stored on disk as plain markdown under
 - **Write** via MCP: `memory_create` (or `memory_update`) after completing an issue or whenever you learn a durable, non-obvious fact (decision + reasoning, constraint not enforced by code, user preference, recurring gotcha). The backend validates (cycle/cross-project guards) and emits realtime events — do **not** edit the `.md` files by hand.
 
 The `project_id` is in `manager.json` at the repo root. Full policy and anti-patterns: `.claude/skills/manager-ai-memories/SKILL.md`.
+
+## Worktrees
+
+Claude Code supports [git worktrees](https://code.claude.com/docs/en/worktrees) for isolated sessions. Each worktree is a separate working directory with its own files and branch, sharing the same repo history.
+
+### Usage
+
+```bash
+claude --worktree feature-name   # Named worktree
+claude --worktree                # Auto-generated name
+```
+
+### Project Config
+
+- `.worktreeinclude` — copies gitignored `.env` into new worktrees so they can connect to the database
+- `.claude/worktrees/` is gitignored
+
+### Cleanup
+
+- Worktrees without changes are auto-removed on exit
+- Named worktrees prompt before removal — choose "keep" to preserve for later
+- `--worktree` + `-p` (non-interactive) worktrees are NOT auto-cleaned — remove manually with `git worktree remove`
+- Orphaned subagent worktrees are swept at startup if older than `cleanupPeriodDays` and clean
+
+### Agent Pipeline Isolation
+
+Manager AI's agent pipeline (SpecWriter → Architect → Developer → Reviewer → QA) inherits worktree isolation at the session level. Run `claude --worktree` to start Manager AI, and all agent steps run inside the isolated worktree. Agent steps spawn `claude -p` subprocesses in the project directory — no `--worktree` flag in the executor (would leak orphaned worktrees since `-p` mode never auto-cleans).

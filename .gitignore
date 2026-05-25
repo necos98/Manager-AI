@@ -27,4 +27,5 @@ project_resources/
 
 # Git worktrees
 .worktrees/
+.claude/worktrees/
 frontend/src/routeTree.gen.ts
