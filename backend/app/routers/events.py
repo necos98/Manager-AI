@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -19,8 +20,16 @@ async def events_ws(websocket: WebSocket):
     websocket_notifier.connect(websocket)
     try:
         while True:
-            # Keep connection alive; clients may send pings as plain text
-            await websocket.receive_text()
+            # Wait for client messages with a timeout so we can send
+            # keepalive pings.  If the client is gone the send will raise
+            # and we clean up.
+            try:
+                raw = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                # Clients may send "ping" as plain text; respond with "pong".
+                if raw == "ping":
+                    await websocket.send_text("pong")
+            except asyncio.TimeoutError:
+                await websocket.send_text("ping")
     except WebSocketDisconnect:
         pass
     except Exception:

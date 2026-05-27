@@ -209,6 +209,7 @@ function showToast(content: ToastContent, action?: { label: string; onClick: () 
 export function EventProvider({ children }: { children: React.ReactNode }) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const heartbeatRef = useRef<ReturnType<typeof setInterval>>();
   const backoffRef = useRef(1000);
   const cleanedUpRef = useRef(false);
   const navigate = useNavigate();
@@ -236,10 +237,18 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       backoffRef.current = 1000;
+      // Heartbeat: send a "ping" every 25 s so the server knows we are alive.
+      heartbeatRef.current = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send("ping");
+        }
+      }, 25000);
     };
 
     ws.onmessage = (event) => {
       if (cleanedUpRef.current) return;
+      // Ignore keepalive ping/pong messages from the server.
+      if (event.data === "ping" || event.data === "pong") return;
       try {
         const data = JSON.parse(event.data) as WsEventData;
 
@@ -332,6 +341,10 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cleanedUpRef.current = true;
       clearTimeout(reconnectTimeoutRef.current);
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = undefined;
+      }
       if (wsRef.current) {
         if (wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.close();

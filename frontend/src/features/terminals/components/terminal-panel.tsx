@@ -25,6 +25,7 @@ interface TerminalPanelProps {
 export function TerminalPanel({ terminalId, projectId, readOnly = false, onSessionEnd, onDownloadRecording }: TerminalPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval>>();
   const onSessionEndRef = useRef(onSessionEnd);
   const cleanedUpRef = useRef(false);
   const searchAddonRef = useRef<SearchAddon | null>(null);
@@ -159,15 +160,28 @@ export function TerminalPanel({ terminalId, projectId, readOnly = false, onSessi
         if (dims?.cols && dims?.rows) {
           ws.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
         }
+        // Heartbeat: respond to server pings. If we receive a ping,
+        // reply with pong so the server knows we are still here.
+        heartbeatRef.current = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "pong" }));
+          }
+        }, 25000);
       };
 
       ws.onmessage = (event) => {
-        if (!cleanedUpRef.current) term.write(event.data);
+        if (!cleanedUpRef.current) {
+          // Ignore server keepalive pings (JSON {"type":"ping"}).
+          if (typeof event.data === "string" && event.data.startsWith('{"type":"ping"')) return;
+          term.write(event.data);
+        }
       };
 
       ws.onclose = (event) => {
         if (cleanedUpRef.current) return;
-        if (event.code === 1000 && event.reason === "Terminal session ended") {
+        // code 1000 = normal closure (PTY exited naturally)
+        // code 1001 = going away (client or server disconnected)
+        if (event.code === 1000) {
           setStatus("ended");
           onSessionEndRef.current?.();
           return;
@@ -250,6 +264,10 @@ export function TerminalPanel({ terminalId, projectId, readOnly = false, onSessi
       searchAddonRef.current = null;
       termRef.current = null;
       resizeObserver.disconnect();
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = undefined;
+      }
       if (wsRef.current) {
         wsRef.current.onclose = null;
         wsRef.current.close();

@@ -7,7 +7,6 @@ import {
   HelpCircle,
   LayoutDashboard,
   MessageSquare,
-  MoreHorizontal,
   Pencil,
   Plug,
   Settings,
@@ -30,13 +29,6 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/shared/components/ui/sidebar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu";
 import { ProjectSwitcher } from "@/features/projects/components/project-switcher";
 import { ProjectSettingsDialog } from "@/features/projects/components/project-settings-dialog";
 import { McpSetupDialog } from "@/features/projects/components/mcp-setup-dialog";
@@ -135,32 +127,27 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
                     </SidebarMenuItem>
                   ))}
                   <SidebarMenuItem>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <SidebarMenuButton>
-                          <MoreHorizontal />
-                          <span>More</span>
-                        </SidebarMenuButton>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent side="right" align="start">
-                        <DropdownMenuItem onClick={() => setProjectSettingsOpen(true)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit Project
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                          <Link to="/projects/$projectId/plugins" params={{ projectId }}>
-                            <Plug className="mr-2 h-4 w-4" />
-                            MCP Plugins
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setMcpSetupOpen(true)}>
-                          <Settings className="mr-2 h-4 w-4" />
-                          MCP Setup
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <SidebarMenuButton onClick={() => setProjectSettingsOpen(true)}>
+                      <Pencil />
+                      <span>Edit Project</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={!!matchRoute({ to: "/projects/$projectId/plugins", params: { projectId }, fuzzy: true })}
+                    >
+                      <Link to="/projects/$projectId/plugins" params={{ projectId }}>
+                        <Plug />
+                        <span>MCP Plugins</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => setMcpSetupOpen(true)}>
+                      <Settings />
+                      <span>MCP Setup</span>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>

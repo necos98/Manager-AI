@@ -9,6 +9,16 @@ const backendProxy = {
     target: process.env.BACKEND_URL || "http://localhost:8000",
     changeOrigin: true,
     ws: true,
+    configure: (proxy: any) => {
+      proxy.on("error", (err: NodeJS.ErrnoException, _req: unknown, _res: unknown) => {
+        // ECONNRESET is expected when the backend closes a WebSocket
+        // (terminal killed, process exited, server restart).
+        // ECONNREFUSED is expected during backend restarts.
+        // Don't pollute the console with these harmless events.
+        if (err.code === "ECONNRESET" || err.code === "ECONNREFUSED") return;
+        console.warn("[vite proxy]", err.message);
+      });
+    },
   },
 };
 
