@@ -610,6 +610,9 @@ async def terminal_ws(
     if session is None:
         session = TerminalSession()
         _sessions[terminal_id] = session
+    # Reset death flag on reconnect so the loop doesn't exit immediately.
+    session.pty_dead.clear()
+    session.pty_died_naturally = False
     session.ws = websocket
     _ensure_reader(terminal_id, service)
 
@@ -620,15 +623,7 @@ async def terminal_ws(
             if session.pty_dead.is_set():
                 break
 
-            try:
-                message = await asyncio.wait_for(
-                    websocket.receive_text(), timeout=30.0
-                )
-            except asyncio.TimeoutError:
-                # Send keepalive ping every 30 s of client silence.
-                # If the client is gone this will raise and we exit.
-                await websocket.send_json({"type": "ping"})
-                continue
+            message = await websocket.receive_text()
             if message.startswith('{"type":"resize"'):
                 try:
                     msg = json.loads(message)
@@ -648,8 +643,6 @@ async def terminal_ws(
         pty_ended_naturally = session is not None and session.pty_died_naturally
         if session is not None:
             session.ws = None
-            # Signal the reader that the WS is gone so it stops forwarding.
-            session.pty_dead.set()
         # If the PTY died naturally, close with a meaningful code so the
         # frontend can distinguish "session ended" from a network blip.
         close_code = 1000 if pty_ended_naturally else 1001
