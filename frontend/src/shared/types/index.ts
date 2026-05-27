@@ -475,3 +475,117 @@ export interface QuestionAnswer {
   answer: string;
   selected_option: string | null;
 }
+
+// ── Agent ──
+
+export interface Agent {
+  id: string;
+  project_id: string;
+  name: string;
+  system_prompt: string;
+  model: string | null;
+  allowed_tools: string[] | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface AgentCreate {
+  name: string;
+  system_prompt: string;
+  model?: string | null;
+  allowed_tools?: string[] | null;
+}
+
+export interface AgentUpdate {
+  name?: string;
+  system_prompt?: string;
+  model?: string | null;
+  allowed_tools?: string[] | null;
+}
+
+// ── Pipeline ──
+
+export interface PipelineStep {
+  id: string;
+  pipeline_id: string;
+  agent_id: string;
+  order_index: number;
+  terminal_command: string;
+}
+
+export interface PipelineStepCreate {
+  agent_id: string;
+  order_index?: number;
+  terminal_command?: string;
+}
+
+export interface Pipeline {
+  id: string;
+  project_id: string;
+  name: string;
+  steps: PipelineStep[];
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface PipelineCreate {
+  name: string;
+  steps?: PipelineStepCreate[];
+}
+
+export interface PipelineUpdate {
+  name: string;
+}
+
+export interface StepReorderRequest {
+  step_ids: string[];
+}
+
+// ── Pipeline Run ──
+
+export type PipelineRunStatus = "RUNNING" | "COMPLETED" | "FAILED";
+
+export type PipelineStepRunStatus = "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
+
+export interface PipelineStepRun {
+  id: string;
+  pipeline_run_id: string;
+  pipeline_step_id: string;
+  agent_name: string;
+  status: PipelineStepRunStatus;
+  terminal_id: number | null;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export interface PipelineRun {
+  id: string;
+  pipeline_id: string;
+  issue_id: string;
+  status: PipelineRunStatus;
+  current_step_index: number;
+  steps: PipelineStepRun[];
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string | null;
+}
+
+export interface PipelineRunStart {
+  pipeline_id: string;
+  issue_id: string;
+}
+
+// ── Pipeline Message ──
+
+export interface PipelineMessage {
+  id: string;
+  pipeline_run_id: string;
+  sender_agent_name: string;
+  content: string;
+  created_at: string | null;
+}
+
+export interface PipelineMessageCreate {
+  sender_agent_name: string;
+  content: string;
+}

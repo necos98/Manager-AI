@@ -1,0 +1,1 @@
+Aggiungere 8 MCP tools a server.py (create_agent, list_agents, create_pipeline, list_pipelines, run_pipeline, get_pipeline_run_status, send_agent_message, get_pipeline_messages) con descrizioni in default_settings.json. Registrare 3 nuovi router in main.py. Modificare ProjectService.create() per chiamare seed_defaults su agenti e pipeline.

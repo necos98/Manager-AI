@@ -25,7 +25,7 @@ from app.storage import memory_store as memory_store_module
 from app.storage import issue_store as issue_store_module
 from app.storage import file_store as file_store_module
 from app.middleware import ErrorLoggerMiddleware
-from app.routers import activity, credentials, events, files, issue_relations, issues, library, memories, network, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, questions, settings as settings_router, system, tasks, terminals, terminal_commands
+from app.routers import activity, agents, credentials, events, files, issue_relations, issues, library, memories, network, pipeline_runs, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, questions, settings as settings_router, system, tasks, terminals, terminal_commands
 from app.routers.projects import install_claude_resources_to
 
 logger = logging.getLogger(__name__)
@@ -378,6 +378,48 @@ async def lifespan(app):
             logger.exception("Failed to start MCP plugins; continuing startup")
 
         try:
+            from app.services.agent_service import AgentService
+            from app.services.pipeline_service import PipelineService
+            async with async_session() as seed_session:
+                for p in rows:
+                    try:
+                        await AgentService(seed_session).seed_defaults(p.id)
+                        await PipelineService(seed_session).seed_defaults(p.id)
+                        await seed_session.commit()
+                    except Exception:
+                        await seed_session.rollback()
+                        logger.warning(
+                            "Failed to seed defaults for project %s", p.id, exc_info=True
+                        )
+        except Exception:
+            logger.exception("Failed to seed default agents/pipelines; continuing startup")
+
+        # Mark orphaned pipeline runs as FAILED (server restart)
+        try:
+            from sqlalchemy import select as _select
+            from app.models.pipeline_run import PipelineRun as _PipelineRun, PipelineRunStatus as _PipelineRunStatus
+            from datetime import timezone as _timezone
+            async with async_session() as cleanup_session:
+                orphaned = await cleanup_session.execute(
+                    _select(_PipelineRun).where(
+                        _PipelineRun.status == _PipelineRunStatus.RUNNING
+                    )
+                )
+                count = 0
+                for run in orphaned.scalars().all():
+                    run.status = _PipelineRunStatus.FAILED
+                    run.finished_at = datetime.now(_timezone.utc)
+                    count += 1
+                if count:
+                    await cleanup_session.commit()
+                    logger.warning(
+                        "Startup cleanup: marked %d orphaned pipeline run(s) as FAILED",
+                        count,
+                    )
+        except Exception:
+            logger.exception("Failed to cleanup orphaned pipeline runs; continuing startup")
+
+        try:
             for p in rows:
                 try:
                     result = install_claude_resources_to(p.path)
@@ -418,6 +460,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(agents.router)
+app.include_router(pipelines.router)
+app.include_router(pipeline_runs.router)
 app.include_router(projects.router)
 app.include_router(projects.dashboard_router)
 app.include_router(project_links.router)

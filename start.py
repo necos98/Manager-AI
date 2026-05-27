@@ -190,6 +190,27 @@ def run_migrations():
     print("[ok] Database migrations complete")
 
 
+def _ensure_app_icon():
+    """Convert logo.png to logo.ico if missing or outdated."""
+    logo_png = ROOT / "logo.png"
+    logo_ico = ROOT / "logo.ico"
+
+    if not logo_png.exists():
+        return
+
+    if logo_ico.exists() and logo_ico.stat().st_mtime >= logo_png.stat().st_mtime:
+        return
+
+    try:
+        from PIL import Image
+
+        img = Image.open(logo_png)
+        img.save(logo_ico, format="ICO", sizes=[(16, 16), (32, 32), (48, 48), (256, 256)])
+        print("[ok] App icon created: logo.ico")
+    except Exception as e:
+        print(f"[!] Could not create logo.ico: {e}")
+
+
 def main():
     backend_port = int(os.environ.get("BACKEND_PORT", 8000))
 
@@ -282,6 +303,8 @@ def main():
 
     stop_event = threading.Event()
 
+    _ensure_app_icon()
+
     window = webview.create_window(
         "Manager AI",
         f"http://localhost:{FRONTEND_PORT}",
@@ -296,7 +319,16 @@ def main():
         Destroying the window unblocks webview.start() on the main thread,
         which then runs shutdown() in its finally clause.
         """
+        icon_set = False
         while not stop_event.is_set():
+            if not icon_set:
+                icon_set = True
+                try:
+                    sys.path.insert(0, str(BACKEND_DIR))
+                    from app.desktop_icon import set_app_window_icon
+                    set_app_window_icon("Manager AI", str(ROOT / "logo.ico"))
+                except Exception:
+                    pass
             for proc in processes:
                 ret = proc.poll()
                 if ret is not None:

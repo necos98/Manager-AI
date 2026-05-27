@@ -1,0 +1,54 @@
+schema_version: 1
+id: 07ea169d-a129-4661-bf7f-de08ca5ade28
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: '[Pipeline] Backend: MCP tools + main.py wiring + project seeding'
+status: Finished
+priority: 2
+category: null
+created_at: '2026-05-27T16:10:54.788146'
+updated_at: '2026-05-27T18:30:25.220865'
+finished_at: '2026-05-27T18:30:25.220887'
+tasks:
+- id: c4e03eaf-b50a-47be-bd04-a41acd31b177
+  name: Add 8 tool descriptions to default_settings.json
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T18:27:13'
+  updated_at: '2026-05-27T18:27:46'
+- id: 3b735838-5170-46e2-ab88-cb8475a4b17d
+  name: Add create_agent + list_agents MCP tools to server.py
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T18:27:13'
+  updated_at: '2026-05-27T18:28:18'
+- id: 48b8620f-8a37-4a2e-a360-b895b751a783
+  name: Add create_pipeline + list_pipelines MCP tools to server.py
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T18:27:13'
+  updated_at: '2026-05-27T18:28:32'
+- id: 6d3015b0-b388-4b17-adea-b832d2f4b819
+  name: Add run_pipeline MCP tool to server.py
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T18:27:13'
+  updated_at: '2026-05-27T18:28:32'
+- id: d0ec9028-6d7d-4f27-931f-9cabfa120f57
+  name: Add get_pipeline_run_status MCP tool to server.py
+  status: Completed
+  order: 4
+  created_at: '2026-05-27T18:27:13'
+  updated_at: '2026-05-27T18:28:33'
+- id: 4e312d8e-6b1c-4fae-a392-0918f9cad2ad
+  name: Add send_agent_message + get_pipeline_messages MCP tools to server.py
+  status: Completed
+  order: 5
+  created_at: '2026-05-27T18:27:13'
+  updated_at: '2026-05-27T18:28:34'
+- id: 0f76c0b3-4eeb-4f85-8c7f-674d1b7548af
+  name: Add seed_defaults calls to ProjectService.create()
+  status: Completed
+  order: 6
+  created_at: '2026-05-27T18:27:13'
+  updated_at: '2026-05-27T18:28:55'
+relations: []

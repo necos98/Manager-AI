@@ -1,0 +1,54 @@
+schema_version: 1
+id: a226bc78-942d-4b9a-87b5-8acd0abd11d6
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: '[Pipeline] Backend: PipelineRunService (orchestrator) + TaskManager + ArtifactService'
+status: Finished
+priority: 1
+category: null
+created_at: '2026-05-27T16:10:50.022445'
+updated_at: '2026-05-27T18:07:18.569923'
+finished_at: '2026-05-27T18:07:18.569936'
+tasks:
+- id: 45f26f01-18f2-4830-acc4-ea883f58bedb
+  name: Create Pydantic schemas (pipeline_run.py + update __init__.py)
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T17:56:41'
+  updated_at: '2026-05-27T17:57:08'
+- id: b241292a-b4b4-4644-bfe8-1d89391d3db9
+  name: Create ArtifactService
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T17:56:41'
+  updated_at: '2026-05-27T17:57:23'
+- id: 1e967f16-83ee-45f5-8f91-a27020f12be9
+  name: Create PipelineTaskManager
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T17:56:41'
+  updated_at: '2026-05-27T17:57:24'
+- id: aeddc5bd-e463-46fb-8e66-69eff096129f
+  name: Create PipelineRunService
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T17:56:41'
+  updated_at: '2026-05-27T17:58:09'
+- id: 744a4485-49e3-4e98-8986-b543be1b63e1
+  name: Create pipeline_runs router
+  status: Completed
+  order: 4
+  created_at: '2026-05-27T17:56:41'
+  updated_at: '2026-05-27T17:58:32'
+- id: b3d346f1-3d79-45a0-afbd-39f2ea77c31a
+  name: Wire up in main.py (router + startup cleanup)
+  status: Completed
+  order: 5
+  created_at: '2026-05-27T17:56:41'
+  updated_at: '2026-05-27T17:58:54'
+- id: e6c0ed51-8e2a-46da-b69c-681b66b39888
+  name: Write tests for PipelineRunService
+  status: Completed
+  order: 6
+  created_at: '2026-05-27T17:56:41'
+  updated_at: '2026-05-27T18:07:05'
+relations: []

@@ -1,0 +1,1 @@
+Ho un logo dell'applicativo da inserire, come faccio a farlo vedere nell'icona del programma aperto? perchè adesso si apre una webview che ha l'icona di un applicativo python. E' possibile fare ciò?

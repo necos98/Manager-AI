@@ -168,6 +168,25 @@ function buildToastContent(data: WsEventData): ToastContent {
     case "tts":
       return { title: "", message: "", variant: "default", silent: true };
 
+    case "agent_step_started":
+    case "agent_step_completed":
+    case "agent_terminal_created":
+      return { title: "", message: "", variant: "default", silent: true };
+
+    case "agent_step_failed":
+      return {
+        title: "Step Failed",
+        message: (data.agent_name as string) || "A pipeline step failed",
+        variant: "error",
+      };
+
+    case "pipeline_completed":
+      return {
+        title: "Pipeline Completed",
+        message: (data.issue_name as string) || "",
+        variant: "success",
+      };
+
     case "terminal_created":
       return {
         title: "Analysis started",
@@ -278,6 +297,19 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         const toastContent = buildToastContent(data);
         showToast(toastContent, action);
         if (!toastContent.silent) playNotificationSound();
+
+        // Invalidate pipeline run queries on pipeline events
+        if (
+          data.type === "agent_step_started" ||
+          data.type === "agent_step_completed" ||
+          data.type === "agent_step_failed" ||
+          data.type === "pipeline_completed" ||
+          data.type === "agent_terminal_created"
+        ) {
+          if (data.project_id) {
+            queryClient.invalidateQueries({ queryKey: ["pipeline-runs", data.project_id] });
+          }
+        }
 
         // Invalidate terminal queries when a new terminal is spawned
         if (data.type === "terminal_created") {

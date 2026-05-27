@@ -10,7 +10,7 @@ import { TERMINAL_THEMES } from "@/features/terminals/themes";
 import { useSettings } from "@/features/settings/hooks";
 import { useTerminalContext } from "@/features/terminals/contexts/terminal-context";
 import { FileGalleryModal } from "@/features/files/components/file-gallery-modal";
-import { SpeechModal } from "@/features/terminals/components/speech-modal";
+import { SpeechModal } from "@/shared/components/speech-modal";
 import type { ProjectFile } from "@/shared/types";
 import "xterm/css/xterm.css";
 

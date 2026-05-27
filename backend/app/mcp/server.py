@@ -11,8 +11,11 @@ from sqlalchemy import select
 
 from app.database import async_session
 from app.exceptions import AppError
+from app.services.agent_service import AgentService
 from app.services.event_service import event_service
 from app.services.issue_service import IssueService
+from app.services.pipeline_run_service import PipelineRunService
+from app.services.pipeline_service import PipelineService
 from app.services.project_service import ProjectService
 from app.models.task import TaskStatus
 from app.services.task_service import TaskService
@@ -951,3 +954,180 @@ async def ask_user_question(issue_id: str, question: str, options: list[str] | N
         "selected_option": updated.selected_option if updated else None,
         "timed_out": False,
     }
+
+
+# ── Agent tools ────────────────────────────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.create_agent.description"])
+async def create_agent(project_id: str, name: str, system_prompt: str, model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
+    async with async_session() as session:
+        svc = AgentService(session)
+        try:
+            agent = await svc.create(
+                project_id=project_id,
+                name=name,
+                system_prompt=system_prompt,
+                model=model,
+                allowed_tools=allowed_tools,
+            )
+            await session.commit()
+            return {
+                "id": agent.id,
+                "project_id": agent.project_id,
+                "name": agent.name,
+                "system_prompt": agent.system_prompt,
+                "model": agent.model,
+                "allowed_tools": agent.allowed_tools,
+                "created_at": str(agent.created_at) if agent.created_at else None,
+                "updated_at": str(agent.updated_at) if agent.updated_at else None,
+            }
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.list_agents.description"])
+async def list_agents(project_id: str) -> dict:
+    async with async_session() as session:
+        svc = AgentService(session)
+        agents = await svc.list_by_project(project_id)
+        return {
+            "agents": [
+                {
+                    "id": a.id,
+                    "project_id": a.project_id,
+                    "name": a.name,
+                    "system_prompt": a.system_prompt,
+                    "model": a.model,
+                    "allowed_tools": a.allowed_tools,
+                    "created_at": str(a.created_at) if a.created_at else None,
+                    "updated_at": str(a.updated_at) if a.updated_at else None,
+                }
+                for a in agents
+            ]
+        }
+
+
+# ── Pipeline tools ────────────────────────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.create_pipeline.description"])
+async def create_pipeline(project_id: str, name: str, steps: list[dict]) -> dict:
+    async with async_session() as session:
+        svc = PipelineService(session)
+        try:
+            pipeline = await svc.create_pipeline(project_id, name)
+            for step_data in steps:
+                await svc.add_step(
+                    pipeline_id=pipeline.id,
+                    agent_id=step_data["agent_id"],
+                    order_index=step_data.get("order_index", 0),
+                    terminal_command=step_data.get("terminal_command", ""),
+                )
+            await session.commit()
+            pipeline = await svc.get_pipeline(pipeline.id)
+            return {
+                "id": pipeline.id,
+                "project_id": pipeline.project_id,
+                "name": pipeline.name,
+                "steps": [
+                    {
+                        "id": s.id,
+                        "pipeline_id": s.pipeline_id,
+                        "agent_id": s.agent_id,
+                        "order_index": s.order_index,
+                        "terminal_command": s.terminal_command,
+                    }
+                    for s in (pipeline.steps or [])
+                ],
+                "created_at": str(pipeline.created_at) if pipeline.created_at else None,
+                "updated_at": str(pipeline.updated_at) if pipeline.updated_at else None,
+            }
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.list_pipelines.description"])
+async def list_pipelines(project_id: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineService(session)
+        pipelines = await svc.list_by_project(project_id)
+        return {
+            "pipelines": [
+                {
+                    "id": p.id,
+                    "project_id": p.project_id,
+                    "name": p.name,
+                    "steps": [
+                        {
+                            "id": s.id,
+                            "pipeline_id": s.pipeline_id,
+                            "agent_id": s.agent_id,
+                            "order_index": s.order_index,
+                            "terminal_command": s.terminal_command,
+                        }
+                        for s in (p.steps or [])
+                    ],
+                    "created_at": str(p.created_at) if p.created_at else None,
+                    "updated_at": str(p.updated_at) if p.updated_at else None,
+                }
+                for p in pipelines
+            ]
+        }
+
+
+# ── Pipeline run tools ────────────────────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.run_pipeline.description"])
+async def run_pipeline(project_id: str, pipeline_id: str, issue_id: str) -> dict:
+    async with async_session() as session:
+        try:
+            project = await ProjectService(session).get_by_id(project_id)
+        except AppError as e:
+            return {"error": e.message}
+        svc = PipelineRunService(session, session_factory=async_session)
+        try:
+            result = await svc.start(
+                pipeline_id=pipeline_id,
+                issue_id=issue_id,
+                project_id=project_id,
+                project_path=project.path,
+            )
+            await session.commit()
+            return result
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.get_pipeline_run_status.description"])
+async def get_pipeline_run_status(run_id: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineRunService(session)
+        try:
+            return await svc.get_run(run_id)
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.send_agent_message.description"])
+async def send_agent_message(run_id: str, sender_agent_name: str, content: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineRunService(session)
+        try:
+            result = await svc.add_message(
+                run_id=run_id,
+                sender_agent_name=sender_agent_name,
+                content=content,
+            )
+            await session.commit()
+            return result
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.get_pipeline_messages.description"])
+async def get_pipeline_messages(run_id: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineRunService(session)
+        return {"messages": await svc.get_messages(run_id)}

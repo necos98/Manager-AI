@@ -1,0 +1,54 @@
+schema_version: 1
+id: 28128841-a33c-4d72-a917-d1e91bd83317
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: '[Pipeline] Backend: Pydantic schemas + REST routers'
+status: Finished
+priority: 2
+category: null
+created_at: '2026-05-27T16:10:52.624743'
+updated_at: '2026-05-27T18:20:23.531318'
+finished_at: '2026-05-27T18:20:23.531332'
+tasks:
+- id: 768a672b-f2a3-4be2-a109-8d3ae4601c8d
+  name: Write Pydantic schemas (agent.py, pipeline.py, pipeline_run.py)
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T18:19:46'
+  updated_at: '2026-05-27T18:20:10'
+- id: 4c057ee7-e889-427e-9c51-d4c97175c3ec
+  name: Update schemas/__init__.py exports
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T18:19:46'
+  updated_at: '2026-05-27T18:20:11'
+- id: 844f1c52-8f4c-4af7-8513-a35517a9a5ce
+  name: Write agents router (CRUD + seed)
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T18:19:46'
+  updated_at: '2026-05-27T18:20:12'
+- id: 86da2b9f-0654-4a83-9389-675199e5d491
+  name: Write pipelines router (CRUD pipeline + steps + reorder + seed)
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T18:19:46'
+  updated_at: '2026-05-27T18:20:13'
+- id: 1207b8af-dcb8-4dea-9fda-6b6496377834
+  name: Write pipeline_runs router (start, status, cancel, messages)
+  status: Completed
+  order: 4
+  created_at: '2026-05-27T18:19:46'
+  updated_at: '2026-05-27T18:20:14'
+- id: d31c6c24-12a2-4685-8d8c-53fa5cf49119
+  name: Register routers in main.py
+  status: Completed
+  order: 5
+  created_at: '2026-05-27T18:19:46'
+  updated_at: '2026-05-27T18:20:14'
+- id: 41e15519-2156-4d39-a559-b5be160a461a
+  name: Run tests and verify
+  status: Completed
+  order: 6
+  created_at: '2026-05-27T18:19:46'
+  updated_at: '2026-05-27T18:20:15'
+relations: []

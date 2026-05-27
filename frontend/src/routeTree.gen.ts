@@ -20,6 +20,7 @@ import { Route as ProjectsArchivedRouteImport } from "./routes/projects/archived
 import { Route as ProjectsProjectIdRouteImport } from "./routes/projects/$projectId"
 import { Route as ProjectsProjectIdVariablesRouteImport } from "./routes/projects/$projectId/variables"
 import { Route as ProjectsProjectIdPluginsRouteImport } from "./routes/projects/$projectId/plugins"
+import { Route as ProjectsProjectIdPipelinesRouteImport } from "./routes/projects/$projectId/pipelines"
 import { Route as ProjectsProjectIdMemoriesRouteImport } from "./routes/projects/$projectId/memories"
 import { Route as ProjectsProjectIdLibraryRouteImport } from "./routes/projects/$projectId/library"
 import { Route as ProjectsProjectIdIssuesRouteImport } from "./routes/projects/$projectId/issues"
@@ -27,6 +28,7 @@ import { Route as ProjectsProjectIdHealthRouteImport } from "./routes/projects/$
 import { Route as ProjectsProjectIdFilesRouteImport } from "./routes/projects/$projectId/files"
 import { Route as ProjectsProjectIdCommandsRouteImport } from "./routes/projects/$projectId/commands"
 import { Route as ProjectsProjectIdAskRouteImport } from "./routes/projects/$projectId/ask"
+import { Route as ProjectsProjectIdAgentsRouteImport } from "./routes/projects/$projectId/agents"
 import { Route as ProjectsProjectIdActivityRouteImport } from "./routes/projects/$projectId/activity"
 import { Route as ProjectsProjectIdIssuesIndexRouteImport } from "./routes/projects/$projectId/issues/index"
 import { Route as ProjectsProjectIdIssuesIssueIdRouteImport } from "./routes/projects/$projectId/issues/$issueId"
@@ -88,6 +90,12 @@ const ProjectsProjectIdPluginsRoute =
     path: "/plugins",
     getParentRoute: () => ProjectsProjectIdRoute,
   } as any)
+const ProjectsProjectIdPipelinesRoute =
+  ProjectsProjectIdPipelinesRouteImport.update({
+    id: "/pipelines",
+    path: "/pipelines",
+    getParentRoute: () => ProjectsProjectIdRoute,
+  } as any)
 const ProjectsProjectIdMemoriesRoute =
   ProjectsProjectIdMemoriesRouteImport.update({
     id: "/memories",
@@ -126,6 +134,11 @@ const ProjectsProjectIdAskRoute = ProjectsProjectIdAskRouteImport.update({
   path: "/ask",
   getParentRoute: () => ProjectsProjectIdRoute,
 } as any)
+const ProjectsProjectIdAgentsRoute = ProjectsProjectIdAgentsRouteImport.update({
+  id: "/agents",
+  path: "/agents",
+  getParentRoute: () => ProjectsProjectIdRoute,
+} as any)
 const ProjectsProjectIdActivityRoute =
   ProjectsProjectIdActivityRouteImport.update({
     id: "/activity",
@@ -156,6 +169,7 @@ export interface FileRoutesByFullPath {
   "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
+  "/projects/$projectId/agents": typeof ProjectsProjectIdAgentsRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
@@ -163,6 +177,7 @@ export interface FileRoutesByFullPath {
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
   "/projects/$projectId/memories": typeof ProjectsProjectIdMemoriesRoute
+  "/projects/$projectId/pipelines": typeof ProjectsProjectIdPipelinesRoute
   "/projects/$projectId/plugins": typeof ProjectsProjectIdPluginsRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
@@ -179,12 +194,14 @@ export interface FileRoutesByTo {
   "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
+  "/projects/$projectId/agents": typeof ProjectsProjectIdAgentsRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
   "/projects/$projectId/health": typeof ProjectsProjectIdHealthRoute
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
   "/projects/$projectId/memories": typeof ProjectsProjectIdMemoriesRoute
+  "/projects/$projectId/pipelines": typeof ProjectsProjectIdPipelinesRoute
   "/projects/$projectId/plugins": typeof ProjectsProjectIdPluginsRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
@@ -202,6 +219,7 @@ export interface FileRoutesById {
   "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
+  "/projects/$projectId/agents": typeof ProjectsProjectIdAgentsRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
   "/projects/$projectId/files": typeof ProjectsProjectIdFilesRoute
@@ -209,6 +227,7 @@ export interface FileRoutesById {
   "/projects/$projectId/issues": typeof ProjectsProjectIdIssuesRouteWithChildren
   "/projects/$projectId/library": typeof ProjectsProjectIdLibraryRoute
   "/projects/$projectId/memories": typeof ProjectsProjectIdMemoriesRoute
+  "/projects/$projectId/pipelines": typeof ProjectsProjectIdPipelinesRoute
   "/projects/$projectId/plugins": typeof ProjectsProjectIdPluginsRoute
   "/projects/$projectId/variables": typeof ProjectsProjectIdVariablesRoute
   "/projects/$projectId/issues/$issueId": typeof ProjectsProjectIdIssuesIssueIdRoute
@@ -227,6 +246,7 @@ export interface FileRouteTypes {
     | "/projects/archived"
     | "/projects/new"
     | "/projects/$projectId/activity"
+    | "/projects/$projectId/agents"
     | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
@@ -234,6 +254,7 @@ export interface FileRouteTypes {
     | "/projects/$projectId/issues"
     | "/projects/$projectId/library"
     | "/projects/$projectId/memories"
+    | "/projects/$projectId/pipelines"
     | "/projects/$projectId/plugins"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
@@ -250,12 +271,14 @@ export interface FileRouteTypes {
     | "/projects/archived"
     | "/projects/new"
     | "/projects/$projectId/activity"
+    | "/projects/$projectId/agents"
     | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
     | "/projects/$projectId/health"
     | "/projects/$projectId/library"
     | "/projects/$projectId/memories"
+    | "/projects/$projectId/pipelines"
     | "/projects/$projectId/plugins"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
@@ -272,6 +295,7 @@ export interface FileRouteTypes {
     | "/projects/archived"
     | "/projects/new"
     | "/projects/$projectId/activity"
+    | "/projects/$projectId/agents"
     | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
     | "/projects/$projectId/files"
@@ -279,6 +303,7 @@ export interface FileRouteTypes {
     | "/projects/$projectId/issues"
     | "/projects/$projectId/library"
     | "/projects/$projectId/memories"
+    | "/projects/$projectId/pipelines"
     | "/projects/$projectId/plugins"
     | "/projects/$projectId/variables"
     | "/projects/$projectId/issues/$issueId"
@@ -376,6 +401,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ProjectsProjectIdPluginsRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
+    "/projects/$projectId/pipelines": {
+      id: "/projects/$projectId/pipelines"
+      path: "/pipelines"
+      fullPath: "/projects/$projectId/pipelines"
+      preLoaderRoute: typeof ProjectsProjectIdPipelinesRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
     "/projects/$projectId/memories": {
       id: "/projects/$projectId/memories"
       path: "/memories"
@@ -425,6 +457,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ProjectsProjectIdAskRouteImport
       parentRoute: typeof ProjectsProjectIdRoute
     }
+    "/projects/$projectId/agents": {
+      id: "/projects/$projectId/agents"
+      path: "/agents"
+      fullPath: "/projects/$projectId/agents"
+      preLoaderRoute: typeof ProjectsProjectIdAgentsRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
     "/projects/$projectId/activity": {
       id: "/projects/$projectId/activity"
       path: "/activity"
@@ -467,6 +506,7 @@ const ProjectsProjectIdIssuesRouteWithChildren =
 
 interface ProjectsProjectIdRouteChildren {
   ProjectsProjectIdActivityRoute: typeof ProjectsProjectIdActivityRoute
+  ProjectsProjectIdAgentsRoute: typeof ProjectsProjectIdAgentsRoute
   ProjectsProjectIdAskRoute: typeof ProjectsProjectIdAskRoute
   ProjectsProjectIdCommandsRoute: typeof ProjectsProjectIdCommandsRoute
   ProjectsProjectIdFilesRoute: typeof ProjectsProjectIdFilesRoute
@@ -474,12 +514,14 @@ interface ProjectsProjectIdRouteChildren {
   ProjectsProjectIdIssuesRoute: typeof ProjectsProjectIdIssuesRouteWithChildren
   ProjectsProjectIdLibraryRoute: typeof ProjectsProjectIdLibraryRoute
   ProjectsProjectIdMemoriesRoute: typeof ProjectsProjectIdMemoriesRoute
+  ProjectsProjectIdPipelinesRoute: typeof ProjectsProjectIdPipelinesRoute
   ProjectsProjectIdPluginsRoute: typeof ProjectsProjectIdPluginsRoute
   ProjectsProjectIdVariablesRoute: typeof ProjectsProjectIdVariablesRoute
 }
 
 const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
   ProjectsProjectIdActivityRoute: ProjectsProjectIdActivityRoute,
+  ProjectsProjectIdAgentsRoute: ProjectsProjectIdAgentsRoute,
   ProjectsProjectIdAskRoute: ProjectsProjectIdAskRoute,
   ProjectsProjectIdCommandsRoute: ProjectsProjectIdCommandsRoute,
   ProjectsProjectIdFilesRoute: ProjectsProjectIdFilesRoute,
@@ -487,6 +529,7 @@ const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
   ProjectsProjectIdIssuesRoute: ProjectsProjectIdIssuesRouteWithChildren,
   ProjectsProjectIdLibraryRoute: ProjectsProjectIdLibraryRoute,
   ProjectsProjectIdMemoriesRoute: ProjectsProjectIdMemoriesRoute,
+  ProjectsProjectIdPipelinesRoute: ProjectsProjectIdPipelinesRoute,
   ProjectsProjectIdPluginsRoute: ProjectsProjectIdPluginsRoute,
   ProjectsProjectIdVariablesRoute: ProjectsProjectIdVariablesRoute,
 }

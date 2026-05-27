@@ -1,0 +1,1 @@
+Aggiungere tipi TypeScript (Agent, Pipeline, PipelineStep, PipelineRunStatus, PipelineStepRunStatus, PipelineMessage) in shared/types/index.ts. Creare API layer (api.ts) e React Query hooks (hooks.ts) per agenti, pipeline, pipeline run, messages. Seguire pattern delle feature esistenti (es. terminals).

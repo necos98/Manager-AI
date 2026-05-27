@@ -1,0 +1,1 @@
+Creare Pydantic schemas (agent.py, pipeline.py, pipeline_run.py) e REST routers (agents.py, pipelines.py, pipeline_runs.py). Router seguono pattern esistente: prefix /api/projects/{project_id}/..., Depends(get_db), async session. CRUD standard + endpoint start run + get status + get messages.

@@ -1,0 +1,42 @@
+schema_version: 1
+id: 9b3c5327-acb5-467d-a954-b85a62034d75
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Custom application window icon (taskbar + title bar)
+status: Finished
+priority: 3
+category: null
+created_at: '2026-05-27T18:44:13.864356'
+updated_at: '2026-05-27T18:53:49.982357'
+finished_at: '2026-05-27T18:53:49.982385'
+tasks:
+- id: 57b05094-7203-4f51-9d84-0de0a2049c7b
+  name: Aggiungere conversione logo.png → logo.ico in start.py
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T18:50:24'
+  updated_at: '2026-05-27T18:50:50'
+- id: 337e39d3-e018-4d67-ba58-6e3dcfd91855
+  name: Creare modulo backend/app/desktop_icon.py con set_app_window_icon()
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T18:50:24'
+  updated_at: '2026-05-27T18:51:18'
+- id: ce601413-916f-46d7-b65d-65b81655c7c3
+  name: Integrare chiamata a set_app_window_icon in start.py
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T18:50:24'
+  updated_at: '2026-05-27T18:51:48'
+- id: 7ca8bb2b-3ad0-4ec1-95cc-5e46c3f2594e
+  name: Copiare logo.png in frontend/public/ e aggiornare index.html favicon
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T18:50:24'
+  updated_at: '2026-05-27T18:52:09'
+- id: e673594f-3dba-499d-9979-2cccb090e2f0
+  name: 'Test end-to-end: avviare app e verificare icona finestra'
+  status: Completed
+  order: 4
+  created_at: '2026-05-27T18:50:24'
+  updated_at: '2026-05-27T18:53:37'
+relations: []

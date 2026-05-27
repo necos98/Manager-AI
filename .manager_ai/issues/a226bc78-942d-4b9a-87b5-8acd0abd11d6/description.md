@@ -1,0 +1,1 @@
+Creare PipelineRunService (orchestrator core): start() lancia esecuzione background, _execute() cicla step in ordine spawnando subprocess con log terminal, stream output, detect exit code, gestisce FAILED. PipelineTaskManager come registry per i task asyncio. ArtifactService per salvare/leggere file artifacts (answers.md etc).

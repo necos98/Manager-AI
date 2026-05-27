@@ -1,0 +1,1 @@
+Creare componenti UI: AgentsTab (lista + CRUD agenti), PipelinesTab (lista + CRUD pipeline con step builder), PipelineRunButton (selettore pipeline + avvia), PipelineProgress (stato step + TerminalPanel readOnly per output), AgentChat (messaggi tra agenti). Nuove pagine /agents e /pipelines. Integrare pulsante Run Pipeline e progress panel nella pagina issue ($issueId.tsx).

@@ -1,0 +1,1 @@
+Implementare sistema di pipeline agenti personalizzabile. I modelli DB esistono già (Agent, Pipeline, PipelineStep, PipelineRun, PipelineStepRun, PipelineMessage) ma non c'è wiring: servizi, router, MCP tools, UI. L'obiettivo è creare pipeline configurabili per progetto con step sequenziali eseguiti da agenti Claude Code, output streammato via log terminal, e chat tra agenti.

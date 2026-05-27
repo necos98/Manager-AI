@@ -1,0 +1,1 @@
+Inserire il sintetizzatore vocale anche nella modale di "New Issue" come fatto per quando si scrive nel terminale

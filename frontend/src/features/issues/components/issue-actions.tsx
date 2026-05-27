@@ -17,6 +17,7 @@ import {
   useCompleteIssue,
 } from "@/features/issues/hooks";
 import { useCreateTerminal } from "@/features/terminals/hooks";
+import { PipelineRunButton } from "@/features/pipeline-runs/components/PipelineRunButton";
 import type { Issue } from "@/shared/types";
 
 interface IssueActionsProps {
@@ -111,6 +112,11 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
           <Play className="size-4 mr-1" />
           {createTerminal.isPending ? "Opening..." : "Run Issue"}
         </Button>
+        <PipelineRunButton
+          projectId={projectId}
+          issueId={issue.id}
+          disabled={isPending}
+        />
         <Button
           size="sm"
           variant="outline"

@@ -6,6 +6,7 @@ import {
   ChevronsUp,
   Equal,
   FilePlus,
+  Mic,
   Paperclip,
   type LucideIcon,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 import { useCreateIssue, useProjectTags } from "@/features/issues/hooks";
 import { TagInput } from "./tag-input";
 import { FileGalleryModal } from "@/features/files/components/file-gallery-modal";
+import { SpeechModal } from "@/shared/components/speech-modal";
 import {
   Dialog,
   DialogContent,
@@ -61,6 +63,7 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
   const [tags, setTags] = useState<string[]>([]);
   const [category, setCategory] = useState<string | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [speechOpen, setSpeechOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const createIssue = useCreateIssue(projectId);
   const { data: availableTags } = useProjectTags(projectId);
@@ -89,6 +92,24 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
       setDescription((prev) => prev + tag);
     }
     setGalleryOpen(false);
+  }, []);
+
+  const handleSpeechSend = useCallback((text: string) => {
+    setSpeechOpen(false);
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      setDescription((prev) => prev.slice(0, start) + text + prev.slice(end));
+      requestAnimationFrame(() => {
+        const newPos = start + text.length;
+        textarea.selectionStart = newPos;
+        textarea.selectionEnd = newPos;
+        textarea.focus();
+      });
+    } else {
+      setDescription((prev) => prev + text);
+    }
   }, []);
 
   const handleOpenChange = (next: boolean) => {
@@ -155,16 +176,28 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
             >
               {description.length.toLocaleString()} / {DESCRIPTION_MAX.toLocaleString()}
             </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => setGalleryOpen(true)}
-            >
-              <Paperclip className="size-4 mr-2" />
-              Browse Files
-            </Button>
+            <div className="flex gap-2 mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setGalleryOpen(true)}
+              >
+                <Paperclip className="size-4 mr-2" />
+                Browse Files
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSpeechOpen(true)}
+                title="Voice input"
+                aria-label="Voice input"
+              >
+                <Mic className="size-4 mr-2" />
+                Voice
+              </Button>
+            </div>
           </div>
 
           <div>
@@ -247,6 +280,11 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
         onClose={() => setGalleryOpen(false)}
         projectId={projectId}
         onSelect={handleFileSelect}
+      />
+      <SpeechModal
+        open={speechOpen}
+        onClose={() => setSpeechOpen(false)}
+        onSend={handleSpeechSend}
       />
     </Dialog>
   );

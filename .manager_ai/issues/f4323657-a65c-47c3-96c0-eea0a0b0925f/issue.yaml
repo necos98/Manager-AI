@@ -1,0 +1,60 @@
+schema_version: 1
+id: f4323657-a65c-47c3-96c0-eea0a0b0925f
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: '[Pipeline] Frontend: TypeScript types + API layer + hooks'
+status: Finished
+priority: 3
+category: null
+created_at: '2026-05-27T16:10:57.300004'
+updated_at: '2026-05-27T18:41:26.375841'
+finished_at: '2026-05-27T18:41:26.375855'
+tasks:
+- id: d2bd0359-c17c-4a66-a38a-e17f579675e0
+  name: Add Agent, Pipeline, PipelineRun, PipelineMessage types to shared/types/index.ts
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T18:39:23'
+  updated_at: '2026-05-27T18:39:48'
+- id: 750e9a78-5a56-4fbf-a44b-2f1b7fd4d5d8
+  name: Create agents/api.ts with CRUD + seed endpoints
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T18:39:23'
+  updated_at: '2026-05-27T18:40:35'
+- id: 9e2bb300-8256-4ed0-a78e-2e42dcd39a32
+  name: Create agents/hooks.ts with React Query hooks
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T18:39:23'
+  updated_at: '2026-05-27T18:40:50'
+- id: 231395d7-a764-47b5-9c90-9592bba2a432
+  name: Create pipelines/api.ts with CRUD + steps + reorder + seed endpoints
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T18:39:23'
+  updated_at: '2026-05-27T18:40:51'
+- id: 5c7dc3d1-85fa-4739-9cab-de0ad92d28bf
+  name: Create pipelines/hooks.ts with React Query hooks
+  status: Completed
+  order: 4
+  created_at: '2026-05-27T18:39:23'
+  updated_at: '2026-05-27T18:40:51'
+- id: 5723d76a-c5f8-4c9e-9106-f9b18ed5efe5
+  name: Create pipeline-runs/api.ts with run + messages endpoints
+  status: Completed
+  order: 5
+  created_at: '2026-05-27T18:39:23'
+  updated_at: '2026-05-27T18:40:52'
+- id: 425f4a07-a624-411b-b207-de1d458c2c65
+  name: Create pipeline-runs/hooks.ts with React Query hooks
+  status: Completed
+  order: 6
+  created_at: '2026-05-27T18:39:23'
+  updated_at: '2026-05-27T18:40:53'
+- id: d657c013-a2f1-4d85-b53c-09677a4691a0
+  name: 'Verify: tsc --noEmit + ESLint pass'
+  status: Completed
+  order: 7
+  created_at: '2026-05-27T18:39:23'
+  updated_at: '2026-05-27T18:41:16'
+relations: []

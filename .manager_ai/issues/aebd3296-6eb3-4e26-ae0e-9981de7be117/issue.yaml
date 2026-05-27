@@ -1,0 +1,66 @@
+schema_version: 1
+id: aebd3296-6eb3-4e26-ae0e-9981de7be117
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: '[Pipeline] Backend: AgentService + PipelineService'
+status: Finished
+priority: 1
+category: null
+created_at: '2026-05-27T16:10:47.028672'
+updated_at: '2026-05-27T16:26:41.793616'
+finished_at: '2026-05-27T16:26:41.793626'
+tasks:
+- id: 7a43475e-3ad9-426c-a877-dee741876c07
+  name: Create Agent schemas (agent.py)
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T16:22:32'
+  updated_at: '2026-05-27T16:22:48'
+- id: a75bccb1-def2-409a-98da-29402846f808
+  name: Create Pipeline schemas (pipeline.py)
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T16:22:32'
+  updated_at: '2026-05-27T16:22:55'
+- id: 7623a8ae-b14e-4b48-9f6a-bc63163c2d98
+  name: Update schemas __init__.py exports
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T16:22:32'
+  updated_at: '2026-05-27T16:23:04'
+- id: ae109fc2-924e-484e-b8f9-8c478c171c38
+  name: Create AgentService (CRUD + seed_defaults)
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T16:22:32'
+  updated_at: '2026-05-27T16:23:22'
+- id: 5f250053-2e15-404c-b6cc-83643341cc6d
+  name: Create PipelineService (CRUD pipeline/step + seed_defaults)
+  status: Completed
+  order: 4
+  created_at: '2026-05-27T16:22:32'
+  updated_at: '2026-05-27T16:23:38'
+- id: 494725d7-9cd1-4e78-9bb8-d34992e1f9e8
+  name: Create agents router
+  status: Completed
+  order: 5
+  created_at: '2026-05-27T16:22:32'
+  updated_at: '2026-05-27T16:23:50'
+- id: c89e1f34-b972-4051-a300-c620f8d29005
+  name: Create pipelines router
+  status: Completed
+  order: 6
+  created_at: '2026-05-27T16:22:32'
+  updated_at: '2026-05-27T16:24:05'
+- id: 584762b0-d5a6-45aa-8402-ef1a08c31558
+  name: Register routers in main.py
+  status: Completed
+  order: 7
+  created_at: '2026-05-27T16:22:32'
+  updated_at: '2026-05-27T16:24:16'
+- id: 19a98013-ea61-4065-9cda-c3627dc13566
+  name: Add seed trigger in main.py lifespan
+  status: Completed
+  order: 8
+  created_at: '2026-05-27T16:22:32'
+  updated_at: '2026-05-27T16:24:49'
+relations: []

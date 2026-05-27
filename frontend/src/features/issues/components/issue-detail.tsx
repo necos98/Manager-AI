@@ -34,6 +34,8 @@ import { InlineEditField } from "./inline-edit-field";
 import { TagInput } from "./tag-input";
 import { useDeleteIssue, useUpdateIssue, useProjectTags } from "@/features/issues/hooks";
 import { useKillTerminal } from "@/features/terminals/hooks";
+import { usePipelineRuns } from "@/features/pipeline-runs/hooks";
+import { AgentChat } from "@/features/pipeline-runs/components/AgentChat";
 import type { Issue } from "@/shared/types";
 import { IssueRelationsTab } from "./issue-relations-tab";
 
@@ -56,6 +58,7 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
   const killTerminal = useKillTerminal();
   const updateIssue = useUpdateIssue(projectId, issue.id);
   const { data: availableTags } = useProjectTags(projectId);
+  const { data: pipelineRuns } = usePipelineRuns(projectId, issue.id);
   const [showTagInput, setShowTagInput] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("");
 
@@ -65,8 +68,9 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
     { value: "plan", label: "Plan", available: !!issue.plan },
     { value: "tasks", label: "Tasks", available: true },
     { value: "relations", label: "Relations", available: true },
+    { value: "chat", label: "Agent Chat", available: !!(pipelineRuns && pipelineRuns.length > 0) },
     { value: "recap", label: "Recap", available: !!issue.recap },
-  ], [issue.specification, issue.plan, issue.recap]);
+  ], [issue.specification, issue.plan, issue.recap, pipelineRuns]);
 
   const availableTabs = tabs.filter((t) => t.available);
   const defaultTab = availableTabs[0]?.value ?? "description";
@@ -276,6 +280,14 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
 
         <TabsContent value="relations">
           <IssueRelationsTab issue={issue} projectId={projectId} />
+        </TabsContent>
+
+        <TabsContent value="chat" className="mt-4">
+          <Card>
+            <CardContent className="pt-6">
+              <AgentChat projectId={projectId} issueId={issue.id} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {issue.recap && (

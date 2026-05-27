@@ -1,0 +1,1 @@
+Creare AgentService (CRUD + seed_defaults con 6 agenti predefiniti: CodebaseExplorer, BrainstormingAgent, SpecWriter, PlanWriter, Developer, Reviewer) e PipelineService (CRUD pipeline/step + seed_default con pipeline base 6-step). Entrambi prendono AsyncSession, pattern uguale a IssueService.

@@ -3,7 +3,7 @@ import { Mic, MicOff, Send, X } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { useSpeechRecognition } from "@/features/terminals/hooks/use-speech-recognition";
+import { useSpeechRecognition } from "@/shared/hooks/use-speech-recognition";
 
 interface SpeechModalProps {
   open: boolean;

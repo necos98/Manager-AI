@@ -1,0 +1,36 @@
+schema_version: 1
+id: 106f4fd3-e4cb-4c7e-bae9-52ae3badd0f6
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Add speech-to-text to New Issue modal
+status: Finished
+priority: 3
+category: Feature
+created_at: '2026-05-27T18:13:06.356331'
+updated_at: '2026-05-27T18:17:04.479307'
+finished_at: '2026-05-27T18:17:04.479321'
+tasks:
+- id: 8a1c2363-97f6-4d15-a060-4b09427e8f94
+  name: Move useSpeechRecognition hook to shared/hooks/
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T18:14:59'
+  updated_at: '2026-05-27T18:15:24'
+- id: 1e6561c6-aa8e-4380-9124-e8ed863c21ab
+  name: Move SpeechModal component to shared/components/
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T18:14:59'
+  updated_at: '2026-05-27T18:15:47'
+- id: 76f6c0f0-3e6b-4119-a85f-b431ba60e7da
+  name: Update TerminalPanel imports to new shared paths
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T18:14:59'
+  updated_at: '2026-05-27T18:15:58'
+- id: 2f881725-07ce-4a8e-91b0-3fa4b0b6f420
+  name: Add voice input mic button to NewIssueDialog
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T18:14:59'
+  updated_at: '2026-05-27T18:16:56'
+relations: []
