@@ -398,6 +398,7 @@ class IssueService:
         if not issue_store.issue_exists(path, issue_id):
             return False
         issue_store.delete_issue(path, issue_id)
+        issue_store.delete_issue_files(path, issue_id)
         return True
 
     async def add_feedback(self, issue_id: str, project_id: str, content: str) -> FeedbackRecord:

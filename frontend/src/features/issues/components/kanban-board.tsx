@@ -5,7 +5,7 @@ import { Button } from "@/shared/components/ui/button";
 import { KanbanColumn } from "./kanban-column";
 import { KanbanCard } from "./kanban-card";
 import { KanbanFilters, SortKey } from "./kanban-filters";
-import { useUpdateIssueStatus } from "@/features/issues/hooks";
+import { useUpdateIssueStatus, useIssues } from "@/features/issues/hooks";
 import type { Issue, IssueStatus } from "@/shared/types";
 
 const COLUMNS: IssueStatus[] = ["New", "Reasoning", "Planned", "Accepted", "Finished", "Canceled"];

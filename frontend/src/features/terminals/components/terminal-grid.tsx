@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Skull } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
-import { TerminalPanel } from "./terminal-panel";
+import { TerminalWithQuestions } from "./terminal-with-questions";
 import type { TerminalListItem } from "@/shared/types";
 
 interface TerminalGridProps {
@@ -60,7 +60,11 @@ export function TerminalGrid({ terminals, onKill }: TerminalGridProps) {
           </div>
           {/* Terminal */}
           <div className="flex-1 min-h-0">
-            <TerminalPanel terminalId={term.id} projectId={term.project_id} />
+            <TerminalWithQuestions
+              terminalId={term.id}
+              projectId={term.project_id}
+              issueId={term.issue_id}
+            />
           </div>
         </div>
       ))}

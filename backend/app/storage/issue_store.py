@@ -210,6 +210,13 @@ def delete_issue(project_path: str, issue_id: str) -> None:
         )
 
 
+def delete_issue_files(project_path: str, issue_id: str) -> None:
+    from app.storage.background_writer import delete_from_disk, rebuild_index_for
+
+    delete_from_disk(project_path, "issues", issue_id)
+    rebuild_index_for(project_path, "issues")
+
+
 def upsert_task(project_path: str, issue_id: str, task: TaskRecord) -> None:
     record = _core.get(project_path, "issues", issue_id)
     if record is None:

@@ -1,0 +1,30 @@
+schema_version: 1
+id: 7f0c162a-bdaf-4e8c-a423-73235c94638f
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Show question under terminal in issue page and terminals page
+status: Finished
+priority: 3
+category: Improvement
+created_at: '2026-05-27T14:03:12.868572'
+updated_at: '2026-05-27T14:13:28.715862'
+finished_at: '2026-05-27T14:13:28.715871'
+tasks:
+- id: 8d935077-b367-4e62-8839-f775e8d7de6e
+  name: Create TerminalWithQuestions wrapper component
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T14:12:04'
+  updated_at: '2026-05-27T14:12:32'
+- id: 73fb21d5-aa28-4809-842e-7719227a8f68
+  name: Update issue detail page to use TerminalWithQuestions
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T14:12:04'
+  updated_at: '2026-05-27T14:13:20'
+- id: ebcffc08-aca5-43ad-b81d-a331db2b2880
+  name: Update TerminalGrid to use TerminalWithQuestions
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T14:12:04'
+  updated_at: '2026-05-27T14:13:21'
+relations: []

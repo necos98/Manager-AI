@@ -4,38 +4,26 @@ import {
   CircleDot,
   FileText,
   HeartPulse,
-  HelpCircle,
-  LayoutDashboard,
   MessageSquare,
   Pencil,
   Plug,
   Settings,
-  Smartphone,
-  Terminal,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useMatchRoute } from "@tanstack/react-router";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
 } from "@/shared/components/ui/sidebar";
-import { ProjectSwitcher } from "@/features/projects/components/project-switcher";
 import { ProjectSettingsDialog } from "@/features/projects/components/project-settings-dialog";
 import { McpSetupDialog } from "@/features/projects/components/mcp-setup-dialog";
-import { SmartphoneQrDialog } from "@/shared/components/smartphone-qr-dialog";
-import { ThemeToggle } from "@/shared/components/theme-toggle";
-import { useTerminalCount } from "@/features/terminals/hooks";
-import { usePendingCount } from "@/features/questions/hooks";
 import type { Project } from "@/shared/types";
 
 interface AppSidebarProps {
@@ -43,58 +31,53 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ activeProject }: AppSidebarProps) {
-  const { data: countData } = useTerminalCount();
-  const terminalCount = countData?.count ?? 0;
-  const { data: pendingQuestionsCount } = usePendingCount();
-  const questionsPendingCount = pendingQuestionsCount?.count ?? 0;
   const matchRoute = useMatchRoute();
 
   const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
   const [mcpSetupOpen, setMcpSetupOpen] = useState(false);
-  const [smartphoneQrOpen, setSmartphoneQrOpen] = useState(false);
 
-  const projectId = activeProject?.id;
+  if (!activeProject) return null;
 
-  const projectNav = projectId
-    ? [
-        {
-          label: "Issues",
-          to: "/projects/$projectId/issues" as const,
-          params: { projectId },
-          icon: CircleDot,
-        },
-        {
-          label: "Files",
-          to: "/projects/$projectId/files" as const,
-          params: { projectId },
-          icon: FileText,
-        },
-        {
-          label: "Activity",
-          to: "/projects/$projectId/activity" as const,
-          params: { projectId },
-          icon: Activity,
-        },
-        {
-          label: "Memories",
-          to: "/projects/$projectId/memories" as const,
-          params: { projectId },
-          icon: Brain,
-        },
-        {
-          label: "Ask & Brainstorming",
-          to: "/projects/$projectId/ask" as const,
-          params: { projectId },
-          icon: MessageSquare,
-        },
-        {
-          label: "Health",
-          to: "/projects/$projectId/health" as const,
-          params: { projectId },
-          icon: HeartPulse,
-        },
-      ]
-    : [];
+  const projectId = activeProject.id;
+
+  const projectNav = [
+    {
+      label: "Issues",
+      to: "/projects/$projectId/issues" as const,
+      params: { projectId },
+      icon: CircleDot,
+    },
+    {
+      label: "Files",
+      to: "/projects/$projectId/files" as const,
+      params: { projectId },
+      icon: FileText,
+    },
+    {
+      label: "Activity",
+      to: "/projects/$projectId/activity" as const,
+      params: { projectId },
+      icon: Activity,
+    },
+    {
+      label: "Memories",
+      to: "/projects/$projectId/memories" as const,
+      params: { projectId },
+      icon: Brain,
+    },
+    {
+      label: "Ask & Brainstorming",
+      to: "/projects/$projectId/ask" as const,
+      params: { projectId },
+      icon: MessageSquare,
+    },
+    {
+      label: "Health",
+      to: "/projects/$projectId/health" as const,
+      params: { projectId },
+      icon: HeartPulse,
+    },
+  ];
 
   return (
     <>
@@ -102,141 +85,65 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <ProjectSwitcher activeProject={activeProject} />
+              <div className="flex items-center gap-2 px-2 py-1">
+                <span className="font-semibold text-sm truncate">{activeProject.name}</span>
+              </div>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
 
         <SidebarContent>
-          {projectId && (
-            <SidebarGroup>
-              <SidebarGroupLabel>Project</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {projectNav.map((item) => (
-                    <SidebarMenuItem key={item.label}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={!!matchRoute({ to: item.to, params: item.params, fuzzy: true })}
-                      >
-                        <Link to={item.to} params={item.params}>
-                          <item.icon />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setProjectSettingsOpen(true)}>
-                      <Pencil />
-                      <span>Edit Project</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
+          <SidebarGroup>
+            <SidebarGroupLabel>Project</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {projectNav.map((item) => (
+                  <SidebarMenuItem key={item.label}>
                     <SidebarMenuButton
                       asChild
-                      isActive={!!matchRoute({ to: "/projects/$projectId/plugins", params: { projectId }, fuzzy: true })}
+                      isActive={!!matchRoute({ to: item.to, params: item.params, fuzzy: true })}
                     >
-                      <Link to="/projects/$projectId/plugins" params={{ projectId }}>
-                        <Plug />
-                        <span>MCP Plugins</span>
+                      <Link to={item.to} params={item.params}>
+                        <item.icon />
+                        <span>{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setMcpSetupOpen(true)}>
-                      <Settings />
-                      <span>MCP Setup</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
-
-          <SidebarSeparator />
-
-          <SidebarGroup>
-            <SidebarGroupLabel>Global</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
+                ))}
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={!!matchRoute({ to: "/dashboard", fuzzy: true })}
-                  >
-                    <Link to="/dashboard">
-                      <LayoutDashboard />
-                      <span>Dashboard</span>
-                    </Link>
+                  <SidebarMenuButton onClick={() => setProjectSettingsOpen(true)}>
+                    <Pencil />
+                    <span>Edit Project</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={!!matchRoute({ to: "/terminals", fuzzy: true })}
+                    isActive={!!matchRoute({ to: "/projects/$projectId/plugins", params: { projectId }, fuzzy: true })}
                   >
-                    <Link to="/terminals">
-                      <Terminal />
-                      <span>Terminals</span>
+                    <Link to="/projects/$projectId/plugins" params={{ projectId }}>
+                      <Plug />
+                      <span>MCP Plugins</span>
                     </Link>
                   </SidebarMenuButton>
-                  {terminalCount > 0 && (
-                    <SidebarMenuBadge>{terminalCount}</SidebarMenuBadge>
-                  )}
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={!!matchRoute({ to: "/questions", fuzzy: true })}
-                  >
-                    <Link to="/questions">
-                      <HelpCircle />
-                      <span>Questions</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  {questionsPendingCount > 0 && (
-                    <SidebarMenuBadge>{questionsPendingCount}</SidebarMenuBadge>
-                  )}
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={!!matchRoute({ to: "/settings", fuzzy: true })}
-                  >
-                    <Link to="/settings">
-                      <Settings />
-                      <span>Settings</span>
-                    </Link>
+                  <SidebarMenuButton onClick={() => setMcpSetupOpen(true)}>
+                    <Settings />
+                    <span>MCP Setup</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="sm" onClick={() => setSmartphoneQrOpen(true)}>
-                <Smartphone className="h-4 w-4" />
-                <span className="text-xs">Show on Smartphone</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <ThemeToggle />
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
       </Sidebar>
 
-      {activeProject && (
-        <ProjectSettingsDialog
-          project={activeProject}
-          open={projectSettingsOpen}
-          onOpenChange={setProjectSettingsOpen}
-        />
-      )}
+      <ProjectSettingsDialog
+        project={activeProject}
+        open={projectSettingsOpen}
+        onOpenChange={setProjectSettingsOpen}
+      />
 
       {projectId && (
         <McpSetupDialog
@@ -245,11 +152,6 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
           onOpenChange={setMcpSetupOpen}
         />
       )}
-
-      <SmartphoneQrDialog
-        open={smartphoneQrOpen}
-        onOpenChange={setSmartphoneQrOpen}
-      />
     </>
   );
 }

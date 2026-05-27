@@ -82,13 +82,13 @@ class BackgroundWriter:
         action = row["action"]
 
         if action == "delete":
-            _delete_from_disk(project_path, store_type, record_id)
+            delete_from_disk(project_path, store_type, record_id)
         elif action == "upsert":
             payload = json.loads(row["payload_json"]) if row["payload_json"] else None
             if payload is not None:
                 _write_to_disk(project_path, store_type, record_id, payload)
 
-        _rebuild_index_for(project_path, store_type)
+        rebuild_index_for(project_path, store_type)
 
     async def _flush_remaining(self) -> None:
         batch = self._queue.dequeue_batch(limit=100)
@@ -143,7 +143,7 @@ def _write_to_disk(
         _write_file_record(project_path, payload)
 
 
-def _delete_from_disk(project_path: str, store_type: str, record_id: str) -> None:
+def delete_from_disk(project_path: str, store_type: str, record_id: str) -> None:
     from app.storage import atomic, paths
 
     if store_type == "memories":
@@ -168,12 +168,12 @@ def flush_all_pending(write_queue: WriteQueue) -> int:
         for row in batch:
             try:
                 if row["action"] == "delete":
-                    _delete_from_disk(row["project_path"], row["store_type"], row["record_id"])
+                    delete_from_disk(row["project_path"], row["store_type"], row["record_id"])
                 elif row["action"] == "upsert":
                     payload = json.loads(row["payload_json"]) if row["payload_json"] else None
                     if payload is not None:
                         _write_to_disk(row["project_path"], row["store_type"], row["record_id"], payload)
-                _rebuild_index_for(row["project_path"], row["store_type"])
+                rebuild_index_for(row["project_path"], row["store_type"])
                 write_queue.remove(row["id"])
                 count += 1
             except Exception:
@@ -181,7 +181,7 @@ def flush_all_pending(write_queue: WriteQueue) -> int:
     return count
 
 
-def _rebuild_index_for(project_path: str, store_type: str) -> None:
+def rebuild_index_for(project_path: str, store_type: str) -> None:
     if store_type == "memories":
         from app.storage.memory_store import rebuild_memories_index
 

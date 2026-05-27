@@ -1,0 +1,1 @@
+Quando ho eseguito un "load more" nella lista kanban, funziona correttamente, ma se dopo ritorno sulla lista (magari ero entrato in una issue) le issue caricate non si vedono più, neanche quelle pre-caricate di default. Capire perchè

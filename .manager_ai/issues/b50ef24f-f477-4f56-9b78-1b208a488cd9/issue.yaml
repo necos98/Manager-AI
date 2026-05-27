@@ -1,11 +1,36 @@
 schema_version: 1
 id: b50ef24f-f477-4f56-9b78-1b208a488cd9
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: New
+name: Double Sidebar Layout for Navigation
+status: Finished
 priority: 3
 category: null
 created_at: '2026-05-27T13:32:34.607008'
-updated_at: '2026-05-27T13:32:34.607008'
-tasks: []
+updated_at: '2026-05-27T14:06:00.351684'
+finished_at: '2026-05-27T14:06:00.351699'
+tasks:
+- id: dfeccf2a-9615-4f72-90f5-4df3c5f64567
+  name: Create ProjectSidebar component (project list + global nav + footer)
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T14:02:00'
+  updated_at: '2026-05-27T14:05:51'
+- id: c0b7eef2-6995-489f-bfd6-3439baa87760
+  name: Modify AppSidebar to project-nav only
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T14:02:00'
+  updated_at: '2026-05-27T14:05:51'
+- id: 8ea2d970-b621-4859-aee3-a0ef8eaafaee
+  name: Update __root.tsx with nested SidebarProvider layout
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T14:02:00'
+  updated_at: '2026-05-27T14:04:27'
+- id: 42bea5ad-ecdb-4409-9b4b-f0dc0cf2b652
+  name: Verify layout and collapse behavior
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T14:02:00'
+  updated_at: '2026-05-27T14:05:32'
 relations: []

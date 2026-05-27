@@ -5,6 +5,7 @@ import { ThemeProvider, useTheme } from "next-themes";
 import { queryClient } from "@/shared/lib/query-client";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { AppSidebar } from "@/shared/components/app-sidebar";
+import { ProjectSidebar } from "@/shared/components/project-sidebar";
 import { EventProvider } from "@/shared/context/event-context";
 import { ErrorBoundary } from "@/shared/components/error-boundary";
 import { useProject } from "@/features/projects/hooks";
@@ -51,17 +52,24 @@ function RootLayout() {
   const activeProject = projectId ? (projectQuery.data ?? null) : null;
 
   return (
-    <SidebarProvider>
-      <AppSidebar activeProject={activeProject} />
+    <SidebarProvider
+      style={{ "--sidebar-width": "220px" } as React.CSSProperties}
+    >
+      <ProjectSidebar activeProject={activeProject} />
       <SidebarInset className="min-w-0 flex flex-col">
-        <header className="md:hidden flex h-12 items-center px-4 border-b bg-background shrink-0">
-          <SidebarTrigger />
-        </header>
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
-        </main>
+        <SidebarProvider>
+          {activeProject && <AppSidebar activeProject={activeProject} />}
+          <SidebarInset className="min-w-0 flex flex-col">
+            <header className="md:hidden flex h-12 items-center px-4 border-b bg-background shrink-0">
+              <SidebarTrigger />
+            </header>
+            <main className="flex-1 overflow-y-auto overflow-x-hidden">
+              <ErrorBoundary>
+                <Outlet />
+              </ErrorBoundary>
+            </main>
+          </SidebarInset>
+        </SidebarProvider>
       </SidebarInset>
     </SidebarProvider>
   );

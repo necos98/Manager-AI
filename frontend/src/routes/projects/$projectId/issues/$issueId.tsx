@@ -6,7 +6,7 @@ import { useIssue } from "@/features/issues/hooks";
 import { useProject } from "@/features/projects/hooks";
 import { useTerminals, useCreateTerminal, useKillTerminal, useTerminalCount, useTerminalConfig } from "@/features/terminals/hooks";
 import { IssueDetail } from "@/features/issues/components/issue-detail";
-import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
+import { TerminalWithQuestions } from "@/features/terminals/components/terminal-with-questions";
 import { ErrorBoundary } from "@/shared/components/error-boundary";
 import { usePendingQuestions } from "@/features/questions/hooks";
 import { QuestionCard } from "@/features/questions/components/question-card";
@@ -152,9 +152,10 @@ function IssueDetailPage() {
           <ResizablePanel defaultSize={45} minSize={20}>
             {!hasSplit ? (
               terminal1 && (
-                <TerminalPanel
+                <TerminalWithQuestions
                   terminalId={terminal1.id}
                   projectId={projectId}
+                  issueId={terminal1.issue_id}
                   onSessionEnd={() => killTerminal.mutate(terminal1.id)}
                   onDownloadRecording={() => handleDownload(terminal1.id)}
                 />
@@ -163,9 +164,10 @@ function IssueDetailPage() {
               <ResizablePanelGroup direction="vertical">
                 <ResizablePanel defaultSize={50} minSize={20}>
                   {terminal1 && (
-                    <TerminalPanel
+                    <TerminalWithQuestions
                       terminalId={terminal1.id}
                       projectId={projectId}
+                      issueId={terminal1.issue_id}
                       onSessionEnd={() => killTerminal.mutate(terminal1.id)}
                       onDownloadRecording={() => handleDownload(terminal1.id)}
                     />
@@ -174,9 +176,10 @@ function IssueDetailPage() {
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={50} minSize={20}>
                   {terminal2 && (
-                    <TerminalPanel
+                    <TerminalWithQuestions
                       terminalId={terminal2.id}
                       projectId={projectId}
+                      issueId={terminal2.issue_id}
                       onSessionEnd={() => killTerminal.mutate(terminal2.id)}
                       onDownloadRecording={() => handleDownload(terminal2.id)}
                     />
