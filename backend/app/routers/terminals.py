@@ -20,7 +20,7 @@ from app.schemas.terminal import AskTerminalCreate, LogTerminalCreate, TerminalC
 from app.services.terminal_service import TerminalService, terminal_service
 from app.services.terminal_command_service import TerminalCommandService
 from app.services.terminal_condition import UnknownConditionError, evaluate_condition
-from app.services.wsl_support import is_wsl_shell, win_to_wsl_path
+from app.services.wsl_support import get_host_ip_for_wsl, is_wsl_shell, win_to_wsl_path
 
 logger = logging.getLogger(__name__)
 
@@ -276,10 +276,18 @@ async def create_terminal(
         }
         if is_wsl:
             _inject_env_vars(pty, env_vars, is_wsl=True)
-            pty.write(
-                f'export MANAGER_AI_BASE_URL='
-                f'"http://localhost:{os.environ.get("BACKEND_PORT", "8000")}"\r\n'
-            )
+            port = os.environ.get("BACKEND_PORT", "8000")
+            host_ip = get_host_ip_for_wsl()
+            if host_ip:
+                pty.write(
+                    f'export MANAGER_AI_BASE_URL='
+                    f'"http://{host_ip}:{port}"\r\n'
+                )
+            else:
+                pty.write(
+                    f'export MANAGER_AI_BASE_URL='
+                    f'"http://localhost:{port}"\r\n'
+                )
         else:
             env_vars["MANAGER_AI_BASE_URL"] = (
                 f'http://localhost:{os.environ.get("BACKEND_PORT", "8000")}'
@@ -401,10 +409,18 @@ async def create_ask_terminal(
         }
         if is_wsl:
             _inject_env_vars(pty, env_vars, is_wsl=True)
-            pty.write(
-                f'export MANAGER_AI_BASE_URL='
-                f'"http://localhost:{os.environ.get("BACKEND_PORT", "8000")}"\r\n'
-            )
+            port = os.environ.get("BACKEND_PORT", "8000")
+            host_ip = get_host_ip_for_wsl()
+            if host_ip:
+                pty.write(
+                    f'export MANAGER_AI_BASE_URL='
+                    f'"http://{host_ip}:{port}"\r\n'
+                )
+            else:
+                pty.write(
+                    f'export MANAGER_AI_BASE_URL='
+                    f'"http://localhost:{port}"\r\n'
+                )
         else:
             env_vars["MANAGER_AI_BASE_URL"] = (
                 f'http://localhost:{os.environ.get("BACKEND_PORT", "8000")}'

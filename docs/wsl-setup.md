@@ -13,7 +13,9 @@ Windows host                         WSL distro (e.g. Ubuntu)
 
 - **Only Claude Code** is installed inside WSL.
 - Manager AI on Windows spawns terminals via `wsl.exe`. The same PTY that drives cmd.exe or PowerShell drives bash inside WSL — no extra transport.
-- The terminal router translates the project's Windows path to a POSIX path (`C:\foo\bar` → `/mnt/c/foo/bar`), injects env vars with bash `export`, and computes `MANAGER_AI_BASE_URL` at runtime from `ip route show default` so each WSL session reaches the Windows host's current IP.
+- The terminal router translates the project's Windows path to a POSIX path (`C:\foo\bar` → `/mnt/c/foo/bar`), injects env vars with bash `export`, and resolves the Windows host IP via PowerShell (querying the `vEthernet (WSL)` interface from the Windows side). This is immune to Docker Desktop or VPN route interference inside the WSL2 VM.
+- **Why not `localhost`?** WSL2 uses NAT networking — the Linux VM has its own network namespace. `localhost` inside WSL2 points to the WSL2 VM itself, **not** the Windows host.
+- **Why resolve from Windows instead of inside WSL2?** Running `ip route show default` or reading `/etc/resolv.conf` inside the Linux VM is unreliable when Docker Desktop (or some VPNs) are active — they can hijack the default route or overwrite the nameserver entry. Querying the `vEthernet (WSL)` interface directly from Windows bypasses all of that.
 
 ## One-time setup
 
@@ -32,10 +34,10 @@ Open the project's **Health** page in the Manager AI UI and click **Install** (o
 
 ```bash
 claude mcp remove ManagerAi 2>/dev/null
-claude mcp add ManagerAi --transport http "http://<wsl-gateway-ip>:<port>/mcp/"
+claude mcp add ManagerAi --transport http "http://<windows-host-ip>:<port>/mcp/"
 ```
 
-The button is idempotent: remove-then-add keeps the entry in sync when the WSL2 gateway IP rotates. Verify with:
+The Windows host IP is resolved from the Windows side (PowerShell queries the `vEthernet (WSL)` interface), so it is always correct regardless of Docker Desktop or VPN interference. Re-running the button after a WSL2 restart picks up the new IP automatically. Verify with:
 
 ```bash
 claude mcp list
@@ -58,7 +60,7 @@ The project path can be either a Windows path (`C:\dev\myproj`) or a WSL path pa
 ```
 $ cd /mnt/c/dev/myproj
 $ export MANAGER_AI_TERMINAL_ID=… && export MANAGER_AI_ISSUE_ID=… && export MANAGER_AI_PROJECT_ID=…
-$ export MANAGER_AI_BASE_URL="http://$(ip route show default | awk '{print $3}'):8000"
+$ export MANAGER_AI_BASE_URL="http://172.x.x.1:8000"
 $ echo "$MANAGER_AI_BASE_URL"
 http://172.x.x.1:8000
 $ curl "$MANAGER_AI_BASE_URL/api/system/info"
@@ -76,9 +78,9 @@ From here `claude` can reach the Manager AI MCP over HTTP.
   ```
   and restart WSL with `wsl --shutdown`. With mirrored networking `localhost:8000` works directly.
 - **`command not found: claude`.** The CLI is not installed inside the distro you selected. Re-run the install command from step 1 *inside that distro*.
-- **WSL1 distros:** `ip route show default` prints the Windows gateway, so the runtime resolution works. WSL2 is still recommended for performance.
+- **WSL1 distros:** `/etc/resolv.conf` also contains the Windows host IP on WSL1, so the runtime resolution works. WSL2 is still recommended for performance.
 - **`docker-desktop` distros appear nowhere in the picker.** Intentional — they are filtered out by `wsl_support.list_wsl_distros` because they are not user-runnable.
-- **I changed my distro's IP / restarted WSL.** No action needed. The IP is resolved fresh for every new terminal via `ip route show default`.
+- **I changed my distro's IP / restarted WSL.** No action needed. The IP is resolved fresh for every new terminal via `/etc/resolv.conf`.
 
 ## Non-goals
 

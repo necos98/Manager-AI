@@ -77,11 +77,31 @@ def get_default_distro() -> str | None:
 
 
 def get_host_ip_for_wsl() -> str | None:
-    """Best-effort Windows host IP reachable from a WSL2 guest.
+    """Return the Windows host IP on the WSL2 virtual switch.
 
-    Returning None signals the frontend/injector to fall back to a runtime
-    bash expression (``ip route show default | awk '{print $3}'``) inside
-    the terminal. That fallback always works.
+    Queries the ``vEthernet (WSL)`` interface from Windows via PowerShell.
+    This runs on the Windows host, completely outside WSL2, so it is immune
+    to Docker Desktop or VPN route interference inside the Linux VM.
+    Returns None when the interface cannot be found.
     """
-    # v1: always return None and rely on runtime resolution inside bash.
+    if platform.system() != "Windows":
+        return None
+    try:
+        ps_cmd = (
+            "Get-NetIPAddress -InterfaceAlias 'vEthernet (WSL)*'"
+            " -AddressFamily IPv4 | Select-Object -First 1 -ExpandProperty IPAddress"
+        )
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", ps_cmd],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        if result.returncode == 0:
+            ip = result.stdout.strip()
+            if ip:
+                return ip
+    except (subprocess.SubprocessError, OSError):
+        pass
     return None

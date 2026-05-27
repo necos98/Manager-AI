@@ -17,7 +17,7 @@ from app.schemas.terminal import TerminalResponse
 from app.services.project_service import ProjectService
 from app.storage.memory_store_core import memory_store as _global_store
 from app.services.terminal_service import terminal_service
-from app.services.wsl_support import is_wsl_shell, win_to_wsl_path
+from app.services.wsl_support import get_host_ip_for_wsl, is_wsl_shell, win_to_wsl_path
 
 logger = logging.getLogger(__name__)
 
@@ -463,11 +463,17 @@ async def install_mcp(project_id: str, db: AsyncSession = Depends(get_db)):
         pty = terminal_service.get_pty(terminal["id"])
         if is_wsl:
             cwd = win_to_wsl_path(project.path)
-            url = f'"http://localhost:{port}/mcp/"'
+            # Resolve the Windows host IP from the Windows side (PowerShell).
+            # This is immune to Docker Desktop / VPN route interference inside WSL2.
+            host_ip = get_host_ip_for_wsl()
+            if host_ip:
+                url = f"http://{host_ip}:{port}/mcp/"
+            else:
+                url = f"http://localhost:{port}/mcp/"
             pty.write(f"cd {shlex.quote(cwd)}\r\n")
             pty.write(
                 "claude mcp remove ManagerAi 2>/dev/null; "
-                f"claude mcp add ManagerAi --transport http {url}\r\n"
+                f"claude mcp add ManagerAi --transport http \"{url}\"\r\n"
             )
         else:
             url = f"http://localhost:{port}/mcp/"
