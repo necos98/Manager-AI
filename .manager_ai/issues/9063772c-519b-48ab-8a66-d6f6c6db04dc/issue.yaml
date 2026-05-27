@@ -1,0 +1,36 @@
+schema_version: 1
+id: 9063772c-519b-48ab-8a66-d6f6c6db04dc
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Taskbar icon not showing in pywebview window
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-27T19:28:04.650023'
+updated_at: '2026-05-27T19:36:59.971173'
+finished_at: '2026-05-27T19:36:59.971198'
+tasks:
+- id: 3be58d71-2894-4a7d-996e-622e59827006
+  name: Add set_app_user_model_id() to desktop_icon.py
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T19:35:08'
+  updated_at: '2026-05-27T19:35:29'
+- id: 87a2cf76-8798-40cb-a41a-4842d94590de
+  name: Add retry loop and stderr logging to set_app_window_icon()
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T19:35:08'
+  updated_at: '2026-05-27T19:35:56'
+- id: 2dea6ab7-3468-4815-b731-956799bfad5a
+  name: 'Fix start.py: call AppUserModelID + fix icon_set flag'
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T19:35:08'
+  updated_at: '2026-05-27T19:36:24'
+- id: d82823c7-546a-4f56-8083-28d5cb8fe526
+  name: 'Manual verification: run app and check icon'
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T19:35:08'
+  updated_at: '2026-05-27T19:36:46'
+relations: []

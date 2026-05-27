@@ -305,6 +305,10 @@ def main():
 
     _ensure_app_icon()
 
+    sys.path.insert(0, str(BACKEND_DIR))
+    from app.desktop_icon import set_app_user_model_id
+    set_app_user_model_id()
+
     window = webview.create_window(
         "Manager AI",
         f"http://localhost:{FRONTEND_PORT}",
@@ -322,11 +326,11 @@ def main():
         icon_set = False
         while not stop_event.is_set():
             if not icon_set:
-                icon_set = True
                 try:
                     sys.path.insert(0, str(BACKEND_DIR))
                     from app.desktop_icon import set_app_window_icon
-                    set_app_window_icon("Manager AI", str(ROOT / "logo.ico"))
+                    if set_app_window_icon("Manager AI", str(ROOT / "logo.ico")):
+                        icon_set = True
                 except Exception:
                     pass
             for proc in processes:

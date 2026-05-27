@@ -1,0 +1,1 @@
+L'icona non si vede all'interno della taskbar, capire perchè
