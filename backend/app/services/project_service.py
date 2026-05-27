@@ -45,7 +45,10 @@ class ProjectService:
     async def update(self, project_id: str, **kwargs) -> Project:
         project = await self.get_by_id(project_id)
         for key, value in kwargs.items():
-            if value is not None:
+            if key == "favorited_at":
+                # favorited_at is special: allow setting to None (unfavorite)
+                setattr(project, key, value)
+            elif value is not None:
                 setattr(project, key, value)
         await self.session.flush()
         return project
