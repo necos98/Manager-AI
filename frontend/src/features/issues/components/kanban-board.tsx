@@ -5,7 +5,8 @@ import { Button } from "@/shared/components/ui/button";
 import { KanbanColumn } from "./kanban-column";
 import { KanbanCard } from "./kanban-card";
 import { KanbanFilters, SortKey } from "./kanban-filters";
-import { useUpdateIssueStatus, useIssues } from "@/features/issues/hooks";
+import { useUpdateIssueStatus, useIssues, issueKeys } from "@/features/issues/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Issue, IssueStatus } from "@/shared/types";
 
 const COLUMNS: IssueStatus[] = ["New", "Reasoning", "Planned", "Accepted", "Finished", "Canceled"];
@@ -45,22 +46,41 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
   const [pending, setPending] = useState<PendingTransition | null>(null);
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
   const [finishedOffset, setFinishedOffset] = useState(0);
-  const [allFinished, setAllFinished] = useState<Issue[]>([]);
   const updateStatus = useUpdateIssueStatus(projectId);
+  const queryClient = useQueryClient();
+
+  const resolvedTag = tag !== "all" ? tag : undefined;
 
   const { data: finishedPage, isFetching: finishedLoading } = useIssues(
-    projectId, "Finished", undefined, tag !== "all" ? tag : undefined, FINISHED_PAGE_SIZE, finishedOffset
+    projectId, "Finished", undefined, resolvedTag, FINISHED_PAGE_SIZE, finishedOffset
   );
 
-  useEffect(() => {
-    if (finishedPage) {
-      setAllFinished(prev => finishedOffset === 0 ? finishedPage : [...prev, ...finishedPage]);
+  // Derive allFinished from React Query cache instead of duplicating state via useEffect.
+  // This fixes a race condition where the previous approach (useEffect-based sync to a
+  // separate useState) would fail to populate the Finished column on remount because the
+  // tag-reset effect could clear allFinished after the data-sync effect had populated it.
+  // By reading the cache directly we always get the correct data for every loaded page.
+  const allFinished = useMemo(() => {
+    const result: Issue[] = [];
+    const numPages = Math.floor(finishedOffset / FINISHED_PAGE_SIZE) + 1;
+    for (let i = 0; i < numPages; i++) {
+      const offset = i * FINISHED_PAGE_SIZE;
+      const key = [...issueKeys.all(projectId), "list", {
+        status: "Finished" as IssueStatus,
+        search: undefined,
+        tag: resolvedTag,
+        limit: FINISHED_PAGE_SIZE,
+        offset,
+      }];
+      const page = queryClient.getQueryData<Issue[]>(key);
+      if (page) result.push(...page);
     }
-  }, [finishedPage, finishedOffset]);
+    return result;
+  }, [finishedOffset, finishedPage, resolvedTag, projectId, queryClient]);
 
+  // Reset pagination when tag filter changes
   useEffect(() => {
     setFinishedOffset(0);
-    setAllFinished([]);
   }, [tag]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));

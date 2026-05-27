@@ -28,9 +28,10 @@ import type { Project } from "@/shared/types";
 
 interface AppSidebarProps {
   activeProject: Project | null;
+  className?: string;
 }
 
-export function AppSidebar({ activeProject }: AppSidebarProps) {
+export function AppSidebar({ activeProject, className }: AppSidebarProps) {
   const matchRoute = useMatchRoute();
 
   const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
@@ -81,7 +82,7 @@ export function AppSidebar({ activeProject }: AppSidebarProps) {
 
   return (
     <>
-      <Sidebar>
+      <Sidebar className={className}>
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
