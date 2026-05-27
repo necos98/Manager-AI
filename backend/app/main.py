@@ -24,6 +24,7 @@ from app.storage.background_writer import BackgroundWriter
 from app.storage import memory_store as memory_store_module
 from app.storage import issue_store as issue_store_module
 from app.storage import file_store as file_store_module
+from app.middleware import ErrorLoggerMiddleware
 from app.routers import activity, credentials, events, files, issue_relations, issues, library, memories, network, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, questions, settings as settings_router, system, tasks, terminals, terminal_commands
 from app.routers.projects import install_claude_resources_to
 
@@ -307,6 +308,37 @@ async def lifespan(app):
     except Exception:
         logger.exception("DB → .manager_ai/ migration failed; continuing startup")
 
+    # ------------------------------------------------------------------
+    # Fix any issue statuses that don't match the current enum (e.g.
+    # 'Completed' written by an older code version / manual edit).
+    # Map unrecognized values to the closest valid status.
+    # ------------------------------------------------------------------
+    _STATUS_FIXUP_MAP: dict[str, str] = {
+        "Completed": "Finished",
+    }
+    try:
+        from sqlalchemy import select, update
+        from app.models.issue import Issue
+        async with async_session() as session:
+            for bad_val, good_val in _STATUS_FIXUP_MAP.items():
+                stmt = select(Issue.id).where(Issue.status == bad_val)
+                result = await session.execute(stmt)
+                ids = result.scalars().all()
+                if ids:
+                    upd = (
+                        update(Issue)
+                        .where(Issue.status == bad_val)
+                        .values(status=good_val)
+                    )
+                    await session.execute(upd)
+                    await session.commit()
+                    logger.warning(
+                        "Startup fixup: migrated %d issue(s) from status '%s' to '%s'",
+                        len(ids), bad_val, good_val,
+                    )
+    except Exception:
+        logger.exception("Status fixup failed; continuing startup")
+
     # Init write queue and background writer
     write_queue = WriteQueue("data/pending_writes.db")
     background_writer = BackgroundWriter(write_queue)
@@ -369,6 +401,8 @@ async def lifespan(app):
 
 
 app = FastAPI(title="Manager AI", version="0.1.0", lifespan=lifespan)
+
+app.add_middleware(ErrorLoggerMiddleware)
 
 
 @app.exception_handler(AppError)

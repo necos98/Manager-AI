@@ -50,12 +50,12 @@ Non aggiungere dettagli specifici di singole issue."""
         env["MANAGER_AI_PROJECT_ID"] = context.project_id
 
         try:
+            cmd = ["claude", "-p", prompt]
+            if tool_guidance:
+                cmd += ["--append-system-prompt", tool_guidance]
+            cmd += ["--output-format", "text"]
             proc = await asyncio.create_subprocess_exec(
-                "claude",
-                "-p",
-                prompt,
-                "--tool-guidance", tool_guidance,
-                "--output-format", "text",
+                *cmd,
                 cwd=project_path,
                 env=env,
                 stdout=asyncio.subprocess.PIPE,

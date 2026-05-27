@@ -17,6 +17,9 @@ dist/
 data/
 project_resources/
 
+# Logs
+backend/logs/
+
 # IDE
 .idea/
 .vscode/
