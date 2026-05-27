@@ -6,6 +6,7 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
 import { usePipelineRuns, useCancelPipelineRun } from "@/features/pipeline-runs/hooks";
+import { useEvents } from "@/shared/context/event-context";
 import type { PipelineRun, PipelineStepRun } from "@/shared/types";
 
 interface PipelineProgressProps {
@@ -62,6 +63,9 @@ export function PipelineProgress({ projectId, issueId, onClose }: PipelineProgre
 
   const activeRun = runs?.find((r) => r.status === "RUNNING") ?? null;
 
+  const { subscribe } = useEvents() ?? {};
+
+  // Auto-select running step when pipeline data updates
   useEffect(() => {
     if (activeRun?.steps) {
       const runningStep = activeRun.steps.find((s) => s.status === "RUNNING");
@@ -70,6 +74,22 @@ export function PipelineProgress({ projectId, issueId, onClose }: PipelineProgre
       }
     }
   }, [activeRun?.id, activeRun?.steps?.find((s) => s.status === "RUNNING")?.id]);
+
+  // Listen for agent_step_started events to react immediately
+  useEffect(() => {
+    if (!subscribe) return;
+    const unsub = subscribe((event) => {
+      if (
+        event.type === "agent_step_started" &&
+        event.project_id === projectId &&
+        event.issue_id === issueId &&
+        typeof event.step_run_id === "string"
+      ) {
+        setSelectedStepId(event.step_run_id);
+      }
+    });
+    return unsub;
+  }, [subscribe, projectId, issueId]);
 
   if (isLoading) {
     return (

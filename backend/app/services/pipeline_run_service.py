@@ -16,6 +16,7 @@ from app.models.pipeline_run import (
     PipelineStepRun,
     PipelineStepRunStatus,
 )
+from app.services.event_service import event_service
 from app.services.pipeline_task_manager import pipeline_task_manager
 from app.services.terminal_service import terminal_service
 
@@ -158,6 +159,15 @@ class PipelineRunService:
                 step_run.terminal_id = term_id
                 await self._safe_flush_session(session)
 
+                await event_service.emit({
+                    "type": "agent_step_started",
+                    "project_id": project_id,
+                    "issue_id": run.issue_id,
+                    "agent_name": agent_name,
+                    "step_run_id": step_run.id,
+                    "terminal_id": term_id,
+                })
+
                 try:
                     success = await self._run_step(
                         term_id=term_id,
@@ -171,11 +181,25 @@ class PipelineRunService:
 
                     if success:
                         step_run.status = PipelineStepRunStatus.COMPLETED
+                        await event_service.emit({
+                            "type": "agent_step_completed",
+                            "project_id": project_id,
+                            "issue_id": run.issue_id,
+                            "agent_name": agent_name,
+                            "step_run_id": step_run.id,
+                        })
                     else:
                         step_run.status = PipelineStepRunStatus.FAILED
                         run.status = PipelineRunStatus.FAILED
                         step_run.finished_at = datetime.now(timezone.utc)
                         await self._safe_flush_session(session)
+                        await event_service.emit({
+                            "type": "agent_step_failed",
+                            "project_id": project_id,
+                            "issue_id": run.issue_id,
+                            "agent_name": agent_name,
+                            "step_run_id": step_run.id,
+                        })
                         await terminal_service.destroy_log(term_id)
                         break
 
@@ -190,6 +214,13 @@ class PipelineRunService:
                     run.status = PipelineRunStatus.FAILED
                     step_run.finished_at = datetime.now(timezone.utc)
                     await self._safe_flush_session(session)
+                    await event_service.emit({
+                        "type": "agent_step_failed",
+                        "project_id": project_id,
+                        "issue_id": run.issue_id,
+                        "agent_name": agent_name,
+                        "step_run_id": step_run.id,
+                    })
                     await terminal_service.destroy_log(term_id)
                     break
 
@@ -200,6 +231,14 @@ class PipelineRunService:
                 run.status = PipelineRunStatus.COMPLETED
             run.finished_at = datetime.now(timezone.utc)
             await self._safe_flush_session(session)
+
+            await event_service.emit({
+                "type": "pipeline_completed",
+                "project_id": project_id,
+                "issue_id": run.issue_id,
+                "run_id": run_id,
+                "status": run.status.value,
+            })
         except asyncio.CancelledError:
             raise
         finally:
@@ -227,22 +266,24 @@ class PipelineRunService:
         run_id: str,
         issue_id: str,
     ) -> bool:
-        full_cmd = (
-            f'claude -p "System prompt: {system_prompt}\\n\\n'
-            f'Task: {command}\\n\\n'
-            f'Issue ID: {issue_id}\\n'
-            f'Pipeline run ID: {run_id}"'
+        prompt = (
+            f"System prompt: {system_prompt}\n\n"
+            f"Task: {command}\n\n"
+            f"Issue ID: {issue_id}\n"
+            f"Pipeline run ID: {run_id}"
         )
 
         env = os.environ.copy()
         env["MANAGER_AI_AGENT_NAME"] = agent_name
         env["MANAGER_AI_AGENT_ROLE"] = agent_name
 
-        proc = await asyncio.create_subprocess_shell(
-            full_cmd,
+        cmd = ["claude", "-p", prompt]
+
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
             cwd=project_path,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
+            stderr=asyncio.subprocess.PIPE,
             env=env,
         )
 
@@ -259,7 +300,21 @@ class PipelineRunService:
             except asyncio.CancelledError:
                 pass
 
+        async def drain_stderr():
+            if proc.stderr is None:
+                return
+            try:
+                while True:
+                    line = await proc.stderr.readline()
+                    if not line:
+                        break
+                    text = line.decode("utf-8", errors="replace")
+                    logger.warning("claude stderr [%s]: %s", agent_name, text.rstrip())
+            except asyncio.CancelledError:
+                pass
+
         stream_task = asyncio.create_task(stream_output())
+        stderr_task = asyncio.create_task(drain_stderr())
 
         try:
             exit_code = await asyncio.wait_for(
@@ -269,14 +324,17 @@ class PipelineRunService:
             proc.kill()
             await proc.wait()
             stream_task.cancel()
+            stderr_task.cancel()
             return False
         except asyncio.CancelledError:
             proc.kill()
             await proc.wait()
             stream_task.cancel()
+            stderr_task.cancel()
             raise
 
         await stream_task
+        await stderr_task
         return exit_code == 0
 
     async def _get_run(self, run_id: str) -> PipelineRun:

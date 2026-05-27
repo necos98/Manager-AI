@@ -11,12 +11,20 @@ DEFAULT_AGENTS = [
             "Explore and analyze codebase structure, find patterns and conventions, "
             "trace execution paths, and document dependencies."
         ),
+        "terminal_command": (
+            "Explore the codebase to understand the context of issue $issue_id "
+            "in project $project_id. Report your findings."
+        ),
     },
     {
         "name": "BrainstormingAgent",
         "system_prompt": (
             "Brainstorm ideas and refine requirements through natural collaborative dialogue. "
             "Turn ideas into fully formed designs and specs."
+        ),
+        "terminal_command": (
+            "Brainstorm and refine requirements for issue $issue_id. "
+            "Produce a clear design and specification."
         ),
     },
     {
@@ -25,12 +33,20 @@ DEFAULT_AGENTS = [
             "Write detailed specifications from requirements. Produce clear, structured "
             "specs covering architecture, components, data flow, error handling, and testing."
         ),
+        "terminal_command": (
+            "Write a detailed specification for issue $issue_id. "
+            "Cover architecture, components, data flow, error handling, and testing."
+        ),
     },
     {
         "name": "PlanWriter",
         "system_prompt": (
             "Create implementation plans from specifications. Break down designs into "
             "atomic, ordered tasks with specific files to create or modify."
+        ),
+        "terminal_command": (
+            "Create an implementation plan for issue $issue_id. "
+            "Break it down into atomic, ordered tasks with specific files to modify."
         ),
     },
     {
@@ -39,12 +55,20 @@ DEFAULT_AGENTS = [
             "Implement code following plans and specifications. Write production-quality "
             "code that follows existing patterns and conventions."
         ),
+        "terminal_command": (
+            "Implement the code changes described in the plan for issue $issue_id. "
+            "Follow existing codebase patterns and conventions."
+        ),
     },
     {
         "name": "Reviewer",
         "system_prompt": (
             "Review code for bugs, logic errors, security vulnerabilities, code quality "
             "issues, and adherence to project conventions."
+        ),
+        "terminal_command": (
+            "Review the code changes made for issue $issue_id. "
+            "Check for bugs, logic errors, security vulnerabilities, and code quality issues."
         ),
     },
 ]

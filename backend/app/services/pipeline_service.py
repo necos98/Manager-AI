@@ -4,7 +4,7 @@ from sqlalchemy.orm import selectinload
 
 from app.exceptions import NotFoundError
 from app.models.pipeline import Pipeline, PipelineStep
-from app.services.agent_service import AgentService
+from app.services.agent_service import AgentService, DEFAULT_AGENTS
 
 
 class PipelineService:
@@ -20,6 +20,9 @@ class PipelineService:
             return existing[0]
         agent_svc = AgentService(self.session)
         agents = await agent_svc.list_by_project(project_id)
+
+        cmd_by_name = {a["name"]: a.get("terminal_command", "") for a in DEFAULT_AGENTS}
+
         pipeline = Pipeline(project_id=project_id, name="Default Pipeline")
         self.session.add(pipeline)
         await self.session.flush()
@@ -28,7 +31,7 @@ class PipelineService:
                 pipeline_id=pipeline.id,
                 agent_id=agent.id,
                 order_index=i,
-                terminal_command="",
+                terminal_command=cmd_by_name.get(agent.name, ""),
             )
             self.session.add(step)
         await self.session.flush()

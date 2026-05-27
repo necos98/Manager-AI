@@ -1,0 +1,2 @@
+Pipeline run bug.
+Quando avvio la pipeline, il terminale non si avvia subito, devo rientrare all'interno della issue. Inoltre non succede niente, il terminare risulta vuoto, non viene avviato claude code. Potresti spiegarmi cosa succede?

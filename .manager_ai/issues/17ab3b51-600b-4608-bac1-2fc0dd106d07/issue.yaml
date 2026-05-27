@@ -1,0 +1,36 @@
+schema_version: 1
+id: 17ab3b51-600b-4608-bac1-2fc0dd106d07
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Pipeline run: terminal not starting, Claude Code never launches'
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-27T19:48:29.838775'
+updated_at: '2026-05-27T20:05:11.344128'
+finished_at: '2026-05-27T20:05:11.344137'
+tasks:
+- id: acef800a-32e8-4234-9dd1-a40fcbbabb4c
+  name: 'Fix _run_step(): replace create_subprocess_shell with create_subprocess_exec'
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T20:00:55'
+  updated_at: '2026-05-27T20:01:37'
+- id: 863e4150-fceb-4858-bd1c-7c5a2129ad2f
+  name: Emit WebSocket events during step execution in _execute()
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T20:00:55'
+  updated_at: '2026-05-27T20:02:21'
+- id: 077784af-b218-4b27-9ac4-377052e72125
+  name: Add default terminal_command per agent in DEFAULT_AGENTS
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T20:00:55'
+  updated_at: '2026-05-27T20:03:33'
+- id: e2143446-4617-4356-b083-8633364ac540
+  name: 'Frontend: subscribe to agent_step_started events in PipelineProgress'
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T20:00:55'
+  updated_at: '2026-05-27T20:04:28'
+relations: []
