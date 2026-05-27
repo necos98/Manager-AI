@@ -1,0 +1,48 @@
+schema_version: 1
+id: 3a55562c-d79d-452c-8fb3-deeeeeb8f488
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Pipeline terminal not launching on pipeline run
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-27T20:24:22.839714'
+updated_at: '2026-05-27T20:36:34.943338'
+finished_at: '2026-05-27T20:36:34.943365'
+tasks:
+- id: e566b38c-5205-437d-92be-76c0a2dd6a7b
+  name: Create Alembic migration to change terminal_id from Integer to String(36)
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T20:31:44'
+  updated_at: '2026-05-27T20:34:51'
+- id: b71bc1d2-36e8-4935-b25a-c15f3f6e5cdd
+  name: 'Fix model: change terminal_id column in pipeline_run.py'
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T20:31:44'
+  updated_at: '2026-05-27T20:35:17'
+- id: 826ce2bb-9f14-4550-be2e-d67076d93b15
+  name: 'Fix backend schema: change terminal_id type in pipeline_run.py Pydantic'
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T20:31:44'
+  updated_at: '2026-05-27T20:35:17'
+- id: 4fd518bd-0869-45b4-a432-95730de07db2
+  name: 'Fix frontend types: change terminal_id from number to string'
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T20:31:44'
+  updated_at: '2026-05-27T20:35:18'
+- id: 527357ee-690a-4e32-81af-53f28174d17a
+  name: 'Fix frontend PipelineProgress: use event.terminal_id for immediate display'
+  status: Completed
+  order: 4
+  created_at: '2026-05-27T20:31:44'
+  updated_at: '2026-05-27T20:35:50'
+- id: 6a953a80-e41b-462a-8cf7-b9756a861a7d
+  name: Run migration and verify pipeline terminal works
+  status: Completed
+  order: 5
+  created_at: '2026-05-27T20:31:44'
+  updated_at: '2026-05-27T20:36:24'
+relations: []

@@ -553,7 +553,7 @@ export interface PipelineStepRun {
   pipeline_step_id: string;
   agent_name: string;
   status: PipelineStepRunStatus;
-  terminal_id: number | null;
+  terminal_id: string | null;
   started_at: string | null;
   finished_at: string | null;
 }

@@ -1,0 +1,1 @@
+Pipeline is bugged. Quando avvio la pipeline il terminale non si avvia! Non ricevo nessun tipo di errore. Voglio solo che si avvia come fa "Run Issue" ovvero con avvio del terminale + prompt iniziale. E' tanto difficile?

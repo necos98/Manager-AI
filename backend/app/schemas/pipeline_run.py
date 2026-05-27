@@ -12,7 +12,7 @@ class PipelineStepRunResponse(BaseModel):
     pipeline_step_id: str
     agent_name: str
     status: str
-    terminal_id: int | None = None
+    terminal_id: str | None = None
     started_at: str | None = None
     finished_at: str | None = None
 

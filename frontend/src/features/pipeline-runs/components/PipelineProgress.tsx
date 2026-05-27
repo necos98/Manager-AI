@@ -62,6 +62,7 @@ export function PipelineProgress({ projectId, issueId, onClose }: PipelineProgre
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
 
   const activeRun = runs?.find((r) => r.status === "RUNNING") ?? null;
+  const [terminalIds, setTerminalIds] = useState<Record<string, string>>({});
 
   const { subscribe } = useEvents() ?? {};
 
@@ -86,6 +87,9 @@ export function PipelineProgress({ projectId, issueId, onClose }: PipelineProgre
         typeof event.step_run_id === "string"
       ) {
         setSelectedStepId(event.step_run_id);
+        if (typeof event.terminal_id === "string") {
+          setTerminalIds((prev) => ({ ...prev, [event.step_run_id!]: event.terminal_id! }));
+        }
       }
     });
     return unsub;
@@ -138,6 +142,7 @@ export function PipelineProgress({ projectId, issueId, onClose }: PipelineProgre
   });
 
   const selectedStep = steps.find((s) => s.id === selectedStepId);
+  const selectedTerminalId = selectedStep?.terminal_id || terminalIds[selectedStep?.id || ""];
   const runningStep = steps.find((s) => s.status === "RUNNING");
 
   return (
@@ -189,9 +194,9 @@ export function PipelineProgress({ projectId, issueId, onClose }: PipelineProgre
 
       {/* Terminal output */}
       <div className="flex-1 min-h-0">
-        {selectedStep && selectedStep.terminal_id ? (
+        {selectedStep && selectedTerminalId ? (
           <TerminalPanel
-            terminalId={String(selectedStep.terminal_id)}
+            terminalId={String(selectedTerminalId)}
             projectId={projectId}
             readOnly
           />

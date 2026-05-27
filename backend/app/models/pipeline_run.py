@@ -45,14 +45,13 @@ class PipelineStepRun(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     pipeline_run_id: Mapped[str] = mapped_column(String(36), ForeignKey("pipeline_runs.id", ondelete="CASCADE"), nullable=False, index=True)
     pipeline_step_id: Mapped[str] = mapped_column(String(36), ForeignKey("pipeline_steps.id"), nullable=False)
-    terminal_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("terminal_commands.id", ondelete="SET NULL"), nullable=True)
+    terminal_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     status: Mapped[PipelineStepRunStatus] = mapped_column(Enum(PipelineStepRunStatus), nullable=False, default=PipelineStepRunStatus.PENDING)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     pipeline_run = relationship("PipelineRun", back_populates="step_runs")
     pipeline_step = relationship("PipelineStep", back_populates="step_runs")
-    terminal = relationship("TerminalCommand")
 
 
 class PipelineMessage(Base):
