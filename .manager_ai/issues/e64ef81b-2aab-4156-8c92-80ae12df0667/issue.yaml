@@ -1,11 +1,11 @@
 schema_version: 1
 id: e64ef81b-2aab-4156-8c92-80ae12df0667
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
+name: Issue deletion not working on first attempt
 status: New
 priority: 3
-category: Bug
+category: null
 created_at: '2026-05-25T14:24:35.439532'
-updated_at: '2026-05-25T14:24:35.439532'
+updated_at: '2026-05-27T09:31:50.039843'
 tasks: []
 relations: []
