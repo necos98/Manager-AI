@@ -1,0 +1,41 @@
+schema_version: 1
+id: 5796129f-27e4-4faa-b89d-3d83ab37958b
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Finished issues: chronological order + pagination'
+status: Finished
+priority: 3
+category: Improvement
+created_at: '2026-05-27T13:27:21.694762'
+updated_at: '2026-05-27T13:45:50.602437'
+tasks:
+- id: 749f09a7-a289-47f9-9cb9-0a98e12fe62d
+  name: 'Task 1: Backend model + dataclass — add finished_at field to Issue model, IssueRecord, and all helper functions in issue_store.py. Create Alembic migration.'
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T13:36:21'
+  updated_at: '2026-05-27T13:39:23'
+- id: 57b42308-f216-48c0-a5e8-e5fa7f004395
+  name: 'Task 2: Backend service + router — add finished_at to IssueResponse, set finished_at in complete_issue, add pagination (limit/offset) to list_by_project and router.'
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T13:36:21'
+  updated_at: '2026-05-27T13:40:01'
+- id: a301dc3e-6b35-496f-9f0e-f4d634115fa3
+  name: 'Task 3: Frontend types + API + hooks — add finished_at to Issue type, add limit/offset params to fetchIssues and useIssues.'
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T13:36:21'
+  updated_at: '2026-05-27T13:40:19'
+- id: 06899c49-d5cd-4d65-bf91-f3e5c4d45968
+  name: 'Task 4: Kanban UI — add Load more button to KanbanColumn, separate Finished fetch with pagination in KanbanBoard, accumulate results.'
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T13:36:21'
+  updated_at: '2026-05-27T13:41:27'
+- id: 7ff566b2-e142-41fe-93c7-8dd5a2b9abda
+  name: 'Task 5: Verify — run migrations, test API endpoint, verify UI pagination works, commit.'
+  status: Completed
+  order: 4
+  created_at: '2026-05-27T13:36:21'
+  updated_at: '2026-05-27T13:45:37'
+relations: []

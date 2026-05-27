@@ -31,10 +31,12 @@ async def list_issues(
     status: IssueStatus | None = Query(None),
     search: str | None = Query(None),
     tag: str | None = Query(None),
+    limit: int | None = Query(None),
+    offset: int = Query(0),
     db: AsyncSession = Depends(get_db),
 ):
     service = IssueService(db)
-    records = await service.list_by_project(project_id, status=status, search=search, tag=tag)
+    records = await service.list_by_project(project_id, status=status, search=search, tag=tag, limit=limit, offset=offset)
     return [IssueResponse.from_record(r) for r in records]
 
 

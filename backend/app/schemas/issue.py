@@ -54,6 +54,7 @@ class IssueResponse(BaseModel):
     tags: list[str] = []
     created_at: datetime
     updated_at: datetime
+    finished_at: datetime | None = None
 
     @classmethod
     def from_record(cls, record: Any) -> "IssueResponse":
@@ -72,6 +73,7 @@ class IssueResponse(BaseModel):
             tags=record.tags if hasattr(record, 'tags') else [],
             created_at=_parse_dt(record.created_at),
             updated_at=_parse_dt(record.updated_at),
+            finished_at=_parse_dt(record.finished_at) if getattr(record, 'finished_at', None) else None,
         )
 
 

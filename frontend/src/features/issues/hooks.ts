@@ -13,10 +13,10 @@ export const issueKeys = {
   tasks: (projectId: string, issueId: string) => ["projects", projectId, "issues", issueId, "tasks"] as const,
 };
 
-export function useIssues(projectId: string, status?: IssueStatus, search?: string, tag?: string) {
+export function useIssues(projectId: string, status?: IssueStatus, search?: string, tag?: string, limit?: number, offset?: number) {
   return useQuery({
-    queryKey: [...issueKeys.all(projectId), "list", { status, search, tag }],
-    queryFn: () => api.fetchIssues(projectId, status, search, tag),
+    queryKey: [...issueKeys.all(projectId), "list", { status, search, tag, limit, offset }],
+    queryFn: () => api.fetchIssues(projectId, status, search, tag, limit, offset),
   });
 }
 

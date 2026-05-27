@@ -1,0 +1,1 @@
+issue... le fare vedere in ordine cronologico di chiusura... inoltre farei vedere gli ultimi 10? e poi gli altri li vedo con un click di un bottone di 10 in 10 (o comunque configurabile

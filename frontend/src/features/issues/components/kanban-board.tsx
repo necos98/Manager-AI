@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { DndContext, DragStartEvent, DragEndEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { Button } from "@/shared/components/ui/button";
@@ -9,6 +9,8 @@ import { useUpdateIssueStatus } from "@/features/issues/hooks";
 import type { Issue, IssueStatus } from "@/shared/types";
 
 const COLUMNS: IssueStatus[] = ["New", "Reasoning", "Planned", "Accepted", "Finished", "Canceled"];
+
+const FINISHED_PAGE_SIZE = 10;
 
 const VALID_TRANSITIONS = new Set([
   "New->Reasoning",
@@ -42,7 +44,24 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
   const [sort, setSort] = useState<SortKey>("priority");
   const [pending, setPending] = useState<PendingTransition | null>(null);
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
+  const [finishedOffset, setFinishedOffset] = useState(0);
+  const [allFinished, setAllFinished] = useState<Issue[]>([]);
   const updateStatus = useUpdateIssueStatus(projectId);
+
+  const { data: finishedPage, isFetching: finishedLoading } = useIssues(
+    projectId, "Finished", undefined, tag !== "all" ? tag : undefined, FINISHED_PAGE_SIZE, finishedOffset
+  );
+
+  useEffect(() => {
+    if (finishedPage) {
+      setAllFinished(prev => finishedOffset === 0 ? finishedPage : [...prev, ...finishedPage]);
+    }
+  }, [finishedPage, finishedOffset]);
+
+  useEffect(() => {
+    setFinishedOffset(0);
+    setAllFinished([]);
+  }, [tag]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -65,9 +84,10 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
   const byStatus = useMemo(() => {
     const map = new Map<IssueStatus, Issue[]>();
     COLUMNS.forEach((s) => map.set(s, []));
-    filtered.forEach((i) => map.get(i.status)?.push(i));
+    filtered.filter(i => i.status !== "Finished").forEach((i) => map.get(i.status)?.push(i));
+    map.set("Finished", allFinished);
     return map;
-  }, [filtered]);
+  }, [filtered, allFinished]);
 
   function handleDragStart(event: DragStartEvent) {
     setActiveIssue(event.active.data.current?.issue ?? null);
@@ -115,6 +135,11 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
               blockedIssueIds={blockedIssueIds}
               isValidTarget={activeIssue ? isValidTransition(activeIssue.status, status) : false}
               projectId={projectId}
+              {...(status === "Finished" ? {
+                onLoadMore: () => setFinishedOffset(prev => prev + FINISHED_PAGE_SIZE),
+                hasMore: finishedPage != null && finishedPage.length >= FINISHED_PAGE_SIZE,
+                isLoadingMore: finishedLoading,
+              } : {})}
             />
           ))}
         </div>

@@ -23,6 +23,7 @@ export interface Issue {
   tasks: Task[];
   created_at: string;
   updated_at: string;
+  finished_at: string | null;
 }
 
 export interface IssueCreate {

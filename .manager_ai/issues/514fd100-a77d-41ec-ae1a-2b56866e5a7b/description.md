@@ -1,0 +1,1 @@
+Vorrei passare all'approccio di MCP con stdio, attualmente è tramite http. Capire cosa comporta il passaggio e se su progetti con WSL può causare problema. Vorrei avere prima una panoramica di tutte le possibili problematiche
