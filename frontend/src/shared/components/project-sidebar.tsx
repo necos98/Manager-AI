@@ -52,7 +52,6 @@ function ProjectSidebarItem({
         </Link>
       </SidebarMenuButton>
       <SidebarMenuAction
-        showOnHover
         onClick={() =>
           updateProject.mutate({
             favorited_at: isFavorited ? null : new Date().toISOString(),

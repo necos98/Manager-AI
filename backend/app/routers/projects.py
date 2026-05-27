@@ -306,7 +306,12 @@ async def get_project(project_id: str, db: AsyncSession = Depends(get_db)):
 @router.put("/{project_id}", response_model=ProjectResponse)
 async def update_project(project_id: str, data: ProjectUpdate, db: AsyncSession = Depends(get_db)):
     service = ProjectService(db)
-    project = await service.update(project_id, **data.model_dump(exclude_unset=True))
+    update_data = data.model_dump(exclude_unset=True)
+    # favorited_at is special: None means unfavorite, but exclude_unset
+    # drops it because None is the field's default. Include it explicitly.
+    if "favorited_at" in data.model_fields_set:
+        update_data["favorited_at"] = data.favorited_at
+    project = await service.update(project_id, **update_data)
     await db.commit()
     await db.refresh(project)
     return await _enrich_project(service, project)
