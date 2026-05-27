@@ -17,12 +17,16 @@ export function fetchIssues(
   projectId: string,
   status?: IssueStatus,
   search?: string,
-  tag?: string
+  tag?: string,
+  limit?: number,
+  offset?: number,
 ): Promise<Issue[]> {
   const params = new URLSearchParams();
   if (status) params.set("status", status);
   if (search) params.set("search", search);
   if (tag) params.set("tag", tag);
+  if (limit !== undefined) params.set("limit", String(limit));
+  if (offset) params.set("offset", String(offset));
   const qs = params.toString();
   return apiGet<Issue[]>(`/projects/${projectId}/issues${qs ? `?${qs}` : ""}`);
 }

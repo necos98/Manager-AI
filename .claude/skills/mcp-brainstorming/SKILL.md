@@ -26,11 +26,10 @@ Create a task for each item and complete them in order:
 3. **Memory scan (MUST)** — `mcp__ManagerAi__memory_search` with topic keywords and `mcp__ManagerAi__memory_list(project_id, parent_id="")` for root memories; surface any prior decisions, constraints, or user preferences before asking clarifying questions
 4. **Ask clarifying questions** — one at a time; scope, constraints, success criteria
 5. **Propose 2-3 approaches** — with trade-offs and a recommendation
-6. **Present the design** — section by section, ask for approval after each section
+6. **Present the design** — present the full design in one shot, then ask for a single overall approval. Do NOT ask for approval section by section.
 7. **Save spec via MCP** — `mcp__ManagerAi__create_task_spec`
 8. **Spec review loop** — dispatch reviewer subagent; fix and re-dispatch until approved (max 3 iterations)
-9. **Request user review** — share the spec task_id, wait for approval
-10. **Transition to mcp-writing-plans** — invoke the skill for the plan
+9. **Notify and proceed** — share the spec task_id briefly, then auto-transition to mcp-writing-plans. Do NOT wait for the user to review or approve the spec — the design approval at step 6 is the only user gate.
 
 ## Flow
 
@@ -41,28 +40,25 @@ digraph mcp_brainstorming {
     "Memory scan" [shape=box];
     "Clarifying questions" [shape=box];
     "Propose 2-3 approaches" [shape=box];
-    "Present design" [shape=box];
+    "Present full design" [shape=box];
     "User approves?" [shape=diamond];
     "Save spec via MCP" [shape=box];
     "Review loop" [shape=box];
-    "Spec approved?" [shape=diamond];
-    "User revises?" [shape=diamond];
-    "Invoke mcp-writing-plans" [shape=doublecircle];
+    "Spec ok?" [shape=diamond];
+    "Auto-transition to plan" [shape=doublecircle];
 
     "Read project_id" -> "Explore context";
     "Explore context" -> "Memory scan";
     "Memory scan" -> "Clarifying questions";
     "Clarifying questions" -> "Propose 2-3 approaches";
-    "Propose 2-3 approaches" -> "Present design";
-    "Present design" -> "User approves?";
-    "User approves?" -> "Present design" [label="no, revise"];
+    "Propose 2-3 approaches" -> "Present full design";
+    "Present full design" -> "User approves?";
+    "User approves?" -> "Present full design" [label="no, revise"];
     "User approves?" -> "Save spec via MCP" [label="yes"];
     "Save spec via MCP" -> "Review loop";
-    "Review loop" -> "Spec approved?";
-    "Spec approved?" -> "Review loop" [label="issues"];
-    "Spec approved?" -> "User revises?" [label="ok"];
-    "User revises?" -> "Save spec via MCP" [label="changes"];
-    "User revises?" -> "Invoke mcp-writing-plans" [label="approved"];
+    "Review loop" -> "Spec ok?";
+    "Spec ok?" -> "Review loop" [label="issues"];
+    "Spec ok?" -> "Auto-transition to plan" [label="ok"];
 }
 ```
 
@@ -75,7 +71,7 @@ mcp__ManagerAi__create_task_spec
 ```
 
 After saving:
-> "Spec saved in Manager AI (task_id: `<id>`). Review it in the interface and let me know if you want changes before moving to the plan."
+> "Spec saved in Manager AI (task_id: `<id>`). Moving to implementation plan now."
 
 ## Principles
 

@@ -1,6 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { KanbanCard } from "./kanban-card";
 import { StatusBadge } from "./status-badge";
+import { Button } from "@/shared/components/ui/button";
 import type { Issue, IssueStatus } from "@/shared/types";
 
 interface KanbanColumnProps {
@@ -10,9 +11,12 @@ interface KanbanColumnProps {
   blockedIssueIds: Set<string>;
   isValidTarget: boolean;
   projectId: string;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
 }
 
-export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIssueIds, isValidTarget, projectId }: KanbanColumnProps) {
+export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIssueIds, isValidTarget, projectId, onLoadMore, hasMore, isLoadingMore }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
@@ -40,6 +44,11 @@ export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIs
             projectId={projectId}
           />
         ))}
+        {onLoadMore && hasMore && (
+          <Button variant="ghost" size="sm" onClick={onLoadMore} disabled={isLoadingMore} className="mt-2 w-full">
+            {isLoadingMore ? "Loading..." : "Load more"}
+          </Button>
+        )}
       </div>
     </div>
   );

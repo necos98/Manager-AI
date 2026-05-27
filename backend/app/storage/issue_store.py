@@ -48,6 +48,7 @@ class IssueRecord:
     recap: str | None
     created_at: str
     updated_at: str
+    finished_at: str | None = None
     category: str | None = None
     tasks: list[TaskRecord] = field(default_factory=list)
     relations: list[RelationRecord] = field(default_factory=list)
@@ -87,6 +88,7 @@ def _to_index_entry(record: IssueRecord) -> dict[str, Any]:
         "category": record.category,
         "created_at": record.created_at,
         "updated_at": record.updated_at,
+        "finished_at": record.finished_at,
     }
 
 
@@ -104,6 +106,7 @@ def _index_to_light_record(entry: dict[str, Any]) -> IssueRecord:
         recap=None,
         created_at=_as_iso(entry.get("created_at")),
         updated_at=_as_iso(entry.get("updated_at")),
+        finished_at=_as_iso(entry.get("finished_at")),
     )
 
 
@@ -324,6 +327,7 @@ def rebuild_issues_index(project_path: str) -> int:
                     "category": data.get("category"),
                     "created_at": _as_iso(data.get("created_at")),
                     "updated_at": _as_iso(data.get("updated_at")),
+                    "finished_at": _as_iso(data.get("finished_at")),
                 }
             )
     entries.sort(key=lambda e: (e["created_at"], e["id"]))
@@ -348,6 +352,7 @@ def _write_issue_record(project_path: str, payload: dict[str, Any]) -> None:
         "category": payload.get("category"),
         "created_at": payload.get("created_at", ""),
         "updated_at": payload.get("updated_at", ""),
+        "finished_at": payload.get("finished_at"),
         "tasks": payload.get("tasks", []),
         "relations": payload.get("relations", []),
     }
@@ -379,6 +384,7 @@ def _record_to_payload(record: IssueRecord) -> dict[str, Any]:
         "recap": record.recap,
         "created_at": record.created_at,
         "updated_at": record.updated_at,
+        "finished_at": record.finished_at,
         "tasks": [asdict(t) for t in sorted(record.tasks, key=lambda t: (t.order, t.id))],
         "relations": [asdict(r) for r in sorted(record.relations, key=lambda r: (r.type, r.target_id))],
         "tags": record.tags,

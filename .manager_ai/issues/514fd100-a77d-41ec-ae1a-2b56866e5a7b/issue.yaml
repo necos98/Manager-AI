@@ -1,0 +1,11 @@
+schema_version: 1
+id: 514fd100-a77d-41ec-ae1a-2b56866e5a7b
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'MCP: passaggio da HTTP a stdio con analisi impatto WSL'
+status: Canceled
+priority: 3
+category: Improvement
+created_at: '2026-05-27T13:29:23.685185'
+updated_at: '2026-05-27T13:39:29.772123'
+tasks: []
+relations: []

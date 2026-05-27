@@ -128,6 +128,8 @@ class IssueService:
         status: IssueStatus | None = None,
         search: str | None = None,
         tag: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list[IssueRecord]:
         path = await self._resolve_path(project_id)
         records = issue_store.list_issues_full(path)
@@ -145,7 +147,13 @@ class IssueService:
         if tag:
             tag_lower = tag.strip().lower()
             records = [r for r in records if tag_lower in (getattr(r, 'tags', []) or [])]
-        records.sort(key=lambda r: (r.priority, r.created_at))
+        target_status = status.value if isinstance(status, IssueStatus) else str(status) if status else None
+        if target_status == IssueStatus.FINISHED.value:
+            records.sort(key=lambda r: (r.finished_at or r.updated_at or ""), reverse=True)
+        else:
+            records.sort(key=lambda r: (r.priority, r.created_at))
+        if limit is not None:
+            records = records[offset:offset + limit]
         return records
 
     async def get_next_issue(self, project_id: str) -> IssueRecord | None:
@@ -356,6 +364,7 @@ class IssueService:
             rec.recap = recap
             rec.status = IssueStatus.FINISHED.value
             rec.updated_at = _now_iso()
+            rec.finished_at = _now_iso()
             path = await self._resolve_path(project_id)
             issue_store.update_issue(path, rec)
             await ActivityService(self.session).log(

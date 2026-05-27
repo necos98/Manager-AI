@@ -1,0 +1,1 @@
+Refactoring grafico, vorrei una dobbia sidebar, quella più a sinistra fa visualizzare tutti i progetti presenti, e sotto le voci "global" quella più a destra invece fa visualizzare le voci relative al progetto. Ha senso come disign? O ne proponi tu uno?

@@ -44,7 +44,7 @@ Before defining tasks, map out the files that will be created or modified. Each 
 7. **Save plan via MCP** — `mcp__ManagerAi__create_task_plan`
 8. **Create MCP tasks** — one `mcp__ManagerAi__create_task` for each main task in the plan
 9. **Plan review loop** — dispatch reviewer subagent; fix and re-dispatch until approved (max 3 iterations)
-10. **Execution handoff** — present execution options to the user
+10. **Auto-start execution** — proceed directly to implementation without asking the user. Use inline execution by default. Do NOT present options or ask "How do you want to proceed?" — just start implementing the tasks.
 
 ## Task structure in the plan
 
@@ -97,15 +97,13 @@ mcp__ManagerAi__create_task
 2. If ❌ issues found: fix with `mcp__ManagerAi__edit_task_plan`, re-dispatch
 3. If ✅ approved: proceed to handoff
 
-## Execution Handoff
+## Auto-Start Execution
 
-> "Plan saved in Manager AI (task_id: `<id>`). Tasks created: N. How do you want to proceed?
->
-> **1. Subagent per task** (recommended) — a fresh subagent for each task, review between tasks
-> **2. Inline execution** — I execute the tasks in this session with checkpoints"
+After saving the plan and creating tasks, auto-accept the issue and start implementing immediately. Use inline execution by default. Announce briefly what you're doing, then begin — do NOT ask the user how to proceed.
 
-- If **Subagent** chosen: **REQUIRED SUB-SKILL:** `superpowers:subagent-driven-development`
-- If **Inline** chosen: **REQUIRED SUB-SKILL:** `superpowers:executing-plans`
+- Default to inline execution in the current session
+- If the plan is too large for one session, use subagent-per-task as a fallback
+- Do NOT invoke `superpowers:subagent-driven-development` or `superpowers:executing-plans` — this skill handles execution directly
 
 ## Rules
 
