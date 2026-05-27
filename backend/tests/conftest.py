@@ -5,8 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.database import Base
 from app.models import (  # noqa: F401
-    ActivityLog, Issue, IssueFeedback, IssueRelation,
-    Memory, MemoryLink, Project, ProjectFile, ProjectSkill,
+    ActivityLog, Agent, Issue, IssueFeedback, IssueRelation,
+    Memory, MemoryLink, Pipeline, PipelineMessage, PipelineRun,
+    PipelineStep, PipelineStepRun, Project, ProjectFile, ProjectSkill,
     PromptTemplate, Setting, Task, TerminalCommand,
 )
 from app.models.issue_relation import IssueRelation  # noqa: F401
