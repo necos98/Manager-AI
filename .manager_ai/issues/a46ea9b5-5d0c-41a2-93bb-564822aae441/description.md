@@ -1,0 +1,1 @@
+Nella sezione "Questions" inserire la issue e il progetto di riferimento, arricchire la schermata con informazioni utili

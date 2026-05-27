@@ -1,0 +1,42 @@
+schema_version: 1
+id: a46ea9b5-5d0c-41a2-93bb-564822aae441
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Enrich Questions page with issue and project context
+status: Accepted
+priority: 3
+category: Improvement
+created_at: '2026-05-27T14:01:12.025090'
+updated_at: '2026-05-27T14:07:47.955708'
+finished_at: null
+tasks:
+- id: bdabf14d-985c-4c42-ba77-cac47d38dd03
+  name: 'Backend: Add project_name and issue_name to QuestionResponse schema'
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T14:07:43'
+  updated_at: '2026-05-27T14:08:08'
+- id: 3533bfeb-6a72-4f7d-b237-96d202a82c80
+  name: 'Backend: Enrich question queries with JOINs for names'
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T14:07:43'
+  updated_at: '2026-05-27T14:08:37'
+- id: 96e96d1d-e055-409f-949e-a725e678fff4
+  name: 'Frontend: Update Question type with new fields'
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T14:07:43'
+  updated_at: '2026-05-27T14:08:48'
+- id: b3440945-71a3-49f2-83dc-46e325eb1fa4
+  name: 'Frontend: Enrich QuestionCard with status badge, timestamps, and issue link'
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T14:07:43'
+  updated_at: '2026-05-27T14:09:09'
+- id: 153af987-e23e-46b3-a340-2a791710766b
+  name: Verify and commit
+  status: In Progress
+  order: 4
+  created_at: '2026-05-27T14:07:43'
+  updated_at: '2026-05-27T14:09:10'
+relations: []

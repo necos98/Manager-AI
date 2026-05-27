@@ -458,6 +458,8 @@ export interface Question {
   id: string;
   project_id: string;
   issue_id: string;
+  project_name?: string;
+  issue_name?: string;
   question: string;
   options: string[] | null;
   status: "pending" | "answered" | "timed_out";

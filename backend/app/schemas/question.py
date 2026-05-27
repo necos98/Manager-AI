@@ -19,6 +19,8 @@ class QuestionResponse(BaseModel):
     id: str
     project_id: str
     issue_id: str
+    project_name: str | None = None
+    issue_name: str | None = None
     question: str
     options: list[str] | None
     status: str

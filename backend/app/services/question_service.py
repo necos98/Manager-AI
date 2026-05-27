@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.issue import Issue
+from app.models.project import Project
 from app.models.question import Question
 
 
@@ -107,18 +109,47 @@ class QuestionService:
 
     async def get_pending(self, project_id: str | None = None, issue_id: str | None = None) -> list[Question]:
         if project_id and issue_id:
-            return question_store.get_pending_by_issue(project_id, issue_id)
-        return question_store.get_all_pending()
+            questions = question_store.get_pending_by_issue(project_id, issue_id)
+        else:
+            questions = question_store.get_all_pending()
+
+        if questions:
+            issue_ids = list({q.issue_id for q in questions})
+            project_ids = list({q.project_id for q in questions})
+
+            issue_stmt = select(Issue.id, Issue.name).where(Issue.id.in_(issue_ids))
+            project_stmt = select(Project.id, Project.name).where(Project.id.in_(project_ids))
+
+            issue_result = await self.session.execute(issue_stmt)
+            issue_names = {row[0]: row[1] for row in issue_result.all()}
+
+            project_result = await self.session.execute(project_stmt)
+            project_names = {row[0]: row[1] for row in project_result.all()}
+
+            for q in questions:
+                q.issue_name = issue_names.get(q.issue_id)
+                q.project_name = project_names.get(q.project_id)
+
+        return questions
 
     async def get_all(self, project_id: str | None = None, issue_id: str | None = None) -> list[Question]:
-        stmt = select(Question)
+        stmt = (
+            select(Question, Issue.name, Project.name)
+            .outerjoin(Issue, Question.issue_id == Issue.id)
+            .outerjoin(Project, Question.project_id == Project.id)
+        )
         if project_id:
             stmt = stmt.where(Question.project_id == project_id)
         if issue_id:
             stmt = stmt.where(Question.issue_id == issue_id)
         stmt = stmt.order_by(Question.created_at.desc())
         result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        questions = []
+        for q, issue_name, project_name in result.all():
+            q.issue_name = issue_name
+            q.project_name = project_name
+            questions.append(q)
+        return questions
 
     async def pending_count(self) -> int:
         return len(question_store.get_all_pending())
