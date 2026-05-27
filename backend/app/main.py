@@ -6,7 +6,8 @@ from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from starlette.requests import ClientDisconnect
 
 from app.config import settings
 from app.database import async_session
@@ -29,6 +30,20 @@ from app.routers import activity, agents, credentials, events, files, issue_rela
 from app.routers.projects import install_claude_resources_to
 
 logger = logging.getLogger(__name__)
+
+
+class _SuppressClientDisconnectFilter(logging.Filter):
+    """Suppress log records whose exception is a ClientDisconnect.
+
+    Client disconnects are normal — logging them at ERROR is noise.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.exc_info:
+            exc_type = record.exc_info[0]
+            if exc_type is not None and exc_type.__name__ == "ClientDisconnect":
+                return False
+        return True
 
 if sys.platform == "win32":
     # Safety net: ensure ProactorEventLoop policy (supports subprocesses for MCP
@@ -75,6 +90,20 @@ _streamable_app = mcp.streamable_http_app()
 # the mounted app's lifespan (which also calls session_manager.run()),
 # leading to "can only be called once" errors that tear down the task group.
 _streamable_app.router.lifespan_context = _noop_lifespan
+
+# Suppress ERROR logs for ClientDisconnect in the MCP streamable HTTP handler.
+# Client disconnects are normal — the library logs them at ERROR with full
+# traceback via logger.exception, which is noise.
+logging.getLogger("mcp.server.streamable_http").addFilter(
+    _SuppressClientDisconnectFilter()
+)
+
+# Catch any ClientDisconnect that escapes the MCP handler (e.g. from a failed
+# error-response send after the client already disconnected).
+@_streamable_app.exception_handler(ClientDisconnect)
+async def _client_disconnect_handler(request, exc):
+    logger.debug("Client disconnected during MCP request to %s", request.url.path)
+    return Response(status_code=499)
 
 
 def _load_project_into_memory(project_path: str, store: Any) -> None:

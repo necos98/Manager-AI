@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
+from starlette.requests import Request, ClientDisconnect
 from starlette.responses import Response
 
 LOGS_DIR = Path(__file__).resolve().parent.parent.parent / "logs"
@@ -43,6 +43,9 @@ class ErrorLoggerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         try:
             return await call_next(request)
+        except ClientDisconnect:
+            logger.debug("Client disconnected during request to %s", request.url.path)
+            return Response(status_code=499)
         except Exception:
             entry = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),

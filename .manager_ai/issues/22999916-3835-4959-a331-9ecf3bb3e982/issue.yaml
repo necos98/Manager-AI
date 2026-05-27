@@ -1,0 +1,36 @@
+schema_version: 1
+id: 22999916-3835-4959-a331-9ecf3bb3e982
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Suppress noisy ClientDisconnect ERROR logs in MCP streamable HTTP handler
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-27T20:10:17.112863'
+updated_at: '2026-05-27T20:19:27.991948'
+finished_at: '2026-05-27T20:19:27.991977'
+tasks:
+- id: 82dafebc-2be1-4123-bfe4-db745fb34689
+  name: Add logging filter to suppress ClientDisconnect in MCP streamable_http logger
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T20:15:35'
+  updated_at: '2026-05-27T20:16:13'
+- id: bf1df147-a347-4871-88af-562c6749cafa
+  name: Add ClientDisconnect exception handler on _streamable_app
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T20:15:35'
+  updated_at: '2026-05-27T20:16:17'
+- id: 4dc1cd7d-4cbe-457a-94cb-fccb6ba66425
+  name: Update ErrorLoggerMiddleware to handle ClientDisconnect gracefully
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T20:15:35'
+  updated_at: '2026-05-27T20:16:41'
+- id: 919ca2c1-5ab5-4594-b31d-72ab4461d51f
+  name: 'Test: start server, verify no ERROR log on client disconnect'
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T20:15:35'
+  updated_at: '2026-05-27T20:19:18'
+relations: []
