@@ -565,20 +565,17 @@ async def delete_terminal(
     terminal_id: str,
     service: TerminalService = Depends(get_terminal_service),
 ):
-    try:
-        buf = service.get_buffered_output(terminal_id)
-        _save_recording(terminal_id, buf)
-        # Stop background reader and disconnect WebSocket before killing
-        _stop_reader(terminal_id)
-        session = _sessions.pop(terminal_id, None)
-        if session is not None and session.ws is not None:
-            try:
-                await session.ws.close(code=1000, reason="Terminal killed")
-            except Exception:
-                pass
-        service.kill(terminal_id)
-    except KeyError:
-        raise HTTPException(status_code=404, detail="Terminal not found")
+    buf = service.get_buffered_output(terminal_id)
+    _save_recording(terminal_id, buf)
+    # Stop background reader and disconnect WebSocket before killing
+    _stop_reader(terminal_id)
+    session = _sessions.pop(terminal_id, None)
+    if session is not None and session.ws is not None:
+        try:
+            await session.ws.close(code=1000, reason="Terminal killed")
+        except Exception:
+            pass
+    service.kill(terminal_id)
 
 
 @router.websocket("/{terminal_id}/ws")

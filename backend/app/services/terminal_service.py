@@ -248,11 +248,11 @@ class TerminalService:
 
     def kill(self, terminal_id: str) -> None:
         with self._lock:
-            if terminal_id not in self._terminals:
-                raise KeyError(f"Terminal {terminal_id} not found")
-            entry = self._terminals.pop(terminal_id)
+            entry = self._terminals.pop(terminal_id, None)
             self._buffers.pop(terminal_id, None)
             self._queues.pop(terminal_id, None)
+        if entry is None:
+            return  # Already cleaned up (e.g., by mark_closed after PTY EOF)
         try:
             pty = entry["pty"]
             if hasattr(pty, "close"):
