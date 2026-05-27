@@ -1,0 +1,1 @@
+possibilità di impostare "preferiti" i progetti e quindi vederli "pinnati" nella sidebar.

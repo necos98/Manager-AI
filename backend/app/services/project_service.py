@@ -28,7 +28,11 @@ class ProjectService:
         elif archived is True:
             stmt = stmt.where(Project.archived_at.is_not(None))
         # archived is None → include both archived and active
-        stmt = stmt.order_by(func.lower(Project.name).asc())
+        stmt = stmt.order_by(
+            Project.favorited_at.is_not(None).desc(),
+            Project.favorited_at.desc(),
+            func.lower(Project.name).asc(),
+        )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 

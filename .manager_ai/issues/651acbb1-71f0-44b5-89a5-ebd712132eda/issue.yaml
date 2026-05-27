@@ -1,0 +1,42 @@
+schema_version: 1
+id: 651acbb1-71f0-44b5-89a5-ebd712132eda
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Favorite/pinned projects in sidebar
+status: Finished
+priority: 3
+category: Feature
+created_at: '2026-05-27T14:44:47.968570'
+updated_at: '2026-05-27T15:01:14.136695'
+finished_at: '2026-05-27T15:01:14.136704'
+tasks:
+- id: 5339344c-bb2e-4ad7-8f4f-14d9dd148f9a
+  name: Add favorited_at column to Project model + migration
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T14:58:48'
+  updated_at: '2026-05-27T14:59:34'
+- id: 4a2f8ba6-b934-465f-aa27-f888a1e28c89
+  name: Update Project schemas (ProjectUpdate + ProjectResponse)
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T14:58:48'
+  updated_at: '2026-05-27T14:59:47'
+- id: eb8c30b9-0113-42fd-a860-3a6801d6ae49
+  name: Update sort order in ProjectService.list_all
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T14:58:48'
+  updated_at: '2026-05-27T14:59:53'
+- id: 99117fda-2927-4f14-a1ac-a4b835b103c8
+  name: 'Frontend: add favorited_at to Project and ProjectUpdate types'
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T14:58:48'
+  updated_at: '2026-05-27T15:00:11'
+- id: 2279c7ba-197f-41dc-8304-baf5ae1be94f
+  name: 'Frontend: add star toggle button in ProjectSidebar'
+  status: Completed
+  order: 4
+  created_at: '2026-05-27T14:58:48'
+  updated_at: '2026-05-27T15:01:02'
+relations: []

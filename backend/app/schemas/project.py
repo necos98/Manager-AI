@@ -36,6 +36,7 @@ class ProjectUpdate(BaseModel):
     shell: str | None = None
     wsl_distro: str | None = None
     url: str | None = None
+    favorited_at: datetime | None = None
 
     @field_validator("path")
     @classmethod
@@ -55,6 +56,7 @@ class ProjectResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None = None
+    favorited_at: datetime | None = None
     issue_counts: dict[str, int] = {}
 
     model_config = {"from_attributes": True}

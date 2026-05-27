@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Settings,
   Smartphone,
+  Star,
   Terminal,
 } from "lucide-react";
 import { useState } from "react";
@@ -16,6 +17,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -23,13 +25,47 @@ import {
 } from "@/shared/components/ui/sidebar";
 import { SmartphoneQrDialog } from "@/shared/components/smartphone-qr-dialog";
 import { ThemeToggle } from "@/shared/components/theme-toggle";
-import { useProjects } from "@/features/projects/hooks";
+import { useProjects, useUpdateProject } from "@/features/projects/hooks";
 import { useTerminalCount } from "@/features/terminals/hooks";
 import { usePendingCount } from "@/features/questions/hooks";
 import type { Project } from "@/shared/types";
 
 interface ProjectSidebarProps {
   activeProject: Project | null;
+}
+
+function ProjectSidebarItem({
+  project,
+  isActive,
+}: {
+  project: Project;
+  isActive: boolean;
+}) {
+  const updateProject = useUpdateProject(project.id);
+  const isFavorited = !!project.favorited_at;
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={isActive}>
+        <Link to="/projects/$projectId/issues" params={{ projectId: project.id }}>
+          <span>{project.name}</span>
+        </Link>
+      </SidebarMenuButton>
+      <SidebarMenuAction
+        showOnHover
+        onClick={() =>
+          updateProject.mutate({
+            favorited_at: isFavorited ? null : new Date().toISOString(),
+          })
+        }
+      >
+        <Star
+          className={isFavorited ? "text-yellow-400" : ""}
+          fill={isFavorited ? "currentColor" : "none"}
+        />
+      </SidebarMenuAction>
+    </SidebarMenuItem>
+  );
 }
 
 export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
@@ -65,13 +101,11 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                     activeProject?.id === project.id &&
                     !!matchRoute({ to: "/projects/$projectId", params: { projectId: project.id }, fuzzy: true });
                   return (
-                    <SidebarMenuItem key={project.id}>
-                      <SidebarMenuButton asChild isActive={isActive}>
-                        <Link to="/projects/$projectId/issues" params={{ projectId: project.id }}>
-                          <span>{project.name}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <ProjectSidebarItem
+                      key={project.id}
+                      project={project}
+                      isActive={isActive}
+                    />
                   );
                 })}
                 <SidebarMenuItem>
