@@ -24,3 +24,5 @@ class Project(Base):
 
     issues = relationship("Issue", back_populates="project", cascade="all, delete-orphan")
     files = relationship("ProjectFile", back_populates="project", cascade="all, delete-orphan")
+    agents = relationship("Agent", back_populates="project", cascade="all, delete-orphan")
+    pipelines = relationship("Pipeline", back_populates="project", cascade="all, delete-orphan")

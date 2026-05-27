@@ -1,0 +1,11 @@
+schema_version: 1
+id: 7b3f0028-7c48-4bf6-a870-5a88a50c15f4
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Pipeline: Agent & Pipeline CRUD (API + UI)'
+status: New
+priority: 2
+category: null
+created_at: '2026-05-25T15:18:56.297124'
+updated_at: '2026-05-25T15:19:31.753335'
+tasks: []
+relations: []

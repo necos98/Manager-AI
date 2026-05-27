@@ -1,0 +1,11 @@
+schema_version: 1
+id: ca4c0ac6-2233-4d8b-9cbd-49ce6d48b429
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Pipeline: Execution Engine (Orchestrator)'
+status: New
+priority: 4
+category: null
+created_at: '2026-05-25T15:19:14.588214'
+updated_at: '2026-05-25T15:19:34.772637'
+tasks: []
+relations: []

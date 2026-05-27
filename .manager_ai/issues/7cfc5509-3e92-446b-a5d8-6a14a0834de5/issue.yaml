@@ -1,0 +1,53 @@
+schema_version: 1
+id: 7cfc5509-3e92-446b-a5d8-6a14a0834de5
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Pipeline: DB Schema & Models'
+status: Finished
+priority: 1
+category: null
+created_at: '2026-05-25T15:18:47.777293'
+updated_at: '2026-05-25T15:31:25.457089'
+tasks:
+- id: 307bbf73-d5ec-453c-a27f-e705a60a42a3
+  name: Create Agent model (agent.py)
+  status: Completed
+  order: 0
+  created_at: '2026-05-25T15:24:06'
+  updated_at: '2026-05-25T15:26:24'
+- id: e50d5d72-dd4b-44a5-8c63-1f5a7f5627a6
+  name: Create Pipeline + PipelineStep models (pipeline.py)
+  status: Completed
+  order: 1
+  created_at: '2026-05-25T15:24:06'
+  updated_at: '2026-05-25T15:26:38'
+- id: 47d3ded1-0cef-4bc0-8125-4c357f168a26
+  name: Create PipelineRun + PipelineStepRun + PipelineMessage models + enums (pipeline_run.py)
+  status: Completed
+  order: 2
+  created_at: '2026-05-25T15:24:06'
+  updated_at: '2026-05-25T15:26:55'
+- id: 470d3183-cb8d-4023-84bd-42222f207017
+  name: Register models in __init__.py and add relationships to Project model
+  status: Completed
+  order: 3
+  created_at: '2026-05-25T15:24:06'
+  updated_at: '2026-05-25T15:27:14'
+- id: 3e79453e-e36a-4e6f-b8db-2b38c4ff3d55
+  name: Generate Alembic auto-migration
+  status: Completed
+  order: 4
+  created_at: '2026-05-25T15:24:06'
+  updated_at: '2026-05-25T15:28:48'
+- id: f0c0711c-fc99-4476-9f75-e13459561204
+  name: Write unit tests for models (table creation, relationships, cascade, constraints)
+  status: Completed
+  order: 5
+  created_at: '2026-05-25T15:24:06'
+  updated_at: '2026-05-25T15:30:04'
+- id: 9263aad9-0d6e-4d98-b0a9-86d469087f7f
+  name: Run tests and verify pass
+  status: Completed
+  order: 6
+  created_at: '2026-05-25T15:24:06'
+  updated_at: '2026-05-25T15:31:01'
+relations: []
