@@ -21,7 +21,7 @@ export function usePipelineRuns(
 ) {
   return useQuery({
     queryKey: pipelineRunKeys.byIssue(projectId, issueId),
-    queryFn: () => api.fetchPipelineRuns(projectId, issueId),
+    queryFn: () => api.fetchPipelineRuns(issueId),
     enabled: Boolean(projectId) && Boolean(issueId),
     refetchInterval: opts?.refetchInterval,
   });
@@ -30,7 +30,7 @@ export function usePipelineRuns(
 export function usePipelineRun(projectId: string, runId: string) {
   return useQuery({
     queryKey: pipelineRunKeys.detail(projectId, runId),
-    queryFn: () => api.fetchPipelineRun(projectId, runId),
+    queryFn: () => api.fetchPipelineRun(runId),
     enabled: Boolean(projectId) && Boolean(runId),
   });
 }
@@ -38,7 +38,7 @@ export function usePipelineRun(projectId: string, runId: string) {
 export function useStartPipelineRun(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: PipelineRunStart) => api.startPipelineRun(projectId, data),
+    mutationFn: (data: PipelineRunStart) => api.startPipelineRun(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: pipelineRunKeys.all(projectId) });
     },
@@ -49,7 +49,7 @@ export function useStartPipelineRun(projectId: string) {
 export function useCancelPipelineRun(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (runId: string) => api.cancelPipelineRun(projectId, runId),
+    mutationFn: (runId: string) => api.cancelPipelineRun(runId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: pipelineRunKeys.all(projectId) });
     },
@@ -64,7 +64,7 @@ export function usePipelineMessages(
 ) {
   return useQuery({
     queryKey: pipelineRunKeys.messages(projectId, runId),
-    queryFn: () => api.fetchPipelineMessages(projectId, runId),
+    queryFn: () => api.fetchPipelineMessages(runId),
     enabled: Boolean(projectId) && Boolean(runId),
     refetchInterval: opts?.refetchInterval,
   });
@@ -74,7 +74,7 @@ export function useSendPipelineMessage(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ runId, data }: { runId: string; data: PipelineMessageCreate }) =>
-      api.sendPipelineMessage(projectId, runId, data),
+      api.sendPipelineMessage(runId, data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: pipelineRunKeys.messages(projectId, variables.runId) });
     },

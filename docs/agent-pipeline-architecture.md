@@ -2,11 +2,12 @@
 
 ## Overview
 
-Sistema di pipeline agenti personalizzabile per progetto. Ogni pipeline e una sequenza ordinata di step, dove ogni step esegue un agente Claude Code con un comando terminale specifico. L'output di ogni step viene streammato in tempo reale via log terminal. Gli agenti comunicano tra loro tramite una chat integrata (`PipelineMessage`).
+Sistema di pipeline agenti globale (software-level), condiviso tra tutti i progetti. Ogni pipeline e una sequenza ordinata di step, dove ogni step esegue un agente Claude Code con un comando terminale specifico. L'output di ogni step viene streammato in tempo reale via log terminal. Gli agenti comunicano tra loro tramite una chat integrata (`PipelineMessage`).
 
 **Principi:**
-- Agenti e pipeline sono **per-project** (scope project_id)
-- N pipeline per progetto, **1 esecuzione alla volta per issue**
+- Agenti e pipeline sono **globali** (software-level, condivisi tra tutti i progetti)
+- PipelineRun e PipelineStepRun sono **per-project** (legate alla issue del progetto)
+- N pipeline disponibili, **1 esecuzione alla volta per issue**
 - Esecuzione **sequenziale** (step 1 finito -> step 2 parte)
 - Ogni step spawna un **subprocess** (non PTY interattivo)
 - Output streammato via **log terminal** (asyncio.Queue)
@@ -16,19 +17,18 @@ Sistema di pipeline agenti personalizzabile per progetto. Ogni pipeline e una se
 
 ## Data Model
 
-Tutti i modelli in `backend/app/models/`. Migration: `04d6489a8fd4`.
+Tutti i modelli in `backend/app/models/`. Migration: `74be7f4de8b5`.
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
 │    Agent    │────→│ PipelineStep │←────│    Pipeline     │
 │             │     │               │     │                 │
 │ id          │     │ id           │     │ id              │
-│ project_id  │     │ pipeline_id  │     │ project_id      │
-│ name        │     │ agent_id     │     │ name            │
-│ system_pr.  │     │ order_index  │     │ created_at      │
-│ model       │     │ terminal_cmd │     └────────┬────────┘
-│ allowed_tls │     └──────┬───────┘              │
-└─────────────┘            │                      │
+│ name        │     │ pipeline_id  │     │ name            │
+│ system_pr.  │     │ agent_id     │     │ created_at      │
+│ model       │     │ order_index  │     └────────┬────────┘
+│ allowed_tls │     │ terminal_cmd │              │
+└─────────────┘     └──────┬───────┘              │
                            │              ┌───────┴────────┐
                            │              │  PipelineRun   │
                            │              │                │
@@ -54,8 +54,7 @@ Tutti i modelli in `backend/app/models/`. Migration: `04d6489a8fd4`.
 | Field | Type | Note |
 |---|---|---|
 | id | UUID string | PK |
-| project_id | FK -> projects | CASCADE delete |
-| name | str(255) | Unique per project |
+| name | str(255) | Globally unique |
 | system_prompt | Text | Prompt di sistema per Claude Code |
 | model | str(50) nullable | es. `claude-sonnet-4-20250514` |
 | allowed_tools | JSON nullable | Lista MCP tools accessibili |
@@ -64,7 +63,6 @@ Tutti i modelli in `backend/app/models/`. Migration: `04d6489a8fd4`.
 | Field | Type | Note |
 |---|---|---|
 | id | UUID string | PK |
-| project_id | FK -> projects | CASCADE delete |
 | name | str(255) | |
 
 ### PipelineStep
@@ -109,12 +107,12 @@ Tutti i modelli in `backend/app/models/`. Migration: `04d6489a8fd4`.
 ## Services
 
 ### AgentService (`backend/app/services/agent_service.py`)
-- CRUD standard (create, list_by_project, get_by_id, update, delete)
-- `seed_defaults(project_id)` — crea 6 agenti predefiniti (idempotente)
+- CRUD standard (create, list_all, get_by_id, update, delete)
+- `seed_defaults()` — crea 6 agenti predefiniti globali (idempotente)
 
 ### PipelineService (`backend/app/services/pipeline_service.py`)
-- CRUD pipeline + step (create, list_by_project, get_by_id, update, delete)
-- `seed_default(project_id)` — crea pipeline base 6-step
+- CRUD pipeline + step (create_pipeline, list_all, get_pipeline, update, delete)
+- `seed_defaults()` — crea pipeline base 6-step globale
 
 ### PipelineRunService (`backend/app/services/pipeline_run_service.py`)
 **Core orchestrator.** Metodi principali:
@@ -147,7 +145,7 @@ Tutti i modelli in `backend/app/models/`. Migration: `04d6489a8fd4`.
 ## Orchestrator Flow
 
 ```
-POST /api/projects/{id}/pipeline-runs  {pipeline_id, issue_id}
+POST /api/pipeline-runs  {pipeline_id, issue_id, project_id}
   │
   ├─ Check: nessuna run attiva per questa issue
   ├─ Crea PipelineRun (status=RUNNING, current_step_index=0)
@@ -220,7 +218,7 @@ Salvati in `.manager_ai/issues/{issue_id}/artifacts/`. L'agente brainstorming sc
 
 ## Default Agents
 
-Creati automaticamente da `AgentService.seed_defaults()` per ogni nuovo progetto.
+Creati automaticamente da `AgentService.seed_defaults()` — globali, una volta per l'istanza.
 
 | Nome | System Prompt | Ruolo |
 |---|---|---|
@@ -233,7 +231,7 @@ Creati automaticamente da `AgentService.seed_defaults()` per ogni nuovo progetto
 
 ## Default Pipeline
 
-Creata da `PipelineService.seed_default()`. 6 step in ordine:
+Creata da `PipelineService.seed_defaults()`. 6 step in ordine:
 
 | # | Agente | Comando |
 |---|---|---|
@@ -248,34 +246,40 @@ Creata da `PipelineService.seed_default()`. 6 step in ordine:
 
 ## REST API
 
-Tutti gli endpoint hanno prefix `/api/projects/{project_id}`.
+Agents e pipelines: endpoint top-level (globali). Pipeline runs: endpoint top-level con `project_id` nel body.
 
 ### Agents
 | Method | Path | Descrizione |
 |---|---|---|
-| GET | `/agents` | Lista agenti del progetto |
-| POST | `/agents` | Crea agente |
-| GET | `/agents/{id}` | Dettaglio agente |
-| PUT | `/agents/{id}` | Modifica agente |
-| DELETE | `/agents/{id}` | Elimina agente |
+| GET | `/api/agents` | Lista tutti gli agenti |
+| POST | `/api/agents` | Crea agente |
+| GET | `/api/agents/{id}` | Dettaglio agente |
+| PUT | `/api/agents/{id}` | Modifica agente |
+| DELETE | `/api/agents/{id}` | Elimina agente |
+| POST | `/api/agents/seed` | Crea agenti default |
 
 ### Pipelines
 | Method | Path | Descrizione |
 |---|---|---|
-| GET | `/pipelines` | Lista pipeline (con step e agent_name) |
-| POST | `/pipelines` | Crea pipeline con step |
-| GET | `/pipelines/{id}` | Dettaglio pipeline |
-| PUT | `/pipelines/{id}` | Modifica pipeline/step |
-| DELETE | `/pipelines/{id}` | Elimina pipeline |
+| GET | `/api/pipelines` | Lista tutte le pipeline (con step) |
+| POST | `/api/pipelines` | Crea pipeline con step |
+| GET | `/api/pipelines/{id}` | Dettaglio pipeline |
+| PUT | `/api/pipelines/{id}` | Modifica pipeline |
+| DELETE | `/api/pipelines/{id}` | Elimina pipeline |
+| POST | `/api/pipelines/{id}/steps` | Aggiungi step |
+| DELETE | `/api/pipelines/{id}/steps/{step_id}` | Rimuovi step |
+| PUT | `/api/pipelines/{id}/steps/reorder` | Riordina step |
+| POST | `/api/pipelines/seed` | Crea pipeline default |
 
 ### Pipeline Runs
 | Method | Path | Descrizione |
 |---|---|---|
-| POST | `/pipeline-runs` | Avvia pipeline `{pipeline_id, issue_id}` |
-| GET | `/pipeline-runs?issue_id=X` | Lista run per issue |
-| GET | `/pipeline-runs/{id}` | Stato run + step_runs |
-| GET | `/pipeline-runs/{id}/messages` | Chat messaggi |
-| POST | `/pipeline-runs/{id}/messages` | Invia messaggio `{sender_agent_name, content}` |
+| POST | `/api/pipeline-runs` | Avvia pipeline `{pipeline_id, issue_id, project_id}` |
+| GET | `/api/pipeline-runs?issue_id=X` | Lista run per issue |
+| GET | `/api/pipeline-runs/{id}` | Stato run + step_runs |
+| DELETE | `/api/pipeline-runs/{id}` | Cancella run |
+| GET | `/api/pipeline-runs/{id}/messages` | Chat messaggi |
+| POST | `/api/pipeline-runs/{id}/messages` | Invia messaggio `{sender_agent_name, content}` |
 
 ---
 
@@ -285,12 +289,12 @@ Esposti dal server MCP per essere chiamati dagli agenti Claude Code durante l'es
 
 | Tool | Parametri | Uso |
 |---|---|---|
-| `list_agents` | project_id | Scoprire agenti disponibili |
-| `create_agent` | project_id, name, system_prompt, model?, allowed_tools? | Creare nuovo agente |
-| `list_pipelines` | project_id | Scoprire pipeline disponibili |
-| `create_pipeline` | project_id, name, steps[] | Creare nuova pipeline |
+| `list_agents` | _(none)_ | Scoprire agenti disponibili |
+| `create_agent` | name, system_prompt, model?, allowed_tools? | Creare nuovo agente |
+| `list_pipelines` | _(none)_ | Scoprire pipeline disponibili |
+| `create_pipeline` | name, steps[] | Creare nuova pipeline |
 | `run_pipeline` | project_id, pipeline_id, issue_id | Avviare esecuzione |
-| `get_pipeline_run_status` | project_id, run_id | Verificare stato run |
+| `get_pipeline_run_status` | run_id | Verificare stato run |
 | `send_agent_message` | run_id, sender_agent_name, content | Scrivere nella chat |
 | `get_pipeline_messages` | run_id | Leggere cronologia chat |
 
@@ -307,8 +311,8 @@ Esposti dal server MCP per essere chiamati dagli agenti Claude Code durante l'es
 ### Route
 | Route | Componente | Descrizione |
 |---|---|---|
-| `/projects/{id}/agents` | AgentsTab | CRUD agenti |
-| `/projects/{id}/pipelines` | PipelinesTab | CRUD pipeline + step builder |
+| `/agents` | AgentsTab | CRUD agenti (top-level, globale) |
+| `/pipelines` | PipelinesTab | CRUD pipeline + step builder (top-level, globale) |
 | `/projects/{id}/issues/{id}` | IssueDetail (modificata) | + pulsante Run Pipeline + progress panel |
 
 ### Component Tree (Issue Detail con pipeline attiva)
@@ -328,7 +332,7 @@ IssueDetail
 ### Data Flow
 ```
 [Run Pipeline click]
-  → useStartPipelineRun.mutate({pipeline_id, issue_id})
+  → useStartPipelineRun.mutate({pipeline_id, issue_id, project_id})
     → POST /api/pipeline-runs
       → PipelineRunService.start() crea run + avvia background task
       → Ritorna {run_id, status: "RUNNING"}
@@ -351,54 +355,4 @@ IssueDetail
 - **Timeout step**: 30 minuti configurabile, scattato = step FAILED
 - **Server restart**: task in memoria persi, run rimangono RUNNING → cleanup startup li marca FAILED
 - **Cancellazione**: `DELETE /api/pipeline-runs/{id}` kill subprocess + cleanup
-- **Buffer output**: `terminal_max_buffer_bytes` limita memoria (già esistente)
-
----
-
-## File Summary
-
-```
-backend/app/
-├── models/
-│   ├── agent.py              (esistente, nessuna modifica)
-│   ├── pipeline.py            (esistente, nessuna modifica)
-│   └── pipeline_run.py        (esistente, nessuna modifica)
-├── services/
-│   ├── agent_service.py       (NUOVO)
-│   ├── pipeline_service.py    (NUOVO)
-│   ├── pipeline_run_service.py (NUOVO)
-│   ├── pipeline_task_manager.py (NUOVO)
-│   └── artifact_service.py    (NUOVO)
-├── schemas/
-│   ├── agent.py               (NUOVO)
-│   ├── pipeline.py            (NUOVO)
-│   └── pipeline_run.py        (NUOVO)
-├── routers/
-│   ├── agents.py              (NUOVO)
-│   ├── pipelines.py           (NUOVO)
-│   └── pipeline_runs.py       (NUOVO)
-├── mcp/
-│   ├── server.py              (MODIFICA: +8 tools)
-│   └── default_settings.json  (MODIFICA: +8 descrizioni)
-└── main.py                    (MODIFICA: +3 router)
-
-frontend/src/
-├── shared/types/index.ts      (MODIFICA: +tipi Agent/Pipeline)
-├── features/pipelines/
-│   ├── api.ts                 (NUOVO)
-│   ├── hooks.ts               (NUOVO)
-│   └── components/
-│       ├── agents-tab.tsx     (NUOVO)
-│       ├── pipelines-tab.tsx  (NUOVO)
-│       ├── pipeline-run-button.tsx (NUOVO)
-│       ├── pipeline-progress.tsx   (NUOVO)
-│       └── agent-chat.tsx     (NUOVO)
-└── routes/projects/$projectId/
-    ├── agents.tsx             (NUOVO)
-    ├── pipelines.tsx          (NUOVO)
-    └── issues/$issueId.tsx    (MODIFICA: integrazione pipeline)
-
-.manager_ai/issues/{id}/
-└── artifacts/
-    └── answers.md             (creato da BrainstormingAgent)
-```
+- **Buffer output**: `terminal_max_buffer_bytes` limita memoria (gia esistente)

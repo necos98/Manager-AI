@@ -17,12 +17,11 @@ from app.services.pipeline_run_service import PipelineRunService
 
 @pytest.mark.asyncio
 async def test_start_creates_run_and_step_runs(db_session):
-    project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", name="dev")
-    db_session.add_all([project, agent])
+    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    db_session.add(agent)
     await db_session.flush()
 
-    pipeline = Pipeline(id="pl1", project_id="p1", name="Test")
+    pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
         terminal_command="echo hello",
@@ -61,12 +60,11 @@ async def test_start_creates_run_and_step_runs(db_session):
 
 @pytest.mark.asyncio
 async def test_start_rejects_double_start(db_session):
-    project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", name="dev")
-    db_session.add_all([project, agent])
+    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    db_session.add(agent)
     await db_session.flush()
 
-    pipeline = Pipeline(id="pl1", project_id="p1", name="Test")
+    pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
         terminal_command="echo hi",
@@ -89,12 +87,11 @@ async def test_start_rejects_double_start(db_session):
 
 @pytest.mark.asyncio
 async def test_get_run_returns_status(db_session):
-    project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", name="dev")
-    db_session.add_all([project, agent])
+    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    db_session.add(agent)
     await db_session.flush()
 
-    pipeline = Pipeline(id="pl1", project_id="p1", name="Test")
+    pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
         terminal_command="echo hi",
@@ -118,12 +115,11 @@ async def test_get_run_returns_status(db_session):
 
 @pytest.mark.asyncio
 async def test_add_and_get_messages(db_session):
-    project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", name="dev")
-    db_session.add_all([project, agent])
+    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    db_session.add(agent)
     await db_session.flush()
 
-    pipeline = Pipeline(id="pl1", project_id="p1", name="Test")
+    pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
         terminal_command="echo hi",
@@ -149,12 +145,11 @@ async def test_add_and_get_messages(db_session):
 
 @pytest.mark.asyncio
 async def test_cancel_run(db_session):
-    project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", name="dev")
-    db_session.add_all([project, agent])
+    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    db_session.add(agent)
     await db_session.flush()
 
-    pipeline = Pipeline(id="pl1", project_id="p1", name="Test")
+    pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
         terminal_command="ping -n 10 127.0.0.1 > nul",
@@ -181,12 +176,11 @@ async def test_cancel_run(db_session):
 
 @pytest.mark.asyncio
 async def test_cancel_non_running_raises(db_session):
-    project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", name="dev")
-    db_session.add_all([project, agent])
+    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    db_session.add(agent)
     await db_session.flush()
 
-    pipeline = Pipeline(id="pl1", project_id="p1", name="Test")
+    pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
         terminal_command="echo hi",
@@ -210,12 +204,11 @@ async def test_cancel_non_running_raises(db_session):
 
 @pytest.mark.asyncio
 async def test_get_runs_for_issue(db_session):
-    project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", name="dev")
-    db_session.add_all([project, agent])
+    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    db_session.add(agent)
     await db_session.flush()
 
-    pipeline = Pipeline(id="pl1", project_id="p1", name="Test")
+    pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
         terminal_command="echo hi",
@@ -239,11 +232,7 @@ async def test_get_runs_for_issue(db_session):
 
 @pytest.mark.asyncio
 async def test_empty_pipeline_completes_immediately(db_session):
-    project = Project(id="p1", name="P", path="/tmp/p")
-    db_session.add(project)
-    await db_session.flush()
-
-    pipeline = Pipeline(id="pl1", project_id="p1", name="Empty")
+    pipeline = Pipeline(id="pl1", name="Empty")
     db_session.add(pipeline)
     await db_session.flush()
 

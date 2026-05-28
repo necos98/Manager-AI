@@ -6,6 +6,7 @@ import {
   Smartphone,
   Star,
   Terminal,
+  Workflow,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useMatchRoute } from "@tanstack/react-router";
@@ -177,6 +178,28 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                   {questionsPendingCount > 0 && (
                     <SidebarMenuBadge>{questionsPendingCount}</SidebarMenuBadge>
                   )}
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={!!matchRoute({ to: "/agents", fuzzy: true })}
+                  >
+                    <Link to="/agents">
+                      <Bot />
+                      <span>Agents</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={!!matchRoute({ to: "/pipelines", fuzzy: true })}
+                  >
+                    <Link to="/pipelines">
+                      <Workflow />
+                      <span>Pipelines</span>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton

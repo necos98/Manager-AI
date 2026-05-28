@@ -1,0 +1,90 @@
+schema_version: 1
+id: 071a4f79-192c-4327-af37-2fc77b6ffe20
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Move pipelines to software level (global, shared across all projects)
+status: Finished
+priority: 3
+category: Improvement
+created_at: '2026-05-28T20:16:02.794289'
+updated_at: '2026-05-28T20:37:30.770986'
+finished_at: '2026-05-28T20:37:30.770996'
+tasks:
+- id: 66fc2833-ed2b-49b3-b28d-e3b0ff70359b
+  name: 'Alembic migration: drop project_id from agents and pipelines'
+  status: Completed
+  order: 0
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:28:41'
+- id: 24359698-735d-4204-8fa3-936b4b34e7a8
+  name: 'Backend models: remove project_id from Agent, Pipeline, Project'
+  status: Completed
+  order: 1
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:28:42'
+- id: 00c4d033-365b-48a8-b353-6badf0ce3d13
+  name: 'Backend schemas: remove project_id from AgentResponse, PipelineResponse'
+  status: Completed
+  order: 2
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:28:43'
+- id: b7b733ed-a4a7-4cfd-aaa8-41048cf4df3c
+  name: 'Backend services: remove project_id from AgentService, PipelineService'
+  status: Completed
+  order: 3
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:29:12'
+- id: a3d32ce3-303b-4dbb-b98e-8d01b5538bc6
+  name: 'Backend routers: move agents/pipelines to top-level /api/agents, /api/pipelines'
+  status: Completed
+  order: 4
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:29:46'
+- id: 258255d5-69da-42e8-8dd2-e6ad3f06285e
+  name: 'Backend routers: update pipeline-runs to not need project_id in URL'
+  status: Completed
+  order: 5
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:30:15'
+- id: fca5fa21-e6ba-4775-8474-dddec6f3bbab
+  name: 'Backend MCP server: remove project_id from agent/pipeline tools'
+  status: Completed
+  order: 6
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:30:43'
+- id: 4c48942e-dbfd-49c9-afef-7d87da065df0
+  name: 'Backend main.py: register global routers, update seed logic'
+  status: Completed
+  order: 7
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:30:53'
+- id: 0e4a8b4b-1d23-4d5a-b2f5-43d3b46038c9
+  name: 'Frontend types & API layer: remove projectId from agents/pipelines'
+  status: Completed
+  order: 8
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:33:33'
+- id: e3c93ef3-61c4-4045-93bc-8a5588e0e6dd
+  name: 'Frontend routes & navigation: top-level agents/pipelines routes + nav items'
+  status: Completed
+  order: 9
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:33:34'
+- id: fb1943fa-6de9-4771-9245-a7c93ff573be
+  name: 'Update tests: remove project_id from Agent/Pipeline constructors'
+  status: Completed
+  order: 10
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:34:30'
+- id: dab1db89-76fc-4e70-b6b7-48c526dcd8db
+  name: 'Update documentation: agent-pipeline-architecture.md'
+  status: Completed
+  order: 11
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:35:53'
+- id: 28eb825c-3fd1-47d2-b6f2-bb6860bcb169
+  name: 'Verify: run tests, frontend build, smoke test'
+  status: Completed
+  order: 12
+  created_at: '2026-05-28T20:23:59'
+  updated_at: '2026-05-28T20:37:18'
+relations: []

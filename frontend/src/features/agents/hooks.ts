@@ -8,13 +8,13 @@ const onMutationError = (e: unknown) => {
 };
 
 export const agentKeys = {
-  all: ["agents"] as const,
+  all: () => ["agents"] as const,
   detail: (agentId: string) => ["agents", agentId] as const,
 };
 
 export function useAgents() {
   return useQuery({
-    queryKey: agentKeys.all,
+    queryKey: agentKeys.all(),
     queryFn: () => api.fetchAgents(),
   });
 }
@@ -32,7 +32,7 @@ export function useCreateAgent() {
   return useMutation({
     mutationFn: (data: AgentCreate) => api.createAgent(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.all });
+      queryClient.invalidateQueries({ queryKey: agentKeys.all() });
     },
     onError: onMutationError,
   });
@@ -44,7 +44,7 @@ export function useUpdateAgent() {
     mutationFn: ({ agentId, data }: { agentId: string; data: AgentUpdate }) =>
       api.updateAgent(agentId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.all });
+      queryClient.invalidateQueries({ queryKey: agentKeys.all() });
     },
     onError: onMutationError,
   });
@@ -55,7 +55,7 @@ export function useDeleteAgent() {
   return useMutation({
     mutationFn: (agentId: string) => api.deleteAgent(agentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.all });
+      queryClient.invalidateQueries({ queryKey: agentKeys.all() });
     },
     onError: onMutationError,
   });
@@ -66,7 +66,7 @@ export function useSeedAgents() {
   return useMutation({
     mutationFn: () => api.seedAgents(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.all });
+      queryClient.invalidateQueries({ queryKey: agentKeys.all() });
     },
     onError: onMutationError,
   });

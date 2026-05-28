@@ -8,102 +8,101 @@ const onMutationError = (e: unknown) => {
 };
 
 export const pipelineKeys = {
-  all: (projectId: string) => ["pipelines", projectId] as const,
-  detail: (projectId: string, pipelineId: string) => ["pipelines", projectId, pipelineId] as const,
+  all: () => ["pipelines"] as const,
+  detail: (pipelineId: string) => ["pipelines", pipelineId] as const,
 };
 
-export function usePipelines(projectId: string) {
+export function usePipelines() {
   return useQuery({
-    queryKey: pipelineKeys.all(projectId),
-    queryFn: () => api.fetchPipelines(projectId),
-    enabled: Boolean(projectId),
+    queryKey: pipelineKeys.all(),
+    queryFn: () => api.fetchPipelines(),
   });
 }
 
-export function usePipeline(projectId: string, pipelineId: string) {
+export function usePipeline(pipelineId: string) {
   return useQuery({
-    queryKey: pipelineKeys.detail(projectId, pipelineId),
-    queryFn: () => api.fetchPipeline(projectId, pipelineId),
-    enabled: Boolean(projectId) && Boolean(pipelineId),
+    queryKey: pipelineKeys.detail(pipelineId),
+    queryFn: () => api.fetchPipeline(pipelineId),
+    enabled: Boolean(pipelineId),
   });
 }
 
-export function useCreatePipeline(projectId: string) {
+export function useCreatePipeline() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: PipelineCreate) => api.createPipeline(projectId, data),
+    mutationFn: (data: PipelineCreate) => api.createPipeline(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: pipelineKeys.all(projectId) });
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
     },
     onError: onMutationError,
   });
 }
 
-export function useUpdatePipeline(projectId: string) {
+export function useUpdatePipeline() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ pipelineId, data }: { pipelineId: string; data: PipelineUpdate }) =>
-      api.updatePipeline(projectId, pipelineId, data),
+      api.updatePipeline(pipelineId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: pipelineKeys.all(projectId) });
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
     },
     onError: onMutationError,
   });
 }
 
-export function useDeletePipeline(projectId: string) {
+export function useDeletePipeline() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (pipelineId: string) => api.deletePipeline(projectId, pipelineId),
+    mutationFn: (pipelineId: string) => api.deletePipeline(pipelineId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: pipelineKeys.all(projectId) });
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
     },
     onError: onMutationError,
   });
 }
 
-export function useAddPipelineStep(projectId: string) {
+export function useAddPipelineStep() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ pipelineId, data }: { pipelineId: string; data: PipelineStepCreate }) =>
-      api.addPipelineStep(projectId, pipelineId, data),
+      api.addPipelineStep(pipelineId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: pipelineKeys.all(projectId) });
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
     },
     onError: onMutationError,
   });
 }
 
-export function useRemovePipelineStep(projectId: string) {
+export function useRemovePipelineStep() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ pipelineId, stepId }: { pipelineId: string; stepId: string }) =>
-      api.removePipelineStep(projectId, pipelineId, stepId),
+      api.removePipelineStep(pipelineId, stepId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: pipelineKeys.all(projectId) });
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
     },
     onError: onMutationError,
   });
 }
 
-export function useReorderPipelineSteps(projectId: string) {
+export function useReorderPipelineSteps() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ pipelineId, data }: { pipelineId: string; data: StepReorderRequest }) =>
-      api.reorderPipelineSteps(projectId, pipelineId, data),
+      api.reorderPipelineSteps(pipelineId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: pipelineKeys.all(projectId) });
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
     },
     onError: onMutationError,
   });
 }
 
-export function useSeedPipeline(projectId: string) {
+export function useSeedPipeline() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api.seedPipeline(projectId),
+    mutationFn: () => api.seedPipeline(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: pipelineKeys.all(projectId) });
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
     },
     onError: onMutationError,
   });
