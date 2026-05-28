@@ -58,6 +58,11 @@ def upgrade() -> None:
     with op.batch_alter_table('agents', schema=None) as batch_op:
         batch_op.create_unique_constraint('uq_agent_name', ['name'])
 
+    # 4. Remove project_id from pipelines
+    with op.batch_alter_table('pipelines', schema=None) as batch_op:
+        batch_op.drop_index('ix_pipelines_project_id')
+        batch_op.drop_column('project_id')
+
 
 def downgrade() -> None:
     # Cannot restore project_id values — this migration is one-way.

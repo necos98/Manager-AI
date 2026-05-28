@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from "./routes/__root"
 import { Route as TerminalsRouteImport } from "./routes/terminals"
 import { Route as SettingsRouteImport } from "./routes/settings"
 import { Route as QuestionsRouteImport } from "./routes/questions"
+import { Route as PipelinesRouteImport } from "./routes/pipelines"
 import { Route as LibraryRouteImport } from "./routes/library"
 import { Route as DashboardRouteImport } from "./routes/dashboard"
 import { Route as AgentsRouteImport } from "./routes/agents"
@@ -46,6 +47,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const QuestionsRoute = QuestionsRouteImport.update({
   id: "/questions",
   path: "/questions",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PipelinesRoute = PipelinesRouteImport.update({
+  id: "/pipelines",
+  path: "/pipelines",
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibraryRoute = LibraryRouteImport.update({
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   "/agents": typeof AgentsRoute
   "/dashboard": typeof DashboardRoute
   "/library": typeof LibraryRoute
+  "/pipelines": typeof PipelinesRoute
   "/questions": typeof QuestionsRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   "/agents": typeof AgentsRoute
   "/dashboard": typeof DashboardRoute
   "/library": typeof LibraryRoute
+  "/pipelines": typeof PipelinesRoute
   "/questions": typeof QuestionsRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   "/agents": typeof AgentsRoute
   "/dashboard": typeof DashboardRoute
   "/library": typeof LibraryRoute
+  "/pipelines": typeof PipelinesRoute
   "/questions": typeof QuestionsRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
@@ -240,6 +249,7 @@ export interface FileRouteTypes {
     | "/agents"
     | "/dashboard"
     | "/library"
+    | "/pipelines"
     | "/questions"
     | "/settings"
     | "/terminals"
@@ -265,6 +275,7 @@ export interface FileRouteTypes {
     | "/agents"
     | "/dashboard"
     | "/library"
+    | "/pipelines"
     | "/questions"
     | "/settings"
     | "/terminals"
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | "/agents"
     | "/dashboard"
     | "/library"
+    | "/pipelines"
     | "/questions"
     | "/settings"
     | "/terminals"
@@ -315,6 +327,7 @@ export interface RootRouteChildren {
   AgentsRoute: typeof AgentsRoute
   DashboardRoute: typeof DashboardRoute
   LibraryRoute: typeof LibraryRoute
+  PipelinesRoute: typeof PipelinesRoute
   QuestionsRoute: typeof QuestionsRoute
   SettingsRoute: typeof SettingsRoute
   TerminalsRoute: typeof TerminalsRoute
@@ -344,6 +357,13 @@ declare module "@tanstack/react-router" {
       path: "/questions"
       fullPath: "/questions"
       preLoaderRoute: typeof QuestionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/pipelines": {
+      id: "/pipelines"
+      path: "/pipelines"
+      fullPath: "/pipelines"
+      preLoaderRoute: typeof PipelinesRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/library": {
@@ -541,6 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgentsRoute: AgentsRoute,
   DashboardRoute: DashboardRoute,
   LibraryRoute: LibraryRoute,
+  PipelinesRoute: PipelinesRoute,
   QuestionsRoute: QuestionsRoute,
   SettingsRoute: SettingsRoute,
   TerminalsRoute: TerminalsRoute,
