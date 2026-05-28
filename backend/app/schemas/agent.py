@@ -17,10 +17,9 @@ class AgentUpdate(BaseModel):
 
 class AgentResponse(BaseModel):
     id: str
-    project_id: str
     name: str
     system_prompt: str
     model: str | None = None
-    allowed_tools: list | None = None
+    allowed_tools: list[str] | None = None
     created_at: str | None = None
     updated_at: str | None = None
