@@ -26,7 +26,6 @@ class PipelineUpdate(BaseModel):
 
 class PipelineResponse(BaseModel):
     id: str
-    project_id: str
     name: str
     steps: list[PipelineStepResponse] = []
     created_at: str | None = None

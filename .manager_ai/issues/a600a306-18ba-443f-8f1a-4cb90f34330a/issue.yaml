@@ -1,0 +1,24 @@
+schema_version: 1
+id: a600a306-18ba-443f-8f1a-4cb90f34330a
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix PipelineResponse schema requiring missing project_id field
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-28T21:09:24.233858'
+updated_at: '2026-05-28T21:11:07.911960'
+finished_at: '2026-05-28T21:11:07.911970'
+tasks:
+- id: cca0ec3f-d570-469e-9f1d-75ad4cc5d991
+  name: Remove project_id from PipelineResponse schema
+  status: Completed
+  order: 0
+  created_at: '2026-05-28T21:10:38'
+  updated_at: '2026-05-28T21:10:50'
+- id: dc9d02b3-9cf2-42cd-808d-fd79809b6447
+  name: Verify fix — model and schema are consistent
+  status: Completed
+  order: 1
+  created_at: '2026-05-28T21:10:38'
+  updated_at: '2026-05-28T21:11:02'
+relations: []
