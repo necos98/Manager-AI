@@ -253,6 +253,7 @@ class PipelineRunService:
         try:
             await session.flush()
         except Exception:
+            logger.warning("_safe_flush_session: flush failed, rolling back", exc_info=True)
             await session.rollback()
             await session.flush()
 
@@ -266,24 +267,18 @@ class PipelineRunService:
         run_id: str,
         issue_id: str,
     ) -> bool:
-        prompt = (
-            f"System prompt: {system_prompt}\n\n"
-            f"Task: {command}\n\n"
-            f"Issue ID: {issue_id}\n"
-            f"Pipeline run ID: {run_id}"
-        )
-
         env = os.environ.copy()
         env["MANAGER_AI_AGENT_NAME"] = agent_name
         env["MANAGER_AI_AGENT_ROLE"] = agent_name
+        env["MANAGER_AI_SYSTEM_PROMPT"] = system_prompt
+        env["MANAGER_AI_ISSUE_ID"] = issue_id
+        env["MANAGER_AI_RUN_ID"] = run_id
 
-        cmd = ["claude", "-p", prompt]
-
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
+        proc = await asyncio.create_subprocess_shell(
+            command,
             cwd=project_path,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
             env=env,
         )
 
@@ -300,21 +295,7 @@ class PipelineRunService:
             except asyncio.CancelledError:
                 pass
 
-        async def drain_stderr():
-            if proc.stderr is None:
-                return
-            try:
-                while True:
-                    line = await proc.stderr.readline()
-                    if not line:
-                        break
-                    text = line.decode("utf-8", errors="replace")
-                    logger.warning("claude stderr [%s]: %s", agent_name, text.rstrip())
-            except asyncio.CancelledError:
-                pass
-
         stream_task = asyncio.create_task(stream_output())
-        stderr_task = asyncio.create_task(drain_stderr())
 
         try:
             exit_code = await asyncio.wait_for(
@@ -324,17 +305,14 @@ class PipelineRunService:
             proc.kill()
             await proc.wait()
             stream_task.cancel()
-            stderr_task.cancel()
             return False
         except asyncio.CancelledError:
             proc.kill()
             await proc.wait()
             stream_task.cancel()
-            stderr_task.cancel()
             raise
 
         await stream_task
-        await stderr_task
         return exit_code == 0
 
     async def _get_run(self, run_id: str) -> PipelineRun:

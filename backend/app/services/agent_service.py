@@ -12,8 +12,8 @@ DEFAULT_AGENTS = [
             "trace execution paths, and document dependencies."
         ),
         "terminal_command": (
-            "Explore the codebase to understand the context of issue $issue_id "
-            "in project $project_id. Report your findings."
+            'claude -p "Explore the codebase to understand the context of issue $issue_id '
+            'in project $project_id. Report your findings."'
         ),
     },
     {
@@ -23,8 +23,8 @@ DEFAULT_AGENTS = [
             "Turn ideas into fully formed designs and specs."
         ),
         "terminal_command": (
-            "Brainstorm and refine requirements for issue $issue_id. "
-            "Produce a clear design and specification."
+            'claude -p "Brainstorm and refine requirements for issue $issue_id. '
+            'Produce a clear design and specification."'
         ),
     },
     {
@@ -34,8 +34,8 @@ DEFAULT_AGENTS = [
             "specs covering architecture, components, data flow, error handling, and testing."
         ),
         "terminal_command": (
-            "Write a detailed specification for issue $issue_id. "
-            "Cover architecture, components, data flow, error handling, and testing."
+            'claude -p "Write a detailed specification for issue $issue_id. '
+            'Cover architecture, components, data flow, error handling, and testing."'
         ),
     },
     {
@@ -45,8 +45,8 @@ DEFAULT_AGENTS = [
             "atomic, ordered tasks with specific files to create or modify."
         ),
         "terminal_command": (
-            "Create an implementation plan for issue $issue_id. "
-            "Break it down into atomic, ordered tasks with specific files to modify."
+            'claude -p "Create an implementation plan for issue $issue_id. '
+            'Break it down into atomic, ordered tasks with specific files to modify."'
         ),
     },
     {
@@ -56,8 +56,8 @@ DEFAULT_AGENTS = [
             "code that follows existing patterns and conventions."
         ),
         "terminal_command": (
-            "Implement the code changes described in the plan for issue $issue_id. "
-            "Follow existing codebase patterns and conventions."
+            'claude -p "Implement the code changes described in the plan for issue $issue_id. '
+            'Follow existing codebase patterns and conventions."'
         ),
     },
     {
@@ -67,8 +67,8 @@ DEFAULT_AGENTS = [
             "issues, and adherence to project conventions."
         ),
         "terminal_command": (
-            "Review the code changes made for issue $issue_id. "
-            "Check for bugs, logic errors, security vulnerabilities, and code quality issues."
+            'claude -p "Review the code changes made for issue $issue_id. '
+            'Check for bugs, logic errors, security vulnerabilities, and code quality issues."'
         ),
     },
 ]

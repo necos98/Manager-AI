@@ -1,0 +1,1 @@
+Pipeline bug. Ennesimo bug della pipeline, quando l'avvio il terminale non si avvia! esce scritto solo "Connected to agent output stream..." Potresti capire a fondo perchè?

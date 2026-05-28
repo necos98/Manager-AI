@@ -1,0 +1,42 @@
+schema_version: 1
+id: 5e6d9e0c-e8c0-4142-a8f7-bff82ad0bc4b
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Pipeline terminal stuck at "Connected to agent output stream..."
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-27T20:40:44.685989'
+updated_at: '2026-05-27T20:54:31.734666'
+finished_at: '2026-05-27T20:54:31.734675'
+tasks:
+- id: d4a50192-28bc-46dd-b72d-3781d57e9403
+  name: Fix _safe_flush_session silent error swallowing - add logger.warning in except block
+  status: Completed
+  order: 0
+  created_at: '2026-05-27T20:52:53'
+  updated_at: '2026-05-27T20:53:07'
+- id: eb68193e-4fdb-4374-ad63-64e1d9e1e1eb
+  name: Update DEFAULT_AGENTS terminal_command to executable shell commands
+  status: Completed
+  order: 1
+  created_at: '2026-05-27T20:52:53'
+  updated_at: '2026-05-27T20:53:25'
+- id: 5695ebdb-925e-433a-9cc0-b467c456621c
+  name: Rewrite _run_step() to execute terminal_command directly via create_subprocess_shell, merge stderr into stdout
+  status: Completed
+  order: 2
+  created_at: '2026-05-27T20:52:53'
+  updated_at: '2026-05-27T20:53:41'
+- id: e930b42c-af69-4aa4-9bf3-106e5fe1d304
+  name: Reseed pipeline steps - delete existing pipeline and restart to get updated terminal_command values
+  status: Completed
+  order: 3
+  created_at: '2026-05-27T20:52:53'
+  updated_at: '2026-05-27T20:54:04'
+- id: 210c7889-d9ca-4197-b7e4-4659bf547cd2
+  name: End-to-end verification - start pipeline, verify terminal shows output, test with custom command
+  status: Completed
+  order: 4
+  created_at: '2026-05-27T20:52:53'
+  updated_at: '2026-05-27T20:54:16'
+relations: []
