@@ -80,15 +80,14 @@ class AgentService:
 
     # ── seed ──────────────────────────────────────────────────────────
 
-    async def seed_defaults(self, project_id: str) -> list[Agent]:
-        """Idempotent. Creates 6 default agents only if project has 0 agents."""
-        existing = await self.list_by_project(project_id)
+    async def seed_defaults(self) -> list[Agent]:
+        """Idempotent. Creates 6 default agents only if no agents exist."""
+        existing = await self.list_all()
         if existing:
             return existing
         agents = []
         for data in DEFAULT_AGENTS:
             agent = Agent(
-                project_id=project_id,
                 name=data["name"],
                 system_prompt=data["system_prompt"],
             )
@@ -101,14 +100,12 @@ class AgentService:
 
     async def create(
         self,
-        project_id: str,
         name: str,
         system_prompt: str,
         model: str | None = None,
         allowed_tools: list[str] | None = None,
     ) -> Agent:
         agent = Agent(
-            project_id=project_id,
             name=name,
             system_prompt=system_prompt,
             model=model,
@@ -127,19 +124,15 @@ class AgentService:
             raise NotFoundError(f"Agent not found: {agent_id}")
         return agent
 
-    async def get_by_name(self, project_id: str, name: str) -> Agent | None:
+    async def get_by_name(self, name: str) -> Agent | None:
         result = await self.session.execute(
-            select(Agent).where(
-                Agent.project_id == project_id, Agent.name == name
-            )
+            select(Agent).where(Agent.name == name)
         )
         return result.scalar_one_or_none()
 
-    async def list_by_project(self, project_id: str) -> list[Agent]:
+    async def list_all(self) -> list[Agent]:
         result = await self.session.execute(
-            select(Agent)
-            .where(Agent.project_id == project_id)
-            .order_by(Agent.name)
+            select(Agent).order_by(Agent.name)
         )
         return list(result.scalars().all())
 

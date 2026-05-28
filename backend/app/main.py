@@ -410,16 +410,18 @@ async def lifespan(app):
             from app.services.agent_service import AgentService
             from app.services.pipeline_service import PipelineService
             async with async_session() as seed_session:
-                for p in rows:
-                    try:
-                        await AgentService(seed_session).seed_defaults(p.id)
-                        await PipelineService(seed_session).seed_defaults(p.id)
-                        await seed_session.commit()
-                    except Exception:
-                        await seed_session.rollback()
-                        logger.warning(
-                            "Failed to seed defaults for project %s", p.id, exc_info=True
-                        )
+                try:
+                    await AgentService(seed_session).seed_defaults()
+                    await seed_session.commit()
+                except Exception:
+                    await seed_session.rollback()
+                    logger.warning("Failed to seed default agents", exc_info=True)
+                try:
+                    await PipelineService(seed_session).seed_defaults()
+                    await seed_session.commit()
+                except Exception:
+                    await seed_session.rollback()
+                    logger.warning("Failed to seed default pipelines", exc_info=True)
         except Exception:
             logger.exception("Failed to seed default agents/pipelines; continuing startup")
 

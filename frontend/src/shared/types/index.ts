@@ -480,7 +480,6 @@ export interface QuestionAnswer {
 
 export interface Agent {
   id: string;
-  project_id: string;
   name: string;
   system_prompt: string;
   model: string | null;
@@ -521,7 +520,6 @@ export interface PipelineStepCreate {
 
 export interface Pipeline {
   id: string;
-  project_id: string;
   name: string;
   steps: PipelineStep[];
   created_at: string | null;
@@ -573,6 +571,7 @@ export interface PipelineRun {
 export interface PipelineRunStart {
   pipeline_id: string;
   issue_id: string;
+  project_id: string;
 }
 
 // ── Pipeline Message ──

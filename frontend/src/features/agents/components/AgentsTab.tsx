@@ -23,7 +23,7 @@ import {
 import type { Agent, AgentCreate, AgentUpdate } from "@/shared/types";
 
 interface AgentsTabProps {
-  projectId: string;
+  projectId?: string;
 }
 
 interface AgentFormData {
@@ -77,12 +77,12 @@ function validateForm(data: AgentFormData): string | null {
   return null;
 }
 
-export function AgentsTab({ projectId }: AgentsTabProps) {
-  const { data: agents, isLoading, isError } = useAgents(projectId);
-  const createAgent = useCreateAgent(projectId);
-  const updateAgent = useUpdateAgent(projectId);
-  const deleteAgent = useDeleteAgent(projectId);
-  const seedAgents = useSeedAgents(projectId);
+export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
+  const { data: agents, isLoading, isError } = useAgents();
+  const createAgent = useCreateAgent();
+  const updateAgent = useUpdateAgent();
+  const deleteAgent = useDeleteAgent();
+  const seedAgents = useSeedAgents();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);

@@ -13,17 +13,17 @@ class PipelineService:
 
     # ── seed ──────────────────────────────────────────────────────────
 
-    async def seed_defaults(self, project_id: str) -> Pipeline:
-        """Idempotent. Creates 6-step pipeline only if project has 0 pipelines."""
-        existing = await self.list_by_project(project_id)
+    async def seed_defaults(self) -> Pipeline:
+        """Idempotent. Creates 6-step pipeline only if no pipelines exist."""
+        existing = await self.list_all()
         if existing:
             return existing[0]
         agent_svc = AgentService(self.session)
-        agents = await agent_svc.list_by_project(project_id)
+        agents = await agent_svc.list_all()
 
         cmd_by_name = {a["name"]: a.get("terminal_command", "") for a in DEFAULT_AGENTS}
 
-        pipeline = Pipeline(project_id=project_id, name="Default Pipeline")
+        pipeline = Pipeline(name="Default Pipeline")
         self.session.add(pipeline)
         await self.session.flush()
         for i, agent in enumerate(agents):
@@ -39,8 +39,8 @@ class PipelineService:
 
     # ── Pipeline CRUD ─────────────────────────────────────────────────
 
-    async def create_pipeline(self, project_id: str, name: str) -> Pipeline:
-        pipeline = Pipeline(project_id=project_id, name=name)
+    async def create_pipeline(self, name: str) -> Pipeline:
+        pipeline = Pipeline(name=name)
         self.session.add(pipeline)
         await self.session.flush()
         return pipeline
@@ -56,10 +56,9 @@ class PipelineService:
             raise NotFoundError(f"Pipeline not found: {pipeline_id}")
         return pipeline
 
-    async def list_by_project(self, project_id: str) -> list[Pipeline]:
+    async def list_all(self) -> list[Pipeline]:
         result = await self.session.execute(
             select(Pipeline)
-            .where(Pipeline.project_id == project_id)
             .options(selectinload(Pipeline.steps))
             .order_by(Pipeline.name)
         )

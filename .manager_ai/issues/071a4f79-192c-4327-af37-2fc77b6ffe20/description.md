@@ -1,0 +1,1 @@
+Muovere le pipeline a livello di software, come gli agenti. Questo vuol dire che ogni progetto vede le stesse pipeline

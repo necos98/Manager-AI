@@ -21,8 +21,8 @@ class ProjectService:
         await self.session.flush()
         from app.services.agent_service import AgentService
         from app.services.pipeline_service import PipelineService
-        await AgentService(self.session).seed_defaults(project.id)
-        await PipelineService(self.session).seed_defaults(project.id)
+        await AgentService(self.session).seed_defaults()
+        await PipelineService(self.session).seed_defaults()
         return project
 
     async def list_all(self, archived: bool | None = False) -> list[Project]:

@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 class PipelineRunStart(BaseModel):
     pipeline_id: str = Field(..., min_length=1)
     issue_id: str = Field(..., min_length=1)
+    project_id: str = Field(..., min_length=1)
 
 
 class PipelineStepRunResponse(BaseModel):

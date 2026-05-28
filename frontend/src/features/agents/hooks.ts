@@ -8,66 +8,65 @@ const onMutationError = (e: unknown) => {
 };
 
 export const agentKeys = {
-  all: (projectId: string) => ["agents", projectId] as const,
-  detail: (projectId: string, agentId: string) => ["agents", projectId, agentId] as const,
+  all: () => ["agents"] as const,
+  detail: (agentId: string) => ["agents", agentId] as const,
 };
 
-export function useAgents(projectId: string) {
+export function useAgents() {
   return useQuery({
-    queryKey: agentKeys.all(projectId),
-    queryFn: () => api.fetchAgents(projectId),
-    enabled: Boolean(projectId),
+    queryKey: agentKeys.all(),
+    queryFn: () => api.fetchAgents(),
   });
 }
 
-export function useAgent(projectId: string, agentId: string) {
+export function useAgent(agentId: string) {
   return useQuery({
-    queryKey: agentKeys.detail(projectId, agentId),
-    queryFn: () => api.fetchAgent(projectId, agentId),
-    enabled: Boolean(projectId) && Boolean(agentId),
+    queryKey: agentKeys.detail(agentId),
+    queryFn: () => api.fetchAgent(agentId),
+    enabled: Boolean(agentId),
   });
 }
 
-export function useCreateAgent(projectId: string) {
+export function useCreateAgent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: AgentCreate) => api.createAgent(projectId, data),
+    mutationFn: (data: AgentCreate) => api.createAgent(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.all(projectId) });
+      queryClient.invalidateQueries({ queryKey: agentKeys.all() });
     },
     onError: onMutationError,
   });
 }
 
-export function useUpdateAgent(projectId: string) {
+export function useUpdateAgent() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ agentId, data }: { agentId: string; data: AgentUpdate }) =>
-      api.updateAgent(projectId, agentId, data),
+      api.updateAgent(agentId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.all(projectId) });
+      queryClient.invalidateQueries({ queryKey: agentKeys.all() });
     },
     onError: onMutationError,
   });
 }
 
-export function useDeleteAgent(projectId: string) {
+export function useDeleteAgent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (agentId: string) => api.deleteAgent(projectId, agentId),
+    mutationFn: (agentId: string) => api.deleteAgent(agentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.all(projectId) });
+      queryClient.invalidateQueries({ queryKey: agentKeys.all() });
     },
     onError: onMutationError,
   });
 }
 
-export function useSeedAgents(projectId: string) {
+export function useSeedAgents() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api.seedAgents(projectId),
+    mutationFn: () => api.seedAgents(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.all(projectId) });
+      queryClient.invalidateQueries({ queryKey: agentKeys.all() });
     },
     onError: onMutationError,
   });

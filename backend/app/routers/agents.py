@@ -5,15 +5,12 @@ from app.database import get_db
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
 from app.services.agent_service import AgentService
 
-router = APIRouter(
-    prefix="/api/projects/{project_id}/agents", tags=["agents"]
-)
+router = APIRouter(prefix="/api/agents", tags=["agents"])
 
 
 def _response(agent) -> AgentResponse:
     return AgentResponse(
         id=agent.id,
-        project_id=agent.project_id,
         name=agent.name,
         system_prompt=agent.system_prompt,
         model=agent.model,
@@ -24,21 +21,16 @@ def _response(agent) -> AgentResponse:
 
 
 @router.get("", response_model=list[AgentResponse])
-async def list_agents(
-    project_id: str, db: AsyncSession = Depends(get_db)
-):
+async def list_agents(db: AsyncSession = Depends(get_db)):
     svc = AgentService(db)
-    agents = await svc.list_by_project(project_id)
+    agents = await svc.list_all()
     return [_response(a) for a in agents]
 
 
 @router.post("", response_model=AgentResponse, status_code=201)
-async def create_agent(
-    project_id: str, data: AgentCreate, db: AsyncSession = Depends(get_db)
-):
+async def create_agent(data: AgentCreate, db: AsyncSession = Depends(get_db)):
     svc = AgentService(db)
     agent = await svc.create(
-        project_id=project_id,
         name=data.name,
         system_prompt=data.system_prompt,
         model=data.model,
@@ -49,9 +41,7 @@ async def create_agent(
 
 
 @router.get("/{agent_id}", response_model=AgentResponse)
-async def get_agent(
-    project_id: str, agent_id: str, db: AsyncSession = Depends(get_db)
-):
+async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
     svc = AgentService(db)
     agent = await svc.get_by_id(agent_id)
     return _response(agent)
@@ -59,7 +49,6 @@ async def get_agent(
 
 @router.put("/{agent_id}", response_model=AgentResponse)
 async def update_agent(
-    project_id: str,
     agent_id: str,
     data: AgentUpdate,
     db: AsyncSession = Depends(get_db),
@@ -77,19 +66,15 @@ async def update_agent(
 
 
 @router.delete("/{agent_id}", status_code=204)
-async def delete_agent(
-    project_id: str, agent_id: str, db: AsyncSession = Depends(get_db)
-):
+async def delete_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
     svc = AgentService(db)
     await svc.delete(agent_id)
     await db.commit()
 
 
 @router.post("/seed", response_model=list[AgentResponse], status_code=201)
-async def seed_agents(
-    project_id: str, db: AsyncSession = Depends(get_db)
-):
+async def seed_agents(db: AsyncSession = Depends(get_db)):
     svc = AgentService(db)
-    agents = await svc.seed_defaults(project_id)
+    agents = await svc.seed_defaults()
     await db.commit()
     return [_response(a) for a in agents]

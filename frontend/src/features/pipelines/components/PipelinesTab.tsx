@@ -47,7 +47,7 @@ import { useAgents } from "@/features/agents/hooks";
 import type { Pipeline, PipelineStep } from "@/shared/types";
 
 interface PipelinesTabProps {
-  projectId: string;
+  projectId?: string;
 }
 
 function StepSummary({ steps, agents }: { steps: PipelineStep[]; agents: Map<string, string> }) {
@@ -70,16 +70,16 @@ function StepSummary({ steps, agents }: { steps: PipelineStep[]; agents: Map<str
   );
 }
 
-export function PipelinesTab({ projectId }: PipelinesTabProps) {
-  const { data: pipelines, isLoading, isError } = usePipelines(projectId);
-  const { data: agentList } = useAgents(projectId);
-  const createPipeline = useCreatePipeline(projectId);
-  const updatePipeline = useUpdatePipeline(projectId);
-  const deletePipeline = useDeletePipeline(projectId);
-  const addStep = useAddPipelineStep(projectId);
-  const removeStep = useRemovePipelineStep(projectId);
-  const reorderSteps = useReorderPipelineSteps(projectId);
-  const seedPipeline = useSeedPipeline(projectId);
+export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
+  const { data: pipelines, isLoading, isError } = usePipelines();
+  const { data: agentList } = useAgents();
+  const createPipeline = useCreatePipeline();
+  const updatePipeline = useUpdatePipeline();
+  const deletePipeline = useDeletePipeline();
+  const addStep = useAddPipelineStep();
+  const removeStep = useRemovePipelineStep();
+  const reorderSteps = useReorderPipelineSteps();
+  const seedPipeline = useSeedPipeline();
 
   const agents = agentList ?? [];
   const agentMap = new Map(agents.map((a) => [a.id, a.name]));

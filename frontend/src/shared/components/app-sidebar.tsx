@@ -1,6 +1,5 @@
 import {
   Activity,
-  Bot,
   Brain,
   CircleDot,
   FileText,
@@ -9,7 +8,6 @@ import {
   Pencil,
   Plug,
   Settings,
-  Workflow,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useMatchRoute } from "@tanstack/react-router";
@@ -49,18 +47,6 @@ export function AppSidebar({ activeProject, className }: AppSidebarProps) {
       to: "/projects/$projectId/issues" as const,
       params: { projectId },
       icon: CircleDot,
-    },
-    {
-      label: "Agents",
-      to: "/projects/$projectId/agents" as const,
-      params: { projectId },
-      icon: Bot,
-    },
-    {
-      label: "Pipelines",
-      to: "/projects/$projectId/pipelines" as const,
-      params: { projectId },
-      icon: Workflow,
     },
     {
       label: "Files",

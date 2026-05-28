@@ -18,7 +18,7 @@ interface PipelineRunButtonProps {
 }
 
 export function PipelineRunButton({ projectId, issueId, disabled }: PipelineRunButtonProps) {
-  const { data: pipelines } = usePipelines(projectId);
+  const { data: pipelines } = usePipelines();
   const { data: runs } = usePipelineRuns(projectId, issueId);
   const startRun = useStartPipelineRun(projectId);
 
@@ -32,7 +32,7 @@ export function PipelineRunButton({ projectId, issueId, disabled }: PipelineRunB
   const handleRun = () => {
     if (!selectedPipelineId || isRunning) return;
     startRun.mutate(
-      { pipeline_id: selectedPipelineId, issue_id: issueId },
+      { pipeline_id: selectedPipelineId, issue_id: issueId, project_id: projectId },
       { onSuccess: () => setSelectedPipelineId("") }
     );
   };
