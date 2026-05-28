@@ -18,7 +18,7 @@ from app.services.pipeline_run_service import PipelineRunService
 @pytest.mark.asyncio
 async def test_start_creates_run_and_step_runs(db_session):
     project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add_all([project, agent])
     await db_session.flush()
 
@@ -62,7 +62,7 @@ async def test_start_creates_run_and_step_runs(db_session):
 @pytest.mark.asyncio
 async def test_start_rejects_double_start(db_session):
     project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add_all([project, agent])
     await db_session.flush()
 
@@ -90,7 +90,7 @@ async def test_start_rejects_double_start(db_session):
 @pytest.mark.asyncio
 async def test_get_run_returns_status(db_session):
     project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add_all([project, agent])
     await db_session.flush()
 
@@ -119,7 +119,7 @@ async def test_get_run_returns_status(db_session):
 @pytest.mark.asyncio
 async def test_add_and_get_messages(db_session):
     project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add_all([project, agent])
     await db_session.flush()
 
@@ -150,7 +150,7 @@ async def test_add_and_get_messages(db_session):
 @pytest.mark.asyncio
 async def test_cancel_run(db_session):
     project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add_all([project, agent])
     await db_session.flush()
 
@@ -182,7 +182,7 @@ async def test_cancel_run(db_session):
 @pytest.mark.asyncio
 async def test_cancel_non_running_raises(db_session):
     project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add_all([project, agent])
     await db_session.flush()
 
@@ -211,7 +211,7 @@ async def test_cancel_non_running_raises(db_session):
 @pytest.mark.asyncio
 async def test_get_runs_for_issue(db_session):
     project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add_all([project, agent])
     await db_session.flush()
 

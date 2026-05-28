@@ -198,7 +198,6 @@ export function PipelineProgress({ projectId, issueId, onClose }: PipelineProgre
           <TerminalPanel
             terminalId={String(selectedTerminalId)}
             projectId={projectId}
-            readOnly
           />
         ) : selectedStep && selectedStep.status === "PENDING" ? (
           <div className="flex items-center justify-center h-full text-sm text-muted-foreground">

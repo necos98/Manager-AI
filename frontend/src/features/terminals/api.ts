@@ -1,5 +1,5 @@
 import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/api/client";
-import type { AskTerminalCreate, LogTerminalCreate, Terminal, TerminalCommand, TerminalCommandCreate, TerminalCommandTemplate, TerminalCommandUpdate, TerminalCommandVariable, TerminalCreate, TerminalListItem } from "@/shared/types";
+import type { AskTerminalCreate, LogTerminalCreate, ManageAgentTerminalCreate, Terminal, TerminalCommand, TerminalCommandCreate, TerminalCommandTemplate, TerminalCommandUpdate, TerminalCommandVariable, TerminalCreate, TerminalListItem } from "@/shared/types";
 
 export function fetchTerminals(projectId?: string, issueId?: string): Promise<TerminalListItem[]> {
   const params = new URLSearchParams();
@@ -60,6 +60,14 @@ export function reorderTerminalCommands(commands: { id: number; sort_order: numb
 
 export function deleteTerminalCommand(id: number): Promise<null> {
   return apiDelete(`/terminal-commands/${id}`);
+}
+
+export function createManageAgentTerminal(data: ManageAgentTerminalCreate): Promise<Terminal> {
+  return apiPost<Terminal>("/terminals/manage-agent", data);
+}
+
+export function fetchManageAgentTerminals(): Promise<TerminalListItem[]> {
+  return apiGet<TerminalListItem[]>("/terminals/manage-agent");
 }
 
 export function fetchTerminalCommandTemplates(): Promise<TerminalCommandTemplate[]> {

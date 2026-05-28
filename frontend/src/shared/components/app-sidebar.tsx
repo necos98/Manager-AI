@@ -1,6 +1,5 @@
 import {
   Activity,
-  Bot,
   Brain,
   CircleDot,
   FileText,
@@ -49,12 +48,6 @@ export function AppSidebar({ activeProject, className }: AppSidebarProps) {
       to: "/projects/$projectId/issues" as const,
       params: { projectId },
       icon: CircleDot,
-    },
-    {
-      label: "Agents",
-      to: "/projects/$projectId/agents" as const,
-      params: { projectId },
-      icon: Bot,
     },
     {
       label: "Pipelines",

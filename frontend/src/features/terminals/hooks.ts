@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as api from "./api";
-import type { AskTerminalCreate, LogTerminalCreate, TerminalCreate, TerminalCommandUpdate } from "@/shared/types";
+import type { AskTerminalCreate, LogTerminalCreate, ManageAgentTerminalCreate, TerminalCreate, TerminalCommandUpdate } from "@/shared/types";
 
 const onMutationError = (e: unknown) => {
   toast.error(e instanceof Error ? e.message : "Operation failed");
@@ -12,6 +12,7 @@ export const terminalKeys = {
   count: ["terminals", "count"] as const,
   config: ["terminals", "config"] as const,
   ask: (projectId: string) => ["terminals", "ask", projectId] as const,
+  manageAgent: ["terminals", "manage-agent"] as const,
   commands: (projectId?: string | null) => ["terminal-commands", projectId] as const,
   variables: ["terminal-commands", "variables"] as const,
 };
@@ -80,6 +81,26 @@ export function useAskTerminals(projectId: string) {
     queryKey: terminalKeys.ask(projectId),
     queryFn: () => api.fetchAskTerminals(projectId),
     enabled: Boolean(projectId),
+    staleTime: 10_000,
+  });
+}
+
+export function useCreateManageAgentTerminal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ManageAgentTerminalCreate) => api.createManageAgentTerminal(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: terminalKeys.all });
+      queryClient.invalidateQueries({ queryKey: terminalKeys.count });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useManageAgentTerminals() {
+  return useQuery({
+    queryKey: terminalKeys.manageAgent,
+    queryFn: api.fetchManageAgentTerminals,
     staleTime: 10_000,
   });
 }

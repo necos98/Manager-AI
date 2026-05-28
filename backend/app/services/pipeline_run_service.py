@@ -142,16 +142,18 @@ class PipelineRunService:
 
                 agent = step.agent
                 agent_name = agent.name if agent else "unknown"
-                agent_prompt = agent.system_prompt if agent else ""
+                agent_prompt = agent.intent if agent else ""
 
                 cmd = step.terminal_command or ""
                 cmd = cmd.replace("$issue_id", run.issue_id)
                 cmd = cmd.replace("$project_id", project_id)
                 cmd = cmd.replace("$project_path", project_path)
 
+                # Use empty issue_id for pipeline step log terminals so they
+                # don't pollute the issue's interactive terminal list.
                 term = await terminal_service.create_log(
                     project_id=project_id,
-                    issue_id=run.issue_id,
+                    issue_id="",
                     project_path=project_path,
                     label=f"{agent_name} (step {i + 1}/{len(steps)})",
                 )
@@ -172,7 +174,7 @@ class PipelineRunService:
                     success = await self._run_step(
                         term_id=term_id,
                         agent_name=agent_name,
-                        system_prompt=agent_prompt,
+                        intent=agent_prompt,
                         command=cmd,
                         project_path=project_path,
                         run_id=run_id,
@@ -261,7 +263,7 @@ class PipelineRunService:
         self,
         term_id: str,
         agent_name: str,
-        system_prompt: str,
+        intent: str,
         command: str,
         project_path: str,
         run_id: str,
@@ -270,7 +272,7 @@ class PipelineRunService:
         env = os.environ.copy()
         env["MANAGER_AI_AGENT_NAME"] = agent_name
         env["MANAGER_AI_AGENT_ROLE"] = agent_name
-        env["MANAGER_AI_SYSTEM_PROMPT"] = system_prompt
+        env["MANAGER_AI_AGENT_INTENT"] = intent
         env["MANAGER_AI_ISSUE_ID"] = issue_id
         env["MANAGER_AI_RUN_ID"] = run_id
 

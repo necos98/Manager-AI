@@ -72,7 +72,7 @@ function StepSummary({ steps, agents }: { steps: PipelineStep[]; agents: Map<str
 
 export function PipelinesTab({ projectId }: PipelinesTabProps) {
   const { data: pipelines, isLoading, isError } = usePipelines(projectId);
-  const { data: agentList } = useAgents(projectId);
+  const { data: agentList } = useAgents();
   const createPipeline = useCreatePipeline(projectId);
   const updatePipeline = useUpdatePipeline(projectId);
   const deletePipeline = useDeletePipeline(projectId);

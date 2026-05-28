@@ -191,6 +191,7 @@ function IssueDetailPage() {
                     !hasSplit ? (
                       terminal1 && (
                         <TerminalWithQuestions
+                          key={terminal1.id}
                           terminalId={terminal1.id}
                           projectId={projectId}
                           issueId={terminal1.issue_id}
@@ -200,9 +201,10 @@ function IssueDetailPage() {
                       )
                     ) : (
                       <ResizablePanelGroup direction="vertical">
-                        <ResizablePanel defaultSize={50} minSize={20}>
+                        <ResizablePanel key={terminal1?.id ?? "t1"} defaultSize={50} minSize={20}>
                           {terminal1 && (
                             <TerminalWithQuestions
+                              key={terminal1.id}
                               terminalId={terminal1.id}
                               projectId={projectId}
                               issueId={terminal1.issue_id}
@@ -212,9 +214,10 @@ function IssueDetailPage() {
                           )}
                         </ResizablePanel>
                         <ResizableHandle withHandle />
-                        <ResizablePanel defaultSize={50} minSize={20}>
+                        <ResizablePanel key={terminal2?.id ?? "t2"} defaultSize={50} minSize={20}>
                           {terminal2 && (
                             <TerminalWithQuestions
+                              key={terminal2.id}
                               terminalId={terminal2.id}
                               projectId={projectId}
                               issueId={terminal2.issue_id}
@@ -235,6 +238,7 @@ function IssueDetailPage() {
               !hasSplit ? (
                 terminal1 && (
                   <TerminalWithQuestions
+                    key={terminal1.id}
                     terminalId={terminal1.id}
                     projectId={projectId}
                     issueId={terminal1.issue_id}
@@ -244,9 +248,10 @@ function IssueDetailPage() {
                 )
               ) : (
                 <ResizablePanelGroup direction="vertical">
-                  <ResizablePanel defaultSize={50} minSize={20}>
+                  <ResizablePanel key={terminal1?.id ?? "t1"} defaultSize={50} minSize={20}>
                     {terminal1 && (
                       <TerminalWithQuestions
+                        key={terminal1.id}
                         terminalId={terminal1.id}
                         projectId={projectId}
                         issueId={terminal1.issue_id}
@@ -256,9 +261,10 @@ function IssueDetailPage() {
                     )}
                   </ResizablePanel>
                   <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={50} minSize={20}>
+                  <ResizablePanel key={terminal2?.id ?? "t2"} defaultSize={50} minSize={20}>
                     {terminal2 && (
                       <TerminalWithQuestions
+                        key={terminal2.id}
                         terminalId={terminal2.id}
                         projectId={projectId}
                         issueId={terminal2.issue_id}

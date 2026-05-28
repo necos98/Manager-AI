@@ -7,6 +7,7 @@ class TerminalCreate(BaseModel):
     issue_id: str
     project_id: str
     run_commands: bool = True
+    command: str | None = None
 
 
 class LogTerminalCreate(BaseModel):
@@ -17,6 +18,10 @@ class LogTerminalCreate(BaseModel):
 
 class AskTerminalCreate(BaseModel):
     project_id: str
+
+
+class ManageAgentTerminalCreate(BaseModel):
+    pass
 
 
 class TerminalResponse(BaseModel):

@@ -31,13 +31,9 @@ async def test_all_tables_exist(db_session):
 
 @pytest.mark.asyncio
 async def test_agent_unique_constraint(db_session):
-    """Duplicate agent name in same project raises IntegrityError."""
-    project = Project(id="p1", name="P", path="/tmp/p")
-    db_session.add(project)
-    await db_session.flush()
-
-    a1 = Agent(id="a1", project_id="p1", name="dev", system_prompt="You are a dev")
-    a2 = Agent(id="a2", project_id="p1", name="dev", system_prompt="Duplicate")
+    """Duplicate agent name (global) raises IntegrityError."""
+    a1 = Agent(id="a1", name="dev", intent="You are a dev")
+    a2 = Agent(id="a2", name="dev", intent="Duplicate")
     db_session.add_all([a1, a2])
 
     with pytest.raises(IntegrityError):
@@ -45,20 +41,14 @@ async def test_agent_unique_constraint(db_session):
 
 
 @pytest.mark.asyncio
-async def test_agent_unique_name_across_projects(db_session):
-    """Same agent name in different projects is allowed."""
-    p1 = Project(id="p1", name="P1", path="/tmp/p1")
-    p2 = Project(id="p2", name="P2", path="/tmp/p2")
-    db_session.add_all([p1, p2])
-    await db_session.flush()
-
-    a1 = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev agent")
-    a2 = Agent(id="a2", project_id="p2", name="dev", system_prompt="Dev agent")
+async def test_agent_unique_name_globally(db_session):
+    """Same agent name is not allowed globally."""
+    a1 = Agent(id="a1", name="dev", intent="Dev agent")
+    a2 = Agent(id="a2", name="dev", intent="Another dev agent")
     db_session.add_all([a1, a2])
-    await db_session.flush()
 
-    rows = (await db_session.execute(select(Agent).order_by(Agent.id))).scalars().all()
-    assert len(rows) == 2
+    with pytest.raises(IntegrityError):
+        await db_session.flush()
 
 
 @pytest.mark.asyncio
@@ -68,7 +58,7 @@ async def test_full_chain_insert(db_session):
     db_session.add(project)
     await db_session.flush()
 
-    agent = Agent(id="a1", project_id="p1", name="spec-writer", system_prompt="You write specs")
+    agent = Agent(id="a1", name="spec-writer", intent="You write specs")
     db_session.add(agent)
     await db_session.flush()
 
@@ -112,7 +102,7 @@ async def test_full_chain_insert(db_session):
 async def test_pipeline_cascade_deletes_steps(db_session):
     """Deleting a pipeline cascades to its steps."""
     project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev", intent="Dev")
     db_session.add_all([project, agent])
     await db_session.flush()
 
@@ -136,7 +126,7 @@ async def test_pipeline_cascade_deletes_steps(db_session):
 async def test_pipeline_run_cascade_deletes_step_runs_and_messages(db_session):
     """Deleting a PipelineRun cascades to step_runs and messages."""
     project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev", intent="Dev")
     db_session.add_all([project, agent])
     await db_session.flush()
 
@@ -168,7 +158,7 @@ async def test_pipeline_run_cascade_deletes_step_runs_and_messages(db_session):
 async def test_pipeline_step_unique_order_constraint(db_session):
     """Duplicate order_index in same pipeline raises IntegrityError."""
     project = Project(id="p1", name="P", path="/tmp/p")
-    agent = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev", intent="Dev")
     db_session.add_all([project, agent])
     await db_session.flush()
 
@@ -202,13 +192,13 @@ async def test_pipeline_step_run_status_enum_values():
 
 
 @pytest.mark.asyncio
-async def test_project_cascade_deletes_agents(db_session):
-    """Deleting a project cascades to its agents."""
+async def test_agent_not_deleted_when_project_deleted(db_session):
+    """Deleting a project does NOT cascade to global agents."""
     project = Project(id="p1", name="P", path="/tmp/p")
     db_session.add(project)
     await db_session.flush()
 
-    agent = Agent(id="a1", project_id="p1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev", intent="Dev")
     db_session.add(agent)
     await db_session.flush()
 
@@ -217,4 +207,5 @@ async def test_project_cascade_deletes_agents(db_session):
     await db_session.delete(project)
     await db_session.flush()
 
-    assert (await db_session.execute(select(Agent))).scalars().first() is None
+    # Agent still exists — it's global, not owned by the project
+    assert (await db_session.execute(select(Agent))).scalars().first() is not None

@@ -1,4 +1,5 @@
 import {
+  Bot,
   HelpCircle,
   LayoutDashboard,
   Settings,
@@ -151,6 +152,17 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                   {terminalCount > 0 && (
                     <SidebarMenuBadge>{terminalCount}</SidebarMenuBadge>
                   )}
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={!!matchRoute({ to: "/agents", fuzzy: true })}
+                  >
+                    <Link to="/agents">
+                      <Bot />
+                      <span>Agents</span>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton

@@ -960,12 +960,11 @@ async def ask_user_question(issue_id: str, question: str, options: list[str] | N
 
 
 @mcp.tool(description=_desc["tool.create_agent.description"])
-async def create_agent(project_id: str, name: str, system_prompt: str, model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
+async def create_agent(name: str, system_prompt: str, model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
     async with async_session() as session:
         svc = AgentService(session)
         try:
             agent = await svc.create(
-                project_id=project_id,
                 name=name,
                 system_prompt=system_prompt,
                 model=model,
@@ -974,7 +973,6 @@ async def create_agent(project_id: str, name: str, system_prompt: str, model: st
             await session.commit()
             return {
                 "id": agent.id,
-                "project_id": agent.project_id,
                 "name": agent.name,
                 "system_prompt": agent.system_prompt,
                 "model": agent.model,
@@ -987,15 +985,14 @@ async def create_agent(project_id: str, name: str, system_prompt: str, model: st
 
 
 @mcp.tool(description=_desc["tool.list_agents.description"])
-async def list_agents(project_id: str) -> dict:
+async def list_agents() -> dict:
     async with async_session() as session:
         svc = AgentService(session)
-        agents = await svc.list_by_project(project_id)
+        agents = await svc.list_all()
         return {
             "agents": [
                 {
                     "id": a.id,
-                    "project_id": a.project_id,
                     "name": a.name,
                     "system_prompt": a.system_prompt,
                     "model": a.model,
@@ -1012,11 +1009,11 @@ async def list_agents(project_id: str) -> dict:
 
 
 @mcp.tool(description=_desc["tool.create_pipeline.description"])
-async def create_pipeline(project_id: str, name: str, steps: list[dict]) -> dict:
+async def create_pipeline(name: str, steps: list[dict]) -> dict:
     async with async_session() as session:
         svc = PipelineService(session)
         try:
-            pipeline = await svc.create_pipeline(project_id, name)
+            pipeline = await svc.create_pipeline(name)
             for step_data in steps:
                 await svc.add_step(
                     pipeline_id=pipeline.id,
@@ -1028,7 +1025,6 @@ async def create_pipeline(project_id: str, name: str, steps: list[dict]) -> dict
             pipeline = await svc.get_pipeline(pipeline.id)
             return {
                 "id": pipeline.id,
-                "project_id": pipeline.project_id,
                 "name": pipeline.name,
                 "steps": [
                     {
@@ -1048,15 +1044,14 @@ async def create_pipeline(project_id: str, name: str, steps: list[dict]) -> dict
 
 
 @mcp.tool(description=_desc["tool.list_pipelines.description"])
-async def list_pipelines(project_id: str) -> dict:
+async def list_pipelines() -> dict:
     async with async_session() as session:
         svc = PipelineService(session)
-        pipelines = await svc.list_by_project(project_id)
+        pipelines = await svc.list_all()
         return {
             "pipelines": [
                 {
                     "id": p.id,
-                    "project_id": p.project_id,
                     "name": p.name,
                     "steps": [
                         {

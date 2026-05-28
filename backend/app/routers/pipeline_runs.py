@@ -12,9 +12,7 @@ from app.schemas.pipeline_run import (
 )
 from app.services.pipeline_run_service import PipelineRunService
 
-router = APIRouter(
-    prefix="/api/projects/{project_id}/pipeline-runs", tags=["pipeline-runs"]
-)
+router = APIRouter(prefix="/api/pipeline-runs", tags=["pipeline-runs"])
 
 
 async def _get_project_path(project_id: str, db: AsyncSession) -> str:
@@ -26,17 +24,16 @@ async def _get_project_path(project_id: str, db: AsyncSession) -> str:
 
 @router.post("", response_model=PipelineRunResponse, status_code=201)
 async def start_pipeline_run(
-    project_id: str,
     data: PipelineRunStart,
     db: AsyncSession = Depends(get_db),
 ):
-    project_path = await _get_project_path(project_id, db)
+    project_path = await _get_project_path(data.project_id, db)
     svc = PipelineRunService(db, session_factory=async_session)
     try:
         result = await svc.start(
             pipeline_id=data.pipeline_id,
             issue_id=data.issue_id,
-            project_id=project_id,
+            project_id=data.project_id,
             project_path=project_path,
         )
     except AppError as e:
@@ -47,7 +44,6 @@ async def start_pipeline_run(
 
 @router.get("", response_model=list[PipelineRunResponse])
 async def list_pipeline_runs(
-    project_id: str,
     issue_id: str = Query(..., min_length=1),
     db: AsyncSession = Depends(get_db),
 ):
@@ -56,11 +52,7 @@ async def list_pipeline_runs(
 
 
 @router.get("/{run_id}", response_model=PipelineRunResponse)
-async def get_pipeline_run(
-    project_id: str,
-    run_id: str,
-    db: AsyncSession = Depends(get_db),
-):
+async def get_pipeline_run(run_id: str, db: AsyncSession = Depends(get_db)):
     svc = PipelineRunService(db)
     try:
         return await svc.get_run(run_id)
@@ -69,11 +61,7 @@ async def get_pipeline_run(
 
 
 @router.delete("/{run_id}", status_code=204)
-async def cancel_pipeline_run(
-    project_id: str,
-    run_id: str,
-    db: AsyncSession = Depends(get_db),
-):
+async def cancel_pipeline_run(run_id: str, db: AsyncSession = Depends(get_db)):
     svc = PipelineRunService(db)
     try:
         await svc.cancel_run(run_id)
@@ -83,11 +71,7 @@ async def cancel_pipeline_run(
 
 
 @router.get("/{run_id}/messages", response_model=list[PipelineMessageResponse])
-async def get_pipeline_messages(
-    project_id: str,
-    run_id: str,
-    db: AsyncSession = Depends(get_db),
-):
+async def get_pipeline_messages(run_id: str, db: AsyncSession = Depends(get_db)):
     svc = PipelineRunService(db)
     return await svc.get_messages(run_id)
 
@@ -98,7 +82,6 @@ async def get_pipeline_messages(
     status_code=201,
 )
 async def send_pipeline_message(
-    project_id: str,
     run_id: str,
     data: PipelineMessageCreate,
     db: AsyncSession = Depends(get_db),

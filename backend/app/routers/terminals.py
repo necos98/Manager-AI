@@ -6,8 +6,6 @@ import logging
 import os
 import platform
 import shlex
-from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -16,156 +14,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings as app_settings
 from app.database import get_db
 from app.models.project import Project
-from app.schemas.terminal import AskTerminalCreate, LogTerminalCreate, TerminalCreate, TerminalListResponse, TerminalResponse
+from app.schemas.terminal import AskTerminalCreate, LogTerminalCreate, ManageAgentTerminalCreate, TerminalCreate, TerminalListResponse, TerminalResponse
 from app.services.terminal_service import TerminalService, terminal_service
 from app.services.terminal_command_service import TerminalCommandService
 from app.services.terminal_condition import UnknownConditionError, evaluate_condition
+from app.services.terminal_session import (
+    TerminalSession,
+    _ensure_reader,
+    _save_recording,
+    _sessions,
+    _stop_reader,
+)
 from app.services.wsl_support import get_host_ip_for_wsl, is_wsl_shell, win_to_wsl_path
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Terminal session — centralised lifecycle state so the persistent reader and
-# the WebSocket endpoint never race on close/cleanup.
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class TerminalSession:
-    """Mutable holder for the WebSocket, reader task, and a close-signalling event.
-
-    Only the WS endpoint is allowed to close the WebSocket (in its ``finally``
-    block).  The reader merely sets *pty_dead* so the endpoint can exit its
-    receive loop gracefully instead of hitting a surprise disconnect.
-    """
-
-    ws: WebSocket | None = None
-    reader_task: asyncio.Task[None] | None = None
-    pty_dead: asyncio.Event = field(default_factory=asyncio.Event)
-    pty_died_naturally: bool = False  # True when the PTY exited on its own
-
-
-def _save_recording(terminal_id: str, content: str) -> None:
-    """Write terminal output buffer to a file in the recordings directory."""
-    if not content:
-        return
-    try:
-        rec_dir = Path(app_settings.recordings_path)
-        rec_dir.mkdir(parents=True, exist_ok=True)
-        (rec_dir / f"{terminal_id}.txt").write_text(content, encoding="utf-8")
-    except Exception:
-        logger.warning("Failed to save recording for terminal %s", terminal_id, exc_info=True)
-
 router = APIRouter(prefix="/api/terminals", tags=["terminals"])
-
-# Dedicated thread pool for blocking PTY reads so they don't starve
-# the default asyncio executor used by DB queries, HTTP, etc.
-_pty_executor = ThreadPoolExecutor(max_workers=20, thread_name_prefix="pty-read")
-
-# --- Persistent reader infrastructure ---
-# One TerminalSession per terminal keeps the reader task, the WebSocket,
-# and a pty_dead signal together so they never race.
-_sessions: dict[str, TerminalSession] = {}
-
-
-async def _terminal_reader(terminal_id: str, service: TerminalService) -> None:
-    """Persistent reader: buffers PTY or log-queue output and forwards to a connected WebSocket.
-
-    The reader never closes the WebSocket itself -- it only signals
-    *pty_dead* on the TerminalSession when the underlying process exits.
-    The WS endpoint is the sole owner of the close handshake.
-    """
-    session = _sessions.get(terminal_id)
-    if session is None:
-        return
-
-    loop = asyncio.get_running_loop()
-    with service._lock:
-        entry = service._terminals.get(terminal_id)
-    if entry is None:
-        return
-
-    is_log = entry.get("mode") == "log"
-
-    try:
-        if is_log:
-            with service._lock:
-                q = service._queues.get(terminal_id)
-            if q is None:
-                return
-            while True:
-                data = await q.get()
-                if data is None:
-                    # EOF sentinel - log terminal destroyed
-                    buf = service.get_buffered_output(terminal_id)
-                    _save_recording(terminal_id, buf)
-                    service.mark_closed(terminal_id)
-                    session.pty_died_naturally = True
-                    session.pty_dead.set()  # signal WS endpoint
-                    break
-                service.append_output(terminal_id, data)
-                ws = session.ws
-                if ws:
-                    try:
-                        await ws.send_text(data)
-                    except Exception:
-                        session.ws = None
-        else:
-            try:
-                pty = service.get_pty(terminal_id)
-            except KeyError:
-                return
-            while True:
-                data = await loop.run_in_executor(
-                    _pty_executor, lambda: pty.read(blocking=True)
-                )
-                if not data:
-                    # PTY EOF - process exited
-                    buf = service.get_buffered_output(terminal_id)
-                    _save_recording(terminal_id, buf)
-                    service.mark_closed(terminal_id)
-                    session.pty_died_naturally = True
-                    session.pty_dead.set()  # signal WS endpoint
-                    break
-                service.append_output(terminal_id, data)
-                ws = session.ws
-                if ws:
-                    try:
-                        await ws.send_text(data)
-                    except Exception:
-                        # WebSocket gone - stop forwarding, but keep buffering
-                        session.ws = None
-    except asyncio.CancelledError:
-        pass
-    except Exception:
-        logger.warning("Terminal reader error for %s", terminal_id, exc_info=True)
-    finally:
-        if session is not None:
-            session.reader_task = None
-
-
-def _ensure_reader(terminal_id: str, service: TerminalService) -> None:
-    """Start the persistent reader if it is not already running."""
-    session = _sessions.get(terminal_id)
-    if session is None:
-        return
-    existing = session.reader_task
-    if existing and not existing.done():
-        return
-    session.reader_task = asyncio.create_task(
-        _terminal_reader(terminal_id, service)
-    )
-
-
-def _stop_reader(terminal_id: str) -> None:
-    """Cancel the persistent reader for a terminal."""
-    session = _sessions.get(terminal_id)
-    if session is None:
-        return
-    task = session.reader_task
-    session.reader_task = None
-    if task and not task.done():
-        task.cancel()
 
 
 async def _teardown_terminal(terminal_id: str, service: TerminalService) -> None:
@@ -314,40 +178,52 @@ async def create_terminal(
             issue = await IssueService(db).get_by_id(data.issue_id)
             issue_status = issue.status if issue else ""
 
-            cmd_service = TerminalCommandService(db)
-            commands = await cmd_service.resolve(data.project_id)
-            if commands:
+            # Resolve dynamic variables in commands
+            replacements = {
+                "$issue_id": data.issue_id,
+                "$project_id": data.project_id,
+                "$project_path": win_to_wsl_path(project_path) if is_wsl else project_path,
+            }
+
+            logger.info("create_terminal: run_commands=%s, command=%s", data.run_commands, data.command)
+            if data.command:
+                # Custom command override (e.g., pipeline run)
+                cmd_text = data.command
+                for var, val in replacements.items():
+                    cmd_text = cmd_text.replace(var, val)
+                logger.info("Injecting custom command: %s", cmd_text)
                 pty = service.get_pty(terminal["id"])
-                # Resolve dynamic variables in commands
-                # Variable names are defined in terminal_commands.TEMPLATE_VARIABLES
-                replacements = {
-                    "$issue_id": data.issue_id,
-                    "$project_id": data.project_id,
-                    "$project_path": win_to_wsl_path(project_path) if is_wsl else project_path,
-                }
-                condition_vars = {
-                    "issue_status": issue_status,
-                    "issue_id": data.issue_id,
-                    "project_id": data.project_id,
-                }
-                for c in commands:
-                    try:
-                        passes = evaluate_condition(c.condition, condition_vars)
-                    except UnknownConditionError as exc:
-                        logger.warning(
-                            "Skipping terminal command %s: %s", c.id, exc
-                        )
-                        continue
-                    if not passes:
-                        continue
-                    cmd_text = c.command
-                    for var, val in replacements.items():
-                        cmd_text = cmd_text.replace(var, val)
-                    # Support multi-line: send each non-empty line as a separate command
-                    for line in cmd_text.split("\n"):
-                        line = line.strip()
-                        if line:
-                            pty.write(line + "\r\n")
+                for line in cmd_text.split("\n"):
+                    line = line.strip()
+                    if line:
+                        pty.write(line + "\r\n")
+            else:
+                cmd_service = TerminalCommandService(db)
+                commands = await cmd_service.resolve(data.project_id)
+                if commands:
+                    pty = service.get_pty(terminal["id"])
+                    condition_vars = {
+                        "issue_status": issue_status,
+                        "issue_id": data.issue_id,
+                        "project_id": data.project_id,
+                    }
+                    for c in commands:
+                        try:
+                            passes = evaluate_condition(c.condition, condition_vars)
+                        except UnknownConditionError as exc:
+                            logger.warning(
+                                "Skipping terminal command %s: %s", c.id, exc
+                            )
+                            continue
+                        if not passes:
+                            continue
+                        cmd_text = c.command
+                        for var, val in replacements.items():
+                            cmd_text = cmd_text.replace(var, val)
+                        for line in cmd_text.split("\n"):
+                            line = line.strip()
+                            if line:
+                                pty.write(line + "\r\n")
         except Exception:
             logger.warning("Failed to inject startup commands for terminal %s", terminal["id"], exc_info=True)
 
@@ -463,6 +339,70 @@ async def create_ask_terminal(
     return TerminalResponse(**terminal)
 
 
+@router.post("/manage-agent", response_model=TerminalResponse, status_code=201)
+async def create_manage_agent_terminal(
+    data: ManageAgentTerminalCreate,
+    db: AsyncSession = Depends(get_db),
+    service: TerminalService = Depends(get_terminal_service),
+):
+    from app.config import settings as app_config
+
+    project_path = str(Path(app_config.database_url).parent.parent.resolve())
+    if not os.path.isdir(project_path):
+        project_path = str(Path(__file__).resolve().parent.parent.parent)
+
+    # Tear down any existing manage-agent terminals
+    for existing in service.list_active(project_id="", issue_id=""):
+        existing_pty = existing.get("pty", None)
+        if existing_pty is not None:
+            await _teardown_terminal(existing["id"], service)
+
+    try:
+        terminal = service.create(
+            issue_id="",
+            project_id="",
+            project_path=project_path,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
+
+    # Inject env vars
+    try:
+        pty = service.get_pty(terminal["id"])
+        port = os.environ.get("BACKEND_PORT", "8000")
+        env_vars = {
+            "MANAGER_AI_TERMINAL_ID": terminal["id"],
+            "MANAGER_AI_BASE_URL": f"http://localhost:{port}",
+        }
+        if platform.system() == "Windows":
+            pairs = (f"{k}={v}" for k, v in env_vars.items())
+            line = " && ".join(f"set {p}" for p in pairs)
+        else:
+            pairs = (f"{k}={shlex.quote(str(v))}" for k, v in env_vars.items())
+            line = " && ".join(f"export {p}" for p in pairs)
+        pty.write(line + "\r\n")
+    except Exception:
+        logger.warning("Failed to inject env vars for manage-agent terminal %s", terminal["id"], exc_info=True)
+
+    # Read and inject the manage_agent_command from settings
+    try:
+        from app.services.settings_service import SettingsService
+        settings_svc = SettingsService(db)
+        cmd = await settings_svc.get("manage_agent_command")
+        skip_perms = await settings_svc.get("claude.skip_permissions") == "true"
+        if skip_perms and cmd.startswith("claude "):
+            cmd = "claude --dangerously-skip-permissions " + cmd[len("claude "):]
+        logger.info("Manage-agent terminal %s command: %s", terminal["id"], cmd)
+        pty = service.get_pty(terminal["id"])
+        pty.write(cmd + "\r\n")
+    except Exception:
+        logger.warning("Failed to inject manage-agent command for terminal %s", terminal["id"], exc_info=True)
+
+    return TerminalResponse(**terminal)
+
+
 @router.post("/log", response_model=TerminalResponse, status_code=201)
 async def create_log_terminal(
     data: LogTerminalCreate,
@@ -503,6 +443,14 @@ async def list_ask_terminals(
         term["project_name"] = project.name if project else None
         term["issue_name"] = None
     return terminals
+
+
+@router.get("/manage-agent", response_model=list[TerminalListResponse])
+async def list_manage_agent_terminals(
+    service: TerminalService = Depends(get_terminal_service),
+):
+    """Return active Manage Agent terminals (project_id == '' and issue_id == '')."""
+    return service.list_active(project_id="", issue_id="")
 
 
 @router.get("/config")

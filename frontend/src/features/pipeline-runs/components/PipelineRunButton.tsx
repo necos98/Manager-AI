@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { usePipelines } from "@/features/pipelines/hooks";
-import { usePipelineRuns, useStartPipelineRun } from "@/features/pipeline-runs/hooks";
+import { useCreateTerminal } from "@/features/terminals/hooks";
 
 interface PipelineRunButtonProps {
   projectId: string;
@@ -19,34 +19,32 @@ interface PipelineRunButtonProps {
 
 export function PipelineRunButton({ projectId, issueId, disabled }: PipelineRunButtonProps) {
   const { data: pipelines } = usePipelines(projectId);
-  const { data: runs } = usePipelineRuns(projectId, issueId);
-  const startRun = useStartPipelineRun(projectId);
+  const createTerminal = useCreateTerminal();
 
   const [selectedPipelineId, setSelectedPipelineId] = useState("");
 
-  const activeRun = runs?.find((r) => r.status === "RUNNING");
   const hasPipelines = pipelines && pipelines.length > 0;
 
-  const isRunning = startRun.isPending || !!activeRun;
-
   const handleRun = () => {
-    if (!selectedPipelineId || isRunning) return;
-    startRun.mutate(
-      { pipeline_id: selectedPipelineId, issue_id: issueId },
+    if (!selectedPipelineId || createTerminal.isPending) return;
+    createTerminal.mutate(
+      {
+        issue_id: issueId,
+        project_id: projectId,
+        command: `claude --dangerously-skip-permissions "/run-pipeline ${issueId}"`,
+      },
       { onSuccess: () => setSelectedPipelineId("") }
     );
   };
 
-  let tooltip = "";
-  if (activeRun) tooltip = "Pipeline already running";
-  else if (!hasPipelines) tooltip = "No pipelines configured";
+  const tooltip = !hasPipelines ? "No pipelines configured" : "";
 
   return (
     <div className="flex items-center gap-1">
       <Select
         value={selectedPipelineId}
         onValueChange={setSelectedPipelineId}
-        disabled={disabled || isRunning}
+        disabled={disabled || createTerminal.isPending}
       >
         <SelectTrigger className="h-8 w-44 text-xs" title={tooltip || undefined}>
           <SelectValue placeholder="Select pipeline..." />
@@ -61,17 +59,17 @@ export function PipelineRunButton({ projectId, issueId, disabled }: PipelineRunB
       </Select>
       <Button
         size="sm"
-        className="h-8"
+        variant="outline"
         onClick={handleRun}
-        disabled={disabled || !selectedPipelineId || isRunning}
+        disabled={disabled || !selectedPipelineId || createTerminal.isPending}
         title={tooltip || undefined}
       >
-        {startRun.isPending ? (
-          <Loader2 className="size-3 mr-1 animate-spin" />
+        {createTerminal.isPending ? (
+          <Loader2 className="size-4 mr-1 animate-spin" />
         ) : (
-          <Play className="size-3 mr-1" />
+          <Play className="size-4 mr-1" />
         )}
-        {activeRun ? "Running" : startRun.isPending ? "Starting..." : "Run Pipeline"}
+        {createTerminal.isPending ? "Starting..." : "Run Pipeline"}
       </Button>
     </div>
   );

@@ -173,6 +173,7 @@ export interface TerminalCreate {
   issue_id: string;
   project_id: string;
   run_commands?: boolean;
+  command?: string;
 }
 
 export interface AskTerminalCreate {
@@ -184,6 +185,8 @@ export interface LogTerminalCreate {
   issue_id: string;
   label?: string;
 }
+
+export interface ManageAgentTerminalCreate {}
 
 // ── Terminal Command ──
 
@@ -480,27 +483,29 @@ export interface QuestionAnswer {
 
 export interface Agent {
   id: string;
-  project_id: string;
   name: string;
-  system_prompt: string;
   model: string | null;
   allowed_tools: string[] | null;
+  terminal_command: string;
+  intent: string;
   created_at: string | null;
   updated_at: string | null;
 }
 
 export interface AgentCreate {
   name: string;
-  system_prompt: string;
   model?: string | null;
   allowed_tools?: string[] | null;
+  terminal_command?: string;
+  intent?: string;
 }
 
 export interface AgentUpdate {
   name?: string;
-  system_prompt?: string;
   model?: string | null;
   allowed_tools?: string[] | null;
+  terminal_command?: string | null;
+  intent?: string | null;
 }
 
 // ── Pipeline ──

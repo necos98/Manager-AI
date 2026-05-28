@@ -12,9 +12,7 @@ from app.schemas.pipeline import (
 )
 from app.services.pipeline_service import PipelineService
 
-router = APIRouter(
-    prefix="/api/projects/{project_id}/pipelines", tags=["pipelines"]
-)
+router = APIRouter(prefix="/api/pipelines", tags=["pipelines"])
 
 
 def _step_response(step) -> PipelineStepResponse:
@@ -30,7 +28,6 @@ def _step_response(step) -> PipelineStepResponse:
 def _response(pipeline) -> PipelineResponse:
     return PipelineResponse(
         id=pipeline.id,
-        project_id=pipeline.project_id,
         name=pipeline.name,
         steps=[_step_response(s) for s in (pipeline.steps or [])],
         created_at=str(pipeline.created_at) if pipeline.created_at else None,
@@ -39,20 +36,16 @@ def _response(pipeline) -> PipelineResponse:
 
 
 @router.get("", response_model=list[PipelineResponse])
-async def list_pipelines(
-    project_id: str, db: AsyncSession = Depends(get_db)
-):
+async def list_pipelines(db: AsyncSession = Depends(get_db)):
     svc = PipelineService(db)
-    pipelines = await svc.list_by_project(project_id)
+    pipelines = await svc.list_all()
     return [_response(p) for p in pipelines]
 
 
 @router.post("", response_model=PipelineResponse, status_code=201)
-async def create_pipeline(
-    project_id: str, data: PipelineCreate, db: AsyncSession = Depends(get_db)
-):
+async def create_pipeline(data: PipelineCreate, db: AsyncSession = Depends(get_db)):
     svc = PipelineService(db)
-    pipeline = await svc.create_pipeline(project_id, data.name)
+    pipeline = await svc.create_pipeline(data.name)
     for step_data in data.steps:
         await svc.add_step(
             pipeline_id=pipeline.id,
@@ -65,9 +58,7 @@ async def create_pipeline(
 
 
 @router.get("/{pipeline_id}", response_model=PipelineResponse)
-async def get_pipeline(
-    project_id: str, pipeline_id: str, db: AsyncSession = Depends(get_db)
-):
+async def get_pipeline(pipeline_id: str, db: AsyncSession = Depends(get_db)):
     svc = PipelineService(db)
     pipeline = await svc.get_pipeline(pipeline_id)
     return _response(pipeline)
@@ -75,7 +66,6 @@ async def get_pipeline(
 
 @router.put("/{pipeline_id}", response_model=PipelineResponse)
 async def update_pipeline(
-    project_id: str,
     pipeline_id: str,
     data: PipelineUpdate,
     db: AsyncSession = Depends(get_db),
@@ -87,9 +77,7 @@ async def update_pipeline(
 
 
 @router.delete("/{pipeline_id}", status_code=204)
-async def delete_pipeline(
-    project_id: str, pipeline_id: str, db: AsyncSession = Depends(get_db)
-):
+async def delete_pipeline(pipeline_id: str, db: AsyncSession = Depends(get_db)):
     svc = PipelineService(db)
     await svc.delete_pipeline(pipeline_id)
     await db.commit()
@@ -101,7 +89,6 @@ async def delete_pipeline(
     status_code=201,
 )
 async def add_step(
-    project_id: str,
     pipeline_id: str,
     data: PipelineStepCreate,
     db: AsyncSession = Depends(get_db),
@@ -119,7 +106,6 @@ async def add_step(
 
 @router.delete("/{pipeline_id}/steps/{step_id}", status_code=204)
 async def remove_step(
-    project_id: str,
     pipeline_id: str,
     step_id: str,
     db: AsyncSession = Depends(get_db),
@@ -134,7 +120,6 @@ async def remove_step(
     response_model=list[PipelineStepResponse],
 )
 async def reorder_steps(
-    project_id: str,
     pipeline_id: str,
     data: StepReorderRequest,
     db: AsyncSession = Depends(get_db),
@@ -146,10 +131,8 @@ async def reorder_steps(
 
 
 @router.post("/seed", response_model=PipelineResponse, status_code=201)
-async def seed_pipeline(
-    project_id: str, db: AsyncSession = Depends(get_db)
-):
+async def seed_pipeline(db: AsyncSession = Depends(get_db)):
     svc = PipelineService(db)
-    pipeline = await svc.seed_defaults(project_id)
+    pipeline = await svc.seed_defaults()
     await db.commit()
     return _response(await svc.get_pipeline(pipeline.id))
