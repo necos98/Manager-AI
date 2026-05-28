@@ -1,0 +1,24 @@
+schema_version: 1
+id: c01d2b92-64a5-4a14-8f99-76f89bdcc5ba
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Fix pipeline deletion: NOT NULL constraint on pipeline_runs.pipeline_id'
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-28T20:04:28.258867'
+updated_at: '2026-05-28T20:07:44.325405'
+finished_at: '2026-05-28T20:07:44.325414'
+tasks:
+- id: 5df66ff3-5576-4d8b-b4b6-8c6492fdaf24
+  name: Add cascade="all, delete-orphan" to Pipeline.runs relationship
+  status: Completed
+  order: 0
+  created_at: '2026-05-28T20:06:56'
+  updated_at: '2026-05-28T20:07:12'
+- id: e4a3d86d-d93a-40c5-b78a-0a48b2d75df9
+  name: 'Verify fix: delete pipeline with existing runs returns 200'
+  status: Completed
+  order: 1
+  created_at: '2026-05-28T20:06:56'
+  updated_at: '2026-05-28T20:07:37'
+relations: []

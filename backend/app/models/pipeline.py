@@ -18,7 +18,7 @@ class Pipeline(Base):
 
     project = relationship("Project", back_populates="pipelines")
     steps = relationship("PipelineStep", back_populates="pipeline", cascade="all, delete-orphan", order_by="PipelineStep.order_index")
-    runs = relationship("PipelineRun", back_populates="pipeline")
+    runs = relationship("PipelineRun", back_populates="pipeline", cascade="all, delete-orphan")
 
 
 class PipelineStep(Base):
