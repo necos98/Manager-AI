@@ -1,0 +1,18 @@
+schema_version: 1
+id: ab16fc80-2d16-4852-b3e0-faafaaa943ca
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Fix GET /api/agents 500: AgentResponse missing project_id'
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-28T21:23:41.636090'
+updated_at: '2026-05-28T21:27:11.299135'
+finished_at: '2026-05-28T21:27:11.299164'
+tasks:
+- id: 70a7a082-c822-415f-9726-88c925282752
+  name: Remove project_id from AgentResponse and fix allowed_tools type annotation
+  status: Completed
+  order: 0
+  created_at: '2026-05-28T21:25:24'
+  updated_at: '2026-05-28T21:27:03'
+relations: []
