@@ -37,4 +37,4 @@ class PipelineStep(Base):
 
     pipeline = relationship("Pipeline", back_populates="steps")
     agent = relationship("Agent", back_populates="pipeline_steps")
-    step_runs = relationship("PipelineStepRun", back_populates="pipeline_step")
+    step_runs = relationship("PipelineStepRun", back_populates="pipeline_step", cascade="all, delete-orphan")

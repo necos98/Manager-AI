@@ -1,0 +1,18 @@
+schema_version: 1
+id: 95e6e226-7540-4b0a-b913-a946128f2c0f
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Fix pipeline step deletion: NOT NULL constraint on pipeline_step_runs.pipeline_step_id'
+status: Finished
+priority: 3
+category: null
+created_at: '2026-05-28T18:03:40.517170'
+updated_at: '2026-05-28T19:59:20.572539'
+finished_at: '2026-05-28T19:59:20.572548'
+tasks:
+- id: bc494f76-c339-4874-9b6a-58355422a471
+  name: Add cascade="all, delete-orphan" to PipelineStep.step_runs relationship in backend/app/models/pipeline.py:40
+  status: Completed
+  order: 0
+  created_at: '2026-05-28T19:59:01'
+  updated_at: '2026-05-28T19:59:13'
+relations: []
