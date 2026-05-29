@@ -1,0 +1,36 @@
+schema_version: 1
+id: e61999ae-d37d-444b-9505-7ca4c8ecbaa5
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Fix MissingGreenlet in pipeline routes: build response before db.commit()'
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-29T08:15:51.004183'
+updated_at: '2026-05-29T08:25:47.125690'
+finished_at: '2026-05-29T08:25:47.125699'
+tasks:
+- id: c7a0429b-36e9-4385-9901-ced05e5e6cd8
+  name: 'Fix update_pipeline: build response before commit'
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T08:24:28'
+  updated_at: '2026-05-29T08:24:50'
+- id: a188104e-9225-476e-a661-fb1bd43132ed
+  name: 'Fix add_step: build response before commit'
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T08:24:28'
+  updated_at: '2026-05-29T08:24:58'
+- id: 0d7eebc9-f071-4168-8cef-fd9bf978fe58
+  name: 'Fix reorder_steps: build response before commit'
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T08:24:28'
+  updated_at: '2026-05-29T08:24:59'
+- id: 1f5a4319-ebdd-46bd-aee6-defae0644af6
+  name: 'Verify fixes: restart backend and test endpoints'
+  status: Completed
+  order: 3
+  created_at: '2026-05-29T08:24:28'
+  updated_at: '2026-05-29T08:25:40'
+relations: []

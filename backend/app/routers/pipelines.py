@@ -72,8 +72,9 @@ async def update_pipeline(
 ):
     svc = PipelineService(db)
     pipeline = await svc.update_pipeline(pipeline_id, data.name)
+    response = _response(pipeline)
     await db.commit()
-    return _response(pipeline)
+    return response
 
 
 @router.delete("/{pipeline_id}", status_code=204)
@@ -100,8 +101,9 @@ async def add_step(
         order_index=data.order_index,
         terminal_command=data.terminal_command,
     )
+    response = _step_response(step)
     await db.commit()
-    return _step_response(step)
+    return response
 
 
 @router.delete("/{pipeline_id}/steps/{step_id}", status_code=204)
@@ -126,8 +128,9 @@ async def reorder_steps(
 ):
     svc = PipelineService(db)
     steps = await svc.reorder_steps(pipeline_id, data.step_ids)
+    response = [_step_response(s) for s in steps]
     await db.commit()
-    return [_step_response(s) for s in steps]
+    return response
 
 
 @router.post("/seed", response_model=PipelineResponse, status_code=201)
