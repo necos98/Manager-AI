@@ -114,6 +114,7 @@ export function useKillTerminal() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: terminalKeys.all });
       queryClient.invalidateQueries({ queryKey: terminalKeys.count });
+      queryClient.invalidateQueries({ queryKey: terminalKeys.manageAgent });
     },
     onError: onMutationError,
   });

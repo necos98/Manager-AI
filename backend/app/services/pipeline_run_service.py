@@ -161,7 +161,7 @@ class PipelineRunService:
                 )
                 term_id = term["id"]
                 step_run.terminal_id = term_id
-                await self._safe_flush_session(session)
+                await self._safe_commit_session(session)
 
                 await event_service.emit({
                     "type": "agent_step_started",
@@ -202,7 +202,7 @@ class PipelineRunService:
                         step_run.status = PipelineStepRunStatus.FAILED
                         run.status = PipelineRunStatus.FAILED
                         step_run.finished_at = datetime.now(timezone.utc)
-                        await self._safe_flush_session(session)
+                        await self._safe_commit_session(session)
                         await event_service.emit({
                             "type": "agent_step_failed",
                             "project_id": project_id,
@@ -213,7 +213,7 @@ class PipelineRunService:
                         break
 
                     step_run.finished_at = datetime.now(timezone.utc)
-                    await self._safe_flush_session(session)
+                    await self._safe_commit_session(session)
                 except asyncio.CancelledError:
                     terminal_service.kill(term_id)
                     raise
@@ -222,7 +222,7 @@ class PipelineRunService:
                     step_run.status = PipelineStepRunStatus.FAILED
                     run.status = PipelineRunStatus.FAILED
                     step_run.finished_at = datetime.now(timezone.utc)
-                    await self._safe_flush_session(session)
+                    await self._safe_commit_session(session)
                     await event_service.emit({
                         "type": "agent_step_failed",
                         "project_id": project_id,
@@ -236,7 +236,7 @@ class PipelineRunService:
             if run.status != PipelineRunStatus.FAILED:
                 run.status = PipelineRunStatus.COMPLETED
             run.finished_at = datetime.now(timezone.utc)
-            await self._safe_flush_session(session)
+            await self._safe_commit_session(session)
 
             await event_service.emit({
                 "type": "pipeline_completed",
@@ -262,6 +262,20 @@ class PipelineRunService:
             logger.warning("_safe_flush_session: flush failed, rolling back", exc_info=True)
             await session.rollback()
             await session.flush()
+
+    async def _safe_commit_session(self, session: AsyncSession) -> None:
+        """Commit and release SQLite write lock.
+
+        Called before/after pipeline steps so the long-running background
+        task doesn't hold an open transaction that blocks MCP tool writes
+        from the claude subprocess.
+        """
+        try:
+            await session.commit()
+        except Exception:
+            logger.warning("_safe_commit_session: commit failed, rolling back", exc_info=True)
+            await session.rollback()
+            await session.commit()
 
     async def _run_step(
         self,
