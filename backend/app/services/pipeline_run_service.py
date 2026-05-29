@@ -18,6 +18,7 @@ from app.models.pipeline_run import (
 from app.services.event_service import event_service
 from app.services.pipeline_task_manager import pipeline_task_manager
 from app.services.terminal_service import terminal_service
+from app.services.terminal_session import _save_recording
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +216,6 @@ class PipelineRunService:
                     step_run.finished_at = datetime.now(timezone.utc)
                     await self._safe_commit_session(session)
                 except asyncio.CancelledError:
-                    terminal_service.kill(term_id)
                     raise
                 except Exception:
                     logger.exception("Step %s failed with exception", agent_name)
@@ -231,6 +231,9 @@ class PipelineRunService:
                         "step_run_id": step_run.id,
                     })
                     break
+                finally:
+                    _save_recording(term_id, terminal_service.get_buffered_output(term_id))
+                    terminal_service.kill(term_id)
 
             await session.refresh(run)
             if run.status != PipelineRunStatus.FAILED:
