@@ -1102,6 +1102,27 @@ async def get_pipeline_run_status(run_id: str) -> dict:
             return {"error": e.message}
 
 
+@mcp.tool(description=_desc["tool.get_active_agent.description"])
+async def get_active_agent(issue_id: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineRunService(session)
+        runs = await svc.get_runs_for_issue(issue_id)
+        active = next((r for r in runs if r["status"] == "running"), None)
+        if not active:
+            return {"active": None}
+        steps = active["steps"]
+        idx = active["current_step_index"]
+        if idx >= len(steps):
+            return {"active": None}
+        step = steps[idx]
+        return {
+            "agent_name": step["agent_name"],
+            "step_index": idx,
+            "step_status": step["status"],
+            "terminal_id": step.get("terminal_id"),
+        }
+
+
 @mcp.tool(description=_desc["tool.send_agent_message.description"])
 async def send_agent_message(run_id: str, sender_agent_name: str, content: str) -> dict:
     async with async_session() as session:

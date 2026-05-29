@@ -1,0 +1,1 @@
+Manca il tool MCP "get_active_agent". Quando faccio andare una pipeline l'agente deve capire quale agente è attivo nella issue del terminale.
