@@ -154,6 +154,31 @@ async def test_pipeline_run_status_enum_values():
 
 
 @pytest.mark.asyncio
+async def test_reorder_steps_no_constraint_violation(db_session):
+    """Reorder that would trigger autoflush UNIQUE conflict succeeds with bulk UPDATE."""
+    from app.services.pipeline_service import PipelineService
+
+    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    pipeline = Pipeline(id="pl1", name="Test")
+    db_session.add_all([agent, pipeline])
+    await db_session.flush()
+
+    s1 = PipelineStep(id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0, terminal_command="echo 1")
+    s2 = PipelineStep(id="ps2", pipeline_id="pl1", agent_id="a1", order_index=1, terminal_command="echo 2")
+    s3 = PipelineStep(id="ps3", pipeline_id="pl1", agent_id="a1", order_index=2, terminal_command="echo 3")
+    db_session.add_all([s1, s2, s3])
+    await db_session.flush()
+
+    svc = PipelineService(db_session)
+    # Reverse order: was [0,1,2], becomes [2,1,0]
+    steps = await svc.reorder_steps("pl1", ["ps3", "ps2", "ps1"])
+
+    assert len(steps) == 3
+    assert [s.id for s in steps] == ["ps3", "ps2", "ps1"]
+    assert [s.order_index for s in steps] == [0, 1, 2]
+
+
+@pytest.mark.asyncio
 async def test_pipeline_step_run_status_enum_values():
     """Verify PipelineStepRunStatus enum members."""
     assert PipelineStepRunStatus.PENDING.value == "PENDING"

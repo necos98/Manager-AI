@@ -1,0 +1,24 @@
+schema_version: 1
+id: 57df850c-00f9-4240-a747-01673bbad1e6
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix UNIQUE constraint violation on pipeline step reorder
+status: Finished
+priority: 3
+category: null
+created_at: '2026-05-28T21:43:05.156379'
+updated_at: '2026-05-29T07:40:08.623682'
+finished_at: '2026-05-29T07:40:08.623693'
+tasks:
+- id: b0067b25-ad5a-4783-bdc3-d818982d5e0a
+  name: Wrap reorder_steps in no_autoflush block
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T07:26:26'
+  updated_at: '2026-05-29T07:26:39'
+- id: 7fb3e153-bf47-45b1-b599-96b6ee5c96d5
+  name: Add tests for pipeline step reorder
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T07:26:26'
+  updated_at: '2026-05-29T07:39:56'
+relations: []

@@ -109,18 +109,28 @@ class PipelineService:
     async def reorder_steps(
         self, pipeline_id: str, step_ids: list[str]
     ) -> list[PipelineStep]:
-        steps = []
-        for i, step_id in enumerate(step_ids):
-            result = await self.session.execute(
-                select(PipelineStep).where(
-                    PipelineStep.id == step_id,
-                    PipelineStep.pipeline_id == pipeline_id,
+        # Two-pass with no_autoflush: assign temp indices first (no conflict),
+        # flush, then assign final indices. This avoids the UNIQUE constraint
+        # violation that occurs when autoflush fires mid-loop.
+        offset = len(step_ids)
+        with self.session.sync_session.no_autoflush:
+            steps = []
+            for i, step_id in enumerate(step_ids):
+                result = await self.session.execute(
+                    select(PipelineStep).where(
+                        PipelineStep.id == step_id,
+                        PipelineStep.pipeline_id == pipeline_id,
+                    )
                 )
-            )
-            step = result.scalar_one_or_none()
-            if step is None:
-                raise NotFoundError(f"Pipeline step not found: {step_id}")
-            step.order_index = i
-            steps.append(step)
-        await self.session.flush()
+                step = result.scalar_one_or_none()
+                if step is None:
+                    raise NotFoundError(f"Pipeline step not found: {step_id}")
+                step.order_index = offset + i
+                steps.append(step)
+            await self.session.flush()
+
+            for i, step in enumerate(steps):
+                step.order_index = i
+            await self.session.flush()
+
         return steps
