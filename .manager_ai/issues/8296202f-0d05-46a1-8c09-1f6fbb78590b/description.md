@@ -1,0 +1,1 @@
+Ci sono 2 voci AGENTS all'interno del frontend, potresti eliminarne una?

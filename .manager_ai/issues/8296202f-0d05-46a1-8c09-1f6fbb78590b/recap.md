@@ -1,0 +1,1 @@
+Removed duplicate Agents sidebar entry from `frontend/src/shared/components/project-sidebar.tsx`. The Global section had two identical Agents navigation blocks — the second one (between Questions and Pipelines, lines 182-192) was deleted. The first entry (between Terminals and Questions) remains. Single-file change, no logic modifications.

@@ -1,0 +1,18 @@
+schema_version: 1
+id: 8296202f-0d05-46a1-8c09-1f6fbb78590b
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Remove duplicate Agents entry from sidebar
+status: Finished
+priority: 3
+category: null
+created_at: '2026-05-29T07:56:57.229012'
+updated_at: '2026-05-29T08:00:01.461477'
+finished_at: '2026-05-29T08:00:01.461487'
+tasks:
+- id: aa17b9d8-abee-488a-bd09-57a2d6778c94
+  name: Remove duplicate Agents sidebar entry (lines 182-192)
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T07:59:16'
+  updated_at: '2026-05-29T07:59:56'
+relations: []

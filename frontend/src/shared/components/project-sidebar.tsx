@@ -182,17 +182,6 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={!!matchRoute({ to: "/agents", fuzzy: true })}
-                  >
-                    <Link to="/agents">
-                      <Bot />
-                      <span>Agents</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
                     isActive={!!matchRoute({ to: "/pipelines", fuzzy: true })}
                   >
                     <Link to="/pipelines">
