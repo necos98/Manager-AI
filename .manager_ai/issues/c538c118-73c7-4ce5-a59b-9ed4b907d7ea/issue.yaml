@@ -2,64 +2,47 @@ schema_version: 1
 id: c538c118-73c7-4ce5-a59b-9ed4b907d7ea
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Claude Code credentials.json Editor
-status: Planned
+status: Finished
 priority: 3
 category: null
 created_at: '2026-05-21T08:48:00.726752'
-updated_at: '2026-05-21T15:41:42.927698'
+updated_at: '2026-05-29T15:03:12.393922'
+finished_at: '2026-05-29T15:03:12.393930'
 tasks:
-- id: bf396f34-3ff2-4bf3-88a0-1dd82cb5158c
-  name: Create CredentialPreset SQLAlchemy model and alembic migration
-  status: Pending
+- id: 34d11f9f-1232-47bb-b814-f2b193b7f391
+  name: Create CredentialEditorService with read/write credentials.json + preset CRUD + encryption
+  status: Completed
   order: 0
-  created_at: '2026-05-21T15:41:35'
-  updated_at: '2026-05-21T15:41:35'
-- id: 48623995-d7d0-4bcb-82d1-b2aefd5c089f
-  name: Create Pydantic schemas for credential presets and env I/O
-  status: Pending
-  order: 1
-  created_at: '2026-05-21T15:41:35'
-  updated_at: '2026-05-21T15:41:35'
-- id: 1d7d2d7c-d6c3-459b-812a-e09e32512648
-  name: Implement CredentialEditorService (read/write credentials.json + preset CRUD + encryption)
-  status: Pending
-  order: 2
-  created_at: '2026-05-21T15:41:35'
-  updated_at: '2026-05-21T15:41:35'
-- id: d20ca0e1-5286-48d0-8bb7-eaf14480a3c3
+  created_at: '2026-05-29T14:54:56'
+  updated_at: '2026-05-29T14:57:22'
+- id: cb98fe27-03fb-4199-b3bf-c23d0b66e329
   name: Create credentials_editor.py router and register in main.py
-  status: Pending
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T14:54:56'
+  updated_at: '2026-05-29T14:57:36'
+- id: 370e81c4-7c0d-427e-996f-9e5b4de38ca3
+  name: Create frontend API client and React Query hooks for credentials-editor
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T14:54:56'
+  updated_at: '2026-05-29T14:58:08'
+- id: fc1d44ce-2ca8-4afd-bc89-3a890c59b5f6
+  name: Build env-editor component (key-value form with add/remove/reveal)
+  status: Completed
   order: 3
-  created_at: '2026-05-21T15:41:35'
-  updated_at: '2026-05-21T15:41:35'
-- id: ab5e13f2-45fe-4aaf-ae74-bbb293d250dd
-  name: Create frontend API client and React Query hooks for credentials-editor endpoints
-  status: Pending
+  created_at: '2026-05-29T14:54:56'
+  updated_at: '2026-05-29T14:59:03'
+- id: 65f9524b-4c95-41e1-ab41-8dfe9024a8ff
+  name: Build presets-panel component (list, create, delete, apply presets)
+  status: Completed
   order: 4
-  created_at: '2026-05-21T15:41:35'
-  updated_at: '2026-05-21T15:41:35'
-- id: bd4f813b-34cd-4b71-a866-100b954c794d
-  name: Build presets panel component (list, create, delete, apply)
-  status: Pending
+  created_at: '2026-05-29T14:54:56'
+  updated_at: '2026-05-29T14:59:17'
+- id: 765f12d4-3ef5-4f71-9061-6092d1fd9a12
+  name: Build credentials-editor main page (two-column layout) + route + sidebar link
+  status: Completed
   order: 5
-  created_at: '2026-05-21T15:41:35'
-  updated_at: '2026-05-21T15:41:35'
-- id: 694b4026-cbd5-4008-999f-930c7eb390d1
-  name: Build env editor component (key-value form with add/remove/reveal)
-  status: Pending
-  order: 6
-  created_at: '2026-05-21T15:41:35'
-  updated_at: '2026-05-21T15:41:35'
-- id: ceba3ad3-7da7-4eef-8e6c-8a2d1582d318
-  name: Build main credentials-editor page with two-column layout
-  status: Pending
-  order: 7
-  created_at: '2026-05-21T15:41:35'
-  updated_at: '2026-05-21T15:41:35'
-- id: b70f1357-7a90-4b03-86ff-52ba28e5fd96
-  name: Create route file and add navigation link to sidebar
-  status: Pending
-  order: 8
-  created_at: '2026-05-21T15:41:35'
-  updated_at: '2026-05-21T15:41:35'
+  created_at: '2026-05-29T14:54:56'
+  updated_at: '2026-05-29T14:59:36'
 relations: []
