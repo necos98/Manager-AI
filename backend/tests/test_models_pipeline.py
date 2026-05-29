@@ -155,7 +155,11 @@ async def test_pipeline_run_status_enum_values():
 
 @pytest.mark.asyncio
 async def test_reorder_steps_no_constraint_violation(db_session):
+<<<<<<< Updated upstream
     """Reorder that would trigger autoflush UNIQUE conflict succeeds with bulk UPDATE."""
+=======
+    """Reorder that would trigger autoflush UNIQUE conflict succeeds."""
+>>>>>>> Stashed changes
     from app.services.pipeline_service import PipelineService
 
     agent = Agent(id="a1", name="dev", system_prompt="Dev")
