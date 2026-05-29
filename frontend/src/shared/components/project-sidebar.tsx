@@ -1,6 +1,7 @@
 import {
   Bot,
   HelpCircle,
+  Key,
   LayoutDashboard,
   Settings,
   Smartphone,
@@ -187,6 +188,17 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                     <Link to="/pipelines">
                       <Workflow />
                       <span>Pipelines</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={!!matchRoute({ to: "/tools/credentials-editor", fuzzy: true })}
+                  >
+                    <Link to="/tools/credentials-editor">
+                      <Key />
+                      <span>Credentials</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

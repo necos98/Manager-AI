@@ -26,7 +26,7 @@ from app.storage import memory_store as memory_store_module
 from app.storage import issue_store as issue_store_module
 from app.storage import file_store as file_store_module
 from app.middleware import ErrorLoggerMiddleware
-from app.routers import activity, agents, credentials, events, files, issue_relations, issues, library, memories, network, pipeline_runs, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, questions, settings as settings_router, system, tasks, terminals, terminal_commands
+from app.routers import activity, agents, credentials, credentials_editor, events, files, issue_relations, issues, library, memories, network, pipeline_runs, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, questions, settings as settings_router, system, tasks, terminals, terminal_commands
 from app.routers.projects import install_claude_resources_to
 
 logger = logging.getLogger(__name__)
@@ -500,6 +500,7 @@ app.include_router(project_links.router)
 app.include_router(project_settings.router)
 app.include_router(project_templates.router)
 app.include_router(credentials.router)
+app.include_router(credentials_editor.router)
 app.include_router(files.formats_router)
 app.include_router(files.router)
 app.include_router(issues.router)

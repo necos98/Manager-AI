@@ -17,6 +17,7 @@ import { Route as LibraryRouteImport } from "./routes/library"
 import { Route as DashboardRouteImport } from "./routes/dashboard"
 import { Route as AgentsRouteImport } from "./routes/agents"
 import { Route as IndexRouteImport } from "./routes/index"
+import { Route as ToolsCredentialsEditorRouteImport } from "./routes/tools/credentials-editor"
 import { Route as ProjectsNewRouteImport } from "./routes/projects/new"
 import { Route as ProjectsArchivedRouteImport } from "./routes/projects/archived"
 import { Route as ProjectsProjectIdRouteImport } from "./routes/projects/$projectId"
@@ -72,6 +73,11 @@ const AgentsRoute = AgentsRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: "/",
   path: "/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsCredentialsEditorRoute = ToolsCredentialsEditorRouteImport.update({
+  id: "/tools/credentials-editor",
+  path: "/tools/credentials-editor",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
@@ -176,6 +182,7 @@ export interface FileRoutesByFullPath {
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
   "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
+  "/tools/credentials-editor": typeof ToolsCredentialsEditorRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
@@ -202,6 +209,7 @@ export interface FileRoutesByTo {
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
   "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
+  "/tools/credentials-editor": typeof ToolsCredentialsEditorRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
   "/projects/archived": typeof ProjectsArchivedRoute
   "/projects/new": typeof ProjectsNewRoute
+  "/tools/credentials-editor": typeof ToolsCredentialsEditorRoute
   "/projects/$projectId/activity": typeof ProjectsProjectIdActivityRoute
   "/projects/$projectId/ask": typeof ProjectsProjectIdAskRoute
   "/projects/$projectId/commands": typeof ProjectsProjectIdCommandsRoute
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | "/projects/$projectId"
     | "/projects/archived"
     | "/projects/new"
+    | "/tools/credentials-editor"
     | "/projects/$projectId/activity"
     | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
@@ -282,6 +292,7 @@ export interface FileRouteTypes {
     | "/projects/$projectId"
     | "/projects/archived"
     | "/projects/new"
+    | "/tools/credentials-editor"
     | "/projects/$projectId/activity"
     | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
@@ -307,6 +318,7 @@ export interface FileRouteTypes {
     | "/projects/$projectId"
     | "/projects/archived"
     | "/projects/new"
+    | "/tools/credentials-editor"
     | "/projects/$projectId/activity"
     | "/projects/$projectId/ask"
     | "/projects/$projectId/commands"
@@ -334,6 +346,7 @@ export interface RootRouteChildren {
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
   ProjectsArchivedRoute: typeof ProjectsArchivedRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
+  ToolsCredentialsEditorRoute: typeof ToolsCredentialsEditorRoute
 }
 
 declare module "@tanstack/react-router" {
@@ -392,6 +405,13 @@ declare module "@tanstack/react-router" {
       path: "/"
       fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/tools/credentials-editor": {
+      id: "/tools/credentials-editor"
+      path: "/tools/credentials-editor"
+      fullPath: "/tools/credentials-editor"
+      preLoaderRoute: typeof ToolsCredentialsEditorRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/projects/new": {
@@ -568,6 +588,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,
   ProjectsArchivedRoute: ProjectsArchivedRoute,
   ProjectsNewRoute: ProjectsNewRoute,
+  ToolsCredentialsEditorRoute: ToolsCredentialsEditorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

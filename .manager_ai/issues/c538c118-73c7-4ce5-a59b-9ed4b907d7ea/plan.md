@@ -1,72 +1,86 @@
 # Implementation Plan: Claude Code credentials.json Editor
 
-## 1. Backend: Data Model & Migration
+## Overview
+Build a tool page to edit `~/.claude/credentials.json` env vars with preset management. Model/schema/migration already done — focus is service, router, frontend.
 
-### New file: `backend/app/models/credential_preset.py`
-- SQLAlchemy model `CredentialPreset`
-- Columns: `id` (UUID PK), `name` (String not null), `variables` (Text, JSON), `encrypted_fields` (Text, Fernet-encrypted JSON), `created_at`, `updated_at`
-- Follow existing model patterns (use `uuid4().hex` for id, `datetime.utcnow` for timestamps)
+## Phase 1: Backend — CredentialEditorService
+**File: `backend/app/services/credential_editor_service.py`**
 
-### New migration
-- Run alembic autogenerate to create `credential_presets` table
+`CredentialEditorService(db: AsyncSession)`:
+- `_get_credentials_path() -> Path` — resolve `%USERPROFILE%\.claude\credentials.json` (Windows) or `~/.claude/credentials.json` (other)
+- `read_env() -> dict[str, str]` — read file, return `env` dict or `{}` if missing/invalid JSON
+- `write_env(variables: dict[str, str])` — read full JSON, backup as `.bak`, modify `env` key, atomic write via temp file + os.replace
+- **Preset CRUD**: `list_presets()`, `create_preset(name, vars)`, `update_preset(id, name, vars)`, `delete_preset(id)`, `get_preset(id)`, `apply_preset(id)`
+- `_is_sensitive_key(key) -> bool` — case-insensitive check for KEY/SECRET/TOKEN
+- Encryption via `CredentialService._get_fernet()` (reuse existing static method). Split variables into plain (visible) and encrypted (sensitive) dicts on write, recombine on read.
 
-## 2. Backend: Schema
+### Pattern reference
+- Service pattern: `backend/app/services/credential_service.py` (AsyncSession, Fernet)
 
-### New file: `backend/app/schemas/credential_preset.py`
-- `CredentialPresetCreate`: `name` (str), `variables` (dict[str, str])
-- `CredentialPresetUpdate`: `name` (str | None), `variables` (dict[str, str] | None)
-- `CredentialPresetOut`: `id`, `name`, `variables` (with secrets masked), `has_secrets` (bool), `created_at`, `updated_at`
-- `CredentialPresetDetail`: like Out but with all values revealed (for apply)
-- `CredentialsEnvOut`: dict[str, str] — current env vars from credentials.json
-- `CredentialsEnvUpdate`: dict[str, str] — env vars to write
+## Phase 2: Backend — Router
+**File: `backend/app/routers/credentials_editor.py`**
 
-## 3. Backend: Service
+| Method | Path | Description | Request | Response |
+|--------|------|-------------|---------|----------|
+| GET | `/api/credentials-editor` | Read current env | - | `{"variables": {...}}` |
+| PUT | `/api/credentials-editor` | Write env vars | `{"variables": {...}}` | `{"variables": {...}}` |
+| GET | `/api/credentials-editor/presets` | List presets | - | `PresetOut[]` |
+| POST | `/api/credentials-editor/presets` | Create preset | `{"name": "...", "variables": {...}}` | `PresetOut` |
+| PUT | `/api/credentials-editor/presets/{id}` | Update preset | `{"name": "...", "variables": {...}}` | `PresetOut` |
+| DELETE | `/api/credentials-editor/presets/{id}` | Delete preset | - | 204 |
+| POST | `/api/credentials-editor/presets/{id}/apply` | Apply preset | - | `{"variables": {...}}` |
 
-### New file: `backend/app/services/credential_editor_service.py`
-- `CredentialEditorService` class
-  - `__init__(db: AsyncSession, secret_key: bytes | None)`
-  - `get_credentials_path() -> Path` — resolves `%USERPROFILE%\.claude\credentials.json`
-  - `read_env() -> dict[str, str]` — reads file, returns `env` object (or `{}` if missing)
-  - `write_env(variables: dict[str, str])` — atomic write (temp + rename), backup as `.bak` first
-  - **Preset CRUD**: `list_presets()`, `create_preset(name, vars)`, `update_preset(id, name, vars)`, `delete_preset(id)`, `get_preset(id)` — encrypt values with sensitive keys before storing
-  - `apply_preset(preset_id)` — get preset, decrypt, write to credentials.json
-  - `_is_sensitive_key(key: str) -> bool` — checks if key name contains KEY/SECRET/TOKEN
-  - `_mask_value(key, value) -> str` — returns masked value for sensitive keys
+**Register:** Add `credentials_editor` to router imports in `backend/app/main.py` line 29 (`from app.routers import ...`) + `app.include_router(credentials_editor.router)`.
 
-## 4. Backend: Router
+Router pattern: `backend/app/routers/credentials.py` (Depends(get_db), async, commit).
 
-### New file: `backend/app/routers/credentials_editor.py`
-- Prefix: `/api/credentials-editor`
-- Endpoints matching spec table above
-- Register in `app/main.py`
+## Phase 3: Frontend — API Client + Hooks
+**File: `frontend/src/features/credentials-editor/api.ts`**
+- `fetchEnv()`, `updateEnv(variables)`, `fetchPresets()`, `createPreset(data)`, `updatePreset(id, data)`, `deletePreset(id)`, `applyPreset(id)`
+- Shared API client: `@/shared/api/client` (apiGet, apiPut, apiPost, apiDelete)
 
-## 5. Frontend: Route & Page
+**File: `frontend/src/features/credentials-editor/hooks.ts`**
+- `useCredentialsEnv()` — query
+- `useUpdateEnv()` — mutation with env invalidation
+- `usePresets()` — query
+- `useCreatePreset()`, `useUpdatePreset()`, `useDeletePreset()`, `useApplyPreset()` — mutations with presets invalidation
+- Toast notifications on mutation errors (pattern from `hooks-credentials.ts`)
 
-### New route: `frontend/src/routes/tools/credentials-editor.tsx`
-- Create `tools/` directory under routes (new route group)
-- Page component with two-column layout
+## Phase 4: Frontend — Components
+**File: `frontend/src/features/credentials-editor/components/env-editor.tsx`**
+- Key-value form listing current env variables
+- "Add Variable" button → new empty row
+- Remove button per row (confirm if value non-empty)
+- Sensitive key detection (KEY/SECRET/TOKEN) → show `****` + reveal toggle
+- "Save" button to persist
 
-### New feature module: `frontend/src/features/credentials-editor/`
-- `api.ts` — API client functions matching backend endpoints
-- `hooks.ts` — React Query hooks (`useCredentialsEnv`, `useUpdateEnv`, `usePresets`, `useCreatePreset`, etc.)
-- `components/`
-  - `credentials-editor.tsx` — main container with two-column layout
-  - `presets-panel.tsx` — left column: list presets, create/delete/apply actions
-  - `env-editor.tsx` — right column: key-value form with add/remove/reveal
+**File: `frontend/src/features/credentials-editor/components/presets-panel.tsx`**
+- Left column: list saved presets with name, edit/delete/apply buttons
+- "Save Current as Preset" button → dialog for name input
+- Apply confirmation dialog
 
-## 6. Frontend: Navigation
+**File: `frontend/src/features/credentials-editor/components/credentials-editor.tsx`**
+- Main two-column layout (left: presets, right: env editor)
+- Fetches env + presets on mount
+- Orchestrates apply/load interactions between panels
 
-### Update `frontend/src/shared/components/app-sidebar.tsx`
-- Add link to `/tools/credentials-editor` under a "Tools" section (or as top-level nav item)
+## Phase 5: Frontend — Route + Sidebar
+**File: `frontend/src/routes/tools/credentials-editor.tsx`** (new `tools/` route group)
+- `createFileRoute('/tools/credentials-editor')` with TanStack Router
+- Renders CredentialsEditor component
 
-## 7. Frontend: Route Tree Update
-- TanStack Router auto-generates route tree — no manual edit needed for file-based routes
+**File: `frontend/src/shared/components/project-sidebar.tsx`**
+- Add "Credentials" nav item under **Global** section (after Pipelines or Settings)
+- Import `Key` from lucide-react
+- Link to `/tools/credentials-editor`
+- Pattern: follow existing nav items in the Global group (e.g., Settings at line 193-203)
+
+TanStack Router auto-generates route tree — no manual route tree edit.
 
 ## Build Order
-1. Backend model + migration
-2. Backend schema + service
-3. Backend router + register in main.py
-4. Frontend API + hooks
-5. Frontend components
-6. Frontend route + navigation link
-7. Manual test with real credentials.json
+1. Backend: CredentialEditorService
+2. Backend: credentials_editor router + main.py registration
+3. Frontend: API client + hooks
+4. Frontend: env-editor component
+5. Frontend: presets-panel component
+6. Frontend: credentials-editor container + route + sidebar link
