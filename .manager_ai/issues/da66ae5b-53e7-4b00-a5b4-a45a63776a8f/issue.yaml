@@ -1,0 +1,30 @@
+schema_version: 1
+id: da66ae5b-53e7-4b00-a5b4-a45a63776a8f
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix manage-agent terminal not attaching to AGENTS section (shows in global Terminals only)
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-29T13:51:59.108722'
+updated_at: '2026-05-29T13:56:21.963733'
+finished_at: '2026-05-29T13:56:21.963748'
+tasks:
+- id: 9841901f-172a-4426-87c2-39b6bf7cda0e
+  name: 'Fix 1: Filter manage-agent terminals from global Terminals listing'
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T13:55:40'
+  updated_at: '2026-05-29T13:55:55'
+- id: 4863fdb5-6a3e-4d78-bad7-aa63a4ebdd5e
+  name: 'Fix 2: Fix manage-agent terminal cleanup on create (teardown existing terminals)'
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T13:55:40'
+  updated_at: '2026-05-29T13:56:03'
+- id: 8f851ef2-5771-4e84-b983-02cdae683a72
+  name: 'Fix 3: Add loading guard to AgentsTab reconnection useEffect'
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T13:55:40'
+  updated_at: '2026-05-29T13:56:13'
+relations: []

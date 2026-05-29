@@ -1,1 +1,0 @@
-Quando starta la pipeline, il terminale deve essere sulla destra come quello di RUN ISSUE, non deve andare da nessun'altra parte!

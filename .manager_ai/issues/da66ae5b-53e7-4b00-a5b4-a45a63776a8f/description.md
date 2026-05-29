@@ -1,0 +1,1 @@
+purtroppo ancora una volta quando avvio "start conversation" all'interno della sezione AGENTS il terminale non viene "attached" alla sezione "AGENTS" ma si perde completamente, lo riesco a vedere solo nella sezione "Terminals" che è globale. Ti chiedo di fixare questo! Trova la root cause e risolvila

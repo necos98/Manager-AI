@@ -89,7 +89,7 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
   const deleteAgent = useDeleteAgent();
   const seedAgents = useSeedAgents();
   const createManageAgentTerminal = useCreateManageAgentTerminal();
-  const { data: manageAgentTerminals } = useManageAgentTerminals();
+  const { data: manageAgentTerminals, isPending: isManageTerminalsPending } = useManageAgentTerminals();
   const killTerminal = useKillTerminal();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -159,12 +159,13 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
   // Reattach to existing manage-agent terminal on mount
   useEffect(() => {
     if (chatTerminalId) return;
+    if (isManageTerminalsPending) return;
     if (!manageAgentTerminals || manageAgentTerminals.length === 0) return;
     const latest = [...manageAgentTerminals].sort((a, b) =>
       (b.created_at ?? "").localeCompare(a.created_at ?? ""),
     )[0];
     if (latest?.id) setChatTerminalId(latest.id);
-  }, [manageAgentTerminals, chatTerminalId]);
+  }, [manageAgentTerminals, chatTerminalId, isManageTerminalsPending]);
 
   if (isLoading) {
     return (

@@ -352,10 +352,10 @@ async def create_manage_agent_terminal(
         project_path = str(Path(__file__).resolve().parent.parent.parent)
 
     # Tear down any existing manage-agent terminals
+    # Note: list_active() returns _to_response() dicts which exclude "pty" field,
+    # so we tear down unconditionally for manage-agent terminals (always have PTY).
     for existing in service.list_active(project_id="", issue_id=""):
-        existing_pty = existing.get("pty", None)
-        if existing_pty is not None:
-            await _teardown_terminal(existing["id"], service)
+        await _teardown_terminal(existing["id"], service)
 
     try:
         terminal = service.create(
@@ -495,6 +495,9 @@ async def list_terminals(
     from app.services.issue_service import IssueService
 
     terminals = service.list_active(project_id=project_id, issue_id=issue_id)
+    # Filter out manage-agent terminals (project_id="" AND issue_id="") from global view
+    # These are section-internal terminals for AGENTS, Pipelines, etc., not project terminals
+    terminals = [t for t in terminals if not (t["project_id"] == "" and t["issue_id"] == "")]
     issue_svc = IssueService(db)
     for term in terminals:
         project = await db.get(Project, term["project_id"])
