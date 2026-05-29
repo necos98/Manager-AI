@@ -1019,7 +1019,6 @@ async def create_pipeline(name: str, steps: list[dict]) -> dict:
                     pipeline_id=pipeline.id,
                     agent_id=step_data["agent_id"],
                     order_index=step_data.get("order_index", 0),
-                    terminal_command=step_data.get("terminal_command", ""),
                 )
             await session.commit()
             pipeline = await svc.get_pipeline(pipeline.id)
@@ -1032,7 +1031,6 @@ async def create_pipeline(name: str, steps: list[dict]) -> dict:
                         "pipeline_id": s.pipeline_id,
                         "agent_id": s.agent_id,
                         "order_index": s.order_index,
-                        "terminal_command": s.terminal_command,
                     }
                     for s in (pipeline.steps or [])
                 ],
@@ -1059,7 +1057,6 @@ async def list_pipelines() -> dict:
                             "pipeline_id": s.pipeline_id,
                             "agent_id": s.agent_id,
                             "order_index": s.order_index,
-                            "terminal_command": s.terminal_command,
                         }
                         for s in (p.steps or [])
                     ],

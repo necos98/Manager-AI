@@ -16,7 +16,6 @@ class Agent(Base):
     system_prompt: Mapped[str] = mapped_column(Text, nullable=False, default="")
     model: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     allowed_tools: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
-    terminal_command: Mapped[str] = mapped_column(Text, nullable=False, default="")
     intent: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())

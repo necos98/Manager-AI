@@ -23,8 +23,7 @@ async def test_start_creates_run_and_step_runs(db_session):
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
-        terminal_command="echo hello",
+        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -66,8 +65,7 @@ async def test_start_rejects_double_start(db_session):
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
-        terminal_command="echo hi",
+        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -93,8 +91,7 @@ async def test_get_run_returns_status(db_session):
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
-        terminal_command="echo hi",
+        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -121,8 +118,7 @@ async def test_add_and_get_messages(db_session):
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
-        terminal_command="echo hi",
+        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -151,8 +147,7 @@ async def test_cancel_run(db_session):
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
-        terminal_command="ping -n 10 127.0.0.1 > nul",
+        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -182,8 +177,7 @@ async def test_cancel_non_running_raises(db_session):
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
-        terminal_command="echo hi",
+        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -210,8 +204,7 @@ async def test_get_runs_for_issue(db_session):
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
-        terminal_command="echo hi",
+        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()

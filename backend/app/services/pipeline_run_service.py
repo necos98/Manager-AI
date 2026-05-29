@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -21,8 +20,6 @@ from app.services.pipeline_task_manager import pipeline_task_manager
 from app.services.terminal_service import terminal_service
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_STEP_TIMEOUT = int(os.environ.get("MANAGER_AI_PIPELINE_STEP_TIMEOUT", "1800"))
 
 
 class PipelineRunService:
@@ -144,18 +141,10 @@ class PipelineRunService:
                 agent_name = agent.name if agent else "unknown"
                 agent_prompt = agent.intent if agent else ""
 
-                cmd = step.terminal_command or ""
-                cmd = cmd.replace("$issue_id", run.issue_id)
-                cmd = cmd.replace("$project_id", project_id)
-                cmd = cmd.replace("$project_path", project_path)
-
-                # Use empty issue_id for pipeline step log terminals so they
-                # don't pollute the issue's interactive terminal list.
-                term = await terminal_service.create_log(
+                term = terminal_service.create(
+                    issue_id=run.issue_id,
                     project_id=project_id,
-                    issue_id="",
                     project_path=project_path,
-                    label=f"{agent_name} (step {i + 1}/{len(steps)})",
                 )
                 term_id = term["id"]
                 step_run.terminal_id = term_id
@@ -175,9 +164,6 @@ class PipelineRunService:
                         term_id=term_id,
                         agent_name=agent_name,
                         intent=agent_prompt,
-                        command=cmd,
-                        project_path=project_path,
-                        run_id=run_id,
                         issue_id=run.issue_id,
                     )
 
@@ -202,13 +188,12 @@ class PipelineRunService:
                             "agent_name": agent_name,
                             "step_run_id": step_run.id,
                         })
-                        await terminal_service.destroy_log(term_id)
                         break
 
                     step_run.finished_at = datetime.now(timezone.utc)
                     await self._safe_flush_session(session)
                 except asyncio.CancelledError:
-                    await terminal_service.destroy_log(term_id)
+                    terminal_service.kill(term_id)
                     raise
                 except Exception:
                     logger.exception("Step %s failed with exception", agent_name)
@@ -223,10 +208,7 @@ class PipelineRunService:
                         "agent_name": agent_name,
                         "step_run_id": step_run.id,
                     })
-                    await terminal_service.destroy_log(term_id)
                     break
-
-                await terminal_service.destroy_log(term_id)
 
             await session.refresh(run)
             if run.status != PipelineRunStatus.FAILED:
@@ -264,58 +246,38 @@ class PipelineRunService:
         term_id: str,
         agent_name: str,
         intent: str,
-        command: str,
-        project_path: str,
-        run_id: str,
         issue_id: str,
     ) -> bool:
-        env = os.environ.copy()
-        env["MANAGER_AI_AGENT_NAME"] = agent_name
-        env["MANAGER_AI_AGENT_ROLE"] = agent_name
-        env["MANAGER_AI_AGENT_INTENT"] = intent
-        env["MANAGER_AI_ISSUE_ID"] = issue_id
-        env["MANAGER_AI_RUN_ID"] = run_id
+        import platform as _platform
+        from app.services.terminal_session import TerminalSession, _sessions, _ensure_reader
 
-        proc = await asyncio.create_subprocess_shell(
-            command,
-            cwd=project_path,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
-            env=env,
-        )
+        pty = terminal_service.get_pty(term_id)
 
-        async def stream_output():
-            if proc.stdout is None:
-                return
-            try:
-                while True:
-                    line = await proc.stdout.readline()
-                    if not line:
-                        break
-                    text = line.decode("utf-8", errors="replace")
-                    await terminal_service.push_output(term_id, text)
-            except asyncio.CancelledError:
-                pass
+        session = TerminalSession()
+        _sessions[term_id] = session
+        _ensure_reader(term_id, terminal_service)
 
-        stream_task = asyncio.create_task(stream_output())
+        is_windows = _platform.system() == "Windows"
+        command = f'claude --dangerously-skip-permissions "/run-pipeline {issue_id}"'
 
-        try:
-            exit_code = await asyncio.wait_for(
-                proc.wait(), timeout=DEFAULT_STEP_TIMEOUT
-            )
-        except asyncio.TimeoutError:
-            proc.kill()
-            await proc.wait()
-            stream_task.cancel()
-            return False
-        except asyncio.CancelledError:
-            proc.kill()
-            await proc.wait()
-            stream_task.cancel()
-            raise
+        if is_windows:
+            pty.write(f"set MANAGER_AI_AGENT_NAME={agent_name}\r\n")
+            pty.write(f"set MANAGER_AI_AGENT_ROLE={agent_name}\r\n")
+            pty.write(f"set MANAGER_AI_AGENT_INTENT={intent}\r\n")
+            pty.write(f"set MANAGER_AI_ISSUE_ID={issue_id}\r\n")
+            pty.write(f"{command}\r\n")
+            pty.write("exit\r\n")
+        else:
+            import shlex as _shlex
+            pty.write(f"export MANAGER_AI_AGENT_NAME={_shlex.quote(agent_name)}\r\n")
+            pty.write(f"export MANAGER_AI_AGENT_ROLE={_shlex.quote(agent_name)}\r\n")
+            pty.write(f"export MANAGER_AI_AGENT_INTENT={_shlex.quote(intent)}\r\n")
+            pty.write(f"export MANAGER_AI_ISSUE_ID={_shlex.quote(issue_id)}\r\n")
+            pty.write(f"{command}; exit\r\n")
 
-        await stream_task
-        return exit_code == 0
+        await session.pty_dead.wait()
+
+        return session.pty_died_naturally
 
     async def _get_run(self, run_id: str) -> PipelineRun:
         return await self._get_run_with_session(run_id, self.session)

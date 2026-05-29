@@ -42,7 +42,6 @@ async def test_full_chain_insert(db_session):
 
     step = PipelineStep(
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
-        terminal_command='claude -p "write spec"',
     )
     db_session.add(step)
     await db_session.flush()
@@ -83,7 +82,7 @@ async def test_pipeline_cascade_deletes_steps(db_session):
     db_session.add(pipeline)
     await db_session.flush()
 
-    step = PipelineStep(id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0, terminal_command="echo hi")
+    step = PipelineStep(id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0)
     db_session.add(step)
     await db_session.flush()
 
@@ -103,7 +102,7 @@ async def test_pipeline_run_cascade_deletes_step_runs_and_messages(db_session):
     await db_session.flush()
 
     pipeline = Pipeline(id="pl1", name="Test")
-    step = PipelineStep(id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0, terminal_command="echo hi")
+    step = PipelineStep(id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0)
     db_session.add_all([pipeline, step])
     await db_session.flush()
 
@@ -137,8 +136,8 @@ async def test_pipeline_step_unique_order_constraint(db_session):
     db_session.add(pipeline)
     await db_session.flush()
 
-    s1 = PipelineStep(id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0, terminal_command="echo 1")
-    s2 = PipelineStep(id="ps2", pipeline_id="pl1", agent_id="a1", order_index=0, terminal_command="echo 2")
+    s1 = PipelineStep(id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0)
+    s2 = PipelineStep(id="ps2", pipeline_id="pl1", agent_id="a1", order_index=0)
     db_session.add_all([s1, s2])
 
     with pytest.raises(IntegrityError):
@@ -157,13 +156,13 @@ async def test_add_step_auto_assigns_next_order_index(db_session):
 
     svc = PipelineService(db_session)
 
-    step1 = await svc.add_step("pl1", "a1", order_index=0, terminal_command="cmd1")
+    step1 = await svc.add_step("pl1", "a1", order_index=0)
     assert step1.order_index == 0
 
-    step2 = await svc.add_step("pl1", "a1", order_index=0, terminal_command="cmd2")
+    step2 = await svc.add_step("pl1", "a1", order_index=0)
     assert step2.order_index == 1
 
-    step3 = await svc.add_step("pl1", "a1", order_index=0, terminal_command="cmd3")
+    step3 = await svc.add_step("pl1", "a1", order_index=0)
     assert step3.order_index == 2
 
 
@@ -185,9 +184,9 @@ async def test_reorder_steps_no_constraint_violation(db_session):
     db_session.add_all([agent, pipeline])
     await db_session.flush()
 
-    s1 = PipelineStep(id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0, terminal_command="echo 1")
-    s2 = PipelineStep(id="ps2", pipeline_id="pl1", agent_id="a1", order_index=1, terminal_command="echo 2")
-    s3 = PipelineStep(id="ps3", pipeline_id="pl1", agent_id="a1", order_index=2, terminal_command="echo 3")
+    s1 = PipelineStep(id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0)
+    s2 = PipelineStep(id="ps2", pipeline_id="pl1", agent_id="a1", order_index=1)
+    s3 = PipelineStep(id="ps3", pipeline_id="pl1", agent_id="a1", order_index=2)
     db_session.add_all([s1, s2, s3])
     await db_session.flush()
 

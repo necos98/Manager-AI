@@ -21,7 +21,6 @@ def _step_response(step) -> PipelineStepResponse:
         pipeline_id=step.pipeline_id,
         agent_id=step.agent_id,
         order_index=step.order_index,
-        terminal_command=step.terminal_command,
     )
 
 
@@ -51,7 +50,6 @@ async def create_pipeline(data: PipelineCreate, db: AsyncSession = Depends(get_d
             pipeline_id=pipeline.id,
             agent_id=step_data.agent_id,
             order_index=step_data.order_index,
-            terminal_command=step_data.terminal_command,
         )
     await db.commit()
     return _response(await svc.get_pipeline(pipeline.id))
@@ -98,7 +96,6 @@ async def add_step(
         pipeline_id=pipeline_id,
         agent_id=data.agent_id,
         order_index=data.order_index,
-        terminal_command=data.terminal_command,
     )
     response = _step_response(step)
     await db.commit()

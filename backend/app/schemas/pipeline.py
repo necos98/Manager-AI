@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 class PipelineStepCreate(BaseModel):
     agent_id: str = Field(..., min_length=1)
     order_index: int = Field(default=0, ge=0)
-    terminal_command: str = ""
 
 
 class PipelineStepResponse(BaseModel):
@@ -12,7 +11,6 @@ class PipelineStepResponse(BaseModel):
     pipeline_id: str
     agent_id: str
     order_index: int
-    terminal_command: str
 
 
 class PipelineCreate(BaseModel):
