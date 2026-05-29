@@ -300,12 +300,14 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
 
       {/* Manage Agent Terminal */}
       {chatTerminalId && (
-        <div className="border rounded-lg overflow-hidden min-h-[400px]">
-          <TerminalPanel
-            terminalId={chatTerminalId}
-            projectId={_projectId}
-            onSessionEnd={handleEndChat}
-          />
+        <div className="border rounded-lg overflow-hidden min-h-[400px] flex flex-col">
+          <div className="flex-1 min-h-0">
+            <TerminalPanel
+              terminalId={chatTerminalId}
+              projectId={_projectId}
+              onSessionEnd={handleEndChat}
+            />
+          </div>
         </div>
       )}
 

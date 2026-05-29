@@ -1,0 +1,1 @@
+Purtroppo nella sezione "Agents" quando clicco sul pulsante "Start conversation" viene startata si la conversazione, il terminale anche, ma il terminale non viene "attaccato" a quella sezione, ma sembra perdersi, riesco ad interagire con il terminale solo nella sezione "Terminals" che è quella globale di tutti i terminali

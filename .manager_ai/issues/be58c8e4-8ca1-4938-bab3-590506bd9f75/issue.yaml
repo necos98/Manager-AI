@@ -1,0 +1,30 @@
+schema_version: 1
+id: be58c8e4-8ca1-4938-bab3-590506bd9f75
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Agent conversation terminal not attached to Agents section
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-29T13:42:47.178943'
+updated_at: '2026-05-29T13:47:36.650760'
+finished_at: '2026-05-29T13:47:36.650771'
+tasks:
+- id: 9d3d9f40-a66d-47e9-898d-944d041677b4
+  name: Fix CSS height chain in AgentsTab terminal wrapper
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T13:47:03'
+  updated_at: '2026-05-29T13:47:31'
+- id: d9802f02-defc-4c09-9a0a-04aa173bd15f
+  name: Add manageAgent query invalidation in hooks.ts
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T13:47:03'
+  updated_at: '2026-05-29T13:47:32'
+- id: 54d057fe-0c81-43d5-91a4-b7ecb317eeb4
+  name: Fix list_active empty-string filter in backend terminal_service.py
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T13:47:03'
+  updated_at: '2026-05-29T13:47:32'
+relations: []

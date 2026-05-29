@@ -216,7 +216,7 @@ class TerminalService:
         for term in self._terminals.values():
             if term["status"] != "active":
                 continue
-            if project_id and term["project_id"] != project_id:
+            if project_id is not None and term["project_id"] != project_id:
                 continue
             if issue_id is not None and term["issue_id"] != issue_id:
                 continue
