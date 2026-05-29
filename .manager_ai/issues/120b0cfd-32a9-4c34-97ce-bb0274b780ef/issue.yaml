@@ -1,0 +1,12 @@
+schema_version: 1
+id: 120b0cfd-32a9-4c34-97ce-bb0274b780ef
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Pipeline terminal missing issue context — should match RUN ISSUE behavior
+status: New
+priority: 3
+category: Bug
+created_at: '2026-05-29T09:37:36.487809'
+updated_at: '2026-05-29T09:38:04.653990'
+finished_at: null
+tasks: []
+relations: []

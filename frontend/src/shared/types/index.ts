@@ -486,7 +486,6 @@ export interface Agent {
   name: string;
   model: string | null;
   allowed_tools: string[] | null;
-  terminal_command: string;
   intent: string;
   created_at: string | null;
   updated_at: string | null;
@@ -496,7 +495,6 @@ export interface AgentCreate {
   name: string;
   model?: string | null;
   allowed_tools?: string[] | null;
-  terminal_command?: string;
   intent?: string;
 }
 
@@ -504,7 +502,6 @@ export interface AgentUpdate {
   name?: string;
   model?: string | null;
   allowed_tools?: string[] | null;
-  terminal_command?: string | null;
   intent?: string | null;
 }
 
@@ -515,13 +512,11 @@ export interface PipelineStep {
   pipeline_id: string;
   agent_id: string;
   order_index: number;
-  terminal_command: string;
 }
 
 export interface PipelineStepCreate {
   agent_id: string;
   order_index?: number;
-  terminal_command?: string;
 }
 
 export interface Pipeline {

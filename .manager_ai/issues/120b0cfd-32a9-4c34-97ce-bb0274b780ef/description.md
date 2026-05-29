@@ -1,0 +1,1 @@
+Quando si avvia la pipeline, il terminale spawnato non ha il riferimento alla issue da dove è startato! Far si che si comporti uguale a "RUN ISSUE"

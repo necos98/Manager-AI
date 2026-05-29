@@ -1,0 +1,42 @@
+schema_version: 1
+id: dee00793-7cea-4207-ba92-c62325da7ecd
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Pipeline PTY not spawning like RUN ISSUE flow
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-29T08:44:31.501745'
+updated_at: '2026-05-29T09:02:42.306051'
+finished_at: '2026-05-29T09:02:42.306060'
+tasks:
+- id: 8436144c-35b8-44a7-af1b-3b3c3c62a2e2
+  name: Change DEFAULT_AGENTS terminal_command to claude --dangerously-skip-permissions /run-pipeline $issue_id
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T08:56:32'
+  updated_at: '2026-05-29T08:56:59'
+- id: f3e6f71b-019b-4f63-8938-64765b3a14ab
+  name: Rewrite _run_step() to use PTY instead of asyncio.create_subprocess_shell
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T08:56:32'
+  updated_at: '2026-05-29T08:57:41'
+- id: 243917f2-674e-4ef8-a220-2df87c10e8ed
+  name: Change _execute() to use terminal_service.create() instead of create_log(), remove destroy_log() calls
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T08:56:32'
+  updated_at: '2026-05-29T08:58:04'
+- id: 1362f209-e065-4c1b-a2f4-307d84c549dc
+  name: Add terminal_session imports and verify no circular import issues
+  status: Completed
+  order: 3
+  created_at: '2026-05-29T08:56:32'
+  updated_at: '2026-05-29T08:58:50'
+- id: c2f25512-5bd7-4127-a51b-87f4248be069
+  name: 'Test: restart backend, delete pipeline, reseed, verify pipeline runs with PTY terminal'
+  status: Completed
+  order: 4
+  created_at: '2026-05-29T08:56:32'
+  updated_at: '2026-05-29T09:02:30'
+relations: []

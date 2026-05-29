@@ -1,0 +1,1 @@
+Ancora quando avvio una pipeline, non viene avviata come dovrebbe essere avviata, ovvero con pty come "RUN ISSUE". Mi spieghi perchè è cosi tanto difficile? Dimmi prima che situazione abbiamo e perchè non funziona? Prima funzionava

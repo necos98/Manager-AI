@@ -92,7 +92,6 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
 
   // Step builder state
   const [newStepAgentId, setNewStepAgentId] = useState("");
-  const [newStepCommand, setNewStepCommand] = useState("");
 
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -125,13 +124,11 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
         pipelineId,
         data: {
           agent_id: newStepAgentId,
-          terminal_command: newStepCommand || "",
         },
       },
       {
         onSuccess: () => {
           setNewStepAgentId("");
-          setNewStepCommand("");
         },
       }
     );
@@ -327,15 +324,6 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
                             <span className="text-sm flex-1">
                               {agentMap.get(step.agent_id) ?? "Unknown"}
                             </span>
-                            {step.terminal_command && (
-                              <Badge
-                                variant="outline"
-                                className="text-xs font-mono max-w-48 truncate"
-                                title={step.terminal_command}
-                              >
-                                {step.terminal_command}
-                              </Badge>
-                            )}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -397,15 +385,6 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Input
-                        placeholder="Terminal command (optional)"
-                        value={newStepCommand}
-                        onChange={(e) => setNewStepCommand(e.target.value)}
-                        className="h-8 text-xs flex-1"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleAddStep(pipeline.id);
-                        }}
-                      />
                       <Button
                         size="sm"
                         className="h-8 text-xs"
