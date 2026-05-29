@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { Plus, Pencil, Trash2, Bot, Loader2, Sprout, Play } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { Plus, Pencil, Trash2, Bot, Loader2, Sprout, MessageSquare } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -21,7 +20,12 @@ import {
   useDeleteAgent,
   useSeedAgents,
 } from "@/features/agents/hooks";
-import { useCreateManageAgentTerminal } from "@/features/terminals/hooks";
+import {
+  useCreateManageAgentTerminal,
+  useManageAgentTerminals,
+  useKillTerminal,
+} from "@/features/terminals/hooks";
+import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
 import type { Agent, AgentCreate, AgentUpdate } from "@/shared/types";
 
 interface AgentsTabProps {
@@ -84,15 +88,16 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
   const updateAgent = useUpdateAgent();
   const deleteAgent = useDeleteAgent();
   const seedAgents = useSeedAgents();
-  const startAgentTerminal = useCreateManageAgentTerminal();
-  const navigate = useNavigate();
+  const createManageAgentTerminal = useCreateManageAgentTerminal();
+  const { data: manageAgentTerminals } = useManageAgentTerminals();
+  const killTerminal = useKillTerminal();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [form, setForm] = useState<AgentFormData>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
-  const [startingAgentId, setStartingAgentId] = useState<string | null>(null);
+  const [chatTerminalId, setChatTerminalId] = useState<string | null>(null);
 
   const openCreate = () => {
     setEditingAgent(null);
@@ -133,23 +138,33 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
     });
   };
 
-  const handleStartAgent = (agent: Agent) => {
-    setStartingAgentId(agent.id);
-    startAgentTerminal.mutate(
-      { agent_id: agent.id },
-      {
-        onSuccess: () => {
-          setStartingAgentId(null);
-          navigate({ to: "/terminals" });
-        },
-        onError: () => {
-          setStartingAgentId(null);
-        },
-      }
-    );
+  const handleStartChat = async () => {
+    try {
+      const terminal = await createManageAgentTerminal.mutateAsync({});
+      setChatTerminalId(terminal.id);
+    } catch {
+      // toast handled by hook
+    }
+  };
+
+  const handleEndChat = async () => {
+    if (chatTerminalId) {
+      try { await killTerminal.mutateAsync(chatTerminalId); } catch { /* already gone */ }
+      setChatTerminalId(null);
+    }
   };
 
   const isMutating = createAgent.isPending || updateAgent.isPending;
+
+  // Reattach to existing manage-agent terminal on mount
+  useEffect(() => {
+    if (chatTerminalId) return;
+    if (!manageAgentTerminals || manageAgentTerminals.length === 0) return;
+    const latest = [...manageAgentTerminals].sort((a, b) =>
+      (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+    )[0];
+    if (latest?.id) setChatTerminalId(latest.id);
+  }, [manageAgentTerminals, chatTerminalId]);
 
   if (isLoading) {
     return (
@@ -179,6 +194,25 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Agents</h2>
         <div className="flex items-center gap-2">
+          {chatTerminalId ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEndChat}
+            >
+              End Conversation
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleStartChat}
+              disabled={createManageAgentTerminal.isPending}
+            >
+              <MessageSquare className="size-4 mr-1" />
+              {createManageAgentTerminal.isPending ? "Starting..." : "Start Conversation"}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -241,21 +275,6 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
                         variant="ghost"
                         size="icon"
                         className="size-8"
-                        onClick={() => handleStartAgent(agent)}
-                        disabled={startingAgentId === agent.id}
-                        aria-label={`Start ${agent.name}`}
-                        title={`Start ${agent.name}`}
-                      >
-                        {startingAgentId === agent.id ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <Play className="size-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
                         onClick={() => openEdit(agent)}
                         aria-label={`Edit ${agent.name}`}
                       >
@@ -276,6 +295,17 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Manage Agent Terminal */}
+      {chatTerminalId && (
+        <div className="border rounded-lg overflow-hidden min-h-[400px]">
+          <TerminalPanel
+            terminalId={chatTerminalId}
+            projectId={_projectId}
+            onSessionEnd={handleEndChat}
+          />
         </div>
       )}
 

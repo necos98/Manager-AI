@@ -1,0 +1,1 @@
+Continuo a non vedere il pulsante per avviare una conversazione all'interno della sezione "Agents". Prima era possibile avviare una conversazione con l'agente usando il comando "/manage-agent" e l'agente ti permetteva appunto di creare/modificare gli agenti interni a manager ai. Ti chiedo di controllare perchè non si vede più
