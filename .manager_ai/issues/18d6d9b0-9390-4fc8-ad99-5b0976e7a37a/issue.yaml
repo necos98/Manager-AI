@@ -1,0 +1,24 @@
+schema_version: 1
+id: 18d6d9b0-9390-4fc8-ad99-5b0976e7a37a
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: MissingGreenlet error in update_pipeline route — expired updated_at triggers lazy load
+status: Finished
+priority: 3
+category: null
+created_at: '2026-05-29T08:33:54.964101'
+updated_at: '2026-05-29T08:40:56.939546'
+finished_at: '2026-05-29T08:40:56.939559'
+tasks:
+- id: ab67968d-1a2a-45eb-b028-849f5ba85965
+  name: 'Reorder update_pipeline route: commit before _response(), re-fetch after commit'
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T08:40:31'
+  updated_at: '2026-05-29T08:40:49'
+- id: 8389de2e-d2e8-4b53-bd10-a8ffa68bc0d0
+  name: Run pipeline tests to verify fix
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T08:40:31'
+  updated_at: '2026-05-29T08:40:50'
+relations: []

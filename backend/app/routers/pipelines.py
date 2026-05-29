@@ -71,10 +71,9 @@ async def update_pipeline(
     db: AsyncSession = Depends(get_db),
 ):
     svc = PipelineService(db)
-    pipeline = await svc.update_pipeline(pipeline_id, data.name)
-    response = _response(pipeline)
+    await svc.update_pipeline(pipeline_id, data.name)
     await db.commit()
-    return response
+    return _response(await svc.get_pipeline(pipeline_id))
 
 
 @router.delete("/{pipeline_id}", status_code=204)
