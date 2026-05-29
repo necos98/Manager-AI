@@ -1,1 +1,1 @@
-Quando si avvia la pipeline, il terminale spawnato non ha il riferimento alla issue da dove è startato! Far si che si comporti uguale a "RUN ISSUE"
+Quando si avvia la pipeline, il terminale spawnato non ha il riferimento alla issue da dove è startato e quindi quando entro in una nuova schermata e rientro nella issue il terminale appunto non c'è, ma lo trovo nella sezione "Terminals", essenzialmente viene spawnato un terminale orfano.

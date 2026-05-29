@@ -159,6 +159,13 @@ class PipelineRunService:
                     "terminal_id": term_id,
                 })
 
+                await event_service.emit({
+                    "type": "terminal_created",
+                    "terminal_id": term_id,
+                    "issue_id": run.issue_id,
+                    "project_id": project_id,
+                })
+
                 try:
                     success = await self._run_step(
                         term_id=term_id,

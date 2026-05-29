@@ -21,6 +21,7 @@ export function useTerminals(projectId?: string, issueId?: string) {
   return useQuery({
     queryKey: [...terminalKeys.all, projectId, issueId] as const,
     queryFn: () => api.fetchTerminals(projectId, issueId),
+    refetchInterval: 3000,
   });
 }
 
