@@ -1,0 +1,30 @@
+schema_version: 1
+id: 11e02dc6-c6a3-4617-8644-fe97d56e7a84
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Pipeline add_step: UNIQUE constraint failed on order_index'
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-29T08:03:23.068925'
+updated_at: '2026-05-29T08:11:37.666972'
+finished_at: '2026-05-29T08:11:37.666981'
+tasks:
+- id: 441b4002-b908-4a58-a82e-7b07c9dfa8a8
+  name: 'Task 1: Write failing test for add_step auto-index'
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T08:08:13'
+  updated_at: '2026-05-29T08:09:30'
+- id: 5e18870a-9cc6-40be-81bd-d295dcde6ee9
+  name: 'Task 2: Fix add_step to auto-assign next order_index'
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T08:08:13'
+  updated_at: '2026-05-29T08:09:46'
+- id: 06eca516-0c90-4f6c-be1a-a675c36911bd
+  name: 'Task 3: Run tests to verify fix'
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T08:08:13'
+  updated_at: '2026-05-29T08:11:28'
+relations: []

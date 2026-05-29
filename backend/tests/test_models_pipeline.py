@@ -146,6 +146,28 @@ async def test_pipeline_step_unique_order_constraint(db_session):
 
 
 @pytest.mark.asyncio
+async def test_add_step_auto_assigns_next_order_index(db_session):
+    """Adding a step auto-assigns max+1 instead of using the passed order_index."""
+    from app.services.pipeline_service import PipelineService
+
+    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    pipeline = Pipeline(id="pl1", name="Test")
+    db_session.add_all([agent, pipeline])
+    await db_session.flush()
+
+    svc = PipelineService(db_session)
+
+    step1 = await svc.add_step("pl1", "a1", order_index=0, terminal_command="cmd1")
+    assert step1.order_index == 0
+
+    step2 = await svc.add_step("pl1", "a1", order_index=0, terminal_command="cmd2")
+    assert step2.order_index == 1
+
+    step3 = await svc.add_step("pl1", "a1", order_index=0, terminal_command="cmd3")
+    assert step3.order_index == 2
+
+
+@pytest.mark.asyncio
 async def test_pipeline_run_status_enum_values():
     """Verify PipelineRunStatus enum members."""
     assert PipelineRunStatus.RUNNING.value == "RUNNING"
@@ -155,11 +177,7 @@ async def test_pipeline_run_status_enum_values():
 
 @pytest.mark.asyncio
 async def test_reorder_steps_no_constraint_violation(db_session):
-<<<<<<< Updated upstream
-    """Reorder that would trigger autoflush UNIQUE conflict succeeds with bulk UPDATE."""
-=======
     """Reorder that would trigger autoflush UNIQUE conflict succeeds."""
->>>>>>> Stashed changes
     from app.services.pipeline_service import PipelineService
 
     agent = Agent(id="a1", name="dev", system_prompt="Dev")

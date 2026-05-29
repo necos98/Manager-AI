@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -85,10 +85,18 @@ class PipelineService:
         order_index: int,
         terminal_command: str = "",
     ) -> PipelineStep:
+        result = await self.session.execute(
+            select(func.max(PipelineStep.order_index)).where(
+                PipelineStep.pipeline_id == pipeline_id
+            )
+        )
+        max_idx = result.scalar()
+        next_idx = (max_idx + 1) if max_idx is not None else 0
+
         step = PipelineStep(
             pipeline_id=pipeline_id,
             agent_id=agent_id,
-            order_index=order_index,
+            order_index=next_idx,
             terminal_command=terminal_command,
         )
         self.session.add(step)
