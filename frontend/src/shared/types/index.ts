@@ -186,7 +186,7 @@ export interface LogTerminalCreate {
   label?: string;
 }
 
-export interface ManageAgentTerminalCreate {}
+export interface ManageAgentTerminalCreate { agent_id?: string }
 
 // ── Terminal Command ──
 

@@ -14,7 +14,7 @@ from app.exceptions import AppError
 from app.services.agent_service import AgentService
 from app.services.event_service import event_service
 from app.services.issue_service import IssueService
-from app.services.pipeline_run_service import PipelineRunService
+from app.services.pipeline_run_service import PipelineRunService, set_step_completed
 from app.services.pipeline_service import PipelineService
 from app.services.project_service import ProjectService
 from app.models.task import TaskStatus
@@ -960,21 +960,21 @@ async def ask_user_question(issue_id: str, question: str, options: list[str] | N
 
 
 @mcp.tool(description=_desc["tool.create_agent.description"])
-async def create_agent(name: str, system_prompt: str, model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
+async def create_agent(name: str, intent: str = "", model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
     async with async_session() as session:
         svc = AgentService(session)
         try:
             agent = await svc.create(
                 name=name,
-                system_prompt=system_prompt,
                 model=model,
                 allowed_tools=allowed_tools,
+                intent=intent,
             )
             await session.commit()
             return {
                 "id": agent.id,
                 "name": agent.name,
-                "system_prompt": agent.system_prompt,
+                "intent": agent.intent,
                 "model": agent.model,
                 "allowed_tools": agent.allowed_tools,
                 "created_at": str(agent.created_at) if agent.created_at else None,
@@ -994,7 +994,7 @@ async def list_agents() -> dict:
                 {
                     "id": a.id,
                     "name": a.name,
-                    "system_prompt": a.system_prompt,
+                    "intent": a.intent,
                     "model": a.model,
                     "allowed_tools": a.allowed_tools,
                     "created_at": str(a.created_at) if a.created_at else None,
@@ -1003,6 +1003,66 @@ async def list_agents() -> dict:
                 for a in agents
             ]
         }
+
+
+@mcp.tool(description=_desc["tool.get_agent.description"])
+async def get_agent(agent_id: str) -> dict:
+    async with async_session() as session:
+        svc = AgentService(session)
+        try:
+            agent = await svc.get_by_id(agent_id)
+            return {
+                "id": agent.id,
+                "name": agent.name,
+                "intent": agent.intent,
+                "model": agent.model,
+                "allowed_tools": agent.allowed_tools,
+                "created_at": str(agent.created_at) if agent.created_at else None,
+                "updated_at": str(agent.updated_at) if agent.updated_at else None,
+            }
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.update_agent.description"])
+async def update_agent(agent_id: str, name: str | None = None, intent: str | None = None, model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
+    async with async_session() as session:
+        svc = AgentService(session)
+        try:
+            kwargs = {}
+            if name is not None:
+                kwargs["name"] = name
+            if intent is not None:
+                kwargs["intent"] = intent
+            if model is not None:
+                kwargs["model"] = model
+            if allowed_tools is not None:
+                kwargs["allowed_tools"] = allowed_tools
+            agent = await svc.update(agent_id, **kwargs)
+            await session.commit()
+            return {
+                "id": agent.id,
+                "name": agent.name,
+                "intent": agent.intent,
+                "model": agent.model,
+                "allowed_tools": agent.allowed_tools,
+                "created_at": str(agent.created_at) if agent.created_at else None,
+                "updated_at": str(agent.updated_at) if agent.updated_at else None,
+            }
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.delete_agent.description"])
+async def delete_agent(agent_id: str) -> dict:
+    async with async_session() as session:
+        svc = AgentService(session)
+        try:
+            await svc.delete(agent_id)
+            await session.commit()
+            return {"deleted": True}
+        except AppError as e:
+            return {"error": e.message}
 
 
 # ── Pipeline tools ────────────────────────────────────────────────────────
@@ -1116,11 +1176,25 @@ async def get_active_agent(issue_id: str) -> dict:
             return {"active": None}
         step = steps[idx]
         return {
+            "run_id": active["id"],
+            "step_run_id": step["id"],
             "agent_name": step["agent_name"],
+            "agent_intent": step.get("agent_intent", ""),
             "step_index": idx,
             "step_status": step["status"],
             "terminal_id": step.get("terminal_id"),
         }
+
+
+@mcp.tool(description=_desc["tool.get_active_pipeline_run.description"])
+async def get_active_pipeline_run(issue_id: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineRunService(session)
+        runs = await svc.get_runs_for_issue(issue_id)
+        active = next((r for r in runs if r["status"] == "RUNNING"), None)
+        if not active:
+            return {"active": None}
+        return active
 
 
 @mcp.tool(description=_desc["tool.send_agent_message.description"])
@@ -1144,3 +1218,38 @@ async def get_pipeline_messages(run_id: str) -> dict:
     async with async_session() as session:
         svc = PipelineRunService(session)
         return {"messages": await svc.get_messages(run_id)}
+
+
+@mcp.tool(description=_desc["tool.finished_pipeline_step.description"])
+async def finished_pipeline_step(issue_id: str, summary: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineRunService(session)
+        runs = await svc.get_runs_for_issue(issue_id)
+        active = next((r for r in runs if r["status"] == "RUNNING"), None)
+        if not active:
+            return {"error": "No active pipeline run for this issue"}
+
+        run_id = active["id"]
+        idx = active["current_step_index"]
+        steps = active["steps"]
+        if idx >= len(steps):
+            return {"error": "No active step"}
+
+        step = steps[idx]
+        agent_name = step["agent_name"]
+
+        await svc.add_message(
+            run_id=run_id,
+            sender_agent_name=agent_name,
+            content=summary,
+        )
+
+        ok = set_step_completed(run_id, idx)
+        pipeline_finished = idx >= len(steps) - 1
+
+        await session.commit()
+        return {
+            "success": ok,
+            "step_completed": ok,
+            "pipeline_finished": pipeline_finished,
+        }

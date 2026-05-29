@@ -13,7 +13,6 @@ class Agent(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    system_prompt: Mapped[str] = mapped_column(Text, nullable=False, default="")
     model: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     allowed_tools: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     intent: Mapped[str] = mapped_column(Text, nullable=False, default="")

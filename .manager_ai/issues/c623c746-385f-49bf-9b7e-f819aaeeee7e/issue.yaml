@@ -1,0 +1,78 @@
+schema_version: 1
+id: c623c746-385f-49bf-9b7e-f819aaeeee7e
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Agents page: missing "start conversation" functionality for agent creation/editing'
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-29T13:00:36.518629'
+updated_at: '2026-05-29T13:18:01.320799'
+finished_at: '2026-05-29T13:18:01.320808'
+tasks:
+- id: b4526f4b-cbce-4291-99b0-940e62952581
+  name: Fix AgentService.create() to accept and save intent field
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T13:11:21'
+  updated_at: '2026-05-29T13:11:40'
+- id: 71ec01a2-9648-4c74-99f2-57939953b6ea
+  name: 'Fix create_agent MCP tool: add system_prompt param, return intent'
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T13:11:21'
+  updated_at: '2026-05-29T13:12:02'
+- id: 42d724c0-90f2-477f-ac8a-1142a947f543
+  name: Update list_agents MCP tool to include intent in response
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T13:11:21'
+  updated_at: '2026-05-29T13:12:10'
+- id: 9cb4a379-f390-40c8-9e17-b511c44e5002
+  name: Add get_agent MCP tool to server.py
+  status: Completed
+  order: 3
+  created_at: '2026-05-29T13:11:21'
+  updated_at: '2026-05-29T13:12:32'
+- id: 1bfea90f-ad56-4904-9361-64a26bdf6e58
+  name: Add update_agent MCP tool to server.py
+  status: Completed
+  order: 4
+  created_at: '2026-05-29T13:11:21'
+  updated_at: '2026-05-29T13:12:37'
+- id: 44d47209-776d-4eed-b8cd-58e9ed05363d
+  name: Add delete_agent MCP tool to server.py
+  status: Completed
+  order: 5
+  created_at: '2026-05-29T13:11:21'
+  updated_at: '2026-05-29T13:12:43'
+- id: de98d03c-2d36-443d-b4d4-874831273b72
+  name: Update default_settings.json with correct tool descriptions
+  status: Completed
+  order: 6
+  created_at: '2026-05-29T13:11:21'
+  updated_at: '2026-05-29T13:16:41'
+- id: 59195393-0bde-4226-b49e-5ed0a6900f37
+  name: Add agent_id to ManageAgentTerminalCreate schema
+  status: Completed
+  order: 7
+  created_at: '2026-05-29T13:11:21'
+  updated_at: '2026-05-29T13:16:47'
+- id: 770a3f9e-2641-4320-b414-44b5c3b20377
+  name: Enhance create_manage_agent_terminal endpoint for per-agent start
+  status: Completed
+  order: 8
+  created_at: '2026-05-29T13:11:21'
+  updated_at: '2026-05-29T13:16:51'
+- id: 7fe56d56-fbd9-4823-8d50-91b164d76cd6
+  name: Add Start button to AgentsTab UI with Play icon
+  status: Completed
+  order: 9
+  created_at: '2026-05-29T13:11:21'
+  updated_at: '2026-05-29T13:16:56'
+- id: bb443277-363d-460a-8287-d59a7aaf8ba8
+  name: Wire Start button to create terminal and navigate to it
+  status: Completed
+  order: 10
+  created_at: '2026-05-29T13:11:21'
+  updated_at: '2026-05-29T13:17:01'
+relations: []

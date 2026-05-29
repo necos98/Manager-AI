@@ -7,44 +7,53 @@ from app.models.agent import Agent
 DEFAULT_AGENTS = [
     {
         "name": "CodebaseExplorer",
-        "system_prompt": (
-            "Explore and analyze codebase structure, find patterns and conventions, "
-            "trace execution paths, and document dependencies."
+        "intent": (
+            "Explore the codebase to understand structure, patterns, and dependencies. "
+            "Trace relevant code paths. Identify files that need changes. "
+            "Document findings. Do NOT modify files — this is analysis only."
         ),
     },
     {
         "name": "BrainstormingAgent",
-        "system_prompt": (
-            "Brainstorm ideas and refine requirements through natural collaborative dialogue. "
-            "Turn ideas into fully formed designs and specs."
+        "intent": (
+            "Analyze the issue description and brainstorm requirements. "
+            "Ask clarifying questions if needed. Write a detailed specification "
+            "via create_issue_spec. Set issue name via set_issue_name."
         ),
     },
     {
         "name": "SpecWriter",
-        "system_prompt": (
-            "Write detailed specifications from requirements. Produce clear, structured "
-            "specs covering architecture, components, data flow, error handling, and testing."
+        "intent": (
+            "Analyze the issue description, ask clarifying questions if needed, "
+            "write a detailed specification covering requirements, constraints, "
+            "and success criteria. Save via create_issue_spec. "
+            "Set issue name via set_issue_name."
         ),
     },
     {
         "name": "PlanWriter",
-        "system_prompt": (
-            "Create implementation plans from specifications. Break down designs into "
-            "atomic, ordered tasks with specific files to create or modify."
+        "intent": (
+            "Review the specification. Design an implementation plan with concrete steps, "
+            "identify files to create/modify, and define atomic tasks. "
+            "Save via create_issue_plan and create_plan_tasks."
         ),
     },
     {
         "name": "Developer",
-        "system_prompt": (
-            "Implement code following plans and specifications. Write production-quality "
-            "code that follows existing patterns and conventions."
+        "intent": (
+            "Read the plan tasks via get_plan_tasks. Implement each task sequentially — "
+            "update status to In Progress when starting, Completed when done. "
+            "Follow existing codebase patterns. Make autonomous decisions. "
+            "Do NOT ask for confirmations."
         ),
     },
     {
         "name": "Reviewer",
-        "system_prompt": (
-            "Review code for bugs, logic errors, security vulnerabilities, code quality "
-            "issues, and adherence to project conventions."
+        "intent": (
+            "Review all code changes for bugs, logic errors, security issues, "
+            "and adherence to project conventions. Run the test suite. "
+            "Report findings via send_agent_message with specific, "
+            "actionable feedback for the QA agent."
         ),
     },
 ]
@@ -65,7 +74,7 @@ class AgentService:
         for data in DEFAULT_AGENTS:
             agent = Agent(
                 name=data["name"],
-                system_prompt=data["system_prompt"],
+                intent=data.get("intent", ""),
             )
             self.session.add(agent)
             agents.append(agent)
@@ -77,15 +86,15 @@ class AgentService:
     async def create(
         self,
         name: str,
-        system_prompt: str,
         model: str | None = None,
         allowed_tools: list[str] | None = None,
+        intent: str = "",
     ) -> Agent:
         agent = Agent(
             name=name,
-            system_prompt=system_prompt,
             model=model,
             allowed_tools=allowed_tools,
+            intent=intent,
         )
         self.session.add(agent)
         await self.session.flush()

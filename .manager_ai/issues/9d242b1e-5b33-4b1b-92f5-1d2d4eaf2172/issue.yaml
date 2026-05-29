@@ -1,0 +1,36 @@
+schema_version: 1
+id: 9d242b1e-5b33-4b1b-92f5-1d2d4eaf2172
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Rename run_pipeline_step to get_step_context
+status: Finished
+priority: 1
+category: null
+created_at: '2026-05-29T11:07:41.227407'
+updated_at: '2026-05-29T11:14:20.688511'
+finished_at: '2026-05-29T11:14:20.688522'
+tasks:
+- id: 0e02a3ef-4299-4911-80e3-f0673847c378
+  name: Rename function in server.py — run_pipeline_step → get_step_context, update _desc key
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T11:12:52'
+  updated_at: '2026-05-29T11:13:24'
+- id: d24a445a-79dd-4a08-9303-3175c8ffba7a
+  name: Update default_settings.json — rename key + description text
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T11:12:52'
+  updated_at: '2026-05-29T11:13:34'
+- id: 961e4ef9-9f36-4729-b029-75f44f59fbcd
+  name: Update run-pipeline.md in claude_resources and .claude sync copy
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T11:12:52'
+  updated_at: '2026-05-29T11:13:46'
+- id: 32cbe97b-9eff-461b-8c5e-de7531d6b91c
+  name: Verify no remaining run_pipeline_step references in source files
+  status: Completed
+  order: 3
+  created_at: '2026-05-29T11:12:52'
+  updated_at: '2026-05-29T11:14:12'
+relations: []

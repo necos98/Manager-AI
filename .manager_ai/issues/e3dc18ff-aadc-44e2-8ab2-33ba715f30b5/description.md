@@ -1,0 +1,3 @@
+L'agente pipeline riceve due fonti di verità sulla propria identità: le env vars iniettate dall'orchestrator (`MANAGER_AI_AGENT_NAME`, `MANAGER_AI_AGENT_ROLE`, `MANAGER_AI_AGENT_INTENT`) e il tool MCP `get_active_agent`. Questo causa confusione: l'agente non capisce che `get_active_agent` restituisce la SUA identità, lo interpreta come un tool per interrogare un'entità esterna, e va in loop (re-call + impulso a usare REST API).
+
+**Soluzione**: rimuovere completamente le env vars di identità agente. Unica fonte di verità: `get_active_agent(issue_id)`. L'agente chiama quello, riceve `agent_intent`, e lo usa come istruzione primaria.

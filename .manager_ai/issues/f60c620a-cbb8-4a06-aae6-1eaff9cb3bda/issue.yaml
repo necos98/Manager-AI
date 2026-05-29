@@ -1,0 +1,30 @@
+schema_version: 1
+id: f60c620a-cbb8-4a06-aae6-1eaff9cb3bda
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Distinguish clean vs dirty PTY death in pipeline step completion
+status: Finished
+priority: 3
+category: null
+created_at: '2026-05-29T11:07:36.291531'
+updated_at: '2026-05-29T12:36:40.894300'
+finished_at: '2026-05-29T12:36:40.894313'
+tasks:
+- id: f9643715-35cc-40e7-add9-357c461409e6
+  name: Change _run_step() PTY-death fallback from success to failure
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T12:35:49'
+  updated_at: '2026-05-29T12:36:12'
+- id: d71c8bd4-2641-4b13-896a-aaa865fd335f
+  name: Run existing tests to verify no regressions
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T12:35:49'
+  updated_at: '2026-05-29T12:36:23'
+- id: a4af3942-14c5-4eab-88e7-aa3522977ad9
+  name: Update memory cb0b9511 to reflect new behavior
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T12:35:49'
+  updated_at: '2026-05-29T12:36:36'
+relations: []

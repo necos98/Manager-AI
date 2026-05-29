@@ -17,17 +17,13 @@ from app.services.pipeline_run_service import PipelineRunService
 
 @pytest.mark.asyncio
 async def test_start_creates_run_and_step_runs(db_session):
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add(agent)
     await db_session.flush()
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-<<<<<<< Updated upstream
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
-=======
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
->>>>>>> Stashed changes
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -63,17 +59,13 @@ async def test_start_creates_run_and_step_runs(db_session):
 
 @pytest.mark.asyncio
 async def test_start_rejects_double_start(db_session):
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add(agent)
     await db_session.flush()
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-<<<<<<< Updated upstream
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
-=======
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
->>>>>>> Stashed changes
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -93,17 +85,13 @@ async def test_start_rejects_double_start(db_session):
 
 @pytest.mark.asyncio
 async def test_get_run_returns_status(db_session):
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add(agent)
     await db_session.flush()
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-<<<<<<< Updated upstream
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
-=======
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
->>>>>>> Stashed changes
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -124,17 +112,13 @@ async def test_get_run_returns_status(db_session):
 
 @pytest.mark.asyncio
 async def test_add_and_get_messages(db_session):
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add(agent)
     await db_session.flush()
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-<<<<<<< Updated upstream
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
-=======
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
->>>>>>> Stashed changes
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -157,17 +141,13 @@ async def test_add_and_get_messages(db_session):
 
 @pytest.mark.asyncio
 async def test_cancel_run(db_session):
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add(agent)
     await db_session.flush()
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-<<<<<<< Updated upstream
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
-=======
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
->>>>>>> Stashed changes
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -191,17 +171,13 @@ async def test_cancel_run(db_session):
 
 @pytest.mark.asyncio
 async def test_cancel_non_running_raises(db_session):
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add(agent)
     await db_session.flush()
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-<<<<<<< Updated upstream
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
-=======
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
->>>>>>> Stashed changes
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()
@@ -222,17 +198,13 @@ async def test_cancel_non_running_raises(db_session):
 
 @pytest.mark.asyncio
 async def test_get_runs_for_issue(db_session):
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add(agent)
     await db_session.flush()
 
     pipeline = Pipeline(id="pl1", name="Test")
     step = PipelineStep(
-<<<<<<< Updated upstream
         id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0
-=======
-        id="ps1", pipeline_id="pl1", agent_id="a1", order_index=0,
->>>>>>> Stashed changes
     )
     db_session.add_all([pipeline, step])
     await db_session.flush()

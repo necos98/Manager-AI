@@ -21,7 +21,7 @@ class AskTerminalCreate(BaseModel):
 
 
 class ManageAgentTerminalCreate(BaseModel):
-    pass
+    agent_id: str | None = None
 
 
 class TerminalResponse(BaseModel):

@@ -21,6 +21,19 @@ from app.services.terminal_service import terminal_service
 
 logger = logging.getLogger(__name__)
 
+# Maps (run_id, step_index) -> asyncio.Event for step completion signaling
+_step_completion_events: dict[tuple[str, int], asyncio.Event] = {}
+
+
+def set_step_completed(run_id: str, step_index: int) -> bool:
+    """Signal that a pipeline step has completed. Called by finished_pipeline_step MCP tool."""
+    key = (run_id, step_index)
+    event = _step_completion_events.get(key)
+    if event is None:
+        return False
+    event.set()
+    return True
+
 
 class PipelineRunService:
     def __init__(self, session: AsyncSession, session_factory=None):
@@ -172,6 +185,8 @@ class PipelineRunService:
                         agent_name=agent_name,
                         intent=agent_prompt,
                         issue_id=run.issue_id,
+                        run_id=run_id,
+                        step_index=i,
                     )
 
                     if success:
@@ -254,8 +269,11 @@ class PipelineRunService:
         agent_name: str,
         intent: str,
         issue_id: str,
+        run_id: str,
+        step_index: int,
     ) -> bool:
         import platform as _platform
+        import os as _os
         from app.services.terminal_session import TerminalSession, _sessions, _ensure_reader
 
         pty = terminal_service.get_pty(term_id)
@@ -268,23 +286,48 @@ class PipelineRunService:
         command = f'claude --dangerously-skip-permissions "/run-pipeline {issue_id}"'
 
         if is_windows:
-            pty.write(f"set MANAGER_AI_AGENT_NAME={agent_name}\r\n")
-            pty.write(f"set MANAGER_AI_AGENT_ROLE={agent_name}\r\n")
-            pty.write(f"set MANAGER_AI_AGENT_INTENT={intent}\r\n")
-            pty.write(f"set MANAGER_AI_ISSUE_ID={issue_id}\r\n")
             pty.write(f"{command}\r\n")
             pty.write("exit\r\n")
         else:
-            import shlex as _shlex
-            pty.write(f"export MANAGER_AI_AGENT_NAME={_shlex.quote(agent_name)}\r\n")
-            pty.write(f"export MANAGER_AI_AGENT_ROLE={_shlex.quote(agent_name)}\r\n")
-            pty.write(f"export MANAGER_AI_AGENT_INTENT={_shlex.quote(intent)}\r\n")
-            pty.write(f"export MANAGER_AI_ISSUE_ID={_shlex.quote(issue_id)}\r\n")
             pty.write(f"{command}; exit\r\n")
 
-        await session.pty_dead.wait()
+        # Wait for step completion event, PTY death, or timeout
+        event = asyncio.Event()
+        _step_completion_events[(run_id, step_index)] = event
 
-        return session.pty_died_naturally
+        timeout = int(_os.environ.get("MANAGER_AI_PIPELINE_STEP_TIMEOUT", "1800"))
+
+        async def wait_pty_death():
+            await session.pty_dead.wait()
+
+        pty_task = asyncio.create_task(wait_pty_death())
+        event_task = asyncio.create_task(event.wait())
+
+        try:
+            done, pending = await asyncio.wait(
+                [pty_task, event_task],
+                timeout=timeout,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+
+            if event_task in done:
+                success = True
+            elif pty_task in done:
+                logger.error(
+                    "Step %s failed: PTY died before finished_pipeline_step called", agent_name
+                )
+                success = False
+            else:
+                logger.error("Step %s timed out after %ds", agent_name, timeout)
+                terminal_service.kill(term_id)
+                success = False
+
+            for t in pending:
+                t.cancel()
+        finally:
+            _step_completion_events.pop((run_id, step_index), None)
+
+        return success
 
     async def _get_run(self, run_id: str) -> PipelineRun:
         return await self._get_run_with_session(run_id, self.session)
@@ -312,14 +355,17 @@ class PipelineRunService:
             key=lambda s: s.pipeline_step.order_index if s.pipeline_step else 0,
         ):
             agent_name = "unknown"
+            agent_intent = ""
             if sr.pipeline_step and sr.pipeline_step.agent:
                 agent_name = sr.pipeline_step.agent.name
+                agent_intent = sr.pipeline_step.agent.intent or ""
             steps.append(
                 {
                     "id": sr.id,
                     "pipeline_run_id": sr.pipeline_run_id,
                     "pipeline_step_id": sr.pipeline_step_id,
                     "agent_name": agent_name,
+                    "agent_intent": agent_intent,
                     "status": sr.status.value,
                     "terminal_id": sr.terminal_id,
                     "started_at": sr.started_at.isoformat() if sr.started_at else None,
@@ -363,6 +409,7 @@ class PipelineRunService:
                         "pipeline_run_id": sr.pipeline_run_id,
                         "pipeline_step_id": sr.pipeline_step_id,
                         "agent_name": sr.pipeline_step.agent.name if sr.pipeline_step and sr.pipeline_step.agent else "unknown",
+                        "agent_intent": sr.pipeline_step.agent.intent if sr.pipeline_step and sr.pipeline_step.agent else "",
                         "status": sr.status.value,
                         "terminal_id": sr.terminal_id,
                         "started_at": sr.started_at.isoformat() if sr.started_at else None,

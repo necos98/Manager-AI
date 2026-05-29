@@ -368,6 +368,17 @@ async def create_manage_agent_terminal(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
 
+    # If agent_id provided, fetch agent for context injection
+    agent_intent = ""
+    if data.agent_id:
+        try:
+            from app.services.agent_service import AgentService
+            agent_svc = AgentService(db)
+            agent = await agent_svc.get_by_id(data.agent_id)
+            agent_intent = agent.intent
+        except Exception:
+            logger.warning("Failed to fetch agent %s for terminal", data.agent_id, exc_info=True)
+
     # Inject env vars
     try:
         pty = service.get_pty(terminal["id"])
@@ -376,6 +387,9 @@ async def create_manage_agent_terminal(
             "MANAGER_AI_TERMINAL_ID": terminal["id"],
             "MANAGER_AI_BASE_URL": f"http://localhost:{port}",
         }
+        if data.agent_id:
+            env_vars["MANAGER_AI_AGENT_ID"] = data.agent_id
+            env_vars["MANAGER_AI_AGENT_INTENT"] = agent_intent
         if platform.system() == "Windows":
             pairs = (f"{k}={v}" for k, v in env_vars.items())
             line = " && ".join(f"set {p}" for p in pairs)
@@ -394,6 +408,9 @@ async def create_manage_agent_terminal(
         skip_perms = await settings_svc.get("claude.skip_permissions") == "true"
         if skip_perms and cmd.startswith("claude "):
             cmd = "claude --dangerously-skip-permissions " + cmd[len("claude "):]
+        # If agent-specific terminal, append agent intent as startup instruction
+        if data.agent_id and agent_intent:
+            cmd += f" \"{agent_intent}\""
         logger.info("Manage-agent terminal %s command: %s", terminal["id"], cmd)
         pty = service.get_pty(terminal["id"])
         pty.write(cmd + "\r\n")

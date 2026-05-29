@@ -1,0 +1,42 @@
+schema_version: 1
+id: e3dc18ff-aadc-44e2-8ab2-33ba715f30b5
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Rimuovere env vars identità agente: single source of truth via get_active_agent'
+status: Finished
+priority: 4
+category: null
+created_at: '2026-05-29T12:52:57.262546'
+updated_at: '2026-05-29T12:57:22.129900'
+finished_at: '2026-05-29T12:57:22.129926'
+tasks:
+- id: 497c31b0-10c4-4ea5-9986-4af12663475d
+  name: Remove agent identity env vars from _run_step in pipeline_run_service.py
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T12:55:51'
+  updated_at: '2026-05-29T12:56:22'
+- id: 8a5a6848-6f59-4b7f-aabb-04db5de444d0
+  name: Rewrite /run-pipeline.md step 1 in first person
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T12:55:51'
+  updated_at: '2026-05-29T12:56:46'
+- id: 120a8645-9bd9-4016-b68f-e25e79d066e3
+  name: Update get_active_agent tool description in default_settings.json
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T12:55:51'
+  updated_at: '2026-05-29T12:56:47'
+- id: 477c7136-5fcf-47a2-913c-c232c00ef909
+  name: Remove terminal_command references from default_settings.json tool descriptions
+  status: Completed
+  order: 3
+  created_at: '2026-05-29T12:55:51'
+  updated_at: '2026-05-29T12:56:48'
+- id: f9421ac3-2140-4013-945b-86d68f4a323d
+  name: Update related memories (fc31b9e8, ee88c5a3, eb307327)
+  status: Completed
+  order: 4
+  created_at: '2026-05-29T12:55:51'
+  updated_at: '2026-05-29T12:57:11'
+relations: []

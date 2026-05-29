@@ -1,0 +1,66 @@
+schema_version: 1
+id: e20cf842-1ae2-4ca2-b294-5f126bfe44c6
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Remove system_prompt from agents — field already dropped from DB, cleanup codebase
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-29T12:59:07.646126'
+updated_at: '2026-05-29T13:05:30.675306'
+finished_at: '2026-05-29T13:05:30.675318'
+tasks:
+- id: ec35e29c-35c2-43fa-be35-fdfb3bd7126e
+  name: Backend model — drop system_prompt column from Agent class
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T13:02:13'
+  updated_at: '2026-05-29T13:02:28'
+- id: d9720aed-5a19-4c38-9db9-85b9ca48049c
+  name: Backend schemas — drop system_prompt from AgentCreate, AgentUpdate, AgentResponse
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T13:02:13'
+  updated_at: '2026-05-29T13:02:38'
+- id: c4aa1ad2-a967-4c98-b601-adb8cc4691e0
+  name: Backend service — drop system_prompt from DEFAULT_AGENTS and create()
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T13:02:13'
+  updated_at: '2026-05-29T13:03:07'
+- id: 1ae7c0ef-d036-428f-af40-dd690a8b1f15
+  name: Backend router — drop system_prompt from route handlers
+  status: Completed
+  order: 3
+  created_at: '2026-05-29T13:02:13'
+  updated_at: '2026-05-29T13:03:23'
+- id: 0ceb0f3c-5b3c-4392-be20-71dbcbc462e8
+  name: MCP server — drop system_prompt from agent tools
+  status: Completed
+  order: 4
+  created_at: '2026-05-29T13:02:13'
+  updated_at: '2026-05-29T13:03:39'
+- id: 5511105c-c4fd-4cea-804a-63e31f0308ee
+  name: Frontend AgentsTab — remove system_prompt from form
+  status: Completed
+  order: 5
+  created_at: '2026-05-29T13:02:13'
+  updated_at: '2026-05-29T13:04:11'
+- id: b3a9fa18-ef1e-41fe-8dc9-c905db3a551d
+  name: Tests — remove system_prompt kwarg from Agent() calls
+  status: Completed
+  order: 6
+  created_at: '2026-05-29T13:02:13'
+  updated_at: '2026-05-29T13:04:37'
+- id: f6b04fe6-f0c9-41c9-bd24-a53e4de5279b
+  name: Docs — remove system_prompt from agent-pipeline-architecture.md
+  status: Completed
+  order: 7
+  created_at: '2026-05-29T13:02:13'
+  updated_at: '2026-05-29T13:04:53'
+- id: aebde6f3-838c-4679-b81e-1c71defac550
+  name: Run tests and grep-verify no remaining references
+  status: Completed
+  order: 8
+  created_at: '2026-05-29T13:02:13'
+  updated_at: '2026-05-29T13:05:19'
+relations: []

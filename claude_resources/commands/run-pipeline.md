@@ -1,10 +1,15 @@
 Work on issue $ARGUMENTS as part of a pipeline workflow.
 
-## 1. Discover your role
+## 1. Discover your identity
 
-Call `get_active_agent` with the issue ID ($ARGUMENTS) to discover:
-- Your **agent name** and **intent** — the intent is your job description. Read it carefully and follow it.
-- The **run_id**, **step_index**, and **terminal_id** for context.
+You ARE the active agent in this pipeline. `get_active_agent` tells you who you are.
+
+Call `get_active_agent` with the issue ID ($ARGUMENTS). The response identifies YOU:
+- **agent_name** — your name (e.g. "SpecWriter", "Developer")
+- **agent_intent** — YOUR primary instruction. This is the most important field. Read it carefully and follow it.
+- **run_id**, **step_run_id**, **step_index**, **terminal_id** — your execution context
+
+`get_active_agent` is the ONLY source of your identity. There are no env vars, no secondary channels. Call it once, internalize the result, and act on it.
 
 If `get_active_agent` returns null, no pipeline is running for this issue. Report this and stop.
 
@@ -20,8 +25,6 @@ Call `get_active_pipeline_run` with the issue ID to see:
 Call `get_issue_details` with the issue ID. The project_id is in `manager.json` at the repo root.
 
 ## 4. Read the agent chat (handoff from previous agents)
-
-The pipeline has a **shared message log** that agents use to hand off context. Each agent writes a summary of what it did, decisions made, and guidance for downstream agents.
 
 Call `get_pipeline_messages` with your `run_id`. This returns all messages ordered by creation time, each with `sender_agent_name`, `content`, and `created_at`.
 
@@ -43,19 +46,18 @@ Your agent's `intent` field tells you what to do. Use it as your primary instruc
 
 - **Review / QA intent** (verifying correctness, testing): review code changes for bugs, logic errors, security issues, and adherence to project conventions. Run tests, verify behavior, report findings.
 
-- **If your intent doesn't clearly map to any of the above**: read the intent again and use your best judgment. Use the available MCP tools (`create_issue_spec`, `create_issue_plan`, `create_plan_tasks`, `update_task_status`, `send_agent_message`) as appropriate.
+- **If your intent doesn't clearly map to any of the above**: read the intent again and use your best judgment. Use the available MCP tools as appropriate.
 
-## 6. Hand off to the next agent
+## 6. Signal completion
 
-When your step is complete, call `send_agent_message` with:
-- `run_id`: your pipeline run ID
-- `sender_agent_name`: your agent name
-- `content`: a clear summary covering **what you did**, **key decisions and why**, **files changed / artifacts created**, **constraints or gotchas discovered**, and **specific guidance for the next agent** (e.g. "the plan tasks are ready, start with task 1", "the auth module needs special handling — see notes above").
+When your step is complete, call `finished_pipeline_step` with:
+- `issue_id`: $ARGUMENTS
+- `summary`: a clear handoff summary covering **what you did**, **key decisions and why**, **files changed / artifacts created**, **constraints or gotchas discovered**, and **specific guidance for the next agent** (e.g. "the plan tasks are ready, start with task 1", "the auth module needs special handling — see notes above").
 
-This message becomes part of the shared pipeline log. The next agent will read it in step 4. Write it for them — be specific and actionable.
+This saves your summary as a pipeline message for the next agent AND signals the orchestrator to advance to the next step.
 
 Also call `memory_create` (via the Manager AI MCP) for any durable, non-obvious facts learned — architectural decisions, constraints, gotchas, user preferences.
 
 ## 7. Complete
 
-When done, simply exit. The pipeline engine will advance to the next agent automatically.
+After calling `finished_pipeline_step`, simply exit. The orchestrator will close your terminal and advance to the next agent automatically.

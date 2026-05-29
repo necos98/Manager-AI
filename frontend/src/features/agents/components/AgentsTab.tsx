@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Bot, Loader2, Sprout } from "lucide-react";
+import { Plus, Pencil, Trash2, Bot, Loader2, Sprout, Play } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -20,6 +21,7 @@ import {
   useDeleteAgent,
   useSeedAgents,
 } from "@/features/agents/hooks";
+import { useCreateManageAgentTerminal } from "@/features/terminals/hooks";
 import type { Agent, AgentCreate, AgentUpdate } from "@/shared/types";
 
 interface AgentsTabProps {
@@ -28,14 +30,14 @@ interface AgentsTabProps {
 
 interface AgentFormData {
   name: string;
-  system_prompt: string;
+  intent: string;
   model: string;
   allowed_tools: string;
 }
 
 const EMPTY_FORM: AgentFormData = {
   name: "",
-  system_prompt: "",
+  intent: "",
   model: "",
   allowed_tools: "",
 };
@@ -43,7 +45,7 @@ const EMPTY_FORM: AgentFormData = {
 function agentToForm(a: Agent): AgentFormData {
   return {
     name: a.name,
-    system_prompt: a.system_prompt,
+    intent: a.intent ?? "",
     model: a.model ?? "",
     allowed_tools: a.allowed_tools?.join(", ") ?? "",
   };
@@ -52,7 +54,7 @@ function agentToForm(a: Agent): AgentFormData {
 function formToCreate(data: AgentFormData): AgentCreate {
   return {
     name: data.name.trim(),
-    system_prompt: data.system_prompt.trim(),
+    intent: data.intent.trim() || undefined,
     model: data.model.trim() || null,
     allowed_tools: data.allowed_tools
       ? data.allowed_tools.split(",").map((t) => t.trim()).filter(Boolean)
@@ -63,7 +65,7 @@ function formToCreate(data: AgentFormData): AgentCreate {
 function formToUpdate(data: AgentFormData): AgentUpdate {
   return {
     name: data.name.trim(),
-    system_prompt: data.system_prompt.trim(),
+    intent: data.intent.trim() || null,
     model: data.model.trim() || null,
     allowed_tools: data.allowed_tools
       ? data.allowed_tools.split(",").map((t) => t.trim()).filter(Boolean)
@@ -73,7 +75,6 @@ function formToUpdate(data: AgentFormData): AgentUpdate {
 
 function validateForm(data: AgentFormData): string | null {
   if (!data.name.trim()) return "Name is required.";
-  if (!data.system_prompt.trim()) return "System Prompt is required.";
   return null;
 }
 
@@ -83,12 +84,15 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
   const updateAgent = useUpdateAgent();
   const deleteAgent = useDeleteAgent();
   const seedAgents = useSeedAgents();
+  const startAgentTerminal = useCreateManageAgentTerminal();
+  const navigate = useNavigate();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [form, setForm] = useState<AgentFormData>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
+  const [startingAgentId, setStartingAgentId] = useState<string | null>(null);
 
   const openCreate = () => {
     setEditingAgent(null);
@@ -127,6 +131,22 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
     deleteAgent.mutate(deleteTarget.id, {
       onSuccess: () => setDeleteTarget(null),
     });
+  };
+
+  const handleStartAgent = (agent: Agent) => {
+    setStartingAgentId(agent.id);
+    startAgentTerminal.mutate(
+      { agent_id: agent.id },
+      {
+        onSuccess: () => {
+          setStartingAgentId(null);
+          navigate({ to: "/terminals" });
+        },
+        onError: () => {
+          setStartingAgentId(null);
+        },
+      }
+    );
   };
 
   const isMutating = createAgent.isPending || updateAgent.isPending;
@@ -221,6 +241,21 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
                         variant="ghost"
                         size="icon"
                         className="size-8"
+                        onClick={() => handleStartAgent(agent)}
+                        disabled={startingAgentId === agent.id}
+                        aria-label={`Start ${agent.name}`}
+                        title={`Start ${agent.name}`}
+                      >
+                        {startingAgentId === agent.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Play className="size-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
                         onClick={() => openEdit(agent)}
                         aria-label={`Edit ${agent.name}`}
                       >
@@ -268,12 +303,12 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">System Prompt</label>
+              <label className="text-sm font-medium">Intent</label>
               <Textarea
-                value={form.system_prompt}
-                onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
+                value={form.intent}
+                onChange={(e) => setForm({ ...form, intent: e.target.value })}
                 placeholder="You are a specification writer..."
-                rows={5}
+                rows={4}
               />
             </div>
             <div>

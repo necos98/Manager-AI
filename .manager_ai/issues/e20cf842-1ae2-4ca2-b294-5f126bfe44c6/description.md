@@ -1,0 +1,1 @@
+All'interno della sezione "Agents" all'interno del dettaglio, il "system_prompt" è obbligatorio, ma non è vero perchè quel campo è stato completamente eliminato. Ti chiedo di eliminarlo anche dal form e  estirparlo ovunque nella codebase

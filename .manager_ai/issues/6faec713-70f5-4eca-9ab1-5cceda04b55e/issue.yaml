@@ -1,0 +1,36 @@
+schema_version: 1
+id: 6faec713-70f5-4eca-9ab1-5cceda04b55e
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Consolidate get_active_agent and run_pipeline_step redundant fields
+status: Finished
+priority: 2
+category: null
+created_at: '2026-05-29T11:07:30.475580'
+updated_at: '2026-05-29T11:47:21.321314'
+finished_at: '2026-05-29T11:47:21.321325'
+tasks:
+- id: a71f2515-c619-45fe-a08c-4795037f061d
+  name: Add step_run_id to get_active_agent return dict in server.py
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T11:45:29'
+  updated_at: '2026-05-29T11:46:02'
+- id: 2106ddfd-a9ad-4333-a1bb-5f629e612301
+  name: Delete get_step_context function from server.py
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T11:45:29'
+  updated_at: '2026-05-29T11:46:14'
+- id: ee99cffc-ad40-41b0-ba60-e2c29000627d
+  name: 'Update default_settings.json: update get_active_agent description, delete get_step_context entry'
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T11:45:29'
+  updated_at: '2026-05-29T11:46:36'
+- id: 14809e47-b378-489f-a368-43c0455cb39e
+  name: 'Update run-pipeline.md: remove step 5, renumber steps, update step 1'
+  status: Completed
+  order: 3
+  created_at: '2026-05-29T11:45:29'
+  updated_at: '2026-05-29T11:47:14'
+relations: []

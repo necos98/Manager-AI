@@ -32,7 +32,7 @@ async def test_all_tables_exist(db_session):
 @pytest.mark.asyncio
 async def test_full_chain_insert(db_session):
     """Insert Agent → Pipeline → PipelineStep → PipelineRun → PipelineStepRun → PipelineMessage."""
-    agent = Agent(id="a1", name="spec-writer", system_prompt="You write specs")
+    agent = Agent(id="a1", name="spec-writer")
     db_session.add(agent)
     await db_session.flush()
 
@@ -74,7 +74,7 @@ async def test_full_chain_insert(db_session):
 @pytest.mark.asyncio
 async def test_pipeline_cascade_deletes_steps(db_session):
     """Deleting a pipeline cascades to its steps."""
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add(agent)
     await db_session.flush()
 
@@ -97,7 +97,7 @@ async def test_pipeline_cascade_deletes_steps(db_session):
 @pytest.mark.asyncio
 async def test_pipeline_run_cascade_deletes_step_runs_and_messages(db_session):
     """Deleting a PipelineRun cascades to step_runs and messages."""
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add(agent)
     await db_session.flush()
 
@@ -128,7 +128,7 @@ async def test_pipeline_run_cascade_deletes_step_runs_and_messages(db_session):
 @pytest.mark.asyncio
 async def test_pipeline_step_unique_order_constraint(db_session):
     """Duplicate order_index in same pipeline raises IntegrityError."""
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     db_session.add(agent)
     await db_session.flush()
 
@@ -149,7 +149,7 @@ async def test_add_step_auto_assigns_next_order_index(db_session):
     """Adding a step auto-assigns max+1 instead of using the passed order_index."""
     from app.services.pipeline_service import PipelineService
 
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     pipeline = Pipeline(id="pl1", name="Test")
     db_session.add_all([agent, pipeline])
     await db_session.flush()
@@ -179,7 +179,7 @@ async def test_reorder_steps_no_constraint_violation(db_session):
     """Reorder that would trigger autoflush UNIQUE conflict succeeds."""
     from app.services.pipeline_service import PipelineService
 
-    agent = Agent(id="a1", name="dev", system_prompt="Dev")
+    agent = Agent(id="a1", name="dev")
     pipeline = Pipeline(id="pl1", name="Test")
     db_session.add_all([agent, pipeline])
     await db_session.flush()

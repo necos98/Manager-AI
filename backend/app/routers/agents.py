@@ -12,7 +12,7 @@ def _response(agent) -> AgentResponse:
     return AgentResponse(
         id=agent.id,
         name=agent.name,
-        system_prompt=agent.system_prompt,
+        intent=agent.intent,
         model=agent.model,
         allowed_tools=agent.allowed_tools,
         created_at=str(agent.created_at) if agent.created_at else None,
@@ -32,9 +32,9 @@ async def create_agent(data: AgentCreate, db: AsyncSession = Depends(get_db)):
     svc = AgentService(db)
     agent = await svc.create(
         name=data.name,
-        system_prompt=data.system_prompt,
         model=data.model,
         allowed_tools=data.allowed_tools,
+        intent=data.intent or "",
     )
     await db.commit()
     return _response(agent)
@@ -54,13 +54,16 @@ async def update_agent(
     db: AsyncSession = Depends(get_db),
 ):
     svc = AgentService(db)
-    agent = await svc.update(
-        agent_id,
-        name=data.name,
-        system_prompt=data.system_prompt,
-        model=data.model,
-        allowed_tools=data.allowed_tools,
-    )
+    kwargs = {}
+    if data.name is not None:
+        kwargs["name"] = data.name
+    if data.intent is not None:
+        kwargs["intent"] = data.intent
+    if data.model is not None:
+        kwargs["model"] = data.model
+    if data.allowed_tools is not None:
+        kwargs["allowed_tools"] = data.allowed_tools
+    agent = await svc.update(agent_id, **kwargs)
     await db.commit()
     return _response(agent)
 

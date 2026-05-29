@@ -1,0 +1,78 @@
+schema_version: 1
+id: 60b28d14-a14c-4c04-86d7-4c09a5f11b13
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix pipeline agent execution flow — agents get stuck, missing tools, unclear direction
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-29T10:40:17.441282'
+updated_at: '2026-05-29T10:55:39.705010'
+finished_at: '2026-05-29T10:55:39.705019'
+tasks:
+- id: ed95aaac-a439-48fa-ac84-dd19f05558d3
+  name: Populate agent intents in DEFAULT_AGENTS
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T10:51:03'
+  updated_at: '2026-05-29T10:51:45'
+- id: dcff4e68-dba9-4bdd-89b8-a3fe75c78d9d
+  name: Add agent_intent to step dicts in get_runs_for_issue and get_run
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T10:51:03'
+  updated_at: '2026-05-29T10:52:07'
+- id: 2034cdd5-dc9b-4267-bc98-98417702c71a
+  name: Add get_active_pipeline_run MCP tool + enhance get_active_agent
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T10:51:03'
+  updated_at: '2026-05-29T10:52:20'
+- id: f847852a-7d41-4509-944b-4883c71781c2
+  name: Add run_pipeline_step MCP tool + description
+  status: Completed
+  order: 3
+  created_at: '2026-05-29T10:51:03'
+  updated_at: '2026-05-29T10:53:05'
+- id: 3d7562f4-781f-4af2-a8ad-f4be102a3af3
+  name: Add finished_pipeline_step MCP tool + description + set_step_completed
+  status: Completed
+  order: 4
+  created_at: '2026-05-29T10:51:03'
+  updated_at: '2026-05-29T10:54:48'
+- id: 7d80d670-546f-40ff-9a06-b4fa4af36e60
+  name: Implement event-based step gating in orchestrator
+  status: Completed
+  order: 5
+  created_at: '2026-05-29T10:51:03'
+  updated_at: '2026-05-29T10:53:40'
+- id: 3e9833c6-0cd4-4b22-b6d1-07f0f0f91167
+  name: Fix _safe_flush_session logging
+  status: Completed
+  order: 6
+  created_at: '2026-05-29T10:51:03'
+  updated_at: '2026-05-29T10:54:14'
+- id: d54eaab4-6a61-4911-aaef-5b0fb0f7a3a6
+  name: Update run-pipeline.md (both copies)
+  status: Completed
+  order: 7
+  created_at: '2026-05-29T10:51:03'
+  updated_at: '2026-05-29T10:54:32'
+- id: 382a421d-77fc-48a4-8cd7-358a844a2288
+  name: Fix test merge conflicts + update tests for new _run_step params
+  status: Completed
+  order: 8
+  created_at: '2026-05-29T10:51:03'
+  updated_at: '2026-05-29T10:54:49'
+- id: c3b66c7b-3ed2-47d7-b081-ffdde7901dd0
+  name: Cleanup dead MCP tool descriptions from default_settings.json
+  status: Completed
+  order: 9
+  created_at: '2026-05-29T10:51:03'
+  updated_at: '2026-05-29T10:55:04'
+- id: c83531b4-7dc1-4efd-80ee-f39fbcbf64f1
+  name: Run tests and verify
+  status: Completed
+  order: 10
+  created_at: '2026-05-29T10:51:03'
+  updated_at: '2026-05-29T10:55:15'
+relations: []

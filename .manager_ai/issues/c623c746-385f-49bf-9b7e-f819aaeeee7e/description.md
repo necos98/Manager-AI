@@ -1,0 +1,1 @@
+All'interno della sezione "Agents" è scomparsa totalmente la funzionalità di avviare una gente specializzato per la modifica/creazione di agenti, non vedo più la possibilità di startare la conversazione. Potresti capire cosa è successo?

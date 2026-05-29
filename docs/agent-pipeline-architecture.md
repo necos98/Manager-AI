@@ -55,7 +55,6 @@ Tutti i modelli in `backend/app/models/`. Migration: `74be7f4de8b5`.
 |---|---|---|
 | id | UUID string | PK |
 | name | str(255) | Globally unique |
-| system_prompt | Text | Prompt di sistema per Claude Code |
 | model | str(50) nullable | es. `claude-sonnet-4-20250514` |
 | allowed_tools | JSON nullable | Lista MCP tools accessibili |
 
@@ -290,7 +289,7 @@ Esposti dal server MCP per essere chiamati dagli agenti Claude Code durante l'es
 | Tool | Parametri | Uso |
 |---|---|---|
 | `list_agents` | _(none)_ | Scoprire agenti disponibili |
-| `create_agent` | name, system_prompt, model?, allowed_tools? | Creare nuovo agente |
+| `create_agent` | name, model?, allowed_tools? | Creare nuovo agente |
 | `list_pipelines` | _(none)_ | Scoprire pipeline disponibili |
 | `create_pipeline` | name, steps[] | Creare nuova pipeline |
 | `run_pipeline` | project_id, pipeline_id, issue_id | Avviare esecuzione |
