@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Plus, Pencil, Trash2, Bot, Loader2, Sprout, MessageSquare } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -98,6 +98,7 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
   const [chatTerminalId, setChatTerminalId] = useState<string | null>(null);
+  const killedTerminalRef = useRef<string | null>(null);
 
   const openCreate = () => {
     setEditingAgent(null);
@@ -149,6 +150,7 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
 
   const handleEndChat = async () => {
     if (chatTerminalId) {
+      killedTerminalRef.current = chatTerminalId;
       try { await killTerminal.mutateAsync(chatTerminalId); } catch { /* already gone */ }
       setChatTerminalId(null);
     }
@@ -164,6 +166,8 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
     const latest = [...manageAgentTerminals].sort((a, b) =>
       (b.created_at ?? "").localeCompare(a.created_at ?? ""),
     )[0];
+    // Don't reattach if we just killed this terminal
+    if (latest?.id && latest.id === killedTerminalRef.current) return;
     if (latest?.id) setChatTerminalId(latest.id);
   }, [manageAgentTerminals, chatTerminalId, isManageTerminalsPending]);
 
@@ -301,7 +305,7 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
 
       {/* Manage Agent Terminal */}
       {chatTerminalId && (
-        <div className="border rounded-lg overflow-hidden min-h-[400px] flex flex-col">
+        <div className="border rounded-lg overflow-hidden h-[400px] flex flex-col flex-shrink-0">
           <div className="flex-1 min-h-0">
             <TerminalPanel
               terminalId={chatTerminalId}
