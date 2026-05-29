@@ -1,0 +1,60 @@
+schema_version: 1
+id: 06bcefbc-3f9b-4535-8e79-5d6e969c0c60
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Aggiungi MCP Pipeline CRUD + aggiorna /manage-agent
+status: Finished
+priority: 3
+category: Feature
+created_at: '2026-05-29T15:09:34.802026'
+updated_at: '2026-05-29T15:28:55.645094'
+finished_at: '2026-05-29T15:28:55.645108'
+tasks:
+- id: 21a397f6-a3d7-441b-88a1-fb3ce63ee038
+  name: Add get_pipeline MCP tool in server.py
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T15:13:41'
+  updated_at: '2026-05-29T15:16:53'
+- id: 539a2f5f-a7c2-4b8c-9a32-e49f5b66acba
+  name: Add update_pipeline MCP tool in server.py
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T15:13:41'
+  updated_at: '2026-05-29T15:16:54'
+- id: 7d095d74-32eb-4c28-92fb-ff7491a88ffb
+  name: Add delete_pipeline MCP tool in server.py
+  status: Completed
+  order: 2
+  created_at: '2026-05-29T15:13:41'
+  updated_at: '2026-05-29T15:16:54'
+- id: 4cd556d6-8b41-484a-a40f-8b0450617c79
+  name: Add add_step MCP tool in server.py
+  status: Completed
+  order: 3
+  created_at: '2026-05-29T15:13:41'
+  updated_at: '2026-05-29T15:16:54'
+- id: 102fb2b6-c31b-43fc-a000-9ba8290c7005
+  name: Add remove_step MCP tool in server.py
+  status: Completed
+  order: 4
+  created_at: '2026-05-29T15:13:41'
+  updated_at: '2026-05-29T15:16:55'
+- id: 7be06e2a-b3a9-4420-8adb-65675166bd00
+  name: Add reorder_steps MCP tool in server.py
+  status: Completed
+  order: 5
+  created_at: '2026-05-29T15:13:41'
+  updated_at: '2026-05-29T15:16:55'
+- id: 4c155961-1a11-45f5-b537-ed35d4576681
+  name: Add 6 description keys in default_settings.json
+  status: Completed
+  order: 6
+  created_at: '2026-05-29T15:13:41'
+  updated_at: '2026-05-29T15:16:55'
+- id: 364187d9-3d0f-403c-b8c6-b56e17cc578d
+  name: Update manage-agent.md with pipeline listing and creation flow
+  status: Completed
+  order: 7
+  created_at: '2026-05-29T15:13:41'
+  updated_at: '2026-05-29T15:16:56'
+relations: []

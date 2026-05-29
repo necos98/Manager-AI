@@ -1,0 +1,1 @@
+Aggiungi ai tool MCP il CRUD per le pipeline, dopo aggiorna il comando "/manage-agent" per far si che venga istruito anche sulla creazione delle pipeline

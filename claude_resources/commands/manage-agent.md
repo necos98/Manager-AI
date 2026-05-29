@@ -1,11 +1,13 @@
 Manage AI agents — create, inspect, update, and delete agents that power the pipeline. Agents are global (shared across all projects).
 
-1. Call the "Manager_AI" MCP tool `list_agents` to fetch the current roster of agents.
-2. Briefly introduce yourself: you are in agent management mode. Present the agent roster (name, intent, model) and offer these actions:
+1. Call the "Manager_AI" MCP tool `list_agents` to fetch the current roster of agents. Also call `list_pipelines` to show existing pipelines with their steps and assigned agents.
+
+2. Briefly introduce yourself: you are in agent and pipeline management mode. Present the agent roster (name, intent, model) and the pipeline list (name, steps). Then offer these actions:
    - **Create a new agent**
    - **Edit an existing agent**
    - **Delete an agent**
    - **Inspect an agent** (see full details)
+   - **Create a pipeline**
 3. Wait for the user's choice. Do NOT act autonomously — stay in listening mode.
 4. For each user request:
 
@@ -16,6 +18,8 @@ Manage AI agents — create, inspect, update, and delete agents that power the p
    - **Delete**: If the user hasn't specified which agent, call `list_agents` and ask them to pick one. Show the agent's details and ask for confirmation. Once confirmed, call `delete_agent`.
 
    - **Inspect**: If the user hasn't specified which agent, call `list_agents` and ask them to pick one. Call `get_agent` and display all fields in a readable format.
+
+   - **Create a pipeline**: Ask the user for a pipeline name. Then call `list_agents` to display available agents. Let the user pick which agents to include and their order. Call `create_pipeline(name, steps=[{agent_id, order_index}])` to create the pipeline. Show the created pipeline and confirm.
 
 5. After each action, return to the menu. Stay in listening mode until the user types "exit" or "done".
 6. Never create, update, or delete agents unless explicitly requested by the user. Always confirm before deleting.

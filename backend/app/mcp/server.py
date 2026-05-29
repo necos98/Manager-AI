@@ -1128,6 +1128,136 @@ async def list_pipelines() -> dict:
         }
 
 
+@mcp.tool(description=_desc["tool.get_pipeline.description"])
+async def get_pipeline(pipeline_id: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineService(session)
+        try:
+            pipeline = await svc.get_pipeline(pipeline_id)
+            return {
+                "id": pipeline.id,
+                "name": pipeline.name,
+                "steps": [
+                    {
+                        "id": s.id,
+                        "pipeline_id": s.pipeline_id,
+                        "agent_id": s.agent_id,
+                        "order_index": s.order_index,
+                    }
+                    for s in (pipeline.steps or [])
+                ],
+                "created_at": str(pipeline.created_at) if pipeline.created_at else None,
+                "updated_at": str(pipeline.updated_at) if pipeline.updated_at else None,
+            }
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.update_pipeline.description"])
+async def update_pipeline(pipeline_id: str, name: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineService(session)
+        try:
+            await svc.update_pipeline(pipeline_id, name)
+            await session.commit()
+            pipeline = await svc.get_pipeline(pipeline_id)
+            return {
+                "id": pipeline.id,
+                "name": pipeline.name,
+                "steps": [
+                    {
+                        "id": s.id,
+                        "pipeline_id": s.pipeline_id,
+                        "agent_id": s.agent_id,
+                        "order_index": s.order_index,
+                    }
+                    for s in (pipeline.steps or [])
+                ],
+                "created_at": str(pipeline.created_at) if pipeline.created_at else None,
+                "updated_at": str(pipeline.updated_at) if pipeline.updated_at else None,
+            }
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.delete_pipeline.description"])
+async def delete_pipeline(pipeline_id: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineService(session)
+        try:
+            await svc.delete_pipeline(pipeline_id)
+            await session.commit()
+            return {"deleted": True}
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.add_step.description"])
+async def add_step(pipeline_id: str, agent_id: str, order_index: int = 0) -> dict:
+    async with async_session() as session:
+        svc = PipelineService(session)
+        try:
+            await svc.add_step(pipeline_id, agent_id, order_index)
+            await session.commit()
+            pipeline = await svc.get_pipeline(pipeline_id)
+            return {
+                "id": pipeline.id,
+                "name": pipeline.name,
+                "steps": [
+                    {
+                        "id": s.id,
+                        "pipeline_id": s.pipeline_id,
+                        "agent_id": s.agent_id,
+                        "order_index": s.order_index,
+                    }
+                    for s in (pipeline.steps or [])
+                ],
+                "created_at": str(pipeline.created_at) if pipeline.created_at else None,
+                "updated_at": str(pipeline.updated_at) if pipeline.updated_at else None,
+            }
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.remove_step.description"])
+async def remove_step(step_id: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineService(session)
+        try:
+            await svc.remove_step(step_id)
+            await session.commit()
+            return {"deleted": True}
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.reorder_steps.description"])
+async def reorder_steps(pipeline_id: str, step_ids: list[str]) -> dict:
+    async with async_session() as session:
+        svc = PipelineService(session)
+        try:
+            await svc.reorder_steps(pipeline_id, step_ids)
+            await session.commit()
+            pipeline = await svc.get_pipeline(pipeline_id)
+            return {
+                "id": pipeline.id,
+                "name": pipeline.name,
+                "steps": [
+                    {
+                        "id": s.id,
+                        "pipeline_id": s.pipeline_id,
+                        "agent_id": s.agent_id,
+                        "order_index": s.order_index,
+                    }
+                    for s in (pipeline.steps or [])
+                ],
+                "created_at": str(pipeline.created_at) if pipeline.created_at else None,
+                "updated_at": str(pipeline.updated_at) if pipeline.updated_at else None,
+            }
+        except AppError as e:
+            return {"error": e.message}
+
+
 # ── Pipeline run tools ────────────────────────────────────────────────────
 
 
