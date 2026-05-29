@@ -123,7 +123,12 @@ export function InlineEditField({
         !disabled && "cursor-pointer",
         className
       )}
-      onClick={() => !disabled && setEditing(true)}
+      onClick={() => {
+        if (disabled) return;
+        const sel = window.getSelection();
+        if (sel && sel.toString().length > 0) return;
+        setEditing(true);
+      }}
       title={disabled ? undefined : "Clicca per modificare"}
     >
       {renderView ? renderView(value) : <span className="text-sm">{value}</span>}

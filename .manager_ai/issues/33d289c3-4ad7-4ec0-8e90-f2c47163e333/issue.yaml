@@ -2,11 +2,23 @@ schema_version: 1
 id: 33d289c3-4ad7-4ec0-8e90-f2c47163e333
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Enable text selection/copy in spec, plan, and content tabs
-status: New
+status: Finished
 priority: 3
 category: null
 created_at: '2026-05-25T10:58:14.348775'
-updated_at: '2026-05-29T14:13:37.451852'
-finished_at: null
-tasks: []
+updated_at: '2026-05-29T14:33:44.682285'
+finished_at: '2026-05-29T14:33:44.682294'
+tasks:
+- id: 2235fb33-f697-4177-bed6-d3d8ca57dc10
+  name: Add text selection guard to InlineEditField onClick handler
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T14:27:53'
+  updated_at: '2026-05-29T14:30:33'
+- id: c82a17cc-e8da-4c7f-8638-d192ae492079
+  name: Add code block copy button to MarkdownViewer ReactMarkdown renderer
+  status: Completed
+  order: 1
+  created_at: '2026-05-29T14:27:53'
+  updated_at: '2026-05-29T14:30:33'
 relations: []
