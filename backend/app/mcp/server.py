@@ -1107,7 +1107,7 @@ async def get_active_agent(issue_id: str) -> dict:
     async with async_session() as session:
         svc = PipelineRunService(session)
         runs = await svc.get_runs_for_issue(issue_id)
-        active = next((r for r in runs if r["status"] == "running"), None)
+        active = next((r for r in runs if r["status"] == "RUNNING"), None)
         if not active:
             return {"active": None}
         steps = active["steps"]

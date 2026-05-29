@@ -1,0 +1,18 @@
+schema_version: 1
+id: 65e7a622-86ce-44b6-bb32-ea89a54bf4cb
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: get_active_agent returns null due to case mismatch in status comparison
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-05-29T10:21:38.000485'
+updated_at: '2026-05-29T10:26:25.081395'
+finished_at: '2026-05-29T10:26:25.081405'
+tasks:
+- id: da3e2252-6b30-47ad-a553-dde747f7fd93
+  name: Fix case mismatch in get_active_agent status comparison — change "running" to "RUNNING" on server.py:1110
+  status: Completed
+  order: 0
+  created_at: '2026-05-29T10:25:40'
+  updated_at: '2026-05-29T10:26:17'
+relations: []
