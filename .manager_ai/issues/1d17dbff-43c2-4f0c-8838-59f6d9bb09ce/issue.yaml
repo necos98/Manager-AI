@@ -1,0 +1,24 @@
+schema_version: 1
+id: 1d17dbff-43c2-4f0c-8838-59f6d9bb09ce
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix ask_user_question foreign key constraint error
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-06-03T12:25:47.416869'
+updated_at: '2026-06-03T12:41:19.689360'
+finished_at: '2026-06-03T12:41:19.689370'
+tasks:
+- id: 03f7d47f-1ef1-42bf-9b1b-4b45032a0215
+  name: Create Alembic migration to drop FK constraint on questions.issue_id
+  status: Completed
+  order: 0
+  created_at: '2026-06-03T12:31:40'
+  updated_at: '2026-06-03T12:41:06'
+- id: c06cb987-86fc-46ab-a234-8d4fe6bb6d9f
+  name: Apply migration and verify — alembic upgrade head + pytest
+  status: Completed
+  order: 1
+  created_at: '2026-06-03T12:31:40'
+  updated_at: '2026-06-03T12:38:09'
+relations: []

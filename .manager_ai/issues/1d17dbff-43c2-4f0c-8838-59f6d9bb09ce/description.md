@@ -1,0 +1,3 @@
+Gli agenti non riescono ad usare il tool delle domande, l'agente mi dice "Foreign key error on question. Let me set issue name first, then retry." oppure mi dicono "ask_user_question fails due to FK constraint — Question model references
+  issues.id in DB, but issues are file-backed via issue_store. The DB has no
+  matching record. This is a real bug in the questions system. I'll document it.". Potesti capire cosa sta succedendo?
