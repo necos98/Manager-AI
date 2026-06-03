@@ -232,3 +232,19 @@ class TestMemoryStoreIssues:
 
     def test_prewarm_is_noop(self, proj):
         issue_store.prewarm_project_cache(proj)
+
+    def test_list_issues_full_filters_none_cache_entries(self, proj):
+        """list_issues_full filters None records from cache (fallback path stores None)."""
+        from app.storage.memory_store_core import memory_store
+
+        _seed_issue(proj, "real1", description="real one")
+        # Load once to populate cache with a real record
+        real1 = issue_store.load_issue(proj, "real1")
+        assert real1 is not None
+        # Insert None sentinels (simulates list_issues() fallback path)
+        memory_store.upsert(proj, "issues", "real2", None, {"id": "real2"})
+        memory_store.upsert(proj, "issues", "ghost", None, {"id": "ghost"})
+
+        results = issue_store.list_issues_full(proj)
+        assert len(results) == 1
+        assert results[0].id == "real1"

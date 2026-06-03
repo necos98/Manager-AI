@@ -169,7 +169,7 @@ def list_issues(project_path: str) -> list[IssueRecord]:
 def list_issues_full(project_path: str) -> list[IssueRecord]:
     all_records = _core.list_all(project_path, "issues")
     if all_records:
-        return list(all_records)
+        return [r for r in all_records if r is not None]
     # Fallback: load from disk via light index + individual loads
     light = list_issues(project_path)
     out: list[IssueRecord] = []
