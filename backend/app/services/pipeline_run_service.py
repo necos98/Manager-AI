@@ -18,7 +18,7 @@ from app.models.pipeline_run import (
 from app.services.event_service import event_service
 from app.services.pipeline_task_manager import pipeline_task_manager
 from app.services.terminal_service import terminal_service
-from app.services.terminal_session import _save_recording
+from app.services.terminal_session import _save_recording, _sessions, _stop_reader
 
 logger = logging.getLogger(__name__)
 
@@ -233,6 +233,8 @@ class PipelineRunService:
                     break
                 finally:
                     _save_recording(term_id, terminal_service.get_buffered_output(term_id))
+                    _stop_reader(term_id)
+                    _sessions.pop(term_id, None)
                     terminal_service.kill(term_id)
 
             await session.refresh(run)

@@ -1,0 +1,1 @@
+Quando viene eseguita una pipeline i terminali che vengono aperti per ogni agente poi non vengono killati e rimangono in memoria ad occupare RAM e CPU. Assicurarsi che quando viene chiuso un terminale quest'ultimo venga completamente killato

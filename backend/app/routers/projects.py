@@ -17,6 +17,7 @@ from app.schemas.terminal import TerminalResponse
 from app.services.project_service import ProjectService
 from app.storage.memory_store_core import memory_store as _global_store
 from app.services.terminal_service import terminal_service
+from app.services.terminal_session import _sessions, _stop_reader
 from app.services.wsl_support import get_host_ip_for_wsl, is_wsl_shell, win_to_wsl_path
 
 logger = logging.getLogger(__name__)
@@ -353,6 +354,8 @@ async def delete_project(project_id: str, db: AsyncSession = Depends(get_db)):
     # Kill active terminals for this project
     for term in terminal_service.list_active(project_id=project_id):
         try:
+            _stop_reader(term["id"])
+            _sessions.pop(term["id"], None)
             terminal_service.kill(term["id"])
         except KeyError:
             pass
