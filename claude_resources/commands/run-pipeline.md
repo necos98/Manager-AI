@@ -53,8 +53,21 @@ Your agent's `intent` field tells you what to do. Use it as your primary instruc
 When your step is complete, call `finished_pipeline_step` with:
 - `issue_id`: $ARGUMENTS
 - `summary`: a clear handoff summary covering **what you did**, **key decisions and why**, **files changed / artifacts created**, **constraints or gotchas discovered**, and **specific guidance for the next agent** (e.g. "the plan tasks are ready, start with task 1", "the auth module needs special handling — see notes above").
+- `rejected` (optional, default `false`): set to `true` if the work from a previous step is NOT acceptable and needs rework.
+- `rejection_reason` (required if `rejected: true`): explain exactly what is wrong and what must be fixed — be specific (files, logic, missing pieces).
+- `target_step_index` (optional, used with `rejected: true`): index of the step to send the work back to. Defaults to the immediate previous step if omitted.
 
-This saves your summary as a pipeline message for the next agent AND signals the orchestrator to advance to the next step.
+### When to reject
+
+Use `rejected: true` when a previous agent's output has **blocker-level** issues: incorrect logic, security flaws, spec doesn't match requirements, plan misses key pieces, code doesn't compile or fails tests, quality is unacceptable. For minor issues, include them in the summary instead and let the next agent handle them.
+
+**Review / QA agents** should reject liberally — quality gate is your job. Provide clear rejection_reason so the target agent knows exactly what to fix.
+
+### How routing works
+
+- `rejected: false` (default): pipeline advances to the next step normally.
+- `rejected: true` without `target_step_index`: work goes back to the immediate previous step. That step's agent gets re-invoked to fix the issues.
+- `rejected: true` with `target_step_index`: work goes back to the specified step (e.g. send a bad implementation back to the Developer step instead of the TaskWriter). The pipeline resets — all steps after the target are marked as pending and will re-run after the fix.
 
 Also call `memory_create` (via the Manager AI MCP) for any durable, non-obvious facts learned — architectural decisions, constraints, gotchas, user preferences.
 
