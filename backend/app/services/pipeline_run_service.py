@@ -113,6 +113,124 @@ class PipelineRunService:
             "created_at": run.created_at.isoformat() if run.created_at else None,
         }
 
+    async def reject_step(
+        self, run_id: str, reason: str, target_step_index: int, project_id: str
+    ) -> dict:
+        """Reject current pipeline step and regress to target step.
+
+        Sets current step_run to REJECTED, creates new RUNNING step_run for
+        the target step, and signals _execute() to pick up the change.
+        """
+        run = await self._get_run_with_session(run_id, self.session)
+
+        if run.status != PipelineRunStatus.RUNNING:
+            raise ValidationError("Can only reject steps in a running pipeline")
+
+        if target_step_index < 0:
+            raise ValidationError("target_step_index must be >= 0")
+        if target_step_index >= run.current_step_index:
+            raise ValidationError(
+                f"target_step_index ({target_step_index}) must be less than "
+                f"current_step_index ({run.current_step_index})"
+            )
+
+        # Find the current RUNNING step run
+        current_sr = None
+        for sr in run.step_runs:
+            if sr.status == PipelineStepRunStatus.RUNNING:
+                current_sr = sr
+                break
+
+        if current_sr is None:
+            raise ValidationError("No RUNNING step run found")
+
+        agent_name = "unknown"
+        if current_sr.pipeline_step and current_sr.pipeline_step.agent:
+            agent_name = current_sr.pipeline_step.agent.name
+
+        # Mark current step as REJECTED
+        current_sr.status = PipelineStepRunStatus.REJECTED
+        current_sr.finished_at = datetime.now(timezone.utc)
+
+        # Find pipeline step at target index and create new step run
+        pipeline = await self.session.execute(
+            select(Pipeline)
+            .where(Pipeline.id == run.pipeline_id)
+            .options(
+                selectinload(Pipeline.steps).selectinload(PipelineStep.agent)
+            )
+        )
+        pipeline = pipeline.unique().scalar_one_or_none()
+        if pipeline is None:
+            raise NotFoundError(f"Pipeline not found: {run.pipeline_id}")
+
+        steps = sorted(pipeline.steps, key=lambda s: s.order_index)
+        if target_step_index >= len(steps):
+            raise ValidationError(
+                f"target_step_index ({target_step_index}) out of bounds "
+                f"(pipeline has {len(steps)} steps)"
+            )
+
+        target_step = steps[target_step_index]
+        new_step_run = PipelineStepRun(
+            pipeline_run_id=run.id,
+            pipeline_step_id=target_step.id,
+            status=PipelineStepRunStatus.RUNNING,
+        )
+        self.session.add(new_step_run)
+        new_step_run.started_at = datetime.now(timezone.utc)
+        await self.session.flush()
+
+        # Update run state
+        run.current_step_index = target_step_index
+        run.rejection_count = (run.rejection_count or 0) + 1
+
+        max_reached = False
+        if run.rejection_count >= 3:
+            run.status = PipelineRunStatus.FAILED
+            run.finished_at = datetime.now(timezone.utc)
+            max_reached = True
+
+        # Save rejection reason as pipeline message
+        msg = PipelineMessage(
+            pipeline_run_id=run.id,
+            sender_agent_name=agent_name,
+            content=f"**Step rejected — regressing to step {target_step_index}**\n\n"
+                    f"Reason: {reason}",
+        )
+        self.session.add(msg)
+
+        # Emit WebSocket event
+        await event_service.emit({
+            "type": "pipeline_step_rejected",
+            "project_id": project_id,
+            "issue_id": run.issue_id,
+            "run_id": run_id,
+            "step_run_id": current_sr.id,
+            "agent_name": agent_name,
+            "reason": reason,
+            "target_step_index": target_step_index,
+            "rejection_count": run.rejection_count,
+        })
+
+        # Signal _execute() to wake up and pick up changes
+        current_idx = run.current_step_index
+        # Need to signal at the OLD step index since that's what _execute is waiting on
+        old_idx = None
+        for i, step in enumerate(steps):
+            if step.id == current_sr.pipeline_step_id:
+                old_idx = i
+                break
+
+        if old_idx is not None:
+            set_step_completed(run_id, old_idx)
+
+        return {
+            "success": True,
+            "rejection_count": run.rejection_count,
+            "max_reached": max_reached,
+        }
+
     async def _execute(
         self, run_id: str, project_id: str, project_path: str
     ) -> None:
@@ -135,12 +253,16 @@ class PipelineRunService:
 
             steps = sorted(pipeline.steps, key=lambda s: s.order_index)
 
-            for i, step in enumerate(steps):
+            while run.current_step_index < len(steps) and run.status != PipelineRunStatus.FAILED:
+                i = run.current_step_index
+                step = steps[i]
+
+                # Fetch the LATEST step_run — reject_step creates new ones, so order by id DESC
                 step_run_result = await session.execute(
                     select(PipelineStepRun).where(
                         PipelineStepRun.pipeline_run_id == run_id,
                         PipelineStepRun.pipeline_step_id == step.id,
-                    )
+                    ).order_by(PipelineStepRun.started_at.desc().nulls_last())
                 )
                 step_run = step_run_result.scalar_one_or_none()
                 if step_run is None:
@@ -189,6 +311,15 @@ class PipelineRunService:
                         run_id=run_id,
                         step_index=i,
                     )
+
+                    # Refresh to pick up rejection changes from reject_step()
+                    await session.refresh(run)
+                    await session.refresh(step_run)
+
+                    if step_run.status == PipelineStepRunStatus.REJECTED:
+                        step_run.finished_at = datetime.now(timezone.utc)
+                        await self._safe_commit_session(session)
+                        continue
 
                     if success:
                         step_run.status = PipelineStepRunStatus.COMPLETED

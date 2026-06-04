@@ -1,0 +1,48 @@
+schema_version: 1
+id: b288fd8e-b169-4cf2-abe7-0b552b744e16
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Pipeline Step Rejection with Feedback Loop
+status: Accepted
+priority: 3
+category: null
+created_at: '2026-06-04T09:58:14.782290'
+updated_at: '2026-06-04T10:03:42.329122'
+finished_at: null
+tasks:
+- id: 3ffd13c4-727b-4847-8bf1-8776b0ae34b4
+  name: Add REJECTED status to PipelineStepRunStatus and rejection_count to PipelineRun model
+  status: Completed
+  order: 0
+  created_at: '2026-06-04T10:05:47'
+  updated_at: '2026-06-04T10:06:54'
+- id: 4987047b-7043-486e-91a4-e7d958576f13
+  name: Create Alembic migration for rejection_count column
+  status: Completed
+  order: 1
+  created_at: '2026-06-04T10:05:47'
+  updated_at: '2026-06-04T10:07:15'
+- id: 49a28de2-69e6-4931-83d2-0706495b2c06
+  name: Implement reject_step() method in PipelineRunService with WebSocket event emission
+  status: Completed
+  order: 2
+  created_at: '2026-06-04T10:05:47'
+  updated_at: '2026-06-04T10:07:35'
+- id: 35ea9e9a-d6e6-4356-8a39-641e0bdd741a
+  name: Refactor _execute() from for-loop to while-loop with regression support
+  status: Completed
+  order: 3
+  created_at: '2026-06-04T10:05:47'
+  updated_at: '2026-06-04T10:08:18'
+- id: 77c35de9-e4e3-4df3-a8c3-ab6860c3aadd
+  name: Extend finished_pipeline_step MCP tool with rejection params
+  status: Completed
+  order: 4
+  created_at: '2026-06-04T10:05:47'
+  updated_at: '2026-06-04T10:08:50'
+- id: 12357f84-21da-4a3f-b194-4e4615ffb32c
+  name: Write tests for rejection flow in test_pipeline_rejection.py
+  status: Completed
+  order: 5
+  created_at: '2026-06-04T10:05:47'
+  updated_at: '2026-06-04T10:13:33'
+relations: []

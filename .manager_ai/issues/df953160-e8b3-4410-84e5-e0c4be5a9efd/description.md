@@ -1,0 +1,1 @@
+Poter esportare ed importare in formato JSON sia le pipeline (comprese di agenti) che gli agenti stessi. Cosi da poter condividere gli agenti e pipeline tra colleghi. Inoltre vorrei che quando il sistema si accorge che un agente o pipeline esiste già chiede esplicitamente all'utente se vuole sovrascrivere la pipeline o l'agente

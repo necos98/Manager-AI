@@ -1,0 +1,3 @@
+Avere la possibilità di creare una issue dal dettaglio di un'altra issue.
+
+Mi spiego meglio: se ho una issue in finished, ma vorrei continuare a creare feature basandomi su quello che ho già fatto, vorrei aprire una nuova issue utilizzando come riferimento una issue già esistente. Quindi banalmente avere un pulsante all'interno di una issue chiamato "Create issue from here" che mi permette di aprire una maschera dove inserire appunto la mia descrizione ma sotto le quinte avere un collegamento diretto a quella issue.

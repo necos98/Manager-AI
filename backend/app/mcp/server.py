@@ -1372,7 +1372,13 @@ async def get_pipeline_messages(run_id: str) -> dict:
 
 
 @mcp.tool(description=_desc["tool.finished_pipeline_step.description"])
-async def finished_pipeline_step(issue_id: str, summary: str) -> dict:
+async def finished_pipeline_step(
+    issue_id: str,
+    summary: str,
+    rejected: bool = False,
+    rejection_reason: str | None = None,
+    target_step_index: int | None = None,
+) -> dict:
     async with async_session() as session:
         svc = PipelineRunService(session)
         runs = await svc.get_runs_for_issue(issue_id)
@@ -1389,6 +1395,25 @@ async def finished_pipeline_step(issue_id: str, summary: str) -> dict:
         step = steps[idx]
         agent_name = step["agent_name"]
 
+        if rejected:
+            if not rejection_reason:
+                return {"error": "rejection_reason is required when rejected=True"}
+            if target_step_index is None:
+                return {"error": "target_step_index is required when rejected=True"}
+
+            issue_service = IssueService(session)
+            issue = await issue_service.get_by_id(issue_id)
+            project_id = issue.project_id if issue else None
+            if not project_id:
+                return {"error": "Could not determine project_id for issue"}
+
+            reject_result = await svc.reject_step(
+                run_id=run_id,
+                reason=rejection_reason,
+                target_step_index=target_step_index,
+                project_id=project_id,
+            )
+
         await svc.add_message(
             run_id=run_id,
             sender_agent_name=agent_name,
@@ -1396,11 +1421,17 @@ async def finished_pipeline_step(issue_id: str, summary: str) -> dict:
         )
 
         ok = set_step_completed(run_id, idx)
-        pipeline_finished = idx >= len(steps) - 1
+        pipeline_finished = False if rejected else idx >= len(steps) - 1
 
         await session.commit()
-        return {
+
+        result = {
             "success": ok,
             "step_completed": ok,
             "pipeline_finished": pipeline_finished,
         }
+        if rejected:
+            result["rejected"] = True
+            result["rejection_count"] = reject_result.get("rejection_count", 0)
+            result["max_reached"] = reject_result.get("max_reached", False)
+        return result

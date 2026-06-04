@@ -31,6 +31,7 @@ export interface IssueCreate {
   priority?: number;
   category?: string | null;
   tags?: string[];
+  source_issue_id?: string;
 }
 
 export interface IssueUpdate {

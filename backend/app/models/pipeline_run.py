@@ -20,6 +20,7 @@ class PipelineStepRunStatus(str, enum.Enum):
     RUNNING = "RUNNING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
+    REJECTED = "REJECTED"
 
 
 class PipelineRun(Base):
@@ -30,6 +31,7 @@ class PipelineRun(Base):
     issue_id: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[PipelineRunStatus] = mapped_column(Enum(PipelineRunStatus), nullable=False, default=PipelineRunStatus.RUNNING)
     current_step_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    rejection_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

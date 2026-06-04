@@ -55,9 +55,10 @@ type Props = {
   projectId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  sourceIssueId?: string;
 };
 
-export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
+export function NewIssueDialog({ projectId, open, onOpenChange, sourceIssueId }: Props) {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState(3);
   const [tags, setTags] = useState<string[]>([]);
@@ -124,7 +125,7 @@ export function NewIssueDialog({ projectId, open, onOpenChange }: Props) {
     e.preventDefault();
     if (disabled) return;
     createIssue.mutate(
-      { description, priority, category, tags },
+      { description, priority, category, tags, ...(sourceIssueId ? { source_issue_id: sourceIssueId } : {}) },
       {
         onSuccess: () => {
           reset();

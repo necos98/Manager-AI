@@ -19,6 +19,7 @@ class IssueCreate(BaseModel):
     priority: int = Field(default=3, ge=1, le=5)
     category: str | None = Field(None, max_length=50)
     tags: list[str] | None = None
+    source_issue_id: str | None = None
 
 
 class IssueUpdate(BaseModel):

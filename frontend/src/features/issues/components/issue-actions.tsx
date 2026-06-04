@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { CheckCircle, XCircle, Loader2, Play, Ban } from "lucide-react";
+import { CheckCircle, FilePlus, XCircle, Loader2, Play, Ban } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -24,6 +24,7 @@ import type { Issue } from "@/shared/types";
 interface IssueActionsProps {
   issue: Issue;
   projectId: string;
+  onCreateFromHere?: () => void;
 }
 
 type ActionType = "accept" | "cancel" | "complete" | "force-finish";
@@ -51,7 +52,7 @@ const CONFIRM_COPY: Record<ActionType, { title: string; description: string; con
   },
 };
 
-export function IssueActions({ issue, projectId }: IssueActionsProps) {
+export function IssueActions({ issue, projectId, onCreateFromHere }: IssueActionsProps) {
   const [confirmAction, setConfirmAction] = useState<ActionType | null>(null);
   const [recap, setRecap] = useState("");
   const navigate = useNavigate();
@@ -99,7 +100,20 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
   };
 
   const isTerminalState = issue.status === "Finished" || issue.status === "Canceled";
-  if (isTerminalState) return null;
+  if (isTerminalState) {
+    return (
+      <>
+        {onCreateFromHere && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={onCreateFromHere} aria-label="Create issue from here">
+              <FilePlus className="size-4 mr-1" />
+              Create issue from here
+            </Button>
+          </div>
+        )}
+      </>
+    );
+  }
 
   const copy = confirmAction ? CONFIRM_COPY[confirmAction] : null;
 
@@ -155,6 +169,12 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
           <XCircle className="size-4 mr-1" />
           Cancel Issue
         </Button>
+        {onCreateFromHere && (
+          <Button size="sm" variant="outline" onClick={onCreateFromHere} aria-label="Create issue from here">
+            <FilePlus className="size-4 mr-1" />
+            Create issue from here
+          </Button>
+        )}
       </div>
 
       {confirmAction && copy && (

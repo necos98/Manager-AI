@@ -22,6 +22,11 @@ router = APIRouter(prefix="/api/projects/{project_id}/issues", tags=["issues"])
 async def create_issue(project_id: str, data: IssueCreate, db: AsyncSession = Depends(get_db)):
     service = IssueService(db)
     record = await service.create(project_id=project_id, description=data.description, priority=data.priority, category=data.category, tags=data.tags)
+    if data.source_issue_id:
+        from app.models.issue_relation import RelationType
+        from app.services.issue_relation_service import IssueRelationService
+        rel_service = IssueRelationService(db)
+        await rel_service.add_relation(record.id, data.source_issue_id, RelationType.RELATED)
     await db.commit()
     return IssueResponse.from_record(record)
 

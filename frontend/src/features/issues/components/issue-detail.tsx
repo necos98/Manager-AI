@@ -38,6 +38,7 @@ import { usePipelineRuns } from "@/features/pipeline-runs/hooks";
 import { AgentChat } from "@/features/pipeline-runs/components/AgentChat";
 import type { Issue } from "@/shared/types";
 import { IssueRelationsTab } from "./issue-relations-tab";
+import { NewIssueDialog } from "./new-issue-dialog";
 
 interface IssueDetailProps {
   issue: Issue;
@@ -61,6 +62,7 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
   const { data: pipelineRuns } = usePipelineRuns(projectId, issue.id);
   const [showTagInput, setShowTagInput] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("");
+  const [newIssueOpen, setNewIssueOpen] = useState(false);
 
   const tabs = useMemo<TabDef[]>(() => [
     { value: "description", label: "Description", available: true },
@@ -211,7 +213,7 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
       )}
 
       {/* Action buttons */}
-      <IssueActions issue={issue} projectId={projectId} />
+      <IssueActions issue={issue} projectId={projectId} onCreateFromHere={() => setNewIssueOpen(true)} />
 
       {/* Tabbed content */}
       <Tabs value={currentTab} onValueChange={setActiveTab} className="w-full">
@@ -300,6 +302,13 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
           </TabsContent>
         )}
       </Tabs>
+
+      <NewIssueDialog
+        projectId={projectId}
+        open={newIssueOpen}
+        onOpenChange={setNewIssueOpen}
+        sourceIssueId={issue.id}
+      />
 
       {/* Delete confirmation */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
