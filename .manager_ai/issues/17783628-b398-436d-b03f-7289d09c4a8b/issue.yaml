@@ -1,0 +1,36 @@
+schema_version: 1
+id: 17783628-b398-436d-b03f-7289d09c4a8b
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 500 error when saving agent due to SQLAlchemy expired attribute access after commit
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-06-04T08:32:14.425133'
+updated_at: '2026-06-04T08:43:45.990946'
+finished_at: '2026-06-04T08:43:45.990955'
+tasks:
+- id: c932dc99-0399-4d9d-acd0-756b8bcf8b50
+  name: 'Fix update_agent: move _response() before db.commit()'
+  status: Completed
+  order: 0
+  created_at: '2026-06-04T08:33:29'
+  updated_at: '2026-06-04T08:34:15'
+- id: 727c5014-2f09-4f71-85b0-b5d4cdbe93cf
+  name: 'Fix create_agent: move _response() before db.commit()'
+  status: Completed
+  order: 1
+  created_at: '2026-06-04T08:33:29'
+  updated_at: '2026-06-04T08:34:15'
+- id: cc2d2262-cf29-4da6-9c7a-f3384263c495
+  name: 'Fix seed_agents: move _response() before db.commit()'
+  status: Completed
+  order: 2
+  created_at: '2026-06-04T08:33:29'
+  updated_at: '2026-06-04T08:34:16'
+- id: a38f2499-5892-4e75-808b-254fe98e0562
+  name: 'Verify: POST and PUT /api/agents return 200, not 500'
+  status: Completed
+  order: 3
+  created_at: '2026-06-04T08:33:29'
+  updated_at: '2026-06-04T08:36:59'
+relations: []

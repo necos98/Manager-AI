@@ -2,11 +2,11 @@ schema_version: 1
 id: d52aee71-3ccc-422e-80c1-7514af9f0878
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: list_issues_full returns None values causing 500 in relation endpoints
-status: Reasoning
+status: Finished
 priority: 3
-category: Bug
+category: null
 created_at: '2026-06-03T12:56:37.665733'
-updated_at: '2026-06-03T12:57:54.039166'
-finished_at: null
+updated_at: '2026-06-04T08:19:10.092596'
+finished_at: '2026-06-04T08:19:10.092607'
 tasks: []
 relations: []

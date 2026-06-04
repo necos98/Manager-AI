@@ -36,8 +36,9 @@ async def create_agent(data: AgentCreate, db: AsyncSession = Depends(get_db)):
         allowed_tools=data.allowed_tools,
         intent=data.intent or "",
     )
+    resp = _response(agent)
     await db.commit()
-    return _response(agent)
+    return resp
 
 
 @router.get("/{agent_id}", response_model=AgentResponse)
@@ -64,8 +65,9 @@ async def update_agent(
     if data.allowed_tools is not None:
         kwargs["allowed_tools"] = data.allowed_tools
     agent = await svc.update(agent_id, **kwargs)
+    resp = _response(agent)
     await db.commit()
-    return _response(agent)
+    return resp
 
 
 @router.delete("/{agent_id}", status_code=204)
@@ -79,5 +81,6 @@ async def delete_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
 async def seed_agents(db: AsyncSession = Depends(get_db)):
     svc = AgentService(db)
     agents = await svc.seed_defaults()
+    resp = [_response(a) for a in agents]
     await db.commit()
-    return [_response(a) for a in agents]
+    return resp

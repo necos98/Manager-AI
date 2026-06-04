@@ -2,12 +2,12 @@ schema_version: 1
 id: cd312bc7-54f5-45c8-bd6e-77b893001b4f
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Fix N+1 query in issue relations loading
-status: Accepted
+status: Finished
 priority: 3
-category: Bug
+category: null
 created_at: '2026-06-04T07:42:07.127606'
-updated_at: '2026-06-04T07:47:41.125789'
-finished_at: null
+updated_at: '2026-06-04T08:19:30.228845'
+finished_at: '2026-06-04T08:19:30.228854'
 tasks:
 - id: 3e5253ec-244a-4314-8d31-6c2b56e9e192
   name: Add BlockedIdsRequest and BlockedIdsResponse schemas to schemas/issue_relation.py
