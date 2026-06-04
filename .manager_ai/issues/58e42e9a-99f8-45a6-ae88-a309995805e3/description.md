@@ -1,0 +1,1 @@
+Quando si avvia una pipeline da una issue, non si riesce a capire che Pipeline è stata startata, intendo il nome. Farlo vedere da qualche parte

@@ -1,0 +1,1 @@
+La ricerca delle ISSUES non cerca sulle issue con stato Finished, far si che cerchi sempre ovunque

@@ -96,6 +96,11 @@ class PipelineRunService:
                 }
             )
 
+        # Commit so _execute()'s new session can see the run.
+        # Without this, _execute() races with the router's db.commit()
+        # and its session_factory()-created session won't find the run.
+        await self.session.commit()
+
         task = asyncio.create_task(
             self._execute(run.id, project_id, project_path)
         )
@@ -104,6 +109,7 @@ class PipelineRunService:
         return {
             "id": run.id,
             "pipeline_id": run.pipeline_id,
+            "pipeline_name": pipeline.name,
             "issue_id": run.issue_id,
             "status": run.status.value,
             "current_step_index": run.current_step_index,
@@ -323,6 +329,7 @@ class PipelineRunService:
 
                     if success:
                         step_run.status = PipelineStepRunStatus.COMPLETED
+                        run.current_step_index += 1
                         await event_service.emit({
                             "type": "agent_step_completed",
                             "project_id": project_id,
@@ -487,9 +494,10 @@ class PipelineRunService:
             select(PipelineRun)
             .where(PipelineRun.id == run_id)
             .options(
+                selectinload(PipelineRun.pipeline),
                 selectinload(PipelineRun.step_runs)
                 .selectinload(PipelineStepRun.pipeline_step)
-                .selectinload(PipelineStep.agent)
+                .selectinload(PipelineStep.agent),
             )
         )
         run = result.unique().scalar_one_or_none()
@@ -525,6 +533,7 @@ class PipelineRunService:
         return {
             "id": run.id,
             "pipeline_id": run.pipeline_id,
+            "pipeline_name": run.pipeline.name if run.pipeline else "",
             "issue_id": run.issue_id,
             "status": run.status.value,
             "current_step_index": run.current_step_index,
@@ -539,9 +548,10 @@ class PipelineRunService:
             select(PipelineRun)
             .where(PipelineRun.issue_id == issue_id)
             .options(
+                selectinload(PipelineRun.pipeline),
                 selectinload(PipelineRun.step_runs)
                 .selectinload(PipelineStepRun.pipeline_step)
-                .selectinload(PipelineStep.agent)
+                .selectinload(PipelineStep.agent),
             )
             .order_by(PipelineRun.created_at.desc())
         )
@@ -550,6 +560,7 @@ class PipelineRunService:
             {
                 "id": r.id,
                 "pipeline_id": r.pipeline_id,
+                "pipeline_name": r.pipeline.name if r.pipeline else "",
                 "issue_id": r.issue_id,
                 "status": r.status.value,
                 "current_step_index": r.current_step_index,

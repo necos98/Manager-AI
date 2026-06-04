@@ -1,0 +1,1 @@
+Quando avvio una pipeline sembra andare in loop continuo sul primo agente, non capisco perchè. Prima funzionava bene, ma dopo l'implementazione con lo step "reject_status" succede appunto questo bug. Ti chiedo di analizzare profondamente

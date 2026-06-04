@@ -21,6 +21,7 @@ class PipelineStepRunResponse(BaseModel):
 class PipelineRunResponse(BaseModel):
     id: str
     pipeline_id: str
+    pipeline_name: str = ""
     issue_id: str
     status: str
     current_step_index: int
