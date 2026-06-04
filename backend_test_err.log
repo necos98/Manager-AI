@@ -1,0 +1,163 @@
+INFO:     Started server process [6616]
+INFO:     Waiting for application startup.
+[06/04/26 10:04:43] INFO     Hook registry: 1 event(s) registered   main.py:330
+                    INFO       issue_completed ->                   main.py:333
+                             enrich_project_context                            
+[06/04/26 10:04:45] INFO     Loaded project C:\laragon\www\acuson:  main.py:276
+                             0 memories, 27 issues, 0 files                    
+[06/04/26 10:04:46] INFO     Loaded project                         main.py:276
+                             C:\Users\j.magarelli\Desktop\apps\freu            
+                             dapp: 0 memories, 3 issues, 0 files               
+                    INFO     Loaded project                         main.py:276
+                             C:\laragon\www\sermig-broadcaster: 8              
+                             memories, 8 issues, 2 files                       
+                    WARNING  Skipping corrupted memory file:        main.py:178
+                             \\wsl.localhost\Ubuntu-18.04\home\jaco            
+                             po\freud-container\freud-manager\.mana            
+                             ger_ai\memories\fc364ee5-159b-40be-90d            
+                             4-4f20a3a8eb2a.md                                 
+                    WARNING  Skipping corrupted memory file:        main.py:178
+                             \\wsl.localhost\Ubuntu-18.04\home\jaco            
+                             po\freud-container\freud-manager\.mana            
+                             ger_ai\memories\7add8e80-fe30-4c42-a0f            
+                             9-c05e6f4be8ad.md                                 
+[06/04/26 10:04:47] INFO     Loaded project                         main.py:276
+                             \\wsl.localhost\Ubuntu-18.04\home\jaco            
+                             po\freud-container\freud-manager: 31              
+                             memories, 18 issues, 1 files                      
+[06/04/26 10:04:48] INFO     Loaded project                         main.py:276
+                             C:\Users\j.magarelli\Desktop\manager-a            
+                             i\manager-ai-mod\Manager-AI: 145                  
+                             memories, 105 issues, 1 files                     
+                    INFO     Loaded project                         main.py:276
+                             C:\laragon\www\sermig-rete-speranza:              
+                             28 memories, 17 issues, 4 files                   
+                    INFO     Loaded project                         main.py:276
+                             C:\laragon\www\occasionali-new-php-ver            
+                             : 6 memories, 5 issues, 0 files                   
+                    INFO     Loaded project                         main.py:276
+                             \\wsl.localhost\Ubuntu-18.04\home\jaco            
+                             po\freud-container\DDB: 2 memories, 1             
+                             issues, 0 files                                   
+                    INFO     Loaded project                         main.py:276
+                             C:\laragon\www\sermig-dupe: 4                     
+                             memories, 1 issues, 0 files                       
+                    INFO     Loaded project                         main.py:276
+                             C:\laragon\www\arielcage: 36 memories,            
+                             17 issues, 0 files                                
+                    INFO     Loaded catalog plugin: mysql         catalog.py:84
+                    INFO     Registered plugin gateway      plugin_proxy.py:178
+                             (lazy): mysql__call                               
+                    WARNING  Tool already exists:            tool_manager.py:59
+                             mysql__call                                       
+                    INFO     Registered plugin gateway      plugin_proxy.py:178
+                             (lazy): mysql__call                               
+                    WARNING  Tool already exists:            tool_manager.py:59
+                             mysql__call                                       
+                    INFO     Registered plugin gateway      plugin_proxy.py:178
+                             (lazy): mysql__call                               
+                    WARNING  Tool already exists:            tool_manager.py:59
+                             mysql__call                                       
+                    INFO     Registered plugin gateway      plugin_proxy.py:178
+                             (lazy): mysql__call                               
+                    ERROR    Failed to cleanup orphaned pipeline    main.py:451
+                             runs; continuing startup                          
+                             +- Traceback (most recent call last)-+            
+                             | C:\Users\j.magarelli\Desktop\manag |            
+                             | er-ai\Manager-AI\backend\app\main. |            
+                             | py:442 in lifespan                 |            
+                             |                                    |            
+                             |   439                 count = 0    |            
+                             |   440                 for run in o |            
+                             |   441                     run.stat |            
+                             | > 442                     run.fini |            
+                             |   443                     count += |            
+                             |   444                 if count:    |            
+                             |   445                     await cl |            
+                             +------------------------------------+            
+                             NameError: name 'datetime' is not                 
+                             defined                                           
+[06/04/26 10:04:49] INFO     Installed claude_resources to          main.py:457
+                             C:\laragon\www\acuson: ['commands',               
+                             'scripts', 'settings.json',                       
+                             'settings_.json', 'skills']                       
+                    INFO     Installed claude_resources to          main.py:457
+                             C:\Users\j.magarelli\Desktop\apps\freu            
+                             dapp: ['commands', 'scripts',                     
+                             'settings.json', 'settings_.json',                
+                             'skills']                                         
+                    INFO     Installed claude_resources to          main.py:457
+                             C:\laragon\www\sermig-broadcaster:                
+                             ['commands', 'scripts',                           
+                             'settings.json', 'settings_.json',                
+                             'skills']                                         
+                    INFO     Installed claude_resources to          main.py:457
+                             \\wsl.localhost\Ubuntu-18.04\home\jaco            
+                             po\freud-container\freud-manager:                 
+                             ['commands', 'scripts',                           
+                             'settings.json', 'settings_.json',                
+                             'skills']                                         
+                    INFO     Installed claude_resources to          main.py:457
+                             C:\Users\j.magarelli\Desktop\manager-a            
+                             i\manager-ai-mod\Manager-AI:                      
+                             ['commands', 'scripts',                           
+                             'settings.json', 'settings_.json',                
+                             'skills']                                         
+                    INFO     Installed claude_resources to          main.py:457
+                             C:\laragon\www\sermig-rete-speranza:              
+                             ['commands', 'scripts',                           
+                             'settings.json', 'settings_.json',                
+                             'skills']                                         
+                    INFO     Installed claude_resources to          main.py:457
+                             C:\laragon\www\occasionali-new-php-ver            
+                             : ['commands', 'scripts',                         
+                             'settings.json', 'settings_.json',                
+                             'skills']                                         
+                    INFO     Installed claude_resources to          main.py:457
+                             \\wsl.localhost\Ubuntu-18.04\home\jaco            
+                             po\freud-container\DDB: ['commands',              
+                             'scripts', 'settings.json',                       
+                             'settings_.json', 'skills']                       
+                    INFO     Installed claude_resources to          main.py:457
+                             C:\laragon\www\sermig-dupe:                       
+                             ['commands', 'scripts',                           
+                             'settings.json', 'settings_.json',                
+                             'skills']                                         
+                    INFO     Installed claude_resources to          main.py:457
+                             C:\laragon\www\arielcage: ['commands',            
+                             'scripts', 'settings.json',                       
+                             'settings_.json', 'skills']                       
+                    INFO     StreamableHTTP      streamable_http_manager.py:109
+                             session manager                                   
+                             started                                           
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[06/04/26 10:05:02] INFO     Created new         streamable_http_manager.py:229
+                             transport with                                    
+                             session ID:                                       
+                             55d1a746a91b4f05ab0                               
+                             532b038f75530                                     
+[06/04/26 10:05:06] WARNING  Plugin MySQL Database         plugin_client.py:209
+                             _init_session failed |                            
+                             type=McpError str=[Connection                     
+                             closed] stderr_len=2301                           
+                    WARNING  Plugin MySQL Database         plugin_client.py:209
+                             _init_session failed |                            
+                             type=McpError str=[Connection                     
+                             closed] stderr_len=2301                           
+                    ERROR    Plugin MySQL Database connect plugin_client.py:177
+                             failed                                            
+                    ERROR    Plugin MySQL Database connect plugin_client.py:177
+                             failed                                            
+[06/04/26 10:05:08] WARNING  Plugin MySQL Database         plugin_client.py:209
+                             _init_session failed |                            
+                             type=McpError str=[Connection                     
+                             closed] stderr_len=2301                           
+                    ERROR    Plugin MySQL Database connect plugin_client.py:177
+                             failed                                            
+                    WARNING  Plugin MySQL Database         plugin_client.py:209
+                             _init_session failed |                            
+                             type=McpError str=[Connection                     
+                             closed] stderr_len=2350                           
+                    ERROR    Plugin MySQL Database connect plugin_client.py:177
+                             failed                                            

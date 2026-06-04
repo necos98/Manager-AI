@@ -1,0 +1,12 @@
+schema_version: 1
+id: 5c86fb70-f320-4f2c-bc72-5664c6766437
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Force Finish button in issue detail GUI
+status: New
+priority: 3
+category: Feature
+created_at: '2026-06-04T07:51:25.305835'
+updated_at: '2026-06-04T07:52:44.365371'
+finished_at: null
+tasks: []
+relations: []

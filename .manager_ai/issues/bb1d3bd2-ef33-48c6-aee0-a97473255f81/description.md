@@ -1,0 +1,3 @@
+Continua ad esserci il bug sull'mcp dedicato alle domande da parte del llm, ovvero "ask_user_questions", il modello mi dice "ask_user_question fails — known FK bug (issues file-backed, questions table has
+   FK on issues.id). Documented memories 8c9970aa, 6d8e5fda. Let me notify the
+  user directly." Continua a non funzionare, ti chiedo di analizzare con cura il bug e eseguire tutti i test necessari

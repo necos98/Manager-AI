@@ -1,0 +1,3 @@
+Ottimizzazione caricamento dei dati backend:
+
+ho notato che quando si clicca su un Progetto lato frontend, si aspetta qualche secondo per riceve la lista delle issues. E ho notato che il frontend effetta N chiamate per quante issue ci sono, cosa totalmente NON sufficiente e causa un overload del backend. Dovrebbe esserci semplicemente una chiamata unica che ritorna la lista, come una API REST classica. Potresti controllare e risolvere questo overload?

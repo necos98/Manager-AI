@@ -1,0 +1,2 @@
+INFO:     127.0.0.1:56931 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59122 - "POST /mcp/ask_user_question HTTP/1.1" 406 Not Acceptable

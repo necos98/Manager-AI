@@ -1,0 +1,1 @@
+Possibilità di chiudere una issue "Finished" tramite la GUI nel dettaglio, il bottone surclassa tutti i tipi di constraint inseriti

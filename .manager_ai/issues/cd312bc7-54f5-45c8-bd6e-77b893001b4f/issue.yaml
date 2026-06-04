@@ -1,0 +1,48 @@
+schema_version: 1
+id: cd312bc7-54f5-45c8-bd6e-77b893001b4f
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix N+1 query in issue relations loading
+status: Accepted
+priority: 3
+category: Bug
+created_at: '2026-06-04T07:42:07.127606'
+updated_at: '2026-06-04T07:47:41.125789'
+finished_at: null
+tasks:
+- id: 3e5253ec-244a-4314-8d31-6c2b56e9e192
+  name: Add BlockedIdsRequest and BlockedIdsResponse schemas to schemas/issue_relation.py
+  status: Pending
+  order: 0
+  created_at: '2026-06-04T07:49:04'
+  updated_at: '2026-06-04T07:49:04'
+- id: 415c711e-2c85-446d-9ac4-14e295ee844f
+  name: Add get_blocked_issue_ids(set[str]) method to services/issue_relation_service.py — single-pass scan, filter None sentinels from list_issues_full, return sorted blocked IDs
+  status: Pending
+  order: 1
+  created_at: '2026-06-04T07:49:04'
+  updated_at: '2026-06-04T07:49:04'
+- id: 7fc4eacc-5775-4eb5-9b04-472a1d0f0394
+  name: Add batch_router with POST /api/issues/relations/batch in routers/issue_relations.py and register batch_router in main.py
+  status: Pending
+  order: 2
+  created_at: '2026-06-04T07:49:04'
+  updated_at: '2026-06-04T07:49:04'
+- id: c6553f02-0e3c-40c7-8157-571a157c6a66
+  name: Add fetchBlockedIssueIds(issueIds) API function to frontend api-relations.ts — calls POST /api/issues/relations/batch
+  status: Pending
+  order: 3
+  created_at: '2026-06-04T07:49:04'
+  updated_at: '2026-06-04T07:49:04'
+- id: 0e2d9828-0568-4f66-bda0-e0926428b8a9
+  name: 'Rewrite useBlockedIssueIds hook: replace useQueries with single useQuery to fetchBlockedIssueIds. Keep existing fetchRelations import (needed by useRelations etc). Remove useQueries import only.'
+  status: Pending
+  order: 4
+  created_at: '2026-06-04T07:49:04'
+  updated_at: '2026-06-04T07:49:04'
+- id: 3ab39c2a-fe11-48ef-9448-8a26b85de524
+  name: Run existing tests (pytest backend/tests/test_routers_issue_relations.py and test_issue_relation_service.py) to verify no regressions
+  status: Pending
+  order: 5
+  created_at: '2026-06-04T07:49:04'
+  updated_at: '2026-06-04T07:49:04'
+relations: []
