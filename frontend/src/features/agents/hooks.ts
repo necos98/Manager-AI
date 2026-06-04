@@ -3,6 +3,15 @@ import { toast } from "sonner";
 import * as api from "./api";
 import type { AgentCreate, AgentUpdate } from "@/shared/types";
 
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 const onMutationError = (e: unknown) => {
   toast.error(e instanceof Error ? e.message : "Operation failed");
 };
@@ -65,6 +74,50 @@ export function useSeedAgents() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => api.seedAgents(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: agentKeys.all() });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useExportAgents() {
+  return useMutation({
+    mutationFn: () => api.exportAgents(),
+    onSuccess: (blob) => {
+      downloadBlob(blob, "agents-export.json");
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useExportAgent() {
+  return useMutation({
+    mutationFn: (agentId: string) => api.exportAgent(agentId),
+    onSuccess: (blob) => {
+      downloadBlob(blob, "agent-export.json");
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useImportAgentsPreview() {
+  return useMutation({
+    mutationFn: (file: File) => api.importAgentsPreview(file),
+    onError: onMutationError,
+  });
+}
+
+export function useImportAgentsConfirm() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      file,
+      conflicts,
+    }: {
+      file: File;
+      conflicts: Record<string, string>;
+    }) => api.importAgentsConfirm(file, conflicts),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: agentKeys.all() });
     },

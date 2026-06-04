@@ -31,6 +31,12 @@ class PipelineRunResponse(BaseModel):
     created_at: str | None = None
 
 
+class ActivePipelineRunResponse(BaseModel):
+    """Minimal response for a single active pipeline run (no steps)."""
+    pipeline_name: str
+    status: str
+
+
 class PipelineMessageCreate(BaseModel):
     sender_agent_name: str = Field(..., min_length=1)
     content: str = Field(..., min_length=1)

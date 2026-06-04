@@ -1,0 +1,84 @@
+schema_version: 1
+id: 8fa7aff8-3f06-4123-aef0-7f58bc7e186c
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Export/Import agents and pipelines in JSON format
+status: Finished
+priority: 3
+category: Feature
+created_at: '2026-06-04T21:08:26.384544'
+updated_at: '2026-06-04T21:48:51.938309'
+finished_at: '2026-06-04T21:48:51.938323'
+tasks:
+- id: 6668a548-7814-4cfe-ac31-2a96c051bd97
+  name: Create backend schemas for export/import (export_import.py)
+  status: Completed
+  order: 0
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:24:33'
+- id: 35116b51-ca07-4a02-871a-2412147e93e5
+  name: Add export/import methods to AgentService
+  status: Completed
+  order: 1
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:24:34'
+- id: e1b746f0-e4cb-441a-9246-dff51750b21b
+  name: Add export/import methods to PipelineService (fix add_step order_index)
+  status: Completed
+  order: 2
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:24:34'
+- id: 43d6f871-7b75-4a8e-b1d7-9fd5db5d8d9b
+  name: Add export/import endpoints to agents router
+  status: Completed
+  order: 3
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:24:34'
+- id: 9a47ceb6-45dc-46fe-bac9-886819d2d7f7
+  name: Add export/import endpoints to pipelines router
+  status: Completed
+  order: 4
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:24:35'
+- id: 58715a8f-f2be-41c5-8e76-115bd13a7349
+  name: Add frontend types and API client functions for export/import
+  status: Completed
+  order: 5
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:25:01'
+- id: 798a6f18-7faf-4e44-9c06-ef2ef05aef13
+  name: Add frontend React Query hooks for export/import
+  status: Completed
+  order: 6
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:25:23'
+- id: 9d69bfb0-8458-4855-86dd-43545e92a7a4
+  name: Create ImportPreviewModal shared component
+  status: Completed
+  order: 7
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:25:46'
+- id: 129a7652-a35a-44e6-8032-5e3cacf98643
+  name: Add export/import buttons and flows to AgentsTab
+  status: Completed
+  order: 8
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:26:16'
+- id: cc49ae67-3b2a-45bb-be94-1bcec542a5e0
+  name: Add export/import buttons and flows to PipelinesTab
+  status: Completed
+  order: 9
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:29:16'
+- id: c124ac96-dd0f-4d03-aa94-f61ccd42ee3c
+  name: Write backend tests for agent export/import endpoints
+  status: Completed
+  order: 10
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:36:01'
+- id: 58ca99ef-5d1a-44c0-a450-eb8b56100247
+  name: Write backend tests for pipeline export/import endpoints
+  status: Completed
+  order: 11
+  created_at: '2026-06-04T21:19:51'
+  updated_at: '2026-06-04T21:36:01'
+relations: []

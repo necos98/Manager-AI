@@ -5,6 +5,7 @@ from app.database import async_session, get_db
 from app.exceptions import AppError
 from app.models.project import Project
 from app.schemas.pipeline_run import (
+    ActivePipelineRunResponse,
     PipelineMessageCreate,
     PipelineMessageResponse,
     PipelineRunResponse,
@@ -40,6 +41,16 @@ async def start_pipeline_run(
         raise HTTPException(status_code=e.status_code, detail=e.message)
     await db.commit()
     return result
+
+
+@router.get("/active-by-issue", response_model=dict[str, ActivePipelineRunResponse | None])
+async def get_active_pipeline_runs_by_issue(
+    issue_ids: str = Query(..., min_length=1, description="Comma-separated issue IDs"),
+    db: AsyncSession = Depends(get_db),
+):
+    ids = [i.strip() for i in issue_ids.split(",") if i.strip()]
+    svc = PipelineRunService(db)
+    return await svc.get_active_runs_for_issues(ids)
 
 
 @router.get("", response_model=list[PipelineRunResponse])

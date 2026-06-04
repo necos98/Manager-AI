@@ -21,6 +21,10 @@ export function fetchPipelineMessages(runId: string): Promise<PipelineMessage[]>
   return apiGet<PipelineMessage[]>(`/pipeline-runs/${runId}/messages`);
 }
 
+export function fetchActivePipelineRuns(issueIds: string[]): Promise<Record<string, { pipeline_name: string; status: string } | null>> {
+  return apiGet(`/pipeline-runs/active-by-issue?issue_ids=${issueIds.join(",")}`);
+}
+
 export function sendPipelineMessage(runId: string, data: PipelineMessageCreate): Promise<PipelineMessage> {
   return apiPost<PipelineMessage>(`/pipeline-runs/${runId}/messages`, data);
 }

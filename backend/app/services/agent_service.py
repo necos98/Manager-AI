@@ -1,8 +1,12 @@
+import json
+from datetime import datetime, timezone
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.exceptions import NotFoundError
+from app.exceptions import NotFoundError, ValidationError
 from app.models.agent import Agent
+from app.schemas.export_import import ImportConfirmResponse
 
 DEFAULT_AGENTS = [
     {
@@ -134,3 +138,71 @@ class AgentService:
         await self.session.delete(agent)
         await self.session.flush()
         return True
+
+    # ── Export / Import ────────────────────────────────────────────────
+
+    async def export_all(self) -> list[Agent]:
+        result = await self.session.execute(
+            select(Agent).order_by(Agent.name)
+        )
+        return list(result.scalars().all())
+
+    async def export_by_id(self, agent_id: str) -> Agent:
+        return await self.get_by_id(agent_id)
+
+    async def import_agents(
+        self,
+        agents_data: list[dict],
+        conflict_map: dict[str, str],
+    ) -> ImportConfirmResponse:
+        imported = 0
+        skipped = 0
+        errors = []
+
+        for item in agents_data:
+            agent_id = item.get("id")
+            if not agent_id:
+                errors.append(f"Agent item missing id: {item.get('name', '?')}")
+                continue
+
+            try:
+                existing = await self.get_by_id(agent_id)
+                action = conflict_map.get(agent_id, "skip")
+                if action == "overwrite":
+                    existing.name = item.get("name", existing.name)
+                    existing.model = item.get("model")
+                    existing.allowed_tools = item.get("allowed_tools")
+                    existing.intent = item.get("intent", "")
+                    await self.session.flush()
+                    imported += 1
+                else:
+                    skipped += 1
+            except NotFoundError:
+                agent = Agent(
+                    id=agent_id,
+                    name=item.get("name", "Unknown"),
+                    model=item.get("model"),
+                    allowed_tools=item.get("allowed_tools"),
+                    intent=item.get("intent", ""),
+                )
+                self.session.add(agent)
+                await self.session.flush()
+                imported += 1
+            except Exception as e:
+                errors.append(f"Error importing agent {agent_id}: {e}")
+
+        return ImportConfirmResponse(
+            imported=imported,
+            skipped=skipped,
+            errors=errors,
+        )
+
+    async def check_agent_ids_exist(
+        self, agent_ids: list[str]
+    ) -> set[str]:
+        if not agent_ids:
+            return set()
+        result = await self.session.execute(
+            select(Agent.id).where(Agent.id.in_(agent_ids))
+        )
+        return {row[0] for row in result.all()}

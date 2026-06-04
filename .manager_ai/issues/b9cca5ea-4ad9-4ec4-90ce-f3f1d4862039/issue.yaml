@@ -2,12 +2,12 @@ schema_version: 1
 id: b9cca5ea-4ad9-4ec4-90ce-f3f1d4862039
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Create issue from here
-status: Accepted
+status: Finished
 priority: 3
-category: Feature
+category: null
 created_at: '2026-06-04T10:01:37.440476'
-updated_at: '2026-06-04T10:09:30.110895'
-finished_at: null
+updated_at: '2026-06-04T21:05:29.135394'
+finished_at: '2026-06-04T21:05:29.135405'
 tasks:
 - id: 1d789701-b317-442f-b096-ad14b6f22f0e
   name: 'Backend: Add source_issue_id to IssueCreate schema'

@@ -1,12 +1,48 @@
 schema_version: 1
 id: 58e42e9a-99f8-45a6-ae88-a309995805e3
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: New
+name: Show pipeline name when running on issue
+status: Finished
 priority: 3
-category: Bug
+category: null
 created_at: '2026-06-04T10:45:30.589354'
-updated_at: '2026-06-04T10:45:30.589354'
-finished_at: null
-tasks: []
+updated_at: '2026-06-04T20:47:52.669383'
+finished_at: '2026-06-04T20:47:52.669397'
+tasks:
+- id: b22d26d8-2e5f-463c-a918-2b32ef90efab
+  name: Add backend batch endpoint for active pipeline runs by issue IDs
+  status: Completed
+  order: 0
+  created_at: '2026-06-04T20:36:11'
+  updated_at: '2026-06-04T20:47:46'
+- id: c692553a-ace3-45ac-9d50-3025252fb4a9
+  name: Add pipeline_name field to PipelineRun TS interface
+  status: Completed
+  order: 1
+  created_at: '2026-06-04T20:36:11'
+  updated_at: '2026-06-04T20:47:47'
+- id: 84bd406a-2445-4430-8f67-f44bd6355ffb
+  name: Add API client function and React Query hook for active pipeline runs
+  status: Completed
+  order: 2
+  created_at: '2026-06-04T20:36:11'
+  updated_at: '2026-06-04T20:47:47'
+- id: 02213fee-6972-4036-9592-b12ba69cc1db
+  name: Add pipeline name badge to issue detail page header
+  status: Completed
+  order: 3
+  created_at: '2026-06-04T20:36:11'
+  updated_at: '2026-06-04T20:47:48'
+- id: 00f29707-75ea-4766-adb1-dfcfec46d401
+  name: Replace hardcoded Pipeline text in PipelineProgress header with actual name
+  status: Completed
+  order: 4
+  created_at: '2026-06-04T20:36:11'
+  updated_at: '2026-06-04T20:47:48'
+- id: 515c0568-1a54-47c4-9339-408e126f953d
+  name: Add pipeline indicator to kanban cards with prop drilling through board and column
+  status: Completed
+  order: 5
+  created_at: '2026-06-04T20:36:11'
+  updated_at: '2026-06-04T20:47:48'
 relations: []

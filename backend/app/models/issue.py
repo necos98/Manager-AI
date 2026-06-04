@@ -18,13 +18,6 @@ class IssueStatus(str, enum.Enum):
     CANCELED = "Canceled"
 
 
-VALID_TRANSITIONS = {
-    (IssueStatus.NEW, IssueStatus.REASONING),
-    (IssueStatus.REASONING, IssueStatus.PLANNED),
-    (IssueStatus.PLANNED, IssueStatus.ACCEPTED),
-    (IssueStatus.ACCEPTED, IssueStatus.FINISHED),
-}
-
 ALLOWED_CATEGORIES = {
     "Bug", "Feature", "Improvement", "Documentation",
     "Refactor", "Security", "Performance", "UI/UX",

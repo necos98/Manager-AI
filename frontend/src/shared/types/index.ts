@@ -458,6 +458,61 @@ export interface CredentialUpsert {
   fields: Record<string, string>;
 }
 
+// ── Export / Import ──
+
+export interface AgentExportItem {
+  id: string;
+  name: string;
+  model: string | null;
+  allowed_tools: string[] | null;
+  intent: string;
+}
+
+export interface PipelineStepExportItem {
+  id: string;
+  pipeline_id: string;
+  agent_id: string;
+  order_index: number;
+  agent: AgentExportItem;
+}
+
+export interface PipelineExportItem {
+  id: string;
+  name: string;
+  steps: PipelineStepExportItem[];
+}
+
+export interface ExportWrapper<T> {
+  version: number;
+  type: string;
+  exported_at: string;
+  items: T[];
+}
+
+export interface ImportConflict<T> {
+  incoming: T;
+  existing: T;
+}
+
+export interface ImportPreviewResponse<T> {
+  conflicts: ImportConflict<T>[];
+  new: T[];
+  total: number;
+}
+
+export interface PipelineImportPreviewResponse<T> {
+  conflicts: ImportConflict<T>[];
+  new: T[];
+  missing_agents: { agent_id: string; name: string }[];
+  total: number;
+}
+
+export interface ImportConfirmResponse {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
 // ── Question ──
 
 export interface Question {
@@ -561,6 +616,7 @@ export interface PipelineStepRun {
 export interface PipelineRun {
   id: string;
   pipeline_id: string;
+  pipeline_name: string;
   issue_id: string;
   status: PipelineRunStatus;
   current_step_index: number;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Plus,
   Trash2,
@@ -13,6 +13,8 @@ import {
   Sprout,
   Check,
   Pencil,
+  Download,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -42,8 +44,13 @@ import {
   useRemovePipelineStep,
   useReorderPipelineSteps,
   useSeedPipeline,
+  useExportPipelines,
+  useExportPipeline,
+  useImportPipelinesPreview,
+  useImportPipelinesConfirm,
 } from "@/features/pipelines/hooks";
 import { useAgents } from "@/features/agents/hooks";
+import { ImportPreviewModal } from "@/shared/components/ImportPreviewModal";
 import type { Pipeline, PipelineStep } from "@/shared/types";
 
 interface PipelinesTabProps {
@@ -80,6 +87,10 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
   const removeStep = useRemovePipelineStep();
   const reorderSteps = useReorderPipelineSteps();
   const seedPipeline = useSeedPipeline();
+  const exportPipelines = useExportPipelines();
+  const exportPipeline = useExportPipeline();
+  const importPreview = useImportPipelinesPreview();
+  const importConfirm = useImportPipelinesConfirm();
 
   const agents = agentList ?? [];
   const agentMap = new Map(agents.map((a) => [a.id, a.name]));
@@ -142,6 +153,53 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
     reorderSteps.mutate({ pipelineId, data: { step_ids: reordered } });
   };
 
+  // Export/Import
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+
+  const handleExportAll = () => {
+    exportPipelines.mutate();
+  };
+
+  const handleExportPipeline = (pipelineId: string) => {
+    exportPipeline.mutate(pipelineId);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFile(file);
+    importPreview.mutate(file, {
+      onSuccess: () => setImportModalOpen(true),
+    });
+    e.target.value = "";
+  };
+
+  const handleImportConfirm = (conflicts: Record<string, string>) => {
+    if (!importFile) return;
+    importConfirm.mutate(
+      { file: importFile, conflicts },
+      {
+        onSuccess: () => {
+          setImportModalOpen(false);
+          setImportFile(null);
+        },
+      },
+    );
+  };
+
+  const closeImportModal = () => {
+    if (importConfirm.isPending) return;
+    setImportModalOpen(false);
+    setImportFile(null);
+    importPreview.reset();
+  };
+
   const isMutating =
     createPipeline.isPending ||
     updatePipeline.isPending ||
@@ -176,15 +234,42 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Pipelines</h2>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => seedPipeline.mutate()}
-          disabled={seedPipeline.isPending}
-        >
-          <Sprout className="size-4 mr-1" />
-          {seedPipeline.isPending ? "Seeding..." : "Seed Default"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportAll}
+            disabled={exportPipelines.isPending}
+          >
+            <Download className="size-4 mr-1" />
+            {exportPipelines.isPending ? "Exporting..." : "Export All"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleImportClick}
+            disabled={importPreview.isPending}
+          >
+            <Upload className="size-4 mr-1" />
+            {importPreview.isPending ? "Reading..." : "Import"}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleFileSelected}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => seedPipeline.mutate()}
+            disabled={seedPipeline.isPending}
+          >
+            <Sprout className="size-4 mr-1" />
+            {seedPipeline.isPending ? "Seeding..." : "Seed Default"}
+          </Button>
+        </div>
       </div>
 
       {/* Create pipeline */}
@@ -279,6 +364,16 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
                   <StepSummary steps={sortedSteps} agents={agentMap} />
 
                   <div className="flex items-center gap-1 ml-auto">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => handleExportPipeline(pipeline.id)}
+                      disabled={exportPipeline.isPending}
+                      aria-label={`Export ${pipeline.name}`}
+                    >
+                      <Download className="size-3.5" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -406,6 +501,18 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
           })}
         </div>
       )}
+
+      {/* Import Preview Modal */}
+      <ImportPreviewModal
+        isOpen={importModalOpen}
+        onClose={closeImportModal}
+        title="Import Pipelines"
+        previewData={importPreview.data as any ?? null}
+        isLoading={importPreview.isPending}
+        error={importPreview.error ? (importPreview.error instanceof Error ? importPreview.error.message : "Preview failed") : null}
+        onConfirm={handleImportConfirm}
+        isConfirming={importConfirm.isPending}
+      />
 
       {/* Delete confirmation */}
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>

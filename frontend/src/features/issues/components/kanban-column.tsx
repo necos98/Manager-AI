@@ -14,9 +14,10 @@ interface KanbanColumnProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   isLoadingMore?: boolean;
+  activeRunsByIssue?: Record<string, { pipeline_name: string; status: string } | null>;
 }
 
-export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIssueIds, isValidTarget, projectId, onLoadMore, hasMore, isLoadingMore }: KanbanColumnProps) {
+export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIssueIds, isValidTarget, projectId, onLoadMore, hasMore, isLoadingMore, activeRunsByIssue }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
@@ -42,6 +43,7 @@ export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIs
             hasTerminal={activeTerminalIssueIds.includes(issue.id)}
             isBlocked={blockedIssueIds.has(issue.id)}
             projectId={projectId}
+            activePipelineName={activeRunsByIssue?.[issue.id]?.pipeline_name}
           />
         ))}
         {onLoadMore && hasMore && (

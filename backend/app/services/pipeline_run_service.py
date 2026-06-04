@@ -585,6 +585,29 @@ class PipelineRunService:
             for r in runs
         ]
 
+    async def get_active_runs_for_issues(self, issue_ids: list[str]) -> dict[str, dict | None]:
+        """Return active (RUNNING) pipeline runs for given issue ids.
+
+        Returns dict: issue_id -> {pipeline_name, status} or None for issues
+        without an active run.
+        """
+        result = await self.session.execute(
+            select(PipelineRun)
+            .where(
+                PipelineRun.issue_id.in_(issue_ids),
+                PipelineRun.status == PipelineRunStatus.RUNNING,
+            )
+            .options(selectinload(PipelineRun.pipeline))
+        )
+        runs = result.unique().scalars().all()
+        run_by_issue: dict[str, dict | None] = {iid: None for iid in issue_ids}
+        for r in runs:
+            run_by_issue[r.issue_id] = {
+                "pipeline_name": r.pipeline.name if r.pipeline else "",
+                "status": r.status.value,
+            }
+        return run_by_issue
+
     async def cancel_run(self, run_id: str) -> bool:
         run = await self._get_run(run_id)
         if run.status != PipelineRunStatus.RUNNING:

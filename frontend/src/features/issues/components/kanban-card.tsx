@@ -12,6 +12,7 @@ interface KanbanCardProps {
   hasTerminal: boolean;
   isBlocked?: boolean;
   projectId: string;
+  activePipelineName?: string;
 }
 
 function TaskProgress({ tasks }: { tasks: Issue["tasks"] }) {
@@ -29,7 +30,7 @@ function TaskProgress({ tasks }: { tasks: Issue["tasks"] }) {
   );
 }
 
-export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId }: KanbanCardProps) {
+export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId, activePipelineName }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: issue.id,
     data: { issue },
@@ -74,6 +75,12 @@ export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId }:
               )}
               {issue.category && (
                 <Badge variant="secondary" className="text-[10px] px-1 py-0 leading-snug">{issue.category}</Badge>
+              )}
+              {activePipelineName && (
+                <span className="flex items-center gap-1 text-[10px] text-blue-600">
+                  <span className="size-1.5 rounded-full bg-blue-500" />
+                  <span className="max-w-20 truncate">{activePipelineName}</span>
+                </span>
               )}
             </div>
             <p className="text-sm font-medium truncate mt-0.5">

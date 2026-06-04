@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Pencil, Trash2, Bot, Loader2, Sprout, MessageSquare } from "lucide-react";
+import { Plus, Pencil, Trash2, Bot, Loader2, Sprout, MessageSquare, Download, Upload } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -19,6 +19,10 @@ import {
   useUpdateAgent,
   useDeleteAgent,
   useSeedAgents,
+  useExportAgents,
+  useExportAgent,
+  useImportAgentsPreview,
+  useImportAgentsConfirm,
 } from "@/features/agents/hooks";
 import {
   useCreateManageAgentTerminal,
@@ -26,6 +30,7 @@ import {
   useKillTerminal,
 } from "@/features/terminals/hooks";
 import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
+import { ImportPreviewModal } from "@/shared/components/ImportPreviewModal";
 import type { Agent, AgentCreate, AgentUpdate } from "@/shared/types";
 
 interface AgentsTabProps {
@@ -88,6 +93,10 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
   const updateAgent = useUpdateAgent();
   const deleteAgent = useDeleteAgent();
   const seedAgents = useSeedAgents();
+  const exportAgents = useExportAgents();
+  const exportAgent = useExportAgent();
+  const importPreview = useImportAgentsPreview();
+  const importConfirm = useImportAgentsConfirm();
   const createManageAgentTerminal = useCreateManageAgentTerminal();
   const { data: manageAgentTerminals, isPending: isManageTerminalsPending } = useManageAgentTerminals();
   const killTerminal = useKillTerminal();
@@ -99,6 +108,54 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
   const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
   const [chatTerminalId, setChatTerminalId] = useState<string | null>(null);
   const killedTerminalRef = useRef<string | null>(null);
+
+  // Export/Import
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+
+  const handleExportAll = () => {
+    exportAgents.mutate();
+  };
+
+  const handleExportAgent = (agentId: string) => {
+    exportAgent.mutate(agentId);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFile(file);
+    importPreview.mutate(file, {
+      onSuccess: () => setImportModalOpen(true),
+    });
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+  };
+
+  const handleImportConfirm = (conflicts: Record<string, string>) => {
+    if (!importFile) return;
+    importConfirm.mutate(
+      { file: importFile, conflicts },
+      {
+        onSuccess: () => {
+          setImportModalOpen(false);
+          setImportFile(null);
+        },
+      },
+    );
+  };
+
+  const closeImportModal = () => {
+    if (importConfirm.isPending) return;
+    setImportModalOpen(false);
+    setImportFile(null);
+    importPreview.reset();
+  };
 
   const openCreate = () => {
     setEditingAgent(null);
@@ -227,6 +284,31 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
             <Sprout className="size-4 mr-1" />
             {seedAgents.isPending ? "Seeding..." : "Seed Defaults"}
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportAll}
+            disabled={exportAgents.isPending}
+          >
+            <Download className="size-4 mr-1" />
+            {exportAgents.isPending ? "Exporting..." : "Export All"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleImportClick}
+            disabled={importPreview.isPending}
+          >
+            <Upload className="size-4 mr-1" />
+            {importPreview.isPending ? "Reading..." : "Import"}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleFileSelected}
+          />
           <Button size="sm" onClick={openCreate}>
             <Plus className="size-4 mr-1" />
             Create Agent
@@ -276,6 +358,16 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        onClick={() => handleExportAgent(agent.id)}
+                        disabled={exportAgent.isPending}
+                        aria-label={`Export ${agent.name}`}
+                      >
+                        <Download className="size-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -382,6 +474,18 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Import Preview Modal */}
+      <ImportPreviewModal
+        isOpen={importModalOpen}
+        onClose={closeImportModal}
+        title="Import Agents"
+        previewData={importPreview.data as any ?? null}
+        isLoading={importPreview.isPending}
+        error={importPreview.error ? (importPreview.error instanceof Error ? importPreview.error.message : "Preview failed") : null}
+        onConfirm={handleImportConfirm}
+        isConfirming={importConfirm.isPending}
+      />
 
       {/* Delete Confirmation */}
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>

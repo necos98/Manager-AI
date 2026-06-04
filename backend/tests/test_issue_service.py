@@ -65,20 +65,6 @@ async def test_update_status_valid_transition(db_session, project):
     assert updated.status == IssueStatus.PLANNED.value
 
 
-async def test_update_status_invalid_transition(db_session, project):
-    service = IssueService(db_session)
-    issue = await service.create(project_id=project.id, description="Skip ahead", priority=1)
-    with pytest.raises(InvalidTransitionError, match="Invalid state transition"):
-        await service.update_status(issue.id, project.id, IssueStatus.FINISHED)
-
-
-async def test_update_status_canceled_from_any(db_session, project):
-    service = IssueService(db_session)
-    issue = await service.create(project_id=project.id, description="Cancel me", priority=1)
-    updated = await service.update_status(issue.id, project.id, IssueStatus.CANCELED)
-    assert updated.status == IssueStatus.CANCELED.value
-
-
 async def test_set_issue_name(db_session, project):
     service = IssueService(db_session)
     issue = await service.create(project_id=project.id, description="Name me", priority=1)

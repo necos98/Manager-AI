@@ -150,7 +150,7 @@ export function PipelineProgress({ projectId, issueId, onClose }: PipelineProgre
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">Pipeline</span>
+          <span className="text-sm font-semibold">{activeRun.pipeline_name || "Pipeline"}</span>
           <Badge variant="default" className="text-xs">
             Running
           </Badge>

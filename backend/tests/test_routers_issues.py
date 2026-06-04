@@ -89,7 +89,7 @@ async def test_update_issue(client, project):
 
 @pytest.mark.asyncio
 async def test_update_status_valid(client, project):
-    """Test a valid status transition via REST: any state can be Canceled."""
+    """Test update_status accepts any transition via REST."""
     create_resp = await client.post(
         f"/api/projects/{project['id']}/issues", json={"description": "Cancel me", "priority": 1}
     )
@@ -100,20 +100,6 @@ async def test_update_status_valid(client, project):
     )
     assert resp.status_code == 200
     assert resp.json()["status"] == "Canceled"
-
-
-@pytest.mark.asyncio
-async def test_update_status_invalid(client, project):
-    create_resp = await client.post(
-        f"/api/projects/{project['id']}/issues", json={"description": "Skip", "priority": 1}
-    )
-    issue_id = create_resp.json()["id"]
-    resp = await client.patch(
-        f"/api/projects/{project['id']}/issues/{issue_id}/status",
-        json={"status": "Finished"},
-    )
-    assert resp.status_code == 409
-
 
 
 @pytest.mark.asyncio

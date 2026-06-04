@@ -3,6 +3,15 @@ import { toast } from "sonner";
 import * as api from "./api";
 import type { PipelineCreate, PipelineStepCreate, PipelineUpdate, StepReorderRequest } from "@/shared/types";
 
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 const onMutationError = (e: unknown) => {
   toast.error(e instanceof Error ? e.message : "Operation failed");
 };
@@ -101,6 +110,50 @@ export function useSeedPipeline() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => api.seedPipeline(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useExportPipelines() {
+  return useMutation({
+    mutationFn: () => api.exportPipelines(),
+    onSuccess: (blob) => {
+      downloadBlob(blob, "pipelines-export.json");
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useExportPipeline() {
+  return useMutation({
+    mutationFn: (pipelineId: string) => api.exportPipeline(pipelineId),
+    onSuccess: (blob) => {
+      downloadBlob(blob, "pipeline-export.json");
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useImportPipelinesPreview() {
+  return useMutation({
+    mutationFn: (file: File) => api.importPipelinesPreview(file),
+    onError: onMutationError,
+  });
+}
+
+export function useImportPipelinesConfirm() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      file,
+      conflicts,
+    }: {
+      file: File;
+      conflicts: Record<string, string>;
+    }) => api.importPipelinesConfirm(file, conflicts),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
     },

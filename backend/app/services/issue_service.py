@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import InvalidTransitionError, NotFoundError, ValidationError
 from app.hooks.registry import HookContext, HookEvent, hook_registry
-from app.models.issue import ALLOWED_CATEGORIES, VALID_TRANSITIONS, IssueStatus
+from app.models.issue import ALLOWED_CATEGORIES, IssueStatus
 from app.models.task import TaskStatus
 from app.services.activity_service import ActivityService
 from app.services.project_service import ProjectService
@@ -179,18 +179,7 @@ class IssueService:
     ) -> IssueRecord:
         rec = await self.get_for_project(issue_id, project_id)
         target = new_status.value if isinstance(new_status, IssueStatus) else str(new_status)
-        current = IssueStatus(rec.status)
-        desired = IssueStatus(target)
-        if desired == IssueStatus.CANCELED:
-            rec.status = desired.value
-            rec.updated_at = _now_iso()
-            issue_store.update_issue(await self._resolve_path(project_id), rec)
-            return rec
-        if (current, desired) not in VALID_TRANSITIONS:
-            raise InvalidTransitionError(
-                f"Invalid state transition from {current.value} to {desired.value}"
-            )
-        rec.status = desired.value
+        rec.status = target
         rec.updated_at = _now_iso()
         issue_store.update_issue(await self._resolve_path(project_id), rec)
         return rec

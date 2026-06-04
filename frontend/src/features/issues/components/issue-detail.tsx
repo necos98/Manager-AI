@@ -60,6 +60,7 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
   const updateIssue = useUpdateIssue(projectId, issue.id);
   const { data: availableTags } = useProjectTags(projectId);
   const { data: pipelineRuns } = usePipelineRuns(projectId, issue.id);
+  const activeRun = pipelineRuns?.find((r) => r.status === "RUNNING") ?? null;
   const [showTagInput, setShowTagInput] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("");
   const [newIssueOpen, setNewIssueOpen] = useState(false);
@@ -130,6 +131,11 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
               )}
             />
             <StatusBadge status={issue.status} />
+            {activeRun && (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                Pipeline: {activeRun.pipeline_name}
+              </Badge>
+            )}
             <Select
               value={issue.category ?? "none"}
               onValueChange={(v) => updateIssue.mutate({ category: v === "none" ? null : v })}

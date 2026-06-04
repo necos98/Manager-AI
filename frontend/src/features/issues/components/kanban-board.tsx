@@ -37,9 +37,10 @@ interface KanbanBoardProps {
   tag: string;
   onTagChange: (tag: string) => void;
   availableTags: string[];
+  activeRunsByIssue?: Record<string, { pipeline_name: string; status: string } | null>;
 }
 
-export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blockedIssueIds = new Set(), tag, onTagChange, availableTags }: KanbanBoardProps) {
+export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blockedIssueIds = new Set(), tag, onTagChange, availableTags, activeRunsByIssue }: KanbanBoardProps) {
   const [search, setSearch] = useState("");
   const [priority, setPriority] = useState("all");
   const [sort, setSort] = useState<SortKey>("priority");
@@ -155,6 +156,7 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
               blockedIssueIds={blockedIssueIds}
               isValidTarget={activeIssue ? isValidTransition(activeIssue.status, status) : false}
               projectId={projectId}
+              activeRunsByIssue={activeRunsByIssue}
               {...(status === "Finished" ? {
                 onLoadMore: () => setFinishedOffset(prev => prev + FINISHED_PAGE_SIZE),
                 hasMore: finishedPage != null && finishedPage.length >= FINISHED_PAGE_SIZE,
@@ -169,6 +171,7 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
               issue={activeIssue}
               hasTerminal={activeTerminalIssueIds.includes(activeIssue.id)}
               isBlocked={blockedIssueIds.has(activeIssue.id)}
+              activePipelineName={activeRunsByIssue?.[activeIssue.id]?.pipeline_name}
             />
           )}
         </DragOverlay>

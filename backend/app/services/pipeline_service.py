@@ -4,7 +4,9 @@ from sqlalchemy.orm import selectinload
 
 from app.exceptions import NotFoundError
 from app.models.pipeline import Pipeline, PipelineStep
+from app.models.agent import Agent
 from app.services.agent_service import AgentService
+from app.schemas.export_import import ImportConfirmResponse
 
 
 class PipelineService:
@@ -137,3 +139,143 @@ class PipelineService:
             await self.session.flush()
 
         return steps
+
+    # ── Export / Import ────────────────────────────────────────────────
+
+    async def export_all(self) -> list[Pipeline]:
+        result = await self.session.execute(
+            select(Pipeline)
+            .options(
+                selectinload(Pipeline.steps).selectinload(PipelineStep.agent)
+            )
+            .order_by(Pipeline.name)
+        )
+        return list(result.unique().scalars().all())
+
+    async def export_by_id(self, pipeline_id: str) -> Pipeline:
+        result = await self.session.execute(
+            select(Pipeline)
+            .where(Pipeline.id == pipeline_id)
+            .options(
+                selectinload(Pipeline.steps).selectinload(PipelineStep.agent)
+            )
+        )
+        pipeline = result.scalar_one_or_none()
+        if pipeline is None:
+            raise NotFoundError(f"Pipeline not found: {pipeline_id}")
+        return pipeline
+
+    async def replace_steps(
+        self,
+        pipeline_id: str,
+        steps_data: list[dict],
+    ) -> list[PipelineStep]:
+        """Delete all existing steps and create new ones with exact order_index."""
+        # Delete existing steps
+        result = await self.session.execute(
+            select(PipelineStep).where(PipelineStep.pipeline_id == pipeline_id)
+        )
+        for step in result.scalars().all():
+            await self.session.delete(step)
+        await self.session.flush()
+
+        # Create new steps
+        new_steps = []
+        for sd in steps_data:
+            step = PipelineStep(
+                pipeline_id=pipeline_id,
+                agent_id=sd["agent_id"],
+                order_index=sd.get("order_index", 0),
+            )
+            self.session.add(step)
+            new_steps.append(step)
+        await self.session.flush()
+        return new_steps
+
+    async def import_pipelines(
+        self,
+        pipelines_data: list[dict],
+        file_agents: list[dict],  # agents from the same file's step.agent fields
+        conflict_map: dict[str, str],
+        agent_service: AgentService,
+    ) -> ImportConfirmResponse:
+        imported = 0
+        skipped = 0
+        errors = []
+
+        # First pass: ensure all referenced agents exist
+        all_agent_ids_in_file = {a.get("id") for a in file_agents if a.get("id")}
+        existing_agent_ids = await agent_service.check_agent_ids_exist(
+            list(all_agent_ids_in_file)
+        )
+
+        for item in pipelines_data:
+            pipeline_id = item.get("id")
+            if not pipeline_id:
+                errors.append(f"Pipeline item missing id: {item.get('name', '?')}")
+                continue
+
+            try:
+                existing_pipeline = await self.get_pipeline(pipeline_id)
+                action = conflict_map.get(pipeline_id, "skip")
+                if action != "overwrite":
+                    skipped += 1
+                    continue
+
+                # Overwrite: update name and replace steps
+                existing_pipeline.name = item.get("name", existing_pipeline.name)
+                steps_data = item.get("steps", [])
+                # Ensure referenced agents exist
+                for sd in steps_data:
+                    agent_id = sd.get("agent_id")
+                    agent_data = sd.get("agent")
+                    if agent_id and agent_id not in existing_agent_ids and agent_data:
+                        # Create the agent
+                        agent = Agent(
+                            id=agent_id,
+                            name=agent_data.get("name", "Unknown"),
+                            model=agent_data.get("model"),
+                            allowed_tools=agent_data.get("allowed_tools"),
+                            intent=agent_data.get("intent", ""),
+                        )
+                        self.session.add(agent)
+                        existing_agent_ids.add(agent_id)
+                await self.session.flush()
+                await self.replace_steps(pipeline_id, steps_data)
+                imported += 1
+
+            except NotFoundError:
+                # New pipeline
+                pipeline = Pipeline(
+                    id=pipeline_id,
+                    name=item.get("name", "Unknown"),
+                )
+                self.session.add(pipeline)
+                await self.session.flush()
+
+                steps_data = item.get("steps", [])
+                for sd in steps_data:
+                    agent_id = sd.get("agent_id")
+                    agent_data = sd.get("agent")
+                    if agent_id and agent_id not in existing_agent_ids and agent_data:
+                        agent = Agent(
+                            id=agent_id,
+                            name=agent_data.get("name", "Unknown"),
+                            model=agent_data.get("model"),
+                            allowed_tools=agent_data.get("allowed_tools"),
+                            intent=agent_data.get("intent", ""),
+                        )
+                        self.session.add(agent)
+                        existing_agent_ids.add(agent_id)
+                await self.session.flush()
+                await self.replace_steps(pipeline.id, steps_data)
+                imported += 1
+
+            except Exception as e:
+                errors.append(f"Error importing pipeline {pipeline_id}: {e}")
+
+        return ImportConfirmResponse(
+            imported=imported,
+            skipped=skipped,
+            errors=errors,
+        )

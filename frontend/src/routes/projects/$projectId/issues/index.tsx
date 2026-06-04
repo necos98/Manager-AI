@@ -6,6 +6,7 @@ import { NewIssueDialog } from "@/features/issues/components/new-issue-dialog";
 import { useBlockedIssueIds } from "@/features/issues/hooks-relations";
 import { useProject } from "@/features/projects/hooks";
 import { useTerminals } from "@/features/terminals/hooks";
+import { useActivePipelineRuns } from "@/features/pipeline-runs/hooks";
 import { KanbanBoard } from "@/features/issues/components/kanban-board";
 import { Button } from "@/shared/components/ui/button";
 import { Skeleton } from "@/shared/components/ui/skeleton";
@@ -36,6 +37,8 @@ function IssuesPage() {
   const { data: terminals } = useTerminals(projectId);
   const activeTerminalIssueIds = terminals?.map((t) => t.issue_id) ?? [];
   const blockedIssueIds = useBlockedIssueIds(issues ?? []);
+  const issueIds = issues?.map((i) => i.id) ?? [];
+  const { data: activePipelineRuns } = useActivePipelineRuns(issueIds);
   const { data: availableTags } = useProjectTags(projectId);
   const navigate = useNavigate();
   const handleTagChange = (newTag: string) => {
@@ -75,6 +78,7 @@ function IssuesPage() {
           tag={tag}
           onTagChange={handleTagChange}
           availableTags={availableTags ?? []}
+          activeRunsByIssue={activePipelineRuns}
         />
       </ErrorBoundary>
       <NewIssueDialog

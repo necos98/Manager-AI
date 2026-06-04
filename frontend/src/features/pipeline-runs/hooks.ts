@@ -12,6 +12,7 @@ export const pipelineRunKeys = {
   byIssue: (projectId: string, issueId: string) => ["pipeline-runs", projectId, "issue", issueId] as const,
   detail: (projectId: string, runId: string) => ["pipeline-runs", projectId, runId] as const,
   messages: (projectId: string, runId: string) => ["pipeline-runs", projectId, runId, "messages"] as const,
+  activeByIssue: (issueIds: string[]) => ["pipeline-runs", "active-by-issue", ...issueIds] as const,
 };
 
 export function usePipelineRuns(
@@ -67,6 +68,15 @@ export function usePipelineMessages(
     queryFn: () => api.fetchPipelineMessages(runId),
     enabled: Boolean(projectId) && Boolean(runId),
     refetchInterval: opts?.refetchInterval,
+  });
+}
+
+export function useActivePipelineRuns(issueIds: string[]) {
+  return useQuery({
+    queryKey: pipelineRunKeys.activeByIssue(issueIds),
+    queryFn: () => api.fetchActivePipelineRuns(issueIds),
+    enabled: issueIds.length > 0,
+    refetchInterval: 5000,
   });
 }
 

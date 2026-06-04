@@ -1,0 +1,1 @@
+Eliminare tutti gli obblighi constraint per l'aggiornamento della issue. Nel senso che l'agente può aggiornare tranquillamente qualsiasi stato, spec, plan, task, quando vuole, senza nessun contrait
