@@ -1,0 +1,1 @@
+Quando sto creando una issue e si apre la modale, vorrei che se clicco fuori, la modale non si chiude, ma esce semplicemente il messaggio "Are you sure to abandone the issue creation" (una roba del genere), in pratica un sistema di prevenzione form abbandonati. SOLO IN CREAZIONE ISSUE
