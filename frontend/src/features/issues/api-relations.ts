@@ -12,3 +12,8 @@ export function addRelation(issueId: string, data: IssueRelationCreate): Promise
 export function deleteRelation(issueId: string, relationId: number): Promise<null> {
   return apiDelete(`/issues/${issueId}/relations/${relationId}`);
 }
+
+export function fetchBlockedIssueIds(issueIds: string[]): Promise<string[]> {
+  return apiPost<{ blocked_ids: string[] }>("/issues/relations/batch", { issue_ids: issueIds })
+    .then(r => r.blocked_ids);
+}

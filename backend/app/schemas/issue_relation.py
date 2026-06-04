@@ -46,6 +46,14 @@ def parse_relation_id(relation_id: str, candidates: list[tuple[str, str, str]]) 
     return None
 
 
+class BlockedIdsRequest(BaseModel):
+    issue_ids: list[str]
+
+
+class BlockedIdsResponse(BaseModel):
+    blocked_ids: list[str]
+
+
 def _parse_dt(value: Any) -> datetime:
     if isinstance(value, datetime):
         return value

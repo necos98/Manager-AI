@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas.issue_relation import IssueRelationCreate, IssueRelationResponse
+from app.schemas.issue_relation import BlockedIdsRequest, BlockedIdsResponse, IssueRelationCreate, IssueRelationResponse
 from app.services.issue_relation_service import IssueRelationService
 
 router = APIRouter(prefix="/api/issues/{issue_id}/relations", tags=["issue-relations"])
@@ -37,3 +37,13 @@ async def delete_relation(issue_id: str, relation_id: str, db: AsyncSession = De
     svc = IssueRelationService(db)
     await svc.delete_relation(relation_id, issue_id)
     await db.commit()
+
+
+batch_router = APIRouter(prefix="/api/issues/relations", tags=["issue-relations"])
+
+
+@batch_router.post("/batch", response_model=BlockedIdsResponse)
+async def get_blocked_ids(data: BlockedIdsRequest, db: AsyncSession = Depends(get_db)):
+    svc = IssueRelationService(db)
+    blocked_ids = await svc.get_blocked_issue_ids(set(data.issue_ids))
+    return BlockedIdsResponse(blocked_ids=blocked_ids)

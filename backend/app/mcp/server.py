@@ -335,6 +335,28 @@ async def cancel_issue(project_id: str, issue_id: str) -> dict:
             return {"error": e.message}
 
 
+@mcp.tool(description=_desc["tool.force_finish_issue.description"])
+async def force_finish_issue(project_id: str, issue_id: str, recap: str | None = None) -> dict:
+    async with async_session() as session:
+        issue_service = IssueService(session)
+        try:
+            issue = await issue_service.force_finish_issue(issue_id, project_id, recap=recap)
+            issue_status = issue.status
+            issue_name_val = issue.name or (issue.description or "")[:50] or ""
+            await session.commit()
+            await event_service.emit({
+                "type": "issue_status_changed",
+                "new_status": issue_status,
+                "project_id": project_id,
+                "issue_id": issue_id,
+                "issue_name": issue_name_val,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+            return {"id": issue_id, "status": issue_status}
+        except AppError as e:
+            return {"error": e.message}
+
+
 @mcp.tool(description=_desc["tool.send_notification.description"])
 async def send_notification(project_id: str, issue_id: str, title: str, message: str = "") -> dict:
     async with async_session() as session:
@@ -890,11 +912,10 @@ async def ask_user_question(issue_id: str, question: str, options: list[str] | N
 
     async with async_session() as session:
         issue_service = IssueService(session)
-        try:
-            issue = await issue_service.get_by_id(issue_id)
-            project_id = issue.project_id
-        except AppError:
+        issue = await issue_service.get_by_id(issue_id)
+        if issue is None:
             return {"error": "Issue not found"}
+        project_id = issue.project_id
 
         qsvc = QuestionService(session)
         q = await qsvc.create(

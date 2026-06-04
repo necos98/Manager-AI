@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { CheckCircle, XCircle, Loader2, Play } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Play, Ban } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -15,6 +15,7 @@ import {
   useAcceptIssue,
   useCancelIssue,
   useCompleteIssue,
+  useForceFinishIssue,
 } from "@/features/issues/hooks";
 import { useCreateTerminal } from "@/features/terminals/hooks";
 import { PipelineRunButton } from "@/features/pipeline-runs/components/PipelineRunButton";
@@ -25,7 +26,7 @@ interface IssueActionsProps {
   projectId: string;
 }
 
-type ActionType = "accept" | "cancel" | "complete";
+type ActionType = "accept" | "cancel" | "complete" | "force-finish";
 
 const CONFIRM_COPY: Record<ActionType, { title: string; description: string; confirm: string }> = {
   accept: {
@@ -43,6 +44,11 @@ const CONFIRM_COPY: Record<ActionType, { title: string; description: string; con
     description: "All tasks must be completed. Enter a recap of what was done.",
     confirm: "Complete",
   },
+  "force-finish": {
+    title: "Force Finish",
+    description: "Force finish overrides all constraints. The issue will be marked as Finished regardless of status or incomplete tasks. This action cannot be undone.",
+    confirm: "Force Finish",
+  },
 };
 
 export function IssueActions({ issue, projectId }: IssueActionsProps) {
@@ -53,12 +59,14 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
   const acceptIssue = useAcceptIssue(projectId, issue.id);
   const cancelIssue = useCancelIssue(projectId, issue.id);
   const completeIssue = useCompleteIssue(projectId, issue.id);
+  const forceFinishIssue = useForceFinishIssue(projectId, issue.id);
   const createTerminal = useCreateTerminal();
 
   const isPending =
     acceptIssue.isPending ||
     cancelIssue.isPending ||
-    completeIssue.isPending;
+    completeIssue.isPending ||
+    forceFinishIssue.isPending;
 
   const handleRunIssue = () => {
     createTerminal.mutate({ issue_id: issue.id, project_id: projectId });
@@ -79,6 +87,14 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
         { recap },
         { onSuccess: () => { setConfirmAction(null); setRecap(""); } }
       );
+    } else if (confirmAction === "force-finish") {
+      forceFinishIssue.mutate(recap || undefined, {
+        onSuccess: () => {
+          setConfirmAction(null);
+          setRecap("");
+          navigate({ to: "/projects/$projectId", params: { projectId } });
+        },
+      });
     }
   };
 
@@ -121,6 +137,17 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
           size="sm"
           variant="outline"
           className="text-destructive hover:text-destructive"
+          onClick={() => setConfirmAction("force-finish")}
+          disabled={isPending}
+          aria-label="Force finish issue"
+        >
+          <Ban className="size-4 mr-1" />
+          Force Finish
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-destructive hover:text-destructive"
           onClick={() => setConfirmAction("cancel")}
           disabled={isPending}
           aria-label="Cancel issue"
@@ -137,10 +164,10 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
               <DialogTitle>{copy.title}</DialogTitle>
               <DialogDescription>{copy.description}</DialogDescription>
             </DialogHeader>
-            {confirmAction === "complete" && (
+            {(confirmAction === "complete" || confirmAction === "force-finish") && (
               <>
                 <Textarea
-                  placeholder="Describe what was implemented..."
+                  placeholder={confirmAction === "force-finish" ? "Optional recap of why this was force finished..." : "Describe what was implemented..."}
                   value={recap}
                   onChange={(e) => setRecap(e.target.value)}
                   rows={4}
@@ -158,9 +185,9 @@ export function IssueActions({ issue, projectId }: IssueActionsProps) {
                 Cancel
               </Button>
               <Button
-                variant={confirmAction === "cancel" ? "destructive" : "default"}
+                variant={confirmAction === "cancel" || confirmAction === "force-finish" ? "destructive" : "default"}
                 onClick={handleConfirm}
-                disabled={isPending || (confirmAction === "complete" && (!recap.trim() || recap.length > 50_000))}
+                disabled={isPending || (confirmAction === "complete" && (!recap.trim() || recap.length > 50_000)) || (confirmAction === "force-finish" && recap.length > 50_000)}
               >
                 {isPending ? <Loader2 className="size-4 mr-1 animate-spin" /> : null}
                 {isPending ? "Working..." : copy.confirm}

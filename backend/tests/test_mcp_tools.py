@@ -1,6 +1,7 @@
 import asyncio
 import uuid
 from contextlib import asynccontextmanager
+from types import SimpleNamespace
 
 import pytest
 import pytest_asyncio
@@ -10,7 +11,7 @@ from app.models.issue import IssueStatus
 from app.services.project_service import ProjectService
 from app.services.issue_service import IssueService
 import app.mcp.server as mcp_server
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 
 @pytest_asyncio.fixture
@@ -221,4 +222,119 @@ async def test_mcp_create_issue_rejects_bad_priority(db_session, project):
 
     assert low == {"error": "Priority must be between 1 and 5"}
     assert high == {"error": "Priority must be between 1 and 5"}
+
+
+@pytest.mark.asyncio
+async def test_ask_user_question_success(db_session, project):
+    """ask_user_question creates question, waits for answer, returns result"""
+    svc = IssueService(db_session)
+    issue = await svc.create(project_id=project.id, description="Question test", priority=1)
+
+    @asynccontextmanager
+    async def fake_session():
+        yield db_session
+
+    class MockSessionmaker:
+        def __call__(self):
+            return fake_session()
+
+    # Mock question_store so wait returns an already-set event
+    ready_event = asyncio.Event()
+    ready_event.set()
+
+    mock_answer = SimpleNamespace(
+        answer="User answered yes",
+        selected_option="yes",
+    )
+
+    with patch("app.mcp.server.async_session", MockSessionmaker()), \
+         patch.object(mcp_server.question_store, "wait", return_value=ready_event), \
+         patch.object(mcp_server.question_store, "get", return_value=mock_answer):
+        result = await mcp_server.ask_user_question(
+            issue_id=str(issue.id),
+            question="Do you want to proceed?",
+            options=["yes", "no"],
+            timeout_seconds=5,
+        )
+
+    assert "error" not in result
+    assert result["answer"] == "User answered yes"
+    assert result["selected_option"] == "yes"
+    assert result["timed_out"] is False
+    assert result["question_id"]
+
+
+@pytest.mark.asyncio
+async def test_ask_user_question_empty_question():
+    """Empty question is rejected"""
+    result = await mcp_server.ask_user_question(
+        issue_id="any-id",
+        question="   ",
+    )
+    assert result == {"error": "Question text cannot be empty"}
+
+
+@pytest.mark.asyncio
+async def test_ask_user_question_bad_timeout():
+    """Timeout outside [5, 3600] is rejected"""
+    result = await mcp_server.ask_user_question(
+        issue_id="any-id",
+        question="Test?",
+        timeout_seconds=1,
+    )
+    assert result == {"error": "Timeout must be between 5 and 3600 seconds"}
+
+
+@pytest.mark.asyncio
+async def test_ask_user_question_issue_not_found(db_session):
+    """Non-existent issue_id returns error"""
+
+    @asynccontextmanager
+    async def fake_session():
+        yield db_session
+
+    class MockSessionmaker:
+        def __call__(self):
+            return fake_session()
+
+    with patch("app.mcp.server.async_session", MockSessionmaker()):
+        result = await mcp_server.ask_user_question(
+            issue_id=str(uuid.uuid4()),
+            question="Test?",
+            timeout_seconds=5,
+        )
+
+    assert result == {"error": "Issue not found"}
+
+
+@pytest.mark.asyncio
+async def test_ask_user_question_timed_out(db_session, project):
+    """ask_user_question returns timed_out when no answer before timeout"""
+    svc = IssueService(db_session)
+    issue = await svc.create(project_id=project.id, description="Timeout test", priority=1)
+
+    @asynccontextmanager
+    async def fake_session():
+        yield db_session
+
+    class MockSessionmaker:
+        def __call__(self):
+            return fake_session()
+
+    # Return an event that never resolves — force TimeoutError immediately
+    pending_event = asyncio.Event()
+    async def _timeout(*args, **kwargs):
+        raise asyncio.TimeoutError()
+
+    with patch("app.mcp.server.async_session", MockSessionmaker()), \
+         patch.object(mcp_server.question_store, "wait", return_value=pending_event), \
+         patch("app.mcp.server.asyncio.wait_for", _timeout):
+        result = await mcp_server.ask_user_question(
+            issue_id=str(issue.id),
+            question="Will you answer?",
+            timeout_seconds=5,
+        )
+
+    assert result["timed_out"] is True
+    assert result["question_id"]
 

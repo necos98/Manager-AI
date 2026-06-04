@@ -111,6 +111,17 @@ class IssueRelationService:
                         )
         return out
 
+    async def get_blocked_issue_ids(self, issue_ids: set[str]) -> list[str]:
+        blocked: set[str] = set()
+        for path in await self._all_paths():
+            for issue in issue_store.list_issues_full(path):
+                if issue is None:
+                    continue
+                for rel in issue.relations:
+                    if rel.type == RelationType.BLOCKS.value and rel.target_id in issue_ids:
+                        blocked.add(rel.target_id)
+        return sorted(blocked)
+
     async def delete_relation(self, relation_id: str, requesting_issue_id: str) -> None:
         """Delete a relation by its deterministic hash id. Caller must own
         either side of the relation."""

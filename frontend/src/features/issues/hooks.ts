@@ -115,6 +115,18 @@ export function useCompleteIssue(projectId: string, issueId: string) {
   });
 }
 
+export function useForceFinishIssue(projectId: string, issueId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (recap?: string) => api.forceFinishIssue(projectId, issueId, recap),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.detail(projectId, issueId) });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all(projectId) });
+    },
+    onError: onMutationError,
+  });
+}
+
 export function useFeedback(projectId: string, issueId: string) {
   return useQuery({
     queryKey: feedbackKeys.all(projectId, issueId),

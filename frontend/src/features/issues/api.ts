@@ -84,6 +84,10 @@ export function completeIssue(projectId: string, issueId: string, data: IssueCom
   return apiPost<Issue>(`/projects/${projectId}/issues/${issueId}/complete`, data);
 }
 
+export function forceFinishIssue(projectId: string, issueId: string, recap?: string): Promise<Issue> {
+  return apiPost<Issue>(`/projects/${projectId}/issues/${issueId}/force-finish`, recap ? { recap } : undefined);
+}
+
 export function fetchFeedback(projectId: string, issueId: string): Promise<IssueFeedback[]> {
   return apiGet<IssueFeedback[]>(`/projects/${projectId}/issues/${issueId}/feedback`);
 }

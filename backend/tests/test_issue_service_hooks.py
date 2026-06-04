@@ -79,3 +79,18 @@ async def test_create_issue_fires_issue_created_hook(mock_registry, db_session, 
     assert "project_path" in ctx.metadata
     assert "project_description" in ctx.metadata
     assert "tech_stack" in ctx.metadata
+
+
+@patch("app.services.issue_service.hook_registry")
+async def test_force_finish_fires_hook(mock_registry, db_session, project):
+    mock_registry.fire = AsyncMock()
+    service = IssueService(db_session)
+    issue = await service.create(project_id=project.id, description="Force hook", priority=1)
+    mock_registry.fire.reset_mock()
+    await service.force_finish_issue(issue.id, project.id, recap="Forced")
+    mock_registry.fire.assert_called_once()
+    args = mock_registry.fire.call_args
+    assert args[0][0] == HookEvent.ISSUE_COMPLETED
+    ctx = args[0][1]
+    assert ctx.metadata.get("issue_name") == "Force hook"
+    assert ctx.metadata.get("project_name") == "Test"

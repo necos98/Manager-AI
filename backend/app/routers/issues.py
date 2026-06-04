@@ -6,6 +6,7 @@ from app.models.issue import IssueStatus
 from app.schemas.issue import (
     IssueCompleteBody,
     IssueCreate,
+    IssueForceFinishBody,
     IssueFeedbackCreate,
     IssueFeedbackResponse,
     IssueResponse,
@@ -141,6 +142,16 @@ async def complete_issue(
         ),
     )
 
+    return IssueResponse.from_record(record)
+
+
+@router.post("/{issue_id}/force-finish", response_model=IssueResponse)
+async def force_finish_issue_endpoint(
+    project_id: str, issue_id: str, data: IssueForceFinishBody | None = None, db: AsyncSession = Depends(get_db)
+):
+    service = IssueService(db)
+    record = await service.force_finish_issue(issue_id, project_id, recap=data.recap if data else None)
+    await db.commit()
     return IssueResponse.from_record(record)
 
 

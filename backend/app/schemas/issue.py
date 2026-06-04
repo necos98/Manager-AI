@@ -39,6 +39,10 @@ class IssueCompleteBody(BaseModel):
     recap: str = Field(..., min_length=1, max_length=_RECAP_MAX)
 
 
+class IssueForceFinishBody(BaseModel):
+    recap: str | None = Field(None, max_length=_RECAP_MAX)
+
+
 class IssueResponse(BaseModel):
     id: str
     project_id: str

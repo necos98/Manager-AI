@@ -13,6 +13,7 @@
   "tool.accept_issue.description": "Accept an issue's plan and move it to Accepted status. Only works for issues in Planned status. Call this ONLY when the user explicitly asks you to accept the plan.\n\nAfter acceptance, wait for the user to tell you to begin implementation. Do NOT automatically start implementing — the user controls when work begins.",
   "tool.cancel_issue.description": "Cancel an issue from any status. Use this when the issue is no longer needed or was created in error.",
   "tool.create_plan_tasks.description": "Create atomic tasks for an issue's plan. Accepts a list of task objects with 'name' field. Tasks track implementation progress.\n\nCall this after create_issue_plan to break the plan into trackable steps.",
+  "tool.force_finish_issue.description": "Force finish an issue from any status, bypassing all constraints (status checks, task completion requirements). Use this when an issue needs to be marked as Finished regardless of its current state. Optional recap parameter.",
   "tool.replace_plan_tasks.description": "Replace all tasks for an issue. Deletes existing tasks and creates new ones from the provided list. Use this when the plan changes significantly.",
   "tool.update_task_status.description": "Update the status of an atomic plan task. Valid transitions: Pending → In Progress → Completed.",
   "tool.update_task_name.description": "Update the name of an atomic plan task.",

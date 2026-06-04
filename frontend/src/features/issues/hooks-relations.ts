@@ -1,6 +1,6 @@
-import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { addRelation, deleteRelation, fetchRelations } from "./api-relations";
+import { addRelation, deleteRelation, fetchBlockedIssueIds, fetchRelations } from "./api-relations";
 import type { Issue, IssueRelationCreate } from "@/shared/types";
 
 const onMutationError = (e: unknown) => {
@@ -33,19 +33,11 @@ export function useDeleteRelation(issueId: string) {
 }
 
 export function useBlockedIssueIds(issues: Issue[]) {
-  const results = useQueries({
-    queries: issues.map((i) => ({
-      queryKey: ["relations", i.id],
-      queryFn: () => fetchRelations(i.id),
-    })),
+  const issueIds = issues.map(i => i.id);
+  const { data } = useQuery({
+    queryKey: ["relations", "batch", ...issueIds],
+    queryFn: () => fetchBlockedIssueIds(issueIds),
+    enabled: issueIds.length > 0,
   });
-  const blockedIds = new Set<string>();
-  results.forEach((result, idx) => {
-    (result.data ?? []).forEach((r) => {
-      if (r.relation_type === "blocks" && r.target_id === issues[idx].id) {
-        blockedIds.add(r.target_id);
-      }
-    });
-  });
-  return blockedIds;
+  return new Set(data ?? []);
 }
