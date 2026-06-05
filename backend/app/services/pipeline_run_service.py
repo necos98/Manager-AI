@@ -443,8 +443,7 @@ class PipelineRunService:
         command = f'claude --dangerously-skip-permissions "/run-pipeline {issue_id}"'
 
         if is_windows:
-            pty.write(f"{command}\r\n")
-            pty.write("exit\r\n")
+            pty.write(f"{command} & exit\r\n")
         else:
             pty.write(f"{command}; exit\r\n")
 
