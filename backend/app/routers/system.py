@@ -46,6 +46,7 @@ async def install_hermes_mcp() -> dict:
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
+            stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             env=os.environ.copy(),
@@ -53,7 +54,7 @@ async def install_hermes_mcp() -> dict:
 
         try:
             stdout, stderr = await asyncio.wait_for(
-                proc.communicate(), timeout=30
+                proc.communicate(input=b"n\ny\ny\n"), timeout=30
             )
         except asyncio.TimeoutError:
             proc.kill()

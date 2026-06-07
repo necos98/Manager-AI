@@ -1,1 +1,0 @@
- 43. desktop_icon.py — Leak GDI handles (LoadImageW senza DestroyIcon)

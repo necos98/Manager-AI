@@ -114,6 +114,65 @@ function SettingField({ setting }: SettingFieldProps) {
     );
   }
 
+  if (setting.key === "agent_provider") {
+    return (
+      <div className="border rounded-lg p-4">
+        <div className="flex items-center justify-between mb-2">
+          <label className="font-medium text-sm">Agent Provider</label>
+          {setting.is_customized && (
+            <Badge variant="secondary" className="text-xs">Customized</Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Which coding agent CLI to spawn in terminals and pipelines.
+        </p>
+        <Select
+          value={value}
+          onValueChange={(v) => {
+            setValue(v);
+            updateSetting.mutate({ key: setting.key, value: v });
+          }}
+        >
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="claude">
+              <span className="flex items-center gap-2">Claude Code</span>
+            </SelectItem>
+            <SelectItem value="hermes">
+              <span className="flex items-center gap-2">Hermes Agent</span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="flex items-center gap-2 mt-2">
+          {setting.is_customized && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => {
+                      resetSetting.mutate(setting.key, {
+                        onSuccess: () => setValue(setting.default),
+                      });
+                    }}
+                    disabled={resetSetting.isPending}
+                  >
+                    <RotateCcw className="size-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Reset to default ({setting.default})</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const handleSave = () => {
     updateSetting.mutate({ key: setting.key, value });
   };
