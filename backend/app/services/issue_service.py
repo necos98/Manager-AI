@@ -350,48 +350,51 @@ class IssueService:
             raise ValidationError("Recap cannot be blank")
         lock = _issue_completion_locks.setdefault(issue_id, asyncio.Lock())
         async with lock:
-            rec = await self.get_for_project(issue_id, project_id)
-            if rec.status != IssueStatus.ACCEPTED.value:
-                raise InvalidTransitionError(
-                    f"Can only complete issues in Accepted status, got {rec.status}"
-                )
-            pending = [t for t in rec.tasks if t.status != TaskStatus.COMPLETED.value]
-            if rec.tasks and pending:
-                names = ", ".join(t.name for t in pending)
-                raise ValidationError(
-                    f"Cannot complete: {len(pending)} tasks not finished: {names}"
-                )
-            rec.recap = recap
-            rec.status = IssueStatus.FINISHED.value
-            rec.updated_at = _now_iso()
-            rec.finished_at = _now_iso()
-            path = await self._resolve_path(project_id)
-            issue_store.update_issue(path, rec)
-            await ActivityService(self.session).log(
-                project_id=project_id,
-                issue_id=issue_id,
-                event_type="issue_completed",
-                details={"issue_name": rec.name or "", "recap_preview": (recap or "")[:100]},
-            )
-            project = await ProjectService(self.session).get_by_id(project_id)
-            await self.session.commit()  # flush activity log
-            await hook_registry.fire(
-                HookEvent.ISSUE_COMPLETED,
-                HookContext(
+            try:
+                rec = await self.get_for_project(issue_id, project_id)
+                if rec.status != IssueStatus.ACCEPTED.value:
+                    raise InvalidTransitionError(
+                        f"Can only complete issues in Accepted status, got {rec.status}"
+                    )
+                pending = [t for t in rec.tasks if t.status != TaskStatus.COMPLETED.value]
+                if rec.tasks and pending:
+                    names = ", ".join(t.name for t in pending)
+                    raise ValidationError(
+                        f"Cannot complete: {len(pending)} tasks not finished: {names}"
+                    )
+                rec.recap = recap
+                rec.status = IssueStatus.FINISHED.value
+                rec.updated_at = _now_iso()
+                rec.finished_at = _now_iso()
+                path = await self._resolve_path(project_id)
+                issue_store.update_issue(path, rec)
+                await ActivityService(self.session).log(
                     project_id=project_id,
                     issue_id=issue_id,
-                    event=HookEvent.ISSUE_COMPLETED,
-                    metadata={
-                        "issue_name": rec.name or "",
-                        "recap": rec.recap or "",
-                        "project_name": project.name,
-                        "project_path": project.path,
-                        "project_description": project.description,
-                        "tech_stack": project.tech_stack,
-                    },
-                ),
-            )
-            return rec
+                    event_type="issue_completed",
+                    details={"issue_name": rec.name or "", "recap_preview": (recap or "")[:100]},
+                )
+                project = await ProjectService(self.session).get_by_id(project_id)
+                await self.session.commit()  # flush activity log
+                await hook_registry.fire(
+                    HookEvent.ISSUE_COMPLETED,
+                    HookContext(
+                        project_id=project_id,
+                        issue_id=issue_id,
+                        event=HookEvent.ISSUE_COMPLETED,
+                        metadata={
+                            "issue_name": rec.name or "",
+                            "recap": rec.recap or "",
+                            "project_name": project.name,
+                            "project_path": project.path,
+                            "project_description": project.description,
+                            "tech_stack": project.tech_stack,
+                        },
+                    ),
+                )
+                return rec
+            finally:
+                _issue_completion_locks.pop(issue_id, None)
 
     async def force_finish_issue(self, issue_id: str, project_id: str, recap: str | None = None) -> IssueRecord:
         rec = await self.get_for_project(issue_id, project_id)
