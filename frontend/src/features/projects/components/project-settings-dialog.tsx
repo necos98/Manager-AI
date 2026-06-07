@@ -18,7 +18,7 @@ import {
 } from "@/shared/components/ui/select";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { useArchiveProject, useCreateProjectLink, useDeleteProjectLink, useProjectLinks, useProjects, useUpdateProject, useUpdateProjectLink } from "@/features/projects/hooks";
+import { useArchiveProject, useCreateProjectLink, useDeleteProject, useDeleteProjectLink, useProjectLinks, useProjects, useUpdateProject, useUpdateProjectLink } from "@/features/projects/hooks";
 import { useSystemInfo } from "@/features/system/hooks";
 import {
   useCredentials,
@@ -79,6 +79,7 @@ export function ProjectSettingsDialog({
 
   const updateProject = useUpdateProject(project.id);
   const archiveProject = useArchiveProject();
+  const deleteProject = useDeleteProject();
   const navigate = useNavigate();
 
   const { data: credentials } = useCredentials(open ? project.id : "");
@@ -114,6 +115,20 @@ export function ProjectSettingsDialog({
     archiveProject.mutate(project.id, {
       onSuccess: () => {
         toast.success("Project archived");
+        onOpenChange(false);
+        navigate({ to: "/" });
+      },
+    });
+  };
+
+  const handleDelete = () => {
+    const confirmed = window.confirm(
+      `Delete "${project.name}" from Manager AI? Issues, files and memories on disk will NOT be deleted. This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    deleteProject.mutate(project.id, {
+      onSuccess: () => {
+        toast.success("Project deleted");
         onOpenChange(false);
         navigate({ to: "/" });
       },
@@ -497,6 +512,28 @@ export function ProjectSettingsDialog({
               >
                 <Archive className="size-3.5 mr-1.5" />
                 {archiveProject.isPending ? "Archiving..." : "Archive project"}
+              </Button>
+            </div>
+          </div>
+          <div className="pt-2 border-t">
+            <label className="text-sm font-medium flex items-center gap-1.5 mb-2 text-destructive">
+              <Trash2 className="size-3.5" />
+              Delete
+            </label>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Removes the project from Manager AI. Issues, files, and memories on disk are preserved.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0"
+                disabled={deleteProject.isPending}
+                onClick={handleDelete}
+              >
+                <Trash2 className="size-3.5 mr-1.5" />
+                {deleteProject.isPending ? "Deleting..." : "Delete project"}
               </Button>
             </div>
           </div>

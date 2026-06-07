@@ -1,20 +1,20 @@
 schema_version: 1
 id: 7cb7e74e-6bbc-4b28-bd1a-af1185b46271
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: "Rimuovere plugin MCP ridondanti (memory, filesystem) dal catalog"
+name: Rimuovere plugin MCP ridondanti (memory, filesystem) dal catalog
 status: Finished
 priority: 3
 created_at: '2026-05-15T07:19:18.297682'
 updated_at: '2026-05-15T07:19:18.297682'
 tasks:
 - id: task-1
-  name: "Rimuovere plugin memory dal catalog"
+  name: Rimuovere plugin memory dal catalog
   status: Completed
   order: 1
   created_at: '2026-05-15T00:00:00'
   updated_at: '2026-05-15T00:00:00'
 - id: task-2
-  name: "Rimuovere plugin filesystem dal catalog"
+  name: Rimuovere plugin filesystem dal catalog
   status: Completed
   order: 2
   created_at: '2026-05-15T00:00:00'

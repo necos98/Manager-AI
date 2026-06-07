@@ -128,6 +128,7 @@ def _startup_resolve_secret_key() -> None:
             key = Fernet.generate_key().decode()
             os.environ["MANAGER_AI_SECRET_KEY"] = key
             tmp_path = key_path + ".tmp"
+            os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
             with open(tmp_path, "w") as f:
                 f.write(key + "\n")
             os.replace(tmp_path, key_path)

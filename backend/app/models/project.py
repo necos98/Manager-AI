@@ -23,5 +23,5 @@ class Project(Base):
     archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     favorited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    issues = relationship("Issue", back_populates="project", cascade="all, delete-orphan")
-    files = relationship("ProjectFile", back_populates="project", cascade="all, delete-orphan")
+    issues = relationship("Issue", back_populates="project")
+    files = relationship("ProjectFile", back_populates="project")

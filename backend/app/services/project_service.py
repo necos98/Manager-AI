@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
+import os
+import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import delete as sa_delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import NotFoundError
@@ -16,7 +19,24 @@ class ProjectService:
     async def create(
         self, name: str, path: str, description: str = "", tech_stack: str = "", shell: str | None = None, url: str | None = None
     ) -> Project:
-        project = Project(name=name, path=path, description=description, tech_stack=tech_stack, shell=shell, url=url)
+        # Use existing project_id from manager.json if present
+        project_id = None
+        manager_json_path = os.path.join(path, "manager.json")
+        if os.path.isfile(manager_json_path):
+            try:
+                with open(manager_json_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                existing_id = data.get("project_id")
+                if existing_id and isinstance(existing_id, str):
+                    project_id = existing_id
+            except (json.JSONDecodeError, OSError):
+                pass
+
+        project = Project(
+            id=project_id or str(uuid.uuid4()),
+            name=name, path=path, description=description,
+            tech_stack=tech_stack, shell=shell, url=url,
+        )
         self.session.add(project)
         await self.session.flush()
         from app.services.agent_service import AgentService
@@ -73,7 +93,28 @@ class ProjectService:
 
     async def delete(self, project_id: str) -> None:
         project = await self.get_by_id(project_id)
-        await self.session.delete(project)
+        # Delete project_links referencing this project (FK constraint).
+        # Links are meaningless without both projects still existing.
+        from app.models.project_link import ProjectLink
+
+        links = await self.session.execute(
+            select(ProjectLink).where(
+                or_(
+                    ProjectLink.source_project_id == project_id,
+                    ProjectLink.target_project_id == project_id,
+                )
+            )
+        )
+        for link in links.scalars().all():
+            await self.session.delete(link)
+        await self.session.flush()
+        # Use raw DELETE to bypass ORM relationship resolution.
+        # The DB has legacy child tables (issues, project_files, etc.)
+        # that may have schema drift from the models — loading relationships
+        # would crash on missing columns like issues.finished_at.
+        await self.session.execute(
+            sa_delete(Project).where(Project.id == project_id)
+        )
         await self.session.flush()
 
     async def get_dashboard_data(self) -> list[dict]:
