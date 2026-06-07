@@ -140,7 +140,7 @@ async def create_terminal(
         }
         if is_wsl:
             _inject_env_vars(pty, env_vars, is_wsl=True)
-            port = os.environ.get("BACKEND_PORT", "8000")
+            port = str(app_settings.backend_port)
             host_ip = get_host_ip_for_wsl()
             if host_ip:
                 pty.write(
@@ -154,7 +154,7 @@ async def create_terminal(
                 )
         else:
             env_vars["MANAGER_AI_BASE_URL"] = (
-                f'http://localhost:{os.environ.get("BACKEND_PORT", "8000")}'
+                f'http://localhost:{str(app_settings.backend_port)}'
             )
             _inject_env_vars(pty, env_vars, is_wsl=False)
     except Exception:
@@ -285,7 +285,7 @@ async def create_ask_terminal(
         }
         if is_wsl:
             _inject_env_vars(pty, env_vars, is_wsl=True)
-            port = os.environ.get("BACKEND_PORT", "8000")
+            port = str(app_settings.backend_port)
             host_ip = get_host_ip_for_wsl()
             if host_ip:
                 pty.write(
@@ -299,7 +299,7 @@ async def create_ask_terminal(
                 )
         else:
             env_vars["MANAGER_AI_BASE_URL"] = (
-                f'http://localhost:{os.environ.get("BACKEND_PORT", "8000")}'
+                f'http://localhost:{str(app_settings.backend_port)}'
             )
             _inject_env_vars(pty, env_vars, is_wsl=False)
     except Exception:
@@ -382,7 +382,7 @@ async def create_manage_agent_terminal(
     # Inject env vars
     try:
         pty = service.get_pty(terminal["id"])
-        port = os.environ.get("BACKEND_PORT", "8000")
+        port = str(app_settings.backend_port)
         env_vars = {
             "MANAGER_AI_TERMINAL_ID": terminal["id"],
             "MANAGER_AI_BASE_URL": f"http://localhost:{port}",
