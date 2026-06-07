@@ -1,4 +1,4 @@
-import { apiGet, apiPut, apiDelete } from "@/shared/api/client";
+import { apiGet, apiPut, apiDelete, apiPost } from "@/shared/api/client";
 import type { Setting } from "@/shared/types";
 
 export function fetchSettings(): Promise<Setting[]> {
@@ -15,4 +15,15 @@ export function resetSetting(key: string): Promise<null> {
 
 export function resetAllSettings(): Promise<null> {
   return apiDelete("/settings");
+}
+
+export function installHermesMcp(): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+  stdout?: string;
+  stderr?: string;
+  exit_code: number;
+}> {
+  return apiPost("/system/install-hermes-mcp");
 }

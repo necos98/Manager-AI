@@ -7,7 +7,7 @@ import functools
 from mcp.server.fastmcp import FastMCP
 
 
-from app.utils.datetime import iso_now
+from app.utils.datetime import iso_now, now
 from sqlalchemy import select
 
 from app.database import async_session
@@ -1185,7 +1185,8 @@ async def list_pipeline_event_rules(pipeline_id: str) -> dict:
 
 
 @mcp.tool(description=_desc["tool.run_pipeline.description"])
-async def run_pipeline(project_id: str, pipeline_id: str, issue_id: str) -> dict:
+async def run_pipeline(project_id: str, pipeline_id: str, issue_id: str,
+                       orchestrated: bool = False) -> dict:
     async with async_session() as session:
         try:
             project = await ProjectService(session).get_by_id(project_id)
@@ -1358,3 +1359,66 @@ async def finished_pipeline_step(
             result["rejection_count"] = reject_result.get("rejection_count", 0)
             result["max_reached"] = reject_result.get("max_reached", False)
         return result
+
+
+# ── Orchestrated pipeline MCP tools (Hermes orchestrator) ─────────
+
+
+@mcp.tool(description=_desc["tool.start_pipeline_step.description"])
+async def start_pipeline_step(run_id: str, project_id: str) -> dict:
+    """Avvia lo step corrente di una pipeline orchestrata."""
+    async with async_session() as session:
+        try:
+            project = await ProjectService(session).get_by_id(project_id)
+        except AppError as e:
+            return {"error": e.message}
+        svc = PipelineRunService(session, session_factory=async_session)
+        try:
+            result = await svc.start_step(
+                run_id=run_id,
+                project_id=project_id,
+                project_path=project.path,
+            )
+            await session.commit()
+            return result
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.advance_pipeline.description"])
+async def advance_pipeline(run_id: str) -> dict:
+    """Avanza la pipeline orchestrata al prossimo step."""
+    async with async_session() as session:
+        svc = PipelineRunService(session)
+        try:
+            result = await svc.advance_step(run_id)
+            await session.commit()
+            return result
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.pause_pipeline.description"])
+async def pause_pipeline(run_id: str) -> dict:
+    """Mette in pausa la pipeline orchestrata."""
+    async with async_session() as session:
+        svc = PipelineRunService(session)
+        try:
+            result = await svc.pause_run(run_id)
+            await session.commit()
+            return result
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.resume_pipeline.description"])
+async def resume_pipeline(run_id: str) -> dict:
+    """Riprende una pipeline in pausa (PAUSED)."""
+    async with async_session() as session:
+        svc = PipelineRunService(session)
+        try:
+            result = await svc.resume_run(run_id)
+            await session.commit()
+            return result
+        except AppError as e:
+            return {"error": e.message}

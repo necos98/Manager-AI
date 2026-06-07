@@ -32,7 +32,6 @@ class PipelineRunResponse(BaseModel):
 
 
 class ActivePipelineRunResponse(BaseModel):
-    """Minimal response for a single active pipeline run (no steps)."""
     pipeline_name: str
     status: str
 
@@ -48,3 +47,26 @@ class PipelineMessageResponse(BaseModel):
     sender_agent_name: str
     content: str
     created_at: str | None = None
+
+
+class StartStepRequest(BaseModel):
+    run_id: str = Field(..., min_length=1)
+    project_id: str = Field(..., min_length=1)
+
+
+class StartStepResponse(BaseModel):
+    term_id: str
+    agent_name: str
+    agent_intent: str = ""
+    step_index: int
+    step_run_id: str
+
+
+class AdvancePipelineResponse(BaseModel):
+    status: str
+    next_step_index: int | None = None
+    pipeline_finished: bool = False
+
+
+class PipelineControlResponse(BaseModel):
+    status: str
