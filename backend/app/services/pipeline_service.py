@@ -257,9 +257,9 @@ class PipelineService:
                         self.session.add(agent)
                         existing_agent_ids.add(agent_id)
                 await self.session.flush()
-                await self.replace_steps(pipeline_id, steps_data)
+                new_steps = await self.replace_steps(pipeline_id, steps_data)
                 await self._import_event_rules(
-                    pipeline_id, item.get("event_rules", []), steps_data
+                    pipeline_id, item.get("event_rules", []), steps_data, new_steps
                 )
                 imported += 1
 
@@ -287,9 +287,9 @@ class PipelineService:
                         self.session.add(agent)
                         existing_agent_ids.add(agent_id)
                 await self.session.flush()
-                await self.replace_steps(pipeline.id, steps_data)
+                new_steps = await self.replace_steps(pipeline.id, steps_data)
                 await self._import_event_rules(
-                    pipeline.id, item.get("event_rules", []), steps_data
+                    pipeline.id, item.get("event_rules", []), steps_data, new_steps
                 )
                 imported += 1
 
@@ -307,8 +307,13 @@ class PipelineService:
         pipeline_id: str,
         event_rules_data: list[dict],
         steps_data: list[dict],
+        new_steps: list[PipelineStep],
     ) -> None:
-        """Import event rules, mapping old step IDs to newly created ones."""
+        """Import event rules, mapping old step IDs to newly created ones.
+
+        new_steps must be the exact list returned by replace_steps (same order
+        as steps_data) so that old→new step ID mapping is correct.
+        """
         if not event_rules_data:
             return
 
@@ -322,15 +327,9 @@ class PipelineService:
             await self.session.delete(r)
         await self.session.flush()
 
-        # Get new steps in order
-        result = await self.session.execute(
-            select(PipelineStep)
-            .where(PipelineStep.pipeline_id == pipeline_id)
-            .order_by(PipelineStep.order_index)
-        )
-        new_steps = result.scalars().all()
-
         # Build map from import step IDs to new step IDs
+        # new_steps is in steps_data order (insertion order from replace_steps),
+        # so new_steps[i] always corresponds to steps_data[i].
         old_to_new = {}
         for i, sd in enumerate(steps_data):
             old_id = sd.get("id")
