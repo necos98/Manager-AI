@@ -61,10 +61,17 @@ Non aggiungere dettagli specifici di singole issue."""
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await proc.communicate()
-            success = proc.returncode == 0
-            output = stdout.decode("utf-8", errors="replace") if stdout else ""
-            error = stderr.decode("utf-8", errors="replace") if stderr and proc.returncode != 0 else None
+            try:
+                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
+            except asyncio.TimeoutError:
+                proc.kill()
+                success = False
+                output = ""
+                error = "Hook timed out after 120 seconds"
+            else:
+                success = proc.returncode == 0
+                output = stdout.decode("utf-8", errors="replace") if stdout else ""
+                error = stderr.decode("utf-8", errors="replace") if stderr and proc.returncode != 0 else None
         except Exception as e:
             success = False
             output = ""
