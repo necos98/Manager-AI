@@ -1,0 +1,12 @@
+schema_version: 1
+id: 77470a4c-cc98-43a8-9a48-af8eccba458f
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Extract _load_project_into_memory into storage/project_loader.py
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T10:16:37.209511'
+updated_at: '2026-06-05T16:40:30.000000'
+finished_at: '2026-06-05T16:40:30.000000'
+tasks: []
+relations: []

@@ -1,0 +1,1 @@
+Attualmente viene mostrato 2 volte il dialog delle domande, se sono all'interno di una issue detail, viene mostrato sia nel lato destro all'interno del container del terminale, sotto in basso al teminale, che viene mostrato anche all'interno della zona issue detail. Vorrei non fosse più mostrato a livello di terminale.

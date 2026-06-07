@@ -1,0 +1,24 @@
+schema_version: 1
+id: 4d7bd326-8bcf-48e2-bc8d-64114e9b1fd5
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: null
+status: Finished
+priority: 3
+category: Improvement
+created_at: '2026-06-05T07:37:30.852199'
+updated_at: '2026-06-05T07:45:40.821402'
+finished_at: '2026-06-05T07:45:40.821412'
+tasks:
+- id: 5ea0bba0-5586-48b0-93c5-b305c22d8232
+  name: Add hideQuestions prop to TerminalWithQuestions component
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T07:40:01'
+  updated_at: '2026-06-05T07:40:15'
+- id: f88ee6d5-e162-4fae-8715-af47dc88fb58
+  name: Pass hideQuestions=true to all TerminalWithQuestions in $issueId.tsx
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T07:40:01'
+  updated_at: '2026-06-05T07:40:49'
+relations: []

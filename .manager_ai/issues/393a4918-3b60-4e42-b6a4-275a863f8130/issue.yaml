@@ -1,0 +1,24 @@
+schema_version: 1
+id: 393a4918-3b60-4e42-b6a4-275a863f8130
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix race condition in pipeline start — commit before create_task leaves stuck runs
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T10:15:55.168480'
+updated_at: '2026-06-05T12:01:32.807760'
+finished_at: '2026-06-05T12:01:32.807791'
+tasks:
+- id: 643064a5-8f65-4bd2-8bfa-e4faa14fe680
+  name: Swap create_task before commit in start() — lines 101-109 of pipeline_run_service.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T11:46:13'
+  updated_at: '2026-06-05T11:47:41'
+- id: 27d25185-0833-4e87-b65c-795fe42fc35b
+  name: Add retry loop in _execute() at line 253 — wait up to 5s for run data to appear
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T11:46:13'
+  updated_at: '2026-06-05T11:47:47'
+relations: []

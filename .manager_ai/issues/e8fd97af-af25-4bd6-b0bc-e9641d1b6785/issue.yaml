@@ -1,0 +1,66 @@
+schema_version: 1
+id: e8fd97af-af25-4bd6-b0bc-e9641d1b6785
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Pipeline failure recovery system - retry step config
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T12:49:28.973809'
+updated_at: '2026-06-05T13:17:03.677337'
+finished_at: '2026-06-05T13:17:03.677350'
+tasks:
+- id: 6559092b-204a-4654-9b12-3f08f1420f05
+  name: Create PipelineEventRule model + Alembic migration
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T13:10:26'
+  updated_at: '2026-06-05T13:11:28'
+- id: cf147abd-1e8d-480f-a859-c09481085828
+  name: Add event rule CRUD to PipelineService + rejection target resolver
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T13:10:26'
+  updated_at: '2026-06-05T13:11:54'
+- id: 42601396-a17b-4a2f-bcf9-28f1176773a4
+  name: Modify finished_pipeline_step MCP tool for auto-resolve
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T13:10:26'
+  updated_at: '2026-06-05T13:12:32'
+- id: 78367e0a-aa79-45bd-9b99-888d2ec06724
+  name: Add MCP tools for event rule CRUD
+  status: Completed
+  order: 3
+  created_at: '2026-06-05T13:10:26'
+  updated_at: '2026-06-05T13:12:54'
+- id: 4328dac4-77c9-4243-a2a7-5f62db0cbaa1
+  name: Add REST API endpoints for event rules
+  status: Completed
+  order: 4
+  created_at: '2026-06-05T13:10:26'
+  updated_at: '2026-06-05T13:13:28'
+- id: afcba42b-a312-4723-88aa-56c6290cf57f
+  name: Frontend types, API functions, and React Query hooks
+  status: Completed
+  order: 5
+  created_at: '2026-06-05T13:10:26'
+  updated_at: '2026-06-05T13:14:08'
+- id: 0beb13e9-97c9-446d-ad6a-a16ab3934f3a
+  name: 'Frontend UI: event rules section in PipelinesTab'
+  status: Completed
+  order: 6
+  created_at: '2026-06-05T13:10:26'
+  updated_at: '2026-06-05T13:14:54'
+- id: 1b8949be-d4a8-47d7-8867-22d8f1564ebd
+  name: Export/Import event rules
+  status: Completed
+  order: 7
+  created_at: '2026-06-05T13:10:26'
+  updated_at: '2026-06-05T13:15:52'
+- id: f1279f48-0e0c-4208-a1d7-72f7f6b6089e
+  name: Tests for event rule CRUD + rejection target resolution
+  status: Completed
+  order: 8
+  created_at: '2026-06-05T13:10:26'
+  updated_at: '2026-06-05T13:16:58'
+relations: []

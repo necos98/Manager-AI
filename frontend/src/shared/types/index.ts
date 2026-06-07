@@ -596,6 +596,25 @@ export interface StepReorderRequest {
   step_ids: string[];
 }
 
+// ── Pipeline Event Rules ──
+
+export interface PipelineEventRule {
+  id: string;
+  pipeline_id: string;
+  event_type: string;
+  source_step_id: string;
+  target_step_id: string;
+  enabled: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface PipelineEventRuleCreate {
+  event_type: string;
+  source_step_id: string;
+  target_step_id: string;
+}
+
 // ── Pipeline Run ──
 
 export type PipelineRunStatus = "RUNNING" | "COMPLETED" | "FAILED";

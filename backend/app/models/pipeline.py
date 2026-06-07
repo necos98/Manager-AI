@@ -17,6 +17,7 @@ class Pipeline(Base):
 
     steps = relationship("PipelineStep", back_populates="pipeline", cascade="all, delete-orphan", order_by="PipelineStep.order_index")
     runs = relationship("PipelineRun", back_populates="pipeline", cascade="all, delete-orphan")
+    event_rules = relationship("PipelineEventRule", back_populates="pipeline", cascade="all, delete-orphan")
 
 
 class PipelineStep(Base):

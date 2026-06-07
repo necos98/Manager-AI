@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Plus,
   Trash2,
@@ -46,12 +46,16 @@ import {
   useSeedPipeline,
   useExportPipelines,
   useExportPipeline,
+  useExportPipelinesBatch,
   useImportPipelinesPreview,
   useImportPipelinesConfirm,
+  useEventRules,
+  useCreateEventRule,
+  useDeleteEventRule,
 } from "@/features/pipelines/hooks";
 import { useAgents } from "@/features/agents/hooks";
 import { ImportPreviewModal } from "@/shared/components/ImportPreviewModal";
-import type { Pipeline, PipelineStep } from "@/shared/types";
+import type { Pipeline, PipelineEventRule, PipelineStep } from "@/shared/types";
 
 interface PipelinesTabProps {
   projectId?: string;
@@ -73,6 +77,132 @@ function StepSummary({ steps, agents }: { steps: PipelineStep[]; agents: Map<str
           )}
         </span>
       ))}
+    </div>
+  );
+}
+
+function ruleStepName(
+  stepId: string,
+  steps: PipelineStep[],
+  agents: Map<string, string>
+): string {
+  const step = steps.find((s) => s.id === stepId);
+  if (!step) return "Unknown";
+  return agents.get(step.agent_id) ?? "Unknown";
+}
+
+function EventRulesSection({
+  pipelineId,
+  steps,
+  agents,
+}: {
+  pipelineId: string;
+  steps: PipelineStep[];
+  agents: Map<string, string>;
+}) {
+  const { data: rules = [] } = useEventRules(pipelineId);
+  const createRule = useCreateEventRule();
+  const deleteRule = useDeleteEventRule();
+  const [sourceId, setSourceId] = useState("");
+  const [targetId, setTargetId] = useState("");
+
+  const handleAdd = () => {
+    if (!sourceId || !targetId) return;
+    createRule.mutate(
+      {
+        pipelineId,
+        data: {
+          event_type: "step_rejected",
+          source_step_id: sourceId,
+          target_step_id: targetId,
+        },
+      },
+      {
+        onSuccess: () => {
+          setSourceId("");
+          setTargetId("");
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="space-y-2">
+      {rules.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-1">
+          No event rules configured.
+        </p>
+      ) : (
+        <div className="space-y-1.5">
+          {rules.map((rule) => (
+            <div
+              key={rule.id}
+              className="flex items-center gap-2 bg-muted/30 rounded px-3 py-2 text-sm"
+            >
+              <Badge variant="outline" className="text-xs">
+                {rule.event_type}
+              </Badge>
+              <span className="text-muted-foreground">when</span>
+              <span className="font-medium">
+                {ruleStepName(rule.source_step_id, steps, agents)}
+              </span>
+              <span className="text-muted-foreground">rejects →</span>
+              <span className="font-medium">
+                {ruleStepName(rule.target_step_id, steps, agents)}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-6 ml-auto text-destructive hover:text-destructive"
+                disabled={deleteRule.isPending}
+                onClick={() =>
+                  deleteRule.mutate({ pipelineId, ruleId: rule.id })
+                }
+              >
+                <X className="size-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add rule form */}
+      <div className="flex items-center gap-2 pt-1">
+        <Select value={sourceId} onValueChange={setSourceId}>
+          <SelectTrigger className="h-8 w-36 text-xs">
+            <SelectValue placeholder="When step..." />
+          </SelectTrigger>
+          <SelectContent>
+            {steps.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {ruleStepName(s.id, steps, agents)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-muted-foreground">rejects → go to</span>
+        <Select value={targetId} onValueChange={setTargetId}>
+          <SelectTrigger className="h-8 w-36 text-xs">
+            <SelectValue placeholder="Target step..." />
+          </SelectTrigger>
+          <SelectContent>
+            {steps.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {ruleStepName(s.id, steps, agents)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          size="sm"
+          className="h-8 text-xs"
+          disabled={!sourceId || !targetId || createRule.isPending}
+          onClick={handleAdd}
+        >
+          <Plus className="size-3 mr-1" />
+          Add Rule
+        </Button>
+      </div>
     </div>
   );
 }
@@ -207,6 +337,36 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
     removeStep.isPending ||
     reorderSteps.isPending;
 
+  // Batch selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selectAllRef = useRef<HTMLInputElement>(null);
+  const exportPipelinesBatch = useExportPipelinesBatch();
+
+  const visibleIds = pipelines?.map((p) => p.id) ?? [];
+  const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  const someSelected = visibleIds.some((id) => selectedIds.has(id));
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someSelected && !allSelected;
+    }
+  }, [someSelected, allSelected]);
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(visibleIds));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-4">
@@ -233,8 +393,31 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
     <div className="p-6 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Pipelines</h2>
         <div className="flex items-center gap-2">
+          <input
+            ref={selectAllRef}
+            type="checkbox"
+            checked={allSelected}
+            onChange={toggleSelectAll}
+            className="size-4"
+          />
+          <h2 className="text-lg font-semibold">Pipelines</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <span className="text-sm text-muted-foreground">
+              {selectedIds.size} selected
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportPipelinesBatch.mutate([...selectedIds])}
+            disabled={selectedIds.size === 0 || exportPipelinesBatch.isPending}
+          >
+            <Download className="size-4 mr-1" />
+            {exportPipelinesBatch.isPending ? "Exporting..." : "Export Selected"}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -321,6 +504,12 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
               >
                 {/* Card header */}
                 <div className="flex items-center gap-2 px-4 py-3 bg-muted/20">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(pipeline.id)}
+                    onChange={() => toggleSelect(pipeline.id)}
+                    className="size-4"
+                  />
                   <button
                     onClick={() => toggleExpand(pipeline.id)}
                     className="size-6 flex items-center justify-center"
@@ -493,6 +682,18 @@ export function PipelinesTab({ projectId: _projectId }: PipelinesTabProps) {
                         )}
                         Add Step
                       </Button>
+                    </div>
+
+                    {/* Event Rules */}
+                    <div className="pt-3 border-t mt-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                        Event Rules
+                      </p>
+                      <EventRulesSection
+                        pipelineId={pipeline.id}
+                        steps={sortedSteps}
+                        agents={agentMap}
+                      />
                     </div>
                   </div>
                 )}

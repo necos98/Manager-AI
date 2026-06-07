@@ -1,0 +1,12 @@
+schema_version: 1
+id: 06fa1cdb-fcf8-44ce-8d7a-e10e141c23fd
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: null
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-06-05T08:45:31.960215'
+updated_at: '2026-06-05T08:52:32.521171'
+finished_at: '2026-06-05T08:52:32.521183'
+tasks: []
+relations: []

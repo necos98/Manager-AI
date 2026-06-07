@@ -1,0 +1,30 @@
+schema_version: 1
+id: 2e662faf-ab3e-40ef-830f-fb2a8c38cd95
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Remove duplicate ISSUE_COMPLETED hook in complete_issue MCP tool
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T10:15:39.528305'
+updated_at: '2026-06-05T11:33:27.035706'
+finished_at: '2026-06-05T11:33:27.035722'
+tasks:
+- id: 49efe2c6-a04a-4051-8e6a-fe656d9066b9
+  name: Remove redundant hook_registry.fire block (lines 162-178) in backend/app/mcp/server.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T11:25:24'
+  updated_at: '2026-06-05T11:26:22'
+- id: e9fb4b07-a1c0-47fb-8ecd-dffe1dc9c089
+  name: Remove dead project/project_name variable computation (lines 146-150) that becomes unused
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T11:25:24'
+  updated_at: '2026-06-05T11:26:22'
+- id: 79a894e7-8a37-4489-b595-7fe3a3228774
+  name: Verify local import removal and no other code references the removed symbols
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T11:25:24'
+  updated_at: '2026-06-05T11:26:23'
+relations: []

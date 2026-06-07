@@ -27,6 +27,16 @@ class ProjectCreate(BaseModel):
     def _norm_path(cls, v: str) -> str:
         return _normalize_path(v)
 
+    @field_validator("shell")
+    @classmethod
+    def _validate_shell(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        bad = set("'\"`$;&|\n\r")
+        if any(c in bad for c in v):
+            raise ValueError(f"shell contains unsafe characters: {v!r}")
+        return v
+
 
 class ProjectUpdate(BaseModel):
     name: str | None = Field(None, max_length=255)
@@ -42,6 +52,16 @@ class ProjectUpdate(BaseModel):
     @classmethod
     def _norm_path(cls, v: str | None) -> str | None:
         return _normalize_path(v)
+
+    @field_validator("shell")
+    @classmethod
+    def _validate_shell(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        bad = set("'\"`$;&|\n\r")
+        if any(c in bad for c in v):
+            raise ValueError(f"shell contains unsafe characters: {v!r}")
+        return v
 
 
 class ProjectResponse(BaseModel):

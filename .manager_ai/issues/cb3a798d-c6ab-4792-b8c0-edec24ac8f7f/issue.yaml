@@ -1,0 +1,30 @@
+schema_version: 1
+id: cb3a798d-c6ab-4792-b8c0-edec24ac8f7f
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix CORS misconfiguration (wildcard origin + credentials)
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T10:15:28.412923'
+updated_at: '2026-06-05T11:36:07.455424'
+finished_at: '2026-06-05T11:36:07.455433'
+tasks:
+- id: 274e30bf-a032-4918-821a-35f0b7627a9d
+  name: Add cors_origins field to Settings class in backend/app/config.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T11:25:58'
+  updated_at: '2026-06-05T11:26:33'
+- id: 0d222891-70c2-41c3-8a0f-ad1d62354e24
+  name: Replace allow_origins wildcard with settings.cors_origins.split in backend/app/main.py
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T11:25:58'
+  updated_at: '2026-06-05T11:26:38'
+- id: 3b7ff8d5-1b37-4134-b1a0-9a6f43b34d67
+  name: Add CORS section with CORS_ORIGINS variable to .env.example
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T11:25:58'
+  updated_at: '2026-06-05T11:26:44'
+relations: []

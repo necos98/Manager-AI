@@ -1,0 +1,102 @@
+schema_version: 1
+id: 3cef51f4-40f5-47ab-a38c-0f78b4e7b4c4
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Decompose main.py monolithic lifespan into extracted startup/shutdown functions
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T10:16:19.233072'
+updated_at: '2026-06-05T12:35:32.741474'
+finished_at: '2026-06-05T12:35:32.741484'
+tasks:
+- id: 71ca3824-4828-4ad6-90c1-2bfdb9e08d25
+  name: Move local imports from lifespan body to module level
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:27:44'
+- id: cef766e2-28dc-434f-88c8-1ed61a7a7e70
+  name: Extract _startup_resolve_secret_key() (sync, fail-fast)
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:27:58'
+- id: 014f8d0e-a8f8-47c8-9b06-29258d570a81
+  name: Extract _startup_log_hooks() (sync, fail-fast)
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:28:09'
+- id: ecc361ea-e0fb-422f-a53e-38687c06b60f
+  name: Extract _startup_migrate(async_session) (async, continue-on-error)
+  status: Completed
+  order: 3
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:28:20'
+- id: 7459f123-fe32-4848-ace6-56085716a900
+  name: Extract _startup_fixup_statuses(async_session) (async, continue-on-error)
+  status: Completed
+  order: 4
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:28:33'
+- id: b396dce3-ae87-4110-a164-5b4dbc604d9b
+  name: Extract _startup_init_write_queue() -> (WriteQueue, BackgroundWriter) (sync, fail-fast)
+  status: Completed
+  order: 5
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:28:49'
+- id: 175dfcf8-3538-4e98-b52e-a7d803f80786
+  name: Extract _startup_load_projects(async_session, wq, bw) -> list[Project] (async, fail-fast)
+  status: Completed
+  order: 6
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:29:19'
+- id: 056e7def-4b7e-4019-8fd8-fbe429ca348f
+  name: Extract _startup_recover_transcriptions(rows) (async, continue-on-error)
+  status: Completed
+  order: 7
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:29:22'
+- id: 99175b2b-2fe1-4f6a-b789-f6ed30d8e5fc
+  name: Extract _startup_load_catalog() (sync, continue-on-error)
+  status: Completed
+  order: 8
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:29:25'
+- id: fd64a148-de5c-44e5-9698-e5948e9a5825
+  name: Extract _startup_plugins(rows, mcp) (async, continue-on-error)
+  status: Completed
+  order: 9
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:29:28'
+- id: 7ab14456-dcd6-4eb3-9f23-408bdc528cf7
+  name: Extract _startup_seed_defaults(async_session) (async, continue-on-error)
+  status: Completed
+  order: 10
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:29:32'
+- id: 1aa2edfe-fea2-4723-a18f-0affec33c783
+  name: Extract _startup_cleanup_orphaned_runs(async_session) (async, continue-on-error)
+  status: Completed
+  order: 11
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:29:36'
+- id: 491e6770-55d2-4b66-bb10-4a7b3705d33e
+  name: Extract _startup_install_claude_resources(rows) (async, continue-on-error)
+  status: Completed
+  order: 12
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:29:39'
+- id: ed1e25ab-fce9-45a3-86e7-af198cfb81e6
+  name: Extract _shutdown(rows, background_writer, write_queue) (async, continue-on-error)
+  status: Completed
+  order: 13
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:29:42'
+- id: 1a273fdf-ce31-43e6-b841-9a82d81dc0cd
+  name: Rewrite lifespan body to ~40-line linear sequence
+  status: Completed
+  order: 14
+  created_at: '2026-06-05T12:26:17'
+  updated_at: '2026-06-05T12:29:55'
+relations: []

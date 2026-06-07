@@ -4,9 +4,10 @@ from sqlalchemy.orm import selectinload
 
 from app.exceptions import NotFoundError
 from app.models.pipeline import Pipeline, PipelineStep
+from app.models.pipeline_event_rule import PipelineEventRule
 from app.models.agent import Agent
 from app.services.agent_service import AgentService
-from app.schemas.export_import import ImportConfirmResponse
+from app.schemas.export_import import ImportConfirmResponse, format_pipeline_export
 
 
 class PipelineService:
@@ -142,11 +143,24 @@ class PipelineService:
 
     # ── Export / Import ────────────────────────────────────────────────
 
+    async def export_batch(self, pipeline_ids: list[str]) -> list[dict]:
+        result = await self.session.execute(
+            select(Pipeline)
+            .where(Pipeline.id.in_(pipeline_ids))
+            .options(
+                selectinload(Pipeline.steps).selectinload(PipelineStep.agent)
+            )
+            .order_by(Pipeline.name)
+        )
+        pipelines = result.unique().scalars().all()
+        return [format_pipeline_export(p) for p in pipelines]
+
     async def export_all(self) -> list[Pipeline]:
         result = await self.session.execute(
             select(Pipeline)
             .options(
-                selectinload(Pipeline.steps).selectinload(PipelineStep.agent)
+                selectinload(Pipeline.steps).selectinload(PipelineStep.agent),
+                selectinload(Pipeline.event_rules),
             )
             .order_by(Pipeline.name)
         )
@@ -157,7 +171,8 @@ class PipelineService:
             select(Pipeline)
             .where(Pipeline.id == pipeline_id)
             .options(
-                selectinload(Pipeline.steps).selectinload(PipelineStep.agent)
+                selectinload(Pipeline.steps).selectinload(PipelineStep.agent),
+                selectinload(Pipeline.event_rules),
             )
         )
         pipeline = result.scalar_one_or_none()
@@ -242,6 +257,9 @@ class PipelineService:
                         existing_agent_ids.add(agent_id)
                 await self.session.flush()
                 await self.replace_steps(pipeline_id, steps_data)
+                await self._import_event_rules(
+                    pipeline_id, item.get("event_rules", []), steps_data
+                )
                 imported += 1
 
             except NotFoundError:
@@ -269,6 +287,9 @@ class PipelineService:
                         existing_agent_ids.add(agent_id)
                 await self.session.flush()
                 await self.replace_steps(pipeline.id, steps_data)
+                await self._import_event_rules(
+                    pipeline.id, item.get("event_rules", []), steps_data
+                )
                 imported += 1
 
             except Exception as e:
@@ -279,3 +300,110 @@ class PipelineService:
             skipped=skipped,
             errors=errors,
         )
+
+    async def _import_event_rules(
+        self,
+        pipeline_id: str,
+        event_rules_data: list[dict],
+        steps_data: list[dict],
+    ) -> None:
+        """Import event rules, mapping old step IDs to newly created ones."""
+        if not event_rules_data:
+            return
+
+        # Delete existing rules for this pipeline
+        existing = await self.session.execute(
+            select(PipelineEventRule).where(
+                PipelineEventRule.pipeline_id == pipeline_id
+            )
+        )
+        for r in existing.scalars().all():
+            await self.session.delete(r)
+        await self.session.flush()
+
+        # Get new steps in order
+        result = await self.session.execute(
+            select(PipelineStep)
+            .where(PipelineStep.pipeline_id == pipeline_id)
+            .order_by(PipelineStep.order_index)
+        )
+        new_steps = result.scalars().all()
+
+        # Build map from import step IDs to new step IDs
+        old_to_new = {}
+        for i, sd in enumerate(steps_data):
+            old_id = sd.get("id")
+            if old_id and i < len(new_steps):
+                old_to_new[old_id] = new_steps[i].id
+
+        for rule_data in event_rules_data:
+            new_source = old_to_new.get(rule_data.get("source_step_id", ""))
+            new_target = old_to_new.get(rule_data.get("target_step_id", ""))
+            if new_source and new_target:
+                rule = PipelineEventRule(
+                    pipeline_id=pipeline_id,
+                    event_type=rule_data["event_type"],
+                    source_step_id=new_source,
+                    target_step_id=new_target,
+                    enabled=rule_data.get("enabled", True),
+                )
+                self.session.add(rule)
+        await self.session.flush()
+
+    # ── Event Rule CRUD ─────────────────────────────────────────────
+
+    async def add_event_rule(
+        self,
+        pipeline_id: str,
+        event_type: str,
+        source_step_id: str,
+        target_step_id: str,
+    ) -> PipelineEventRule:
+        """Add an event rule with step ID validation."""
+        pipeline = await self.get_pipeline(pipeline_id)
+        step_ids = {s.id for s in pipeline.steps}
+        if source_step_id not in step_ids:
+            raise NotFoundError(f"source_step_id {source_step_id} not in pipeline steps")
+        if target_step_id not in step_ids:
+            raise NotFoundError(f"target_step_id {target_step_id} not in pipeline steps")
+        rule = PipelineEventRule(
+            pipeline_id=pipeline_id,
+            event_type=event_type,
+            source_step_id=source_step_id,
+            target_step_id=target_step_id,
+        )
+        self.session.add(rule)
+        await self.session.flush()
+        return rule
+
+    async def remove_event_rule(self, rule_id: str) -> bool:
+        result = await self.session.execute(
+            select(PipelineEventRule).where(PipelineEventRule.id == rule_id)
+        )
+        rule = result.scalar_one_or_none()
+        if rule is None:
+            raise NotFoundError(f"PipelineEventRule not found: {rule_id}")
+        await self.session.delete(rule)
+        await self.session.flush()
+        return True
+
+    async def list_event_rules(self, pipeline_id: str) -> list[PipelineEventRule]:
+        result = await self.session.execute(
+            select(PipelineEventRule)
+            .where(PipelineEventRule.pipeline_id == pipeline_id)
+            .order_by(PipelineEventRule.created_at)
+        )
+        return list(result.scalars().all())
+
+    async def get_event_rule_for_step(
+        self, pipeline_id: str, event_type: str, source_step_id: str
+    ) -> PipelineEventRule | None:
+        result = await self.session.execute(
+            select(PipelineEventRule).where(
+                PipelineEventRule.pipeline_id == pipeline_id,
+                PipelineEventRule.event_type == event_type,
+                PipelineEventRule.source_step_id == source_step_id,
+                PipelineEventRule.enabled.is_(True),
+            )
+        )
+        return result.scalar_one_or_none()

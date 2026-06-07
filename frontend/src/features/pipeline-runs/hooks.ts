@@ -12,7 +12,7 @@ export const pipelineRunKeys = {
   byIssue: (projectId: string, issueId: string) => ["pipeline-runs", projectId, "issue", issueId] as const,
   detail: (projectId: string, runId: string) => ["pipeline-runs", projectId, runId] as const,
   messages: (projectId: string, runId: string) => ["pipeline-runs", projectId, runId, "messages"] as const,
-  activeByIssue: (issueIds: string[]) => ["pipeline-runs", "active-by-issue", ...issueIds] as const,
+  activeByProject: (projectId: string) => ["pipeline-runs", projectId, "active-by-project"] as const,
 };
 
 export function usePipelineRuns(
@@ -71,12 +71,23 @@ export function usePipelineMessages(
   });
 }
 
-export function useActivePipelineRuns(issueIds: string[]) {
+export function useActivePipelineRuns(projectId: string) {
   return useQuery({
-    queryKey: pipelineRunKeys.activeByIssue(issueIds),
-    queryFn: () => api.fetchActivePipelineRuns(issueIds),
-    enabled: issueIds.length > 0,
-    refetchInterval: 5000,
+    queryKey: pipelineRunKeys.activeByProject(projectId),
+    queryFn: async () => {
+      const runs = await api.fetchActivePipelineRunsByProject(projectId);
+      return Object.fromEntries(
+        (runs ?? []).map((r) => [
+          r.issue_id,
+          { pipeline_name: r.pipeline_name, status: r.status },
+        ]),
+      );
+    },
+    enabled: Boolean(projectId),
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data && Object.keys(data).length > 0 ? 5000 : 30000;
+    },
   });
 }
 

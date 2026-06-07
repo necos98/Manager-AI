@@ -1,0 +1,42 @@
+schema_version: 1
+id: 7b959db7-c9f2-4a5d-ba6e-95c58a1d9fb1
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: PlanWriter accept_issue without finished_pipeline_step
+status: Finished
+priority: 4
+category: null
+created_at: '2026-06-05T14:12:50.686427'
+updated_at: '2026-06-05T15:25:05.153691'
+finished_at: '2026-06-05T15:25:05.153703'
+tasks:
+- id: 8c061860-ec13-421b-a15c-47f1f336da7a
+  name: Remove accept_issue from PlanWriter allowed_tools (MCP update + DEFAULT_AGENTS)
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T15:21:50'
+  updated_at: '2026-06-05T15:23:09'
+- id: 7055dc6b-587b-42a8-85d3-bde4cc540fac
+  name: Add defensive check in finish_step() for ACCEPTED issue without active step run
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T15:21:50'
+  updated_at: '2026-06-05T15:23:15'
+- id: 6ad65dad-02ab-43ac-8c47-71b5cbe227d8
+  name: Write tests for defensive fix
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T15:21:50'
+  updated_at: '2026-06-05T15:24:32'
+- id: 0c29b330-9c91-46c4-9027-1f6f79252077
+  name: Run tests to verify everything passes
+  status: Completed
+  order: 3
+  created_at: '2026-06-05T15:21:50'
+  updated_at: '2026-06-05T15:24:45'
+- id: 12694037-480c-4af9-b672-663125ab7877
+  name: Write project memory documenting the changes
+  status: Completed
+  order: 4
+  created_at: '2026-06-05T15:21:50'
+  updated_at: '2026-06-05T15:24:59'
+relations: []

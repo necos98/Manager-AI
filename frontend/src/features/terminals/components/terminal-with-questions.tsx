@@ -6,6 +6,7 @@ interface TerminalWithQuestionsProps {
   terminalId: string;
   projectId: string;
   issueId: string;
+  hideQuestions?: boolean;
   readOnly?: boolean;
   onSessionEnd?: () => void;
   onDownloadRecording?: () => void;
@@ -15,6 +16,7 @@ export function TerminalWithQuestions({
   terminalId,
   projectId,
   issueId,
+  hideQuestions,
   readOnly,
   onSessionEnd,
   onDownloadRecording,
@@ -32,7 +34,7 @@ export function TerminalWithQuestions({
           onDownloadRecording={onDownloadRecording}
         />
       </div>
-      {questions && questions.length > 0 && (
+      {!hideQuestions && questions && questions.length > 0 && (
         <div className="border-t mt-2 pt-3 px-3 flex-shrink-0 max-h-[40%] overflow-y-auto">
           <h3 className="text-sm font-medium mb-3">Pending Questions</h3>
           <div className="space-y-3">

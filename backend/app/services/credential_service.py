@@ -17,8 +17,11 @@ class CredentialService:
     def _get_fernet() -> Fernet:
         key = os.environ.get("MANAGER_AI_SECRET_KEY")
         if not key:
-            key = Fernet.generate_key().decode()
-            os.environ["MANAGER_AI_SECRET_KEY"] = key
+            raise ValueError(
+                "MANAGER_AI_SECRET_KEY is not set. "
+                "The server must set this env var at startup "
+                "(it is persisted to data/secret.key on first run)."
+            )
         return Fernet(key.encode() if isinstance(key, str) else key)
 
     def encrypt_fields(self, fields: dict) -> str:

@@ -35,6 +35,16 @@ export async function exportAgent(agentId: string): Promise<Blob> {
   return res.blob();
 }
 
+export async function exportAgentsBatch(agentIds: string[]): Promise<Blob> {
+  const res = await fetch(buildUrl("/agents/export/batch"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ agent_ids: agentIds }),
+  });
+  if (!res.ok) throw new Error(`Export failed: ${res.statusText}`);
+  return res.blob();
+}
+
 export function importAgentsPreview(file: File): Promise<ImportPreviewResponse<AgentExportItem>> {
   const fd = new FormData();
   fd.append("file", file);

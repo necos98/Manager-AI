@@ -8,6 +8,7 @@ from app.database import get_db
 from app.exceptions import NotFoundError
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
 from app.schemas.export_import import (
+    AgentBatchExportRequest,
     ImportConfirmResponse,
     ImportPreviewResponse,
     ImportConflict,
@@ -69,6 +70,23 @@ async def export_agents_all(db: AsyncSession = Depends(get_db)):
     svc = AgentService(db)
     agents = await svc.export_all()
     items = [format_agent_export(a) for a in agents]
+    wrapper = build_export_wrapper("agents", items)
+    return Response(
+        content=json.dumps(wrapper, indent=2, default=str),
+        media_type="application/json",
+        headers={"Content-Disposition": 'attachment; filename="agents-export.json"'},
+    )
+
+
+@router.post("/export/batch")
+async def export_agents_batch(
+    request: AgentBatchExportRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    if not request.agent_ids:
+        raise HTTPException(status_code=400, detail="agent_ids must not be empty")
+    svc = AgentService(db)
+    items = await svc.export_batch(request.agent_ids)
     wrapper = build_export_wrapper("agents", items)
     return Response(
         content=json.dumps(wrapper, indent=2, default=str),

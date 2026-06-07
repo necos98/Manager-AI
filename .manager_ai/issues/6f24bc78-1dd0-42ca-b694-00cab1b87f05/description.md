@@ -1,0 +1,1 @@
+44. _ensure_proactor.py:17 — Monkey-patch fragile di uvicorn.loops.asyncio.asyncio_setup

@@ -4,6 +4,7 @@ import asyncio as asyncio_mod
 import os
 import platform
 import re
+import shutil
 import threading
 import uuid
 from datetime import datetime, timezone
@@ -12,6 +13,8 @@ from app.config import settings
 from app.services.wsl_support import is_wsl_shell
 
 IS_WINDOWS = platform.system() == "Windows"
+
+_BAD_SHELL_CHARS = re.compile(r"""['"`$;&|\n\r]""")
 
 if IS_WINDOWS:
     from winpty import PTY
@@ -117,6 +120,9 @@ class TerminalService:
     ) -> dict:
         shell_to_use = shell or DEFAULT_SHELL
 
+        if _BAD_SHELL_CHARS.search(shell_to_use):
+            raise ValueError(f"shell contains unsafe characters: {shell_to_use!r}")
+
         use_wsl_distro = bool(wsl_distro) and is_wsl_shell(shell_to_use)
         if use_wsl_distro and not re.fullmatch(r"[A-Za-z0-9._-]{1,100}", wsl_distro):
             raise ValueError(
@@ -135,7 +141,10 @@ class TerminalService:
         # Pass the full command in `appname` and omit `cmdline`.
         pty = PTY(cols, rows)
         if use_wsl_distro:
-            pty.spawn(f'"{shell_to_use}" -d {wsl_distro}', cwd=spawn_cwd)
+            wsl_exe = shutil.which("wsl.exe")
+            if wsl_exe is None:
+                raise ValueError("wsl.exe not found on PATH, cannot start WSL terminal")
+            pty.spawn(f'"{wsl_exe}" -d {wsl_distro}', cwd=spawn_cwd)
         else:
             pty.spawn(shell_to_use, cwd=spawn_cwd)
 

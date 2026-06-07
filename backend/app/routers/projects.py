@@ -18,7 +18,7 @@ from app.services.project_service import ProjectService
 from app.storage.memory_store_core import memory_store as _global_store
 from app.services.terminal_service import terminal_service
 from app.services.terminal_session import _sessions, _stop_reader
-from app.services.wsl_support import get_host_ip_for_wsl, is_wsl_shell, win_to_wsl_path
+from app.services.wsl_support import get_host_ip_for_wsl, is_wsl_shell, quote_url_for_shell, win_to_wsl_path
 
 logger = logging.getLogger(__name__)
 
@@ -340,7 +340,7 @@ async def unarchive_project(project_id: str, db: AsyncSession = Depends(get_db))
     # Load project data into RAM and restart plugins.
     from app.mcp.server import mcp
     from app.mcp.plugin_manager import plugin_manager
-    from app.main import _load_project_into_memory
+    from app.storage.project_loader import _load_project_into_memory
     _load_project_into_memory(project.path, _global_store)
     await plugin_manager.start_plugins_for_project(project.id, project.path, mcp)
     return await _enrich_project(service, project)
@@ -418,7 +418,7 @@ async def rebuild_index(project_id: str, db: AsyncSession = Depends(get_db)):
     if project.archived_at is not None:
         raise HTTPException(status_code=400, detail="Cannot rebuild index for archived project")
     logger.info("Manual rebuild triggered for project %s", project_id)
-    from app.main import _load_project_into_memory
+    from app.storage.project_loader import _load_project_into_memory
     _global_store.remove_project(project.path)
     _load_project_into_memory(project.path, _global_store)
     # Also trigger disk index rebuild
@@ -476,13 +476,13 @@ async def install_mcp(project_id: str, db: AsyncSession = Depends(get_db)):
             pty.write(f"cd {shlex.quote(cwd)}\r\n")
             pty.write(
                 "claude mcp remove ManagerAi 2>/dev/null; "
-                f"claude mcp add ManagerAi --transport http \"{url}\"\r\n"
+                f"claude mcp add ManagerAi --transport http {quote_url_for_shell(url, is_wsl=True)}\r\n"
             )
         else:
             url = f"http://localhost:{port}/mcp/"
             pty.write(
                 "claude mcp remove ManagerAi 2>nul & "
-                f"claude mcp add ManagerAi --transport http {url}\r\n"
+                f"claude mcp add ManagerAi --transport http {quote_url_for_shell(url, is_wsl=False)}\r\n"
             )
     except Exception:
         logger.warning("Failed to write install-mcp command for terminal %s", terminal["id"], exc_info=True)

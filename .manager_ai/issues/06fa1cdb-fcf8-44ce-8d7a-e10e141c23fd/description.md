@@ -1,0 +1,1 @@
+Purtroppo l'avvio della pipeline terminal è sempre ultra buggato in presenza di progetti che hanno shell diversa da CMD con WSL e distro UBUNTU. Viene aperta la shell corretta ma viene usato il mount sulla cartella del software di Manager AI. Non capisco per quale motivo! Deve funzionare uguale ed identico al comando Run Issue.

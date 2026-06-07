@@ -1,0 +1,1 @@
+ 42. project_file.py:25 — Colonna metadata confligge con Base.metadata di SQLAlchemy

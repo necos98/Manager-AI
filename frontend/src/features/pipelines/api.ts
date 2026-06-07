@@ -1,5 +1,5 @@
 import { apiGet, apiPost, apiPut, apiDelete, buildUrl, uploadRequest } from "@/shared/api/client";
-import type { Pipeline, PipelineCreate, PipelineStep, PipelineStepCreate, PipelineUpdate, StepReorderRequest, ImportConfirmResponse, PipelineImportPreviewResponse, PipelineExportItem } from "@/shared/types";
+import type { Pipeline, PipelineCreate, PipelineStep, PipelineStepCreate, PipelineUpdate, StepReorderRequest, ImportConfirmResponse, PipelineImportPreviewResponse, PipelineExportItem, PipelineEventRule, PipelineEventRuleCreate } from "@/shared/types";
 
 export function fetchPipelines(): Promise<Pipeline[]> {
   return apiGet<Pipeline[]>("/pipelines");
@@ -47,6 +47,16 @@ export async function exportPipeline(pipelineId: string): Promise<Blob> {
   return res.blob();
 }
 
+export async function exportPipelinesBatch(pipelineIds: string[]): Promise<Blob> {
+  const res = await fetch(buildUrl("/pipelines/export/batch"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pipeline_ids: pipelineIds }),
+  });
+  if (!res.ok) throw new Error(`Export failed: ${res.statusText}`);
+  return res.blob();
+}
+
 export function importPipelinesPreview(file: File): Promise<PipelineImportPreviewResponse<PipelineExportItem>> {
   const fd = new FormData();
   fd.append("file", file);
@@ -61,4 +71,16 @@ export function importPipelinesConfirm(
   fd.append("file", file);
   fd.append("conflicts", JSON.stringify(conflicts));
   return uploadRequest<ImportConfirmResponse>("/pipelines/import/confirm", fd);
+}
+
+export function fetchEventRules(pipelineId: string): Promise<PipelineEventRule[]> {
+  return apiGet<PipelineEventRule[]>(`/pipelines/${pipelineId}/event-rules`);
+}
+
+export function createEventRule(pipelineId: string, data: PipelineEventRuleCreate): Promise<PipelineEventRule> {
+  return apiPost<PipelineEventRule>(`/pipelines/${pipelineId}/event-rules`, data);
+}
+
+export function deleteEventRule(pipelineId: string, ruleId: string): Promise<null> {
+  return apiDelete(`/pipelines/${pipelineId}/event-rules/${ruleId}`);
 }

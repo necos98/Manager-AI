@@ -195,6 +195,7 @@ function IssueDetailPage() {
                           terminalId={terminal1.id}
                           projectId={projectId}
                           issueId={terminal1.issue_id}
+                          hideQuestions
                           onSessionEnd={() => killTerminal.mutate(terminal1.id)}
                           onDownloadRecording={() => handleDownload(terminal1.id)}
                         />
@@ -208,6 +209,7 @@ function IssueDetailPage() {
                               terminalId={terminal1.id}
                               projectId={projectId}
                               issueId={terminal1.issue_id}
+                              hideQuestions
                               onSessionEnd={() => killTerminal.mutate(terminal1.id)}
                               onDownloadRecording={() => handleDownload(terminal1.id)}
                             />
@@ -221,6 +223,7 @@ function IssueDetailPage() {
                               terminalId={terminal2.id}
                               projectId={projectId}
                               issueId={terminal2.issue_id}
+                              hideQuestions
                               onSessionEnd={() => killTerminal.mutate(terminal2.id)}
                               onDownloadRecording={() => handleDownload(terminal2.id)}
                             />
@@ -242,6 +245,7 @@ function IssueDetailPage() {
                     terminalId={terminal1.id}
                     projectId={projectId}
                     issueId={terminal1.issue_id}
+                    hideQuestions
                     onSessionEnd={() => killTerminal.mutate(terminal1.id)}
                     onDownloadRecording={() => handleDownload(terminal1.id)}
                   />
@@ -255,6 +259,7 @@ function IssueDetailPage() {
                         terminalId={terminal1.id}
                         projectId={projectId}
                         issueId={terminal1.issue_id}
+                        hideQuestions
                         onSessionEnd={() => killTerminal.mutate(terminal1.id)}
                         onDownloadRecording={() => handleDownload(terminal1.id)}
                       />
@@ -268,6 +273,7 @@ function IssueDetailPage() {
                         terminalId={terminal2.id}
                         projectId={projectId}
                         issueId={terminal2.issue_id}
+                        hideQuestions
                         onSessionEnd={() => killTerminal.mutate(terminal2.id)}
                         onDownloadRecording={() => handleDownload(terminal2.id)}
                       />

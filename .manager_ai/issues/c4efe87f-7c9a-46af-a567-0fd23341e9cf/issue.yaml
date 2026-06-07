@@ -1,0 +1,36 @@
+schema_version: 1
+id: c4efe87f-7c9a-46af-a567-0fd23341e9cf
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Command injection via shell_to_use in WSL terminal spawn
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T10:49:53.021855'
+updated_at: '2026-06-05T12:11:12.504416'
+finished_at: '2026-06-05T12:11:12.504430'
+tasks:
+- id: 260aa470-5ca5-4aa9-baab-b0bef436eb86
+  name: Add pydantic field_validator on shell in ProjectCreate and ProjectUpdate (schemas/project.py)
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T11:32:38'
+  updated_at: '2026-06-05T11:33:51'
+- id: 60804600-e0ba-4335-982a-3f13c64f7c0b
+  name: Add spawn-site validation guard after shell_to_use assignment (terminal_service.py:118)
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T11:32:38'
+  updated_at: '2026-06-05T11:33:58'
+- id: c1156aec-3690-4636-9863-145433bb1a64
+  name: Resolve wsl.exe via shutil.which() in WSL spawn path (terminal_service.py:138)
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T11:32:38'
+  updated_at: '2026-06-05T11:33:58'
+- id: 5ec68b0c-c9b8-4da4-9547-91d2abe6743c
+  name: Add shell injection test in test_terminals_wsl.py
+  status: Completed
+  order: 3
+  created_at: '2026-06-05T11:32:38'
+  updated_at: '2026-06-05T11:34:07'
+relations: []

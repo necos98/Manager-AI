@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 from typing import Any
@@ -28,6 +29,16 @@ from app.storage import file_store as file_store_module
 from app.middleware import ErrorLoggerMiddleware
 from app.routers import activity, agents, credentials, credentials_editor, events, files, issue_relations, issues, library, memories, network, pipeline_runs, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, questions, settings as settings_router, system, tasks, terminals, terminal_commands
 from app.routers.projects import install_claude_resources_to
+from cryptography.fernet import Fernet
+
+from app.storage.project_loader import _load_project_into_memory
+from sqlalchemy import select, update
+from app.models.issue import Issue
+from app.models.project import Project
+from app.services.agent_service import AgentService
+from app.services.pipeline_service import PipelineService
+from app.models.pipeline_run import PipelineRun, PipelineRunStatus
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -106,249 +117,43 @@ async def _client_disconnect_handler(request, exc):
     return Response(status_code=499)
 
 
-def _load_project_into_memory(project_path: str, store: Any) -> None:
-    """Load all issues, memories, and file metadata from disk into MemoryStore."""
-    import re as _re
-    from app.storage import atomic as _atomic, paths as _paths
-
-    _FRONTMATTER_RE = _re.compile(r"^---\n(.*?)\n---\n?(.*)$", _re.DOTALL)
-
-    def _parse_fm(text: str) -> dict[str, Any]:
-        if not text:
-            return {"meta": {}, "body": ""}
-        m = _FRONTMATTER_RE.match(text)
-        if not m:
-            return {"meta": {}, "body": text}
-        import yaml as _yaml
-        meta = _yaml.safe_load(m.group(1)) or {}
-        return {"meta": meta, "body": m.group(2)}
-
-    # --- memories ---
-    mem_dir = _paths.memories_dir(project_path)
-    mem_records: dict[str, Any] = {}
-    mem_index: list[dict[str, Any]] = []
-    if mem_dir.exists():
-        for md_file in mem_dir.glob("*.md"):
-            try:
-                parsed = _parse_fm(_atomic.read_text(md_file))
-                meta = parsed["meta"] or {}
-                body = parsed["body"]
-                mid = str(meta.get("id", md_file.stem))
-                from app.storage.memory_store import MemoryRecord, MemoryLinkRecord
-
-                def _opt_str(v: Any) -> str | None:
-                    if v is None:
-                        return None
-                    s = str(v)
-                    return s if s else None
-
-                def _as_str(v: Any) -> str:
-                    if v is None:
-                        return ""
-                    return str(v)
-
-                def _link_from_dict(d: dict) -> Any:
-                    return MemoryLinkRecord(
-                        to_id=str(d.get("to_id", "")),
-                        relation=str(d.get("relation", "")),
-                        created_at=_as_str(d.get("created_at")),
-                    )
-
-                record = MemoryRecord(
-                    id=mid,
-                    project_id=str(meta.get("project_id", "")),
-                    title=str(meta.get("title", "")),
-                    parent_id=_opt_str(meta.get("parent_id")),
-                    description=body,
-                    created_at=_as_str(meta.get("created_at")),
-                    updated_at=_as_str(meta.get("updated_at")),
-                    links=[_link_from_dict(l) for l in (meta.get("links") or [])],
-                )
-                mem_records[mid] = record
-                mem_index.append({
-                    "id": mid,
-                    "project_id": str(meta.get("project_id", "")),
-                    "title": str(meta.get("title", "")),
-                    "parent_id": _opt_str(meta.get("parent_id")),
-                    "created_at": _as_str(meta.get("created_at")),
-                    "updated_at": _as_str(meta.get("updated_at")),
-                    "links": list(meta.get("links") or []),
-                })
-            except Exception:
-                logger.warning("Skipping corrupted memory file: %s", md_file)
-    mem_index.sort(key=lambda e: (e["created_at"], e["id"]))
-    store.init_project(project_path, "memories", mem_records, mem_index)
-
-    # --- issues ---
-    issues_dir = _paths.issues_dir(project_path)
-    issue_records: dict[str, Any] = {}
-    issue_index: list[dict[str, Any]] = []
-    if issues_dir.exists():
-        for issue_folder in issues_dir.iterdir():
-            if not issue_folder.is_dir():
-                continue
-            yaml_path = issue_folder / "issue.yaml"
-            if not yaml_path.exists():
-                continue
-            try:
-                data = _atomic.read_yaml(yaml_path) or {}
-                iid = data.get("id", issue_folder.name)
-                description = _atomic.read_text(_paths.issue_md(project_path, iid, "description"))
-                specification = _read_optional_md(_atomic, _paths, project_path, iid, "specification")
-                plan = _read_optional_md(_atomic, _paths, project_path, iid, "plan")
-                recap = _read_optional_md(_atomic, _paths, project_path, iid, "recap")
-                from app.storage.issue_store import IssueRecord, TaskRecord, RelationRecord
-
-                record = IssueRecord(
-                    id=iid,
-                    project_id=data.get("project_id", ""),
-                    name=data.get("name"),
-                    status=data.get("status", "New"),
-                    priority=int(data.get("priority", 3)),
-                    description=description,
-                    specification=specification,
-                    plan=plan,
-                    recap=recap,
-                    created_at=_as_iso(data.get("created_at")),
-                    updated_at=_as_iso(data.get("updated_at")),
-                    tasks=[_task_from_dict(t) for t in (data.get("tasks") or [])],
-                    relations=[_relation_from_dict(r) for r in (data.get("relations") or [])],
-                )
-                issue_records[iid] = record
-                issue_index.append({
-                    "id": iid,
-                    "project_id": data.get("project_id", ""),
-                    "name": data.get("name"),
-                    "status": data.get("status", "New"),
-                    "priority": int(data.get("priority", 3)),
-                    "created_at": _as_iso(data.get("created_at")),
-                    "updated_at": _as_iso(data.get("updated_at")),
-                })
-            except Exception:
-                logger.warning("Skipping corrupted issue: %s", issue_folder)
-    issue_index.sort(key=lambda e: (e["created_at"], e["id"]))
-    store.init_project(project_path, "issues", issue_records, issue_index)
-
-    # --- files ---
-    files_index_path = _paths.files_index(project_path)
-    file_records: dict[str, Any] = {}
-    file_index: list[dict[str, Any]] = []
-    if files_index_path.exists():
-        try:
-            data = _atomic.read_yaml(files_index_path) or {}
-            entries = list(data.get("files") or [])
-            from app.storage.file_store import FileRecord
-
-            for e in entries:
-                fid = str(e.get("id", ""))
-                record = FileRecord(
-                    id=fid,
-                    original_name=str(e.get("original_name", "")),
-                    stored_name=str(e.get("stored_name", "")),
-                    file_type=str(e.get("file_type", "")),
-                    file_size=int(e.get("file_size", 0)),
-                    mime_type=str(e.get("mime_type", "")),
-                    extraction_status=str(e.get("extraction_status", "pending")),
-                    extraction_error=_opt_str_static(e.get("extraction_error")),
-                    extracted_at=_opt_str_static(e.get("extracted_at")),
-                    created_at=_as_iso(e.get("created_at")),
-                    metadata=e.get("metadata") if isinstance(e.get("metadata"), dict) else None,
-                    extracted_text=None,
-                )
-                file_records[fid] = record
-                file_index.append({
-                    "id": fid,
-                    "original_name": e.get("original_name", ""),
-                    "stored_name": e.get("stored_name", ""),
-                    "file_type": e.get("file_type", ""),
-                    "file_size": int(e.get("file_size", 0)),
-                    "mime_type": e.get("mime_type", ""),
-                    "extraction_status": e.get("extraction_status", "pending"),
-                    "extraction_error": e.get("extraction_error"),
-                    "extracted_at": e.get("extracted_at"),
-                    "created_at": e.get("created_at", ""),
-                    "metadata": e.get("metadata"),
-                })
-        except Exception:
-            logger.warning("Skipping corrupted files index: %s", files_index_path)
-    store.init_project(project_path, "files", file_records, file_index)
-
-    logger.info(
-        "Loaded project %s: %d memories, %d issues, %d files",
-        project_path, len(mem_records), len(issue_records), len(file_records),
-    )
+def _startup_resolve_secret_key() -> None:
+    if not os.environ.get("MANAGER_AI_SECRET_KEY"):
+        key_path = os.path.join("data", "secret.key")
+        if os.path.exists(key_path):
+            with open(key_path, "r") as f:
+                os.environ["MANAGER_AI_SECRET_KEY"] = f.read().strip()
+            logger.info("Loaded MANAGER_AI_SECRET_KEY from %s", key_path)
+        else:
+            key = Fernet.generate_key().decode()
+            os.environ["MANAGER_AI_SECRET_KEY"] = key
+            tmp_path = key_path + ".tmp"
+            with open(tmp_path, "w") as f:
+                f.write(key + "\n")
+            os.replace(tmp_path, key_path)
+            logger.info("Generated and persisted MANAGER_AI_SECRET_KEY to %s", key_path)
 
 
-# Helpers used by _load_project_into_memory — defined at module level to keep the function clean
-
-def _read_optional_md(_atomic, _paths, project_path: str, issue_id: str, field_name: str) -> str | None:
-    path = _paths.issue_md(project_path, issue_id, field_name)
-    if not path.exists():
-        return None
-    return _atomic.read_text(path)
-
-
-def _opt_str_static(value: Any) -> str | None:
-    if value is None:
-        return None
-    s = str(value)
-    return s if s else None
-
-
-def _as_iso(value: Any) -> str:
-    if value is None:
-        return ""
-    return str(value)
-
-
-def _task_from_dict(d: dict) -> Any:
-    from app.storage.issue_store import TaskRecord
-    return TaskRecord(
-        id=str(d.get("id", "")),
-        name=str(d.get("name", "")),
-        status=str(d.get("status", "Pending")),
-        order=int(d.get("order", 0)),
-        created_at=_as_iso(d.get("created_at")),
-        updated_at=_as_iso(d.get("updated_at")),
-    )
-
-
-def _relation_from_dict(d: dict) -> Any:
-    from app.storage.issue_store import RelationRecord
-    return RelationRecord(
-        target_id=str(d.get("target_id", "")),
-        type=str(d.get("type", "related")),
-        created_at=_as_iso(d.get("created_at")),
-    )
-
-
-@asynccontextmanager
-async def lifespan(app):
-    if sys.platform == "win32":
-        asyncio.get_running_loop().set_exception_handler(_suppress_windows_accept_noise)
-
+def _startup_log_hooks() -> None:
     logger.info("Hook registry: %d event(s) registered", len(hook_registry._hooks))
     for event_type, hooks in hook_registry._hooks.items():
         for h in hooks:
             logger.info("  %s -> %s", event_type.value, h.name)
 
+
+async def _startup_migrate(db_session) -> None:
     try:
-        await migrate_all_projects(async_session)
+        await migrate_all_projects(db_session)
     except Exception:
         logger.exception("DB → .manager_ai/ migration failed; continuing startup")
 
-    # ------------------------------------------------------------------
-    # Fix any issue statuses that don't match the current enum (e.g.
-    # 'Completed' written by an older code version / manual edit).
-    # Map unrecognized values to the closest valid status.
-    # ------------------------------------------------------------------
+
+async def _startup_fixup_statuses(db_session) -> None:
     _STATUS_FIXUP_MAP: dict[str, str] = {
         "Completed": "Finished",
     }
     try:
-        from sqlalchemy import select, update
-        from app.models.issue import Issue
-        async with async_session() as session:
+        async with db_session() as session:
             for bad_val, good_val in _STATUS_FIXUP_MAP.items():
                 stmt = select(Issue.id).where(Issue.status == bad_val)
                 result = await session.execute(stmt)
@@ -368,109 +173,140 @@ async def lifespan(app):
     except Exception:
         logger.exception("Status fixup failed; continuing startup")
 
-    # Init write queue and background writer
+
+def _startup_init_write_queue() -> tuple[WriteQueue, BackgroundWriter]:
     write_queue = WriteQueue("data/pending_writes.db")
     background_writer = BackgroundWriter(write_queue)
+    return write_queue, background_writer
 
-    # Inject write_queue into store modules so they can enqueue writes
+
+async def _startup_load_projects(db_session, write_queue, background_writer) -> list:
     memory_store_module.inject_write_queue(write_queue)
     issue_store_module.inject_write_queue(write_queue)
     file_store_module.inject_write_queue(write_queue)
+    async with db_session() as session:
+        rows = (
+            await session.execute(
+                select(Project).where(Project.archived_at.is_(None))
+            )
+        ).scalars().all()
+        for p in rows:
+            _load_project_into_memory(p.path, memory_store)
+    if rows:
+        await background_writer.start()
+    return rows
 
-    rows = []
+
+async def _startup_recover_transcriptions(rows: list) -> None:
     try:
-        from sqlalchemy import select
-        from app.models.project import Project
-        async with async_session() as session:
-            rows = (
-                await session.execute(
-                    select(Project).where(Project.archived_at.is_(None))
-                )
-            ).scalars().all()
-            for p in rows:
-                _load_project_into_memory(p.path, memory_store)
-        if rows:
-            await background_writer.start()
+        for p in rows:
+            recover_pending_transcriptions(p.path)
     except Exception:
-        logger.exception("Failed to load projects into memory; continuing startup")
-    else:
-        try:
-            for p in rows:
-                recover_pending_transcriptions(p.path)
-        except Exception:
-            logger.exception("Failed to recover pending transcriptions; continuing startup")
-        catalog_loader.load()
-        try:
-            for p in rows:
-                await plugin_manager.start_plugins_for_project(p.id, p.path, mcp)
-        except Exception:
-            logger.exception("Failed to start MCP plugins; continuing startup")
+        logger.exception("Failed to recover pending transcriptions; continuing startup")
 
-        try:
-            from app.services.agent_service import AgentService
-            from app.services.pipeline_service import PipelineService
-            async with async_session() as seed_session:
-                try:
-                    await AgentService(seed_session).seed_defaults()
-                    await seed_session.commit()
-                except Exception:
-                    await seed_session.rollback()
-                    logger.warning("Failed to seed default agents", exc_info=True)
-                try:
-                    await PipelineService(seed_session).seed_defaults()
-                    await seed_session.commit()
-                except Exception:
-                    await seed_session.rollback()
-                    logger.warning("Failed to seed default pipelines", exc_info=True)
-        except Exception:
-            logger.exception("Failed to seed default agents/pipelines; continuing startup")
 
-        # Mark orphaned pipeline runs as FAILED (server restart)
-        try:
-            from sqlalchemy import select as _select
-            from app.models.pipeline_run import PipelineRun as _PipelineRun, PipelineRunStatus as _PipelineRunStatus
-            from datetime import timezone as _timezone
-            async with async_session() as cleanup_session:
-                orphaned = await cleanup_session.execute(
-                    _select(_PipelineRun).where(
-                        _PipelineRun.status == _PipelineRunStatus.RUNNING
-                    )
+def _startup_load_catalog() -> None:
+    catalog_loader.load()
+
+
+async def _startup_plugins(rows: list, mcp_server) -> None:
+    try:
+        for p in rows:
+            await plugin_manager.start_plugins_for_project(p.id, p.path, mcp_server)
+    except Exception:
+        logger.exception("Failed to start MCP plugins; continuing startup")
+
+
+async def _startup_seed_defaults(db_session) -> None:
+    try:
+        async with db_session() as seed_session:
+            try:
+                await AgentService(seed_session).seed_defaults()
+                await seed_session.commit()
+            except Exception:
+                await seed_session.rollback()
+                logger.warning("Failed to seed default agents", exc_info=True)
+            try:
+                await PipelineService(seed_session).seed_defaults()
+                await seed_session.commit()
+            except Exception:
+                await seed_session.rollback()
+                logger.warning("Failed to seed default pipelines", exc_info=True)
+    except Exception:
+        logger.exception("Failed to seed default agents/pipelines; continuing startup")
+
+
+async def _startup_cleanup_orphaned_runs(db_session) -> None:
+    try:
+        async with db_session() as cleanup_session:
+            orphaned = await cleanup_session.execute(
+                select(PipelineRun).where(
+                    PipelineRun.status == PipelineRunStatus.RUNNING
                 )
-                count = 0
-                for run in orphaned.scalars().all():
-                    run.status = _PipelineRunStatus.FAILED
-                    run.finished_at = datetime.now(_timezone.utc)
-                    count += 1
-                if count:
-                    await cleanup_session.commit()
-                    logger.warning(
-                        "Startup cleanup: marked %d orphaned pipeline run(s) as FAILED",
-                        count,
-                    )
-        except Exception:
-            logger.exception("Failed to cleanup orphaned pipeline runs; continuing startup")
+            )
+            count = 0
+            for run in orphaned.scalars().all():
+                run.status = PipelineRunStatus.FAILED
+                run.finished_at = datetime.now(timezone.utc)
+                count += 1
+            if count:
+                await cleanup_session.commit()
+                logger.warning(
+                    "Startup cleanup: marked %d orphaned pipeline run(s) as FAILED",
+                    count,
+                )
+    except Exception:
+        logger.exception("Failed to cleanup orphaned pipeline runs; continuing startup")
 
-        try:
-            for p in rows:
-                try:
-                    result = install_claude_resources_to(p.path)
-                    logger.info("Installed claude_resources to %s: %s", p.path, result.get("copied"))
-                except Exception:
-                    logger.warning("Failed to install claude_resources to %s", p.path, exc_info=True)
-        except Exception:
-            logger.exception("Failed to install claude_resources; continuing startup")
+
+async def _startup_install_claude_resources(rows: list) -> None:
+    try:
+        for p in rows:
+            try:
+                result = install_claude_resources_to(p.path)
+                logger.info("Installed claude_resources to %s: %s", p.path, result.get("copied"))
+            except Exception:
+                logger.warning("Failed to install claude_resources to %s", p.path, exc_info=True)
+    except Exception:
+        logger.exception("Failed to install claude_resources; continuing startup")
+
+
+async def _shutdown(rows: list, background_writer, write_queue) -> None:
+    try:
+        for p in rows:
+            await plugin_manager.stop_plugins_for_project(p.id)
+    except Exception:
+        logger.exception("Failed to stop MCP plugins; continuing shutdown")
+    await background_writer.stop()
+    write_queue.close()
+
+
+@asynccontextmanager
+async def lifespan(app):
+    if sys.platform == "win32":
+        asyncio.get_running_loop().set_exception_handler(_suppress_windows_accept_noise)
+
+    _startup_resolve_secret_key()
+    _startup_log_hooks()
+    await _startup_migrate(async_session)
+    await _startup_fixup_statuses(async_session)
+    wq, bw = _startup_init_write_queue()
+    rows = await _startup_load_projects(async_session, wq, bw)
+    try:
+        await _startup_recover_transcriptions(rows)
+        _startup_load_catalog()
+        await _startup_plugins(rows, mcp)
+        await _startup_seed_defaults(async_session)
+        await _startup_cleanup_orphaned_runs(async_session)
+        await _startup_install_claude_resources(rows)
+    except Exception:
+        logger.exception("Non-critical startup ops failed; continuing")
 
     async with mcp.session_manager.run():
         try:
             yield
         finally:
-            try:
-                for p in rows:
-                    await plugin_manager.stop_plugins_for_project(p.id)
-            except Exception:
-                logger.exception("Failed to stop MCP plugins; continuing shutdown")
-            await background_writer.stop()
-            write_queue.close()
+            await _shutdown(rows, bw, wq)
 
 
 app = FastAPI(title="Manager AI", version="0.1.0", lifespan=lifespan)
@@ -485,7 +321,7 @@ async def app_error_handler(request, exc: AppError):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins.split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,0 +1,30 @@
+schema_version: 1
+id: 96f560bb-2137-47b3-97a8-11d723956ff5
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fernet key persistence fix — hard error on missing MANAGER_AI_SECRET_KEY
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T10:15:17.203735'
+updated_at: '2026-06-05T11:13:46.822145'
+finished_at: '2026-06-05T11:13:46.822155'
+tasks:
+- id: 9f18b091-b904-4833-a482-7a7424a8a589
+  name: Add hard error guard in _get_fernet() — raise ValueError if MANAGER_AI_SECRET_KEY not set
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T10:50:37'
+  updated_at: '2026-06-05T10:50:49'
+- id: 69814e70-85ef-4bc8-86f4-39bd1111187e
+  name: Add startup key persistence in main.py lifespan — read/write data/secret.key
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T10:50:37'
+  updated_at: '2026-06-05T10:51:02'
+- id: c903d548-d4af-4ea4-b65c-4b9dd62b4c36
+  name: Document MANAGER_AI_SECRET_KEY in .env.example
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T10:50:37'
+  updated_at: '2026-06-05T10:51:13'
+relations: []

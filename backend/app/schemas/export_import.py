@@ -4,6 +4,14 @@ from typing import Literal
 from pydantic import BaseModel
 
 
+class AgentBatchExportRequest(BaseModel):
+    agent_ids: list[str]
+
+
+class PipelineBatchExportRequest(BaseModel):
+    pipeline_ids: list[str]
+
+
 class AgentExportItem(BaseModel):
     id: str
     name: str
@@ -64,11 +72,22 @@ def format_pipeline_step_export(step) -> dict:
     }
 
 
+def format_pipeline_event_rule_export(rule) -> dict:
+    return {
+        "id": rule.id,
+        "event_type": rule.event_type,
+        "source_step_id": rule.source_step_id,
+        "target_step_id": rule.target_step_id,
+        "enabled": rule.enabled,
+    }
+
+
 def format_pipeline_export(pipeline) -> dict:
     return {
         "id": pipeline.id,
         "name": pipeline.name,
         "steps": [format_pipeline_step_export(s) for s in (pipeline.steps or [])],
+        "event_rules": [format_pipeline_event_rule_export(r) for r in (pipeline.event_rules or [])],
     }
 
 

@@ -21,8 +21,8 @@ export function fetchPipelineMessages(runId: string): Promise<PipelineMessage[]>
   return apiGet<PipelineMessage[]>(`/pipeline-runs/${runId}/messages`);
 }
 
-export function fetchActivePipelineRuns(issueIds: string[]): Promise<Record<string, { pipeline_name: string; status: string } | null>> {
-  return apiGet(`/pipeline-runs/active-by-issue?issue_ids=${issueIds.join(",")}`);
+export function fetchActivePipelineRunsByProject(projectId: string): Promise<PipelineRun[]> {
+  return apiGet<PipelineRun[]>(`/pipeline-runs/active-by-project?project_id=${encodeURIComponent(projectId)}`);
 }
 
 export function sendPipelineMessage(runId: string, data: PipelineMessageCreate): Promise<PipelineMessage> {

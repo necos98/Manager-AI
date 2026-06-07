@@ -1,0 +1,36 @@
+schema_version: 1
+id: 7329ca95-ab1c-4889-bdf3-3afceb8295ef
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix Windows orphan process in start.py re-exec
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T10:50:25.592336'
+updated_at: '2026-06-05T15:16:35.798787'
+finished_at: '2026-06-05T15:16:35.798800'
+tasks:
+- id: 9de37e12-7168-4a20-b30c-e7e103eaf49f
+  name: Add ctypes import and Win32 constants (CREATE_BREAKAWAY_FROM_JOB, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE) to start.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T14:28:35'
+  updated_at: '2026-06-05T15:15:54'
+- id: f6973f66-13e8-4712-9850-85a637a542c4
+  name: Define JOBOBJECT_EXTENDED_LIMIT_INFORMATION ctypes struct for x64
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T14:28:35'
+  updated_at: '2026-06-05T15:16:00'
+- id: f2fe34f4-98f3-48ca-8211-9ff21d590be2
+  name: Implement _run_windows_reexec() helper with Job Object kill-on-close
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T14:28:35'
+  updated_at: '2026-06-05T15:16:12'
+- id: 3892430f-a9e7-413c-8cec-b16db222891f
+  name: Replace Windows branch in _bootstrap_venv_and_reexec() to use _run_windows_reexec
+  status: Completed
+  order: 3
+  created_at: '2026-06-05T14:28:35'
+  updated_at: '2026-06-05T15:16:30'
+relations: []

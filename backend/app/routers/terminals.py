@@ -25,7 +25,7 @@ from app.services.terminal_session import (
     _sessions,
     _stop_reader,
 )
-from app.services.wsl_support import get_host_ip_for_wsl, is_wsl_shell, win_to_wsl_path
+from app.services.wsl_support import get_host_ip_for_wsl, is_wsl_shell, quote_url_for_shell, win_to_wsl_path
 
 logger = logging.getLogger(__name__)
 
@@ -145,12 +145,12 @@ async def create_terminal(
             if host_ip:
                 pty.write(
                     f'export MANAGER_AI_BASE_URL='
-                    f'"http://{host_ip}:{port}"\r\n'
+                    f'{quote_url_for_shell(f"http://{host_ip}:{port}", is_wsl=True)}\r\n'
                 )
             else:
                 pty.write(
                     f'export MANAGER_AI_BASE_URL='
-                    f'"http://localhost:{port}"\r\n'
+                    f'{quote_url_for_shell(f"http://localhost:{port}", is_wsl=True)}\r\n'
                 )
         else:
             env_vars["MANAGER_AI_BASE_URL"] = (
@@ -290,12 +290,12 @@ async def create_ask_terminal(
             if host_ip:
                 pty.write(
                     f'export MANAGER_AI_BASE_URL='
-                    f'"http://{host_ip}:{port}"\r\n'
+                    f'{quote_url_for_shell(f"http://{host_ip}:{port}", is_wsl=True)}\r\n'
                 )
             else:
                 pty.write(
                     f'export MANAGER_AI_BASE_URL='
-                    f'"http://localhost:{port}"\r\n'
+                    f'{quote_url_for_shell(f"http://localhost:{port}", is_wsl=True)}\r\n'
                 )
         else:
             env_vars["MANAGER_AI_BASE_URL"] = (

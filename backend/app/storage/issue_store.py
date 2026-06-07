@@ -110,6 +110,10 @@ def _index_to_light_record(entry: dict[str, Any]) -> IssueRecord:
     )
 
 
+def find_issue_project(issue_id: str) -> str | None:
+    return _core.find_issue_project(issue_id)
+
+
 # ---- public CRUD ----
 
 

@@ -5,7 +5,7 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.exceptions import NotFoundError
+from app.exceptions import AppError, NotFoundError
 from app.schemas.pipeline import (
     PipelineCreate,
     PipelineResponse,
@@ -14,10 +14,15 @@ from app.schemas.pipeline import (
     PipelineUpdate,
     StepReorderRequest,
 )
+from app.schemas.pipeline_event_rule import (
+    PipelineEventRuleCreate,
+    PipelineEventRuleResponse,
+)
 from app.schemas.export_import import (
     ImportConfirmResponse,
     ImportConflict,
     MissingAgentInfo,
+    PipelineBatchExportRequest,
     PipelineImportPreviewResponse,
     build_export_wrapper,
     format_pipeline_export,
@@ -84,6 +89,23 @@ async def export_pipelines_all(db: AsyncSession = Depends(get_db)):
     svc = PipelineService(db)
     pipelines = await svc.export_all()
     items = [format_pipeline_export(p) for p in pipelines]
+    wrapper = build_export_wrapper("pipelines", items)
+    return Response(
+        content=json.dumps(wrapper, indent=2, default=str),
+        media_type="application/json",
+        headers={"Content-Disposition": 'attachment; filename="pipelines-export.json"'},
+    )
+
+
+@router.post("/export/batch")
+async def export_pipelines_batch(
+    request: PipelineBatchExportRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    if not request.pipeline_ids:
+        raise HTTPException(status_code=400, detail="pipeline_ids must not be empty")
+    svc = PipelineService(db)
+    items = await svc.export_batch(request.pipeline_ids)
     wrapper = build_export_wrapper("pipelines", items)
     return Response(
         content=json.dumps(wrapper, indent=2, default=str),
@@ -315,3 +337,67 @@ async def reorder_steps(
     response = [_step_response(s) for s in steps]
     await db.commit()
     return response
+
+
+def _rule_response(rule) -> PipelineEventRuleResponse:
+    return PipelineEventRuleResponse(
+        id=rule.id,
+        pipeline_id=rule.pipeline_id,
+        event_type=rule.event_type,
+        source_step_id=rule.source_step_id,
+        target_step_id=rule.target_step_id,
+        enabled=rule.enabled,
+        created_at=str(rule.created_at) if rule.created_at else None,
+        updated_at=str(rule.updated_at) if rule.updated_at else None,
+    )
+
+
+@router.get(
+    "/{pipeline_id}/event-rules",
+    response_model=list[PipelineEventRuleResponse],
+)
+async def list_event_rules(pipeline_id: str, db: AsyncSession = Depends(get_db)):
+    svc = PipelineService(db)
+    rules = await svc.list_event_rules(pipeline_id)
+    return [_rule_response(r) for r in rules]
+
+
+@router.post(
+    "/{pipeline_id}/event-rules",
+    response_model=PipelineEventRuleResponse,
+    status_code=201,
+)
+async def create_event_rule(
+    pipeline_id: str,
+    data: PipelineEventRuleCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    svc = PipelineService(db)
+    try:
+        rule = await svc.add_event_rule(
+            pipeline_id=pipeline_id,
+            event_type=data.event_type,
+            source_step_id=data.source_step_id,
+            target_step_id=data.target_step_id,
+        )
+    except AppError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    await db.commit()
+    return _rule_response(rule)
+
+
+@router.delete(
+    "/{pipeline_id}/event-rules/{rule_id}",
+    status_code=204,
+)
+async def delete_event_rule(
+    pipeline_id: str,
+    rule_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    svc = PipelineService(db)
+    try:
+        await svc.remove_event_rule(rule_id)
+    except AppError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    await db.commit()

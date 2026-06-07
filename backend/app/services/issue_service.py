@@ -108,7 +108,18 @@ class IssueService:
         return record
 
     async def get_by_id(self, issue_id: str) -> IssueRecord | None:
-        """Scan across all projects — needed when project_id unknown."""
+        # O(1) via reverse index
+        project_path = issue_store.find_issue_project(issue_id)
+        if project_path is not None:
+            rec = issue_store.load_issue(project_path, issue_id)
+            if rec is not None:
+                try:
+                    project = await ProjectService(self.session).get_by_id(rec.project_id)
+                    if project is not None and project.archived_at is None:
+                        return rec
+                except NotFoundError:
+                    pass  # Deleted project — fall through to scan
+        # Fallback: scan all non-archived projects
         for project in await ProjectService(self.session).list_all(archived=False):
             rec = issue_store.load_issue(project.path, issue_id)
             if rec is not None:

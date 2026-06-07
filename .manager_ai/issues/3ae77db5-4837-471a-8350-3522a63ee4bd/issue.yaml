@@ -1,0 +1,30 @@
+schema_version: 1
+id: 3ae77db5-4837-471a-8350-3522a63ee4bd
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: O(n) project scan in get_by_id — add reverse index
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T10:49:21.035899'
+updated_at: '2026-06-05T11:34:53.076776'
+finished_at: '2026-06-05T11:34:53.076788'
+tasks:
+- id: 906d1f58-d225-4ed8-9743-f7b7d7458f1e
+  name: Add _issue_to_project reverse index + find_issue_project() to MemoryStoreCore — lifecycle hooks in init_project, upsert, delete, remove_project, reset
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T11:28:27'
+  updated_at: '2026-06-05T11:34:48'
+- id: bee5339c-8f25-418f-be7c-afa539ddb040
+  name: Expose find_issue_project wrapper in issue_store.py
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T11:28:27'
+  updated_at: '2026-06-05T11:34:49'
+- id: a43a861c-0ace-406b-bc84-8a836f2f7590
+  name: Update IssueService.get_by_id() to use reverse index with archived/deleted fallback
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T11:28:27'
+  updated_at: '2026-06-05T11:34:49'
+relations: []

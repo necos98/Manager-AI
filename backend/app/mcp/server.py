@@ -2,6 +2,7 @@ import asyncio
 import logging
 import json
 from pathlib import Path
+import functools
 
 from mcp.server.fastmcp import FastMCP
 
@@ -17,6 +18,7 @@ from app.services.issue_service import IssueService
 from app.services.pipeline_run_service import PipelineRunService, set_step_completed
 from app.services.pipeline_service import PipelineService
 from app.services.project_service import ProjectService
+from app.models.issue import IssueStatus
 from app.models.task import TaskStatus
 from app.services.task_service import TaskService
 from app.services.settings_service import SettingsService
@@ -29,157 +31,169 @@ mcp = FastMCP(_desc["server.name"], streamable_http_path="/")
 logger = logging.getLogger(__name__)
 
 
+def _issue_display_name(issue, max_len: int = 50) -> str:
+    return issue.name or (issue.description or "")[:max_len] or ""
+
+
+def _serialize_agent(agent) -> dict:
+    return {
+        "id": agent.id,
+        "name": agent.name,
+        "intent": agent.intent,
+        "model": agent.model,
+        "allowed_tools": agent.allowed_tools,
+        "created_at": str(agent.created_at) if agent.created_at else None,
+        "updated_at": str(agent.updated_at) if agent.updated_at else None,
+    }
+
+
+def _serialize_pipeline(pipeline) -> dict:
+    return {
+        "id": pipeline.id,
+        "name": pipeline.name,
+        "steps": [
+            {
+                "id": s.id,
+                "pipeline_id": s.pipeline_id,
+                "agent_id": s.agent_id,
+                "order_index": s.order_index,
+            }
+            for s in (pipeline.steps or [])
+        ],
+        "created_at": str(pipeline.created_at) if pipeline.created_at else None,
+        "updated_at": str(pipeline.updated_at) if pipeline.updated_at else None,
+    }
+
+
+def mcp_tool_wrapper(func):
+    """Wraps async with async_session() + try/except AppError."""
+    import inspect as _inspect
+    _sig = _inspect.signature(func)
+    _no_session = [p for p in _sig.parameters.values() if p.name != "session"]
+    _new_sig = _sig.replace(parameters=_no_session)
+
+    async def wrapper(*args, **kwargs):
+        async with async_session() as session:
+            try:
+                return await func(session, *args, **kwargs)
+            except AppError as e:
+                return {"error": e.message}
+
+    wrapper.__name__ = func.__name__
+    wrapper.__signature__ = _new_sig
+    return wrapper
+
+
 @mcp.tool(description=_desc["tool.get_issue_details.description"])
-async def get_issue_details(project_id: str, issue_id: str) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.get_for_project(issue_id, project_id)
-        except AppError as e:
-            return {"error": e.message}
-        return {
-            "id": issue.id,
-            "project_id": issue.project_id,
-            "name": issue.name,
-            "description": issue.description,
-            "status": issue.status,
-            "priority": issue.priority,
-            "specification": issue.specification,
-            "plan": issue.plan,
-            "recap": issue.recap,
-            "tasks": [
-                {"id": t.id, "name": t.name, "status": t.status, "order": t.order}
-                for t in issue.tasks
-            ],
-            "created_at": issue.created_at or None,
-            "updated_at": issue.updated_at or None,
-        }
+@mcp_tool_wrapper
+async def get_issue_details(session, project_id: str, issue_id: str) -> dict:
+    issue_service = IssueService(session)
+    issue = await issue_service.get_for_project(issue_id, project_id)
+    return {
+        "id": issue.id,
+        "project_id": issue.project_id,
+        "name": issue.name,
+        "description": issue.description,
+        "status": issue.status,
+        "priority": issue.priority,
+        "specification": issue.specification,
+        "plan": issue.plan,
+        "recap": issue.recap,
+        "tasks": [
+            {"id": t.id, "name": t.name, "status": t.status, "order": t.order}
+            for t in issue.tasks
+        ],
+        "created_at": issue.created_at or None,
+        "updated_at": issue.updated_at or None,
+    }
 
 
 @mcp.tool(description=_desc["tool.get_issue_status.description"])
-async def get_issue_status(project_id: str, issue_id: str) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.get_for_project(issue_id, project_id)
-        except AppError as e:
-            return {"error": e.message}
-        return {"id": issue.id, "status": issue.status}
+@mcp_tool_wrapper
+async def get_issue_status(session, project_id: str, issue_id: str) -> dict:
+    issue_service = IssueService(session)
+    issue = await issue_service.get_for_project(issue_id, project_id)
+    return {"id": issue.id, "status": issue.status}
 
 
 @mcp.tool(description=_desc["tool.get_project_context.description"])
-async def get_project_context(project_id: str) -> dict:
-    async with async_session() as session:
-        project_service = ProjectService(session)
-        try:
-            project = await project_service.get_by_id(project_id)
-            return {
-                "id": project.id,
-                "name": project.name,
-                "path": project.path,
-                "description": project.description,
-                "tech_stack": project.tech_stack,
-            }
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def get_project_context(session, project_id: str) -> dict:
+    project_service = ProjectService(session)
+    project = await project_service.get_by_id(project_id)
+    return {
+        "id": project.id,
+        "name": project.name,
+        "path": project.path,
+        "description": project.description,
+        "tech_stack": project.tech_stack,
+    }
 
 
 @mcp.tool(description=_desc["tool.update_project_context.description"])
-async def update_project_context(project_id: str, description: str | None = None, tech_stack: str | None = None) -> dict:
-    async with async_session() as session:
-        project_service = ProjectService(session)
-        try:
-            project = await project_service.update(project_id, description=description, tech_stack=tech_stack)
-            await session.commit()
-            await event_service.emit({
-                "type": "project_updated",
-                "project_id": project_id,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-            return {
-                "id": project.id,
-                "name": project.name,
-                "path": project.path,
-                "description": project.description,
-                "tech_stack": project.tech_stack,
-            }
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def update_project_context(session, project_id: str, description: str | None = None, tech_stack: str | None = None) -> dict:
+    project_service = ProjectService(session)
+    project = await project_service.update(project_id, description=description, tech_stack=tech_stack)
+    await session.commit()
+    await event_service.emit({
+        "type": "project_updated",
+        "project_id": project_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {
+        "id": project.id,
+        "name": project.name,
+        "path": project.path,
+        "description": project.description,
+        "tech_stack": project.tech_stack,
+    }
 
 
 @mcp.tool(description=_desc["tool.set_issue_name.description"])
-async def set_issue_name(project_id: str, issue_id: str, name: str) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.set_name(issue_id, project_id, name)
-            await session.commit()
-            await event_service.emit({
-                "type": "issue_content_updated",
-                "content_type": "name",
-                "project_id": project_id,
-                "issue_id": issue_id,
-                "issue_name": issue.name or "",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-            return {"id": issue.id, "name": issue.name}
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def set_issue_name(session, project_id: str, issue_id: str, name: str) -> dict:
+    issue_service = IssueService(session)
+    issue = await issue_service.set_name(issue_id, project_id, name)
+    await session.commit()
+    await event_service.emit({
+        "type": "issue_content_updated",
+        "content_type": "name",
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": issue.name or "",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"id": issue.id, "name": issue.name}
 
 
 @mcp.tool(description=_desc["tool.complete_issue.description"])
-async def complete_issue(project_id: str, issue_id: str, recap: str) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.complete_issue(issue_id, project_id, recap)
-            # Extract data while session is open
-            issue_data = {
-                "name": issue.name or (issue.description or "")[:100],
-                "specification": issue.specification,
-                "plan": issue.plan,
-                "recap": issue.recap,
-            }
-            issue_id_val = issue.id
-            issue_name = issue.name or (issue.description or "")[:50] or ""
-            issue_status = issue.status
-            try:
-                project = await ProjectService(session).get_by_id(project_id)
-                project_name = project.name
-            except AppError:
-                project_name = ""
-            await session.commit()
+@mcp_tool_wrapper
+async def complete_issue(session, project_id: str, issue_id: str, recap: str) -> dict:
+    issue_service = IssueService(session)
+    issue = await issue_service.complete_issue(issue_id, project_id, recap)
+    # Extract data while session is open
+    issue_data = {
+        "name": _issue_display_name(issue, max_len=100),
+        "specification": issue.specification,
+        "plan": issue.plan,
+        "recap": issue.recap,
+    }
+    issue_id_val = issue.id
+    issue_name = _issue_display_name(issue)
+    issue_status = issue.status
+    await session.commit()
 
-            await event_service.emit({
-                "type": "issue_status_changed",
-                "new_status": issue_status,
-                "project_id": project_id,
-                "issue_id": issue_id_val,
-                "issue_name": issue_name,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
+    await event_service.emit({
+        "type": "issue_status_changed",
+        "new_status": issue_status,
+        "project_id": project_id,
+        "issue_id": issue_id_val,
+        "issue_name": issue_name,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
 
-            from app.hooks.registry import HookContext, HookEvent, hook_registry
-            await hook_registry.fire(
-                HookEvent.ISSUE_COMPLETED,
-                HookContext(
-                    project_id=project_id,
-                    issue_id=issue_id_val,
-                    event=HookEvent.ISSUE_COMPLETED,
-                    metadata={
-                        "issue_name": issue_name,
-                        "recap": recap,
-                        "project_name": project_name,
-                        "project_path": project.path if project else "",
-                        "project_description": project.description if project else "",
-                        "tech_stack": project.tech_stack if project else "",
-                    },
-                ),
-            )
-
-            return {"id": issue_id_val, "status": issue_status, "recap": issue.recap}
-        except AppError as e:
-            return {"error": e.message}
+    return {"id": issue_id_val, "status": issue_status, "recap": issue.recap}
 
 
 @mcp.tool(description=_desc["tool.create_issue.description"])
@@ -210,151 +224,127 @@ async def create_issue(project_id: str, description: str, priority: int = 3) -> 
 
 
 @mcp.tool(description=_desc["tool.create_issue_spec.description"])
-async def create_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.create_spec(issue_id, project_id, spec)
-            await session.commit()
-            await event_service.emit({
-                "type": "issue_status_changed",
-                "new_status": issue.status,
-                "project_id": project_id,
-                "issue_id": issue_id,
-                "issue_name": issue.name or (issue.description or "")[:50] or "",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-            return {"id": issue.id, "status": issue.status, "specification": issue.specification}
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def create_issue_spec(session, project_id: str, issue_id: str, spec: str) -> dict:
+    issue_service = IssueService(session)
+    issue = await issue_service.create_spec(issue_id, project_id, spec)
+    await session.commit()
+    await event_service.emit({
+        "type": "issue_status_changed",
+        "new_status": issue.status,
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": _issue_display_name(issue),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"id": issue.id, "status": issue.status, "specification": issue.specification}
 
 
 @mcp.tool(description=_desc["tool.edit_issue_spec.description"])
-async def edit_issue_spec(project_id: str, issue_id: str, spec: str) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.edit_spec(issue_id, project_id, spec)
-            await session.commit()
-            await event_service.emit({
-                "type": "issue_content_updated",
-                "content_type": "spec",
-                "project_id": project_id,
-                "issue_id": issue_id,
-                "issue_name": issue.name or (issue.description or "")[:50] or "",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-            return {"id": issue.id, "status": issue.status, "specification": issue.specification}
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def edit_issue_spec(session, project_id: str, issue_id: str, spec: str) -> dict:
+    issue_service = IssueService(session)
+    issue = await issue_service.edit_spec(issue_id, project_id, spec)
+    await session.commit()
+    await event_service.emit({
+        "type": "issue_content_updated",
+        "content_type": "spec",
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": _issue_display_name(issue),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"id": issue.id, "status": issue.status, "specification": issue.specification}
 
 
 @mcp.tool(description=_desc["tool.create_issue_plan.description"])
-async def create_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.create_plan(issue_id, project_id, plan)
-            await session.commit()
-            await event_service.emit({
-                "type": "issue_status_changed",
-                "new_status": issue.status,
-                "project_id": project_id,
-                "issue_id": issue_id,
-                "issue_name": issue.name or (issue.description or "")[:50] or "",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-            return {"id": issue.id, "status": issue.status, "plan": issue.plan}
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def create_issue_plan(session, project_id: str, issue_id: str, plan: str) -> dict:
+    issue_service = IssueService(session)
+    issue = await issue_service.create_plan(issue_id, project_id, plan)
+    await session.commit()
+    await event_service.emit({
+        "type": "issue_status_changed",
+        "new_status": issue.status,
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": _issue_display_name(issue),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"id": issue.id, "status": issue.status, "plan": issue.plan}
 
 
 @mcp.tool(description=_desc["tool.edit_issue_plan.description"])
-async def edit_issue_plan(project_id: str, issue_id: str, plan: str) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.edit_plan(issue_id, project_id, plan)
-            await session.commit()
-            await event_service.emit({
-                "type": "issue_content_updated",
-                "content_type": "plan",
-                "project_id": project_id,
-                "issue_id": issue_id,
-                "issue_name": issue.name or (issue.description or "")[:50] or "",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-            return {"id": issue.id, "status": issue.status, "plan": issue.plan}
-        except AppError as e:
-            return {"error": e.message}
-
-
+@mcp_tool_wrapper
+async def edit_issue_plan(session, project_id: str, issue_id: str, plan: str) -> dict:
+    issue_service = IssueService(session)
+    issue = await issue_service.edit_plan(issue_id, project_id, plan)
+    await session.commit()
+    await event_service.emit({
+        "type": "issue_content_updated",
+        "content_type": "plan",
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": _issue_display_name(issue),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"id": issue.id, "status": issue.status, "plan": issue.plan}
 @mcp.tool(description=_desc["tool.accept_issue.description"])
-async def accept_issue(project_id: str, issue_id: str) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.accept_issue(issue_id, project_id)
-            issue_status = issue.status
-            issue_name_val = issue.name or (issue.description or "")[:50] or ""
-            await session.commit()
-            await event_service.emit({
-                "type": "issue_status_changed",
-                "new_status": issue_status,
-                "project_id": project_id,
-                "issue_id": issue_id,
-                "issue_name": issue_name_val,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
+@mcp_tool_wrapper
+async def accept_issue(session, project_id: str, issue_id: str) -> dict:
+    issue_service = IssueService(session)
+    issue = await issue_service.accept_issue(issue_id, project_id)
+    issue_status = issue.status
+    issue_name_val = _issue_display_name(issue)
+    await session.commit()
+    await event_service.emit({
+        "type": "issue_status_changed",
+        "new_status": issue_status,
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": issue_name_val,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
 
-            return {"id": issue_id, "status": issue_status}
-
-        except AppError as e:
-            return {"error": e.message}
+    return {"id": issue_id, "status": issue_status}
 
 
 @mcp.tool(description=_desc["tool.cancel_issue.description"])
-async def cancel_issue(project_id: str, issue_id: str) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.cancel_issue(issue_id, project_id)
-            issue_status = issue.status
-            issue_name_val = issue.name or (issue.description or "")[:50] or ""
-            await session.commit()
-            await event_service.emit({
-                "type": "issue_status_changed",
-                "new_status": issue_status,
-                "project_id": project_id,
-                "issue_id": issue_id,
-                "issue_name": issue_name_val,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-            return {"id": issue_id, "status": issue_status}
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def cancel_issue(session, project_id: str, issue_id: str) -> dict:
+    issue_service = IssueService(session)
+    issue = await issue_service.cancel_issue(issue_id, project_id)
+    issue_status = issue.status
+    issue_name_val = _issue_display_name(issue)
+    await session.commit()
+    await event_service.emit({
+        "type": "issue_status_changed",
+        "new_status": issue_status,
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": issue_name_val,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"id": issue_id, "status": issue_status}
 
 
 @mcp.tool(description=_desc["tool.force_finish_issue.description"])
-async def force_finish_issue(project_id: str, issue_id: str, recap: str | None = None) -> dict:
-    async with async_session() as session:
-        issue_service = IssueService(session)
-        try:
-            issue = await issue_service.force_finish_issue(issue_id, project_id, recap=recap)
-            issue_status = issue.status
-            issue_name_val = issue.name or (issue.description or "")[:50] or ""
-            await session.commit()
-            await event_service.emit({
-                "type": "issue_status_changed",
-                "new_status": issue_status,
-                "project_id": project_id,
-                "issue_id": issue_id,
-                "issue_name": issue_name_val,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-            return {"id": issue_id, "status": issue_status}
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def force_finish_issue(session, project_id: str, issue_id: str, recap: str | None = None) -> dict:
+    issue_service = IssueService(session)
+    issue = await issue_service.force_finish_issue(issue_id, project_id, recap=recap)
+    issue_status = issue.status
+    issue_name_val = _issue_display_name(issue)
+    await session.commit()
+    await event_service.emit({
+        "type": "issue_status_changed",
+        "new_status": issue_status,
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": issue_name_val,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"id": issue_id, "status": issue_status}
 
 
 @mcp.tool(description=_desc["tool.send_notification.description"])
@@ -365,7 +355,7 @@ async def send_notification(project_id: str, issue_id: str, title: str, message:
             issue = await issue_service.get_for_project(issue_id, project_id)
         except AppError as e:
             return {"error": e.message}
-        issue_name = issue.name or (issue.description or "")[:50] or "Untitled issue"
+        issue_name = _issue_display_name(issue) or "Untitled issue"
         project = await ProjectService(session).get_by_id(project_id)
         project_name = project.name if project else ""
         await event_service.emit({
@@ -935,7 +925,7 @@ async def ask_user_question(issue_id: str, question: str, options: list[str] | N
             "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
-        issue_name = issue.name or (issue.description or "")[:50] or "Untitled issue"
+        issue_name = _issue_display_name(issue) or "Untitled issue"
         project = await ProjectService(session).get_by_id(project_id)
         project_name = project.name if project else ""
         await event_service.emit({
@@ -981,28 +971,17 @@ async def ask_user_question(issue_id: str, question: str, options: list[str] | N
 
 
 @mcp.tool(description=_desc["tool.create_agent.description"])
-async def create_agent(name: str, intent: str = "", model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
-    async with async_session() as session:
-        svc = AgentService(session)
-        try:
-            agent = await svc.create(
-                name=name,
-                model=model,
-                allowed_tools=allowed_tools,
-                intent=intent,
-            )
-            await session.commit()
-            return {
-                "id": agent.id,
-                "name": agent.name,
-                "intent": agent.intent,
-                "model": agent.model,
-                "allowed_tools": agent.allowed_tools,
-                "created_at": str(agent.created_at) if agent.created_at else None,
-                "updated_at": str(agent.updated_at) if agent.updated_at else None,
-            }
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def create_agent(session, name: str, intent: str = "", model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
+    svc = AgentService(session)
+    agent = await svc.create(
+        name=name,
+        model=model,
+        allowed_tools=allowed_tools,
+        intent=intent,
+    )
+    await session.commit()
+    return _serialize_agent(agent)
 
 
 @mcp.tool(description=_desc["tool.list_agents.description"])
@@ -1011,115 +990,62 @@ async def list_agents() -> dict:
         svc = AgentService(session)
         agents = await svc.list_all()
         return {
-            "agents": [
-                {
-                    "id": a.id,
-                    "name": a.name,
-                    "intent": a.intent,
-                    "model": a.model,
-                    "allowed_tools": a.allowed_tools,
-                    "created_at": str(a.created_at) if a.created_at else None,
-                    "updated_at": str(a.updated_at) if a.updated_at else None,
-                }
-                for a in agents
-            ]
+            "agents": [_serialize_agent(a) for a in agents]
         }
 
 
 @mcp.tool(description=_desc["tool.get_agent.description"])
-async def get_agent(agent_id: str) -> dict:
-    async with async_session() as session:
-        svc = AgentService(session)
-        try:
-            agent = await svc.get_by_id(agent_id)
-            return {
-                "id": agent.id,
-                "name": agent.name,
-                "intent": agent.intent,
-                "model": agent.model,
-                "allowed_tools": agent.allowed_tools,
-                "created_at": str(agent.created_at) if agent.created_at else None,
-                "updated_at": str(agent.updated_at) if agent.updated_at else None,
-            }
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def get_agent(session, agent_id: str) -> dict:
+    svc = AgentService(session)
+    agent = await svc.get_by_id(agent_id)
+    return _serialize_agent(agent)
 
 
 @mcp.tool(description=_desc["tool.update_agent.description"])
-async def update_agent(agent_id: str, name: str | None = None, intent: str | None = None, model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
-    async with async_session() as session:
-        svc = AgentService(session)
-        try:
-            kwargs = {}
-            if name is not None:
-                kwargs["name"] = name
-            if intent is not None:
-                kwargs["intent"] = intent
-            if model is not None:
-                kwargs["model"] = model
-            if allowed_tools is not None:
-                kwargs["allowed_tools"] = allowed_tools
-            agent = await svc.update(agent_id, **kwargs)
-            await session.commit()
-            return {
-                "id": agent.id,
-                "name": agent.name,
-                "intent": agent.intent,
-                "model": agent.model,
-                "allowed_tools": agent.allowed_tools,
-                "created_at": str(agent.created_at) if agent.created_at else None,
-                "updated_at": str(agent.updated_at) if agent.updated_at else None,
-            }
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def update_agent(session, agent_id: str, name: str | None = None, intent: str | None = None, model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
+    svc = AgentService(session)
+    kwargs = {}
+    if name is not None:
+        kwargs["name"] = name
+    if intent is not None:
+        kwargs["intent"] = intent
+    if model is not None:
+        kwargs["model"] = model
+    if allowed_tools is not None:
+        kwargs["allowed_tools"] = allowed_tools
+    agent = await svc.update(agent_id, **kwargs)
+    await session.commit()
+    return _serialize_agent(agent)
 
 
 @mcp.tool(description=_desc["tool.delete_agent.description"])
-async def delete_agent(agent_id: str) -> dict:
-    async with async_session() as session:
-        svc = AgentService(session)
-        try:
-            await svc.delete(agent_id)
-            await session.commit()
-            return {"deleted": True}
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def delete_agent(session, agent_id: str) -> dict:
+    svc = AgentService(session)
+    await svc.delete(agent_id)
+    await session.commit()
+    return {"deleted": True}
 
 
 # ── Pipeline tools ────────────────────────────────────────────────────────
 
 
 @mcp.tool(description=_desc["tool.create_pipeline.description"])
-async def create_pipeline(name: str, steps: list[dict]) -> dict:
-    async with async_session() as session:
-        svc = PipelineService(session)
-        try:
-            pipeline = await svc.create_pipeline(name)
-            for step_data in steps:
-                await svc.add_step(
-                    pipeline_id=pipeline.id,
-                    agent_id=step_data["agent_id"],
-                    order_index=step_data.get("order_index", 0),
-                )
-            await session.commit()
-            pipeline = await svc.get_pipeline(pipeline.id)
-            return {
-                "id": pipeline.id,
-                "name": pipeline.name,
-                "steps": [
-                    {
-                        "id": s.id,
-                        "pipeline_id": s.pipeline_id,
-                        "agent_id": s.agent_id,
-                        "order_index": s.order_index,
-                    }
-                    for s in (pipeline.steps or [])
-                ],
-                "created_at": str(pipeline.created_at) if pipeline.created_at else None,
-                "updated_at": str(pipeline.updated_at) if pipeline.updated_at else None,
-            }
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def create_pipeline(session, name: str, steps: list[dict]) -> dict:
+    svc = PipelineService(session)
+    pipeline = await svc.create_pipeline(name)
+    for step_data in steps:
+        await svc.add_step(
+            pipeline_id=pipeline.id,
+            agent_id=step_data["agent_id"],
+            order_index=step_data.get("order_index", 0),
+        )
+    await session.commit()
+    pipeline = await svc.get_pipeline(pipeline.id)
+    return _serialize_pipeline(pipeline)
 
 
 @mcp.tool(description=_desc["tool.list_pipelines.description"])
@@ -1128,116 +1054,45 @@ async def list_pipelines() -> dict:
         svc = PipelineService(session)
         pipelines = await svc.list_all()
         return {
-            "pipelines": [
-                {
-                    "id": p.id,
-                    "name": p.name,
-                    "steps": [
-                        {
-                            "id": s.id,
-                            "pipeline_id": s.pipeline_id,
-                            "agent_id": s.agent_id,
-                            "order_index": s.order_index,
-                        }
-                        for s in (p.steps or [])
-                    ],
-                    "created_at": str(p.created_at) if p.created_at else None,
-                    "updated_at": str(p.updated_at) if p.updated_at else None,
-                }
-                for p in pipelines
-            ]
+            "pipelines": [_serialize_pipeline(p) for p in pipelines]
         }
 
 
 @mcp.tool(description=_desc["tool.get_pipeline.description"])
-async def get_pipeline(pipeline_id: str) -> dict:
-    async with async_session() as session:
-        svc = PipelineService(session)
-        try:
-            pipeline = await svc.get_pipeline(pipeline_id)
-            return {
-                "id": pipeline.id,
-                "name": pipeline.name,
-                "steps": [
-                    {
-                        "id": s.id,
-                        "pipeline_id": s.pipeline_id,
-                        "agent_id": s.agent_id,
-                        "order_index": s.order_index,
-                    }
-                    for s in (pipeline.steps or [])
-                ],
-                "created_at": str(pipeline.created_at) if pipeline.created_at else None,
-                "updated_at": str(pipeline.updated_at) if pipeline.updated_at else None,
-            }
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def get_pipeline(session, pipeline_id: str) -> dict:
+    svc = PipelineService(session)
+    pipeline = await svc.get_pipeline(pipeline_id)
+    return _serialize_pipeline(pipeline)
 
 
 @mcp.tool(description=_desc["tool.update_pipeline.description"])
-async def update_pipeline(pipeline_id: str, name: str) -> dict:
-    async with async_session() as session:
-        svc = PipelineService(session)
-        try:
-            await svc.update_pipeline(pipeline_id, name)
-            await session.commit()
-            pipeline = await svc.get_pipeline(pipeline_id)
-            return {
-                "id": pipeline.id,
-                "name": pipeline.name,
-                "steps": [
-                    {
-                        "id": s.id,
-                        "pipeline_id": s.pipeline_id,
-                        "agent_id": s.agent_id,
-                        "order_index": s.order_index,
-                    }
-                    for s in (pipeline.steps or [])
-                ],
-                "created_at": str(pipeline.created_at) if pipeline.created_at else None,
-                "updated_at": str(pipeline.updated_at) if pipeline.updated_at else None,
-            }
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def update_pipeline(session, pipeline_id: str, name: str) -> dict:
+    svc = PipelineService(session)
+    await svc.update_pipeline(pipeline_id, name)
+    await session.commit()
+    pipeline = await svc.get_pipeline(pipeline_id)
+    return _serialize_pipeline(pipeline)
 
 
 @mcp.tool(description=_desc["tool.delete_pipeline.description"])
-async def delete_pipeline(pipeline_id: str) -> dict:
-    async with async_session() as session:
-        svc = PipelineService(session)
-        try:
-            await svc.delete_pipeline(pipeline_id)
-            await session.commit()
-            return {"deleted": True}
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def delete_pipeline(session, pipeline_id: str) -> dict:
+    svc = PipelineService(session)
+    await svc.delete_pipeline(pipeline_id)
+    await session.commit()
+    return {"deleted": True}
 
 
 @mcp.tool(description=_desc["tool.add_step.description"])
-async def add_step(pipeline_id: str, agent_id: str, order_index: int = 0) -> dict:
-    async with async_session() as session:
-        svc = PipelineService(session)
-        try:
-            await svc.add_step(pipeline_id, agent_id, order_index)
-            await session.commit()
-            pipeline = await svc.get_pipeline(pipeline_id)
-            return {
-                "id": pipeline.id,
-                "name": pipeline.name,
-                "steps": [
-                    {
-                        "id": s.id,
-                        "pipeline_id": s.pipeline_id,
-                        "agent_id": s.agent_id,
-                        "order_index": s.order_index,
-                    }
-                    for s in (pipeline.steps or [])
-                ],
-                "created_at": str(pipeline.created_at) if pipeline.created_at else None,
-                "updated_at": str(pipeline.updated_at) if pipeline.updated_at else None,
-            }
-        except AppError as e:
-            return {"error": e.message}
+@mcp_tool_wrapper
+async def add_step(session, pipeline_id: str, agent_id: str, order_index: int = 0) -> dict:
+    svc = PipelineService(session)
+    await svc.add_step(pipeline_id, agent_id, order_index)
+    await session.commit()
+    pipeline = await svc.get_pipeline(pipeline_id)
+    return _serialize_pipeline(pipeline)
 
 
 @mcp.tool(description=_desc["tool.remove_step.description"])
@@ -1253,30 +1108,77 @@ async def remove_step(step_id: str) -> dict:
 
 
 @mcp.tool(description=_desc["tool.reorder_steps.description"])
-async def reorder_steps(pipeline_id: str, step_ids: list[str]) -> dict:
+@mcp_tool_wrapper
+async def reorder_steps(session, pipeline_id: str, step_ids: list[str]) -> dict:
+    svc = PipelineService(session)
+    await svc.reorder_steps(pipeline_id, step_ids)
+    await session.commit()
+    pipeline = await svc.get_pipeline(pipeline_id)
+    return _serialize_pipeline(pipeline)
+
+
+# ── Pipeline event rule tools ──────────────────────────────────────
+
+
+@mcp.tool(description=_desc["tool.add_pipeline_event_rule.description"])
+async def add_pipeline_event_rule(
+    pipeline_id: str,
+    event_type: str,
+    source_step_id: str,
+    target_step_id: str,
+) -> dict:
     async with async_session() as session:
         svc = PipelineService(session)
         try:
-            await svc.reorder_steps(pipeline_id, step_ids)
+            rule = await svc.add_event_rule(
+                pipeline_id=pipeline_id,
+                event_type=event_type,
+                source_step_id=source_step_id,
+                target_step_id=target_step_id,
+            )
             await session.commit()
-            pipeline = await svc.get_pipeline(pipeline_id)
             return {
-                "id": pipeline.id,
-                "name": pipeline.name,
-                "steps": [
-                    {
-                        "id": s.id,
-                        "pipeline_id": s.pipeline_id,
-                        "agent_id": s.agent_id,
-                        "order_index": s.order_index,
-                    }
-                    for s in (pipeline.steps or [])
-                ],
-                "created_at": str(pipeline.created_at) if pipeline.created_at else None,
-                "updated_at": str(pipeline.updated_at) if pipeline.updated_at else None,
+                "id": rule.id,
+                "pipeline_id": rule.pipeline_id,
+                "event_type": rule.event_type,
+                "source_step_id": rule.source_step_id,
+                "target_step_id": rule.target_step_id,
+                "enabled": rule.enabled,
             }
         except AppError as e:
             return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.remove_pipeline_event_rule.description"])
+async def remove_pipeline_event_rule(rule_id: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineService(session)
+        try:
+            await svc.remove_event_rule(rule_id)
+            await session.commit()
+            return {"deleted": True}
+        except AppError as e:
+            return {"error": e.message}
+
+
+@mcp.tool(description=_desc["tool.list_pipeline_event_rules.description"])
+async def list_pipeline_event_rules(pipeline_id: str) -> dict:
+    async with async_session() as session:
+        svc = PipelineService(session)
+        rules = await svc.list_event_rules(pipeline_id)
+        return {
+            "rules": [
+                {
+                    "id": r.id,
+                    "pipeline_id": r.pipeline_id,
+                    "event_type": r.event_type,
+                    "source_step_id": r.source_step_id,
+                    "target_step_id": r.target_step_id,
+                    "enabled": r.enabled,
+                }
+                for r in rules
+            ]
+        }
 
 
 # ── Pipeline run tools ────────────────────────────────────────────────────
@@ -1384,6 +1286,20 @@ async def finished_pipeline_step(
         runs = await svc.get_runs_for_issue(issue_id)
         active = next((r for r in runs if r["status"] == "RUNNING"), None)
         if not active:
+            issue_service = IssueService(session)
+            issue = await issue_service.get_by_id(issue_id)
+            if issue and issue.status == IssueStatus.ACCEPTED.value:
+                logger.warning(
+                    "No active pipeline run for issue %s (status ACCEPTED) — "
+                    "step completed via accept_issue without finished_pipeline_step",
+                    issue_id,
+                )
+                return {
+                    "success": True,
+                    "step_completed": True,
+                    "pipeline_finished": True,
+                    "warning": "No active pipeline run found; step implicitly completed",
+                }
             return {"error": "No active pipeline run for this issue"}
 
         run_id = active["id"]
@@ -1398,8 +1314,15 @@ async def finished_pipeline_step(
         if rejected:
             if not rejection_reason:
                 return {"error": "rejection_reason is required when rejected=True"}
+
             if target_step_index is None:
-                return {"error": "target_step_index is required when rejected=True"}
+                resolved = await svc.resolve_rejection_target(run_id, step["pipeline_step_id"])
+                if resolved is None:
+                    return {
+                        "error": "No rejection redirect configured for this step. "
+                                 "Provide target_step_index or configure an event rule."
+                    }
+                target_step_index = resolved
 
             issue_service = IssueService(session)
             issue = await issue_service.get_by_id(issue_id)

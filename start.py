@@ -12,6 +12,7 @@ import shutil
 import signal
 import socket
 import subprocess
+import ctypes
 import sys
 import threading
 import time
@@ -28,6 +29,32 @@ IS_WINDOWS = platform.system() == "Windows"
 VENV_PYTHON = VENV_DIR / ("Scripts/python.exe" if IS_WINDOWS else "bin/python")
 VENV_PIP = VENV_DIR / ("Scripts/pip.exe" if IS_WINDOWS else "bin/pip")
 VENV_ALEMBIC = VENV_DIR / ("Scripts/alembic.exe" if IS_WINDOWS else "bin/alembic")
+
+if IS_WINDOWS:
+    CREATE_BREAKAWAY_FROM_JOB = 0x02000000
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
+
+    class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("PerProcessUserTimeLimit", ctypes.c_int64),
+            ("PerJobUserTimeLimit", ctypes.c_int64),
+            ("LimitFlags", ctypes.c_uint32),
+            ("_pad1", ctypes.c_uint32),
+            ("MinimumWorkingSetSize", ctypes.c_uint64),
+            ("MaximumWorkingSetSize", ctypes.c_uint64),
+            ("ActiveProcessLimit", ctypes.c_uint32),
+            ("_pad2", ctypes.c_uint32),
+            ("Affinity", ctypes.c_uint64),
+            ("ChildProcessNotify", ctypes.c_uint32),
+            ("_pad3", ctypes.c_uint32),
+            ("MaximumSchedulingClass", ctypes.c_uint32),
+            ("_pad4", ctypes.c_uint32),
+            ("IoInfo", ctypes.c_uint64 * 6),
+            ("ProcessMemoryLimit", ctypes.c_uint64),
+            ("JobMemoryLimit", ctypes.c_uint64),
+            ("PeakProcessMemoryUsed", ctypes.c_uint64),
+            ("PeakJobMemoryUsed", ctypes.c_uint64),
+        ]
 
 
 def _in_project_venv():
@@ -89,6 +116,45 @@ def _ensure_pth_patch():
     print("[ok] .pth patch installed for ProactorEventLoop")
 
 
+def _run_windows_reexec(cmd):
+    """Re-exec cmd under a Job Object. Kills child when this process dies.
+
+    Uses Win32 Job Object API via ctypes (no pywin32 dep).
+    Falls back silently if Job API fails (unusual security policy, old Windows).
+    """
+    proc = None
+    try:
+        kernel32 = ctypes.windll.kernel32
+        kernel32.CreateJobObjectW.restype = ctypes.c_void_p
+        job = kernel32.CreateJobObjectW(None, None)
+        if not job:
+            raise ctypes.WinError()
+
+        info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+        info.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+
+        kernel32.SetInformationJobObject.argtypes = [
+            ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint32,
+        ]
+        ret = kernel32.SetInformationJobObject(
+            job, 9, ctypes.byref(info), ctypes.sizeof(info))
+        if not ret:
+            raise ctypes.WinError()
+
+        proc = subprocess.Popen(cmd, creationflags=CREATE_BREAKAWAY_FROM_JOB)
+        kernel32.AssignProcessToJobObject.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+        ret = kernel32.AssignProcessToJobObject(job, proc._handle)
+        if not ret:
+            raise ctypes.WinError()
+    except Exception:
+        pass
+
+    if proc is None:
+        proc = subprocess.Popen(cmd)
+
+    sys.exit(proc.wait())
+
+
 def _bootstrap_venv_and_reexec():
     """Create venv, install deps, then re-exec this script under venv python.
 
@@ -104,8 +170,7 @@ def _bootstrap_venv_and_reexec():
 
     # execv on Windows doesn't replace process cleanly in some shells; spawn+exit is safer.
     if IS_WINDOWS:
-        ret = subprocess.run([str(VENV_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]]).returncode
-        sys.exit(ret)
+        _run_windows_reexec([str(VENV_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]])
     else:
         os.execv(str(VENV_PYTHON), [str(VENV_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]])
 

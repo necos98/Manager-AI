@@ -1,16 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as api from "./api";
+import { downloadBlob } from "@/shared/utils/download";
+import { saveFile } from "@/shared/utils/saveFile";
 import type { AgentCreate, AgentUpdate } from "@/shared/types";
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 const onMutationError = (e: unknown) => {
   toast.error(e instanceof Error ? e.message : "Operation failed");
@@ -96,6 +89,17 @@ export function useExportAgent() {
     mutationFn: (agentId: string) => api.exportAgent(agentId),
     onSuccess: (blob) => {
       downloadBlob(blob, "agent-export.json");
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useExportAgentsBatch() {
+  return useMutation({
+    mutationFn: (agentIds: string[]) => api.exportAgentsBatch(agentIds),
+    onSuccess: (blob, agentIds) => {
+      saveFile(blob, "agents-export.json");
+      toast.success(`Exported ${agentIds.length} agent${agentIds.length === 1 ? "" : "s"}`);
     },
     onError: onMutationError,
   });

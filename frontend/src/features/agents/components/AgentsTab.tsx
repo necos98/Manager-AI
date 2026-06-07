@@ -21,6 +21,7 @@ import {
   useSeedAgents,
   useExportAgents,
   useExportAgent,
+  useExportAgentsBatch,
   useImportAgentsPreview,
   useImportAgentsConfirm,
 } from "@/features/agents/hooks";
@@ -215,6 +216,39 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
 
   const isMutating = createAgent.isPending || updateAgent.isPending;
 
+  // Batch selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selectAllRef = useRef<HTMLInputElement>(null);
+  const exportAgentsBatch = useExportAgentsBatch();
+
+  const visibleIds = agents?.map((a) => a.id) ?? [];
+  const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  const someSelected = visibleIds.some((id) => selectedIds.has(id));
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someSelected && !allSelected;
+    }
+  }, [someSelected, allSelected]);
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(visibleIds));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedIds(next);
+  };
+
   // Reattach to existing manage-agent terminal on mount
   useEffect(() => {
     if (chatTerminalId) return;
@@ -284,6 +318,20 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
             <Sprout className="size-4 mr-1" />
             {seedAgents.isPending ? "Seeding..." : "Seed Defaults"}
           </Button>
+          {selectedIds.size > 0 && (
+            <span className="text-sm text-muted-foreground">
+              {selectedIds.size} selected
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportAgentsBatch.mutate([...selectedIds])}
+            disabled={selectedIds.size === 0 || exportAgentsBatch.isPending}
+          >
+            <Download className="size-4 mr-1" />
+            {exportAgentsBatch.isPending ? "Exporting..." : "Export Selected"}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -329,6 +377,15 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
           <table className="w-full">
             <thead>
               <tr className="bg-muted/50 border-b">
+                <th className="w-10 px-4 py-3">
+                  <input
+                    ref={selectAllRef}
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="size-4"
+                  />
+                </th>
                 <th className="text-left px-4 py-3 text-sm font-medium">Name</th>
                 <th className="text-left px-4 py-3 text-sm font-medium">Model</th>
                 <th className="text-left px-4 py-3 text-sm font-medium">Tools</th>
@@ -338,6 +395,14 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
             <tbody>
               {agents.map((agent) => (
                 <tr key={agent.id} className="border-b last:border-b-0 hover:bg-muted/30">
+                  <td className="w-10 px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(agent.id)}
+                      onChange={() => toggleSelect(agent.id)}
+                      className="size-4"
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <Bot className="size-4 text-muted-foreground" />

@@ -1,0 +1,36 @@
+schema_version: 1
+id: 90e097b2-c47f-407d-b494-0d4d157e37d5
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Windows PTY: exit race condition kills pipeline'
+status: Finished
+priority: 5
+category: null
+created_at: '2026-06-05T14:12:31.562260'
+updated_at: '2026-06-05T15:33:18.189729'
+finished_at: '2026-06-05T15:33:18.189743'
+tasks:
+- id: 8b230318-3ce3-4435-a4a1-6b1db81ca176
+  name: Read _run_step() to confirm exact code
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T15:26:24'
+  updated_at: '2026-06-05T15:26:33'
+- id: 000f7991-9e31-4a10-827a-917f86975360
+  name: 'Apply fix: merge exit into same write for Windows'
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T15:26:24'
+  updated_at: '2026-06-05T15:26:39'
+- id: fe93e234-6906-4cf2-8327-c76935e95ce8
+  name: Run existing tests to verify no regression
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T15:26:24'
+  updated_at: '2026-06-05T15:30:29'
+- id: 090da031-f3b4-4e78-b706-f3a1856f3cfe
+  name: Commit
+  status: Completed
+  order: 3
+  created_at: '2026-06-05T15:26:24'
+  updated_at: '2026-06-05T15:33:14'
+relations: []

@@ -1,0 +1,36 @@
+schema_version: 1
+id: 4bc5963a-d9ee-4f62-9e41-2548998e5a33
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix pipeline step rejection crash and terminal cleanup
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T10:58:44.503440'
+updated_at: '2026-06-05T11:11:13.403859'
+finished_at: '2026-06-05T11:11:13.403870'
+tasks:
+- id: 8ccc737e-aa11-4669-bb73-6cc53c1380bf
+  name: 'Fix 1: scalar_one_or_none → scalars().first() at line 275'
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T11:07:39'
+  updated_at: '2026-06-05T11:07:55'
+- id: 264f241f-2f7f-491d-8248-e6ea51ef4a56
+  name: 'Fix 2: Add commit before set_step_completed() in reject_step()'
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T11:07:39'
+  updated_at: '2026-06-05T11:08:06'
+- id: f9544e15-4288-4432-8158-25812bdcc23c
+  name: 'Fix 3: Add outer except Exception handler in _execute()'
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T11:07:39'
+  updated_at: '2026-06-05T11:08:21'
+- id: 2fb74118-c955-4858-8c26-c5ebd4de863f
+  name: Run tests to verify no regressions
+  status: Completed
+  order: 3
+  created_at: '2026-06-05T11:07:39'
+  updated_at: '2026-06-05T11:11:08'
+relations: []

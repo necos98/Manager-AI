@@ -1,0 +1,78 @@
+schema_version: 1
+id: ddf8d899-75c0-45c5-ad9d-f2a88224b5d0
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Export selettivo di Agenti e Pipeline con Save-As dialog
+status: Finished
+priority: 3
+category: Improvement
+created_at: '2026-06-05T07:34:30.728750'
+updated_at: '2026-06-05T07:54:54.428117'
+finished_at: '2026-06-05T07:54:54.428134'
+tasks:
+- id: f049cb21-1f67-4ac6-af19-c740a6f130b5
+  name: Add batch export request schemas (AgentBatchExportRequest, PipelineBatchExportRequest)
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T07:43:23'
+  updated_at: '2026-06-05T07:54:44'
+- id: cd192eb3-896f-4984-8167-8a2dd4f36ab1
+  name: Add AgentService.export_batch method
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T07:43:23'
+  updated_at: '2026-06-05T07:54:45'
+- id: 5a192b62-1401-4409-aa29-dc3433a00f74
+  name: Add PipelineService.export_batch method
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T07:43:23'
+  updated_at: '2026-06-05T07:54:45'
+- id: a1513802-989a-4385-84b3-41405d16046d
+  name: Add POST /api/agents/export/batch endpoint
+  status: Completed
+  order: 3
+  created_at: '2026-06-05T07:43:23'
+  updated_at: '2026-06-05T07:54:46'
+- id: 422bfa17-15cd-4f71-8e62-57256e51e5b5
+  name: Add POST /api/pipelines/export/batch endpoint
+  status: Completed
+  order: 4
+  created_at: '2026-06-05T07:43:23'
+  updated_at: '2026-06-05T07:54:46'
+- id: 4e353f6f-516f-48bd-8275-6397cb04c5a1
+  name: Extract downloadBlob to shared utility (frontend/src/shared/utils/download.ts)
+  status: Completed
+  order: 5
+  created_at: '2026-06-05T07:43:23'
+  updated_at: '2026-06-05T07:54:46'
+- id: 82778b9d-85c3-4ec1-9b5a-066f3f373cda
+  name: Create saveFile utility with showSaveFilePicker + fallback (frontend/src/shared/utils/saveFile.ts)
+  status: Completed
+  order: 6
+  created_at: '2026-06-05T07:43:23'
+  updated_at: '2026-06-05T07:54:47'
+- id: 808f4222-ea4d-4391-b36c-f5a3c8a4cf9a
+  name: Add agents batch export API function + useExportAgentsBatch hook, import shared downloadBlob
+  status: Completed
+  order: 7
+  created_at: '2026-06-05T07:43:23'
+  updated_at: '2026-06-05T07:54:47'
+- id: 2620732b-a140-45ab-9ee1-6b0d423f5331
+  name: Add checkbox selection, select-all, counter, Export Selected button to AgentsTab
+  status: Completed
+  order: 8
+  created_at: '2026-06-05T07:43:23'
+  updated_at: '2026-06-05T07:54:48'
+- id: 753345c2-52a3-4e0d-842e-47c6676ba91f
+  name: Add pipelines batch export API function + useExportPipelinesBatch hook, import shared downloadBlob
+  status: Completed
+  order: 9
+  created_at: '2026-06-05T07:43:23'
+  updated_at: '2026-06-05T07:54:48'
+- id: cde0bb93-bb60-4eaf-9a68-f1ebd4dbae36
+  name: Add checkbox selection, select-all, counter, Export Selected button to PipelinesTab
+  status: Completed
+  order: 10
+  created_at: '2026-06-05T07:43:23'
+  updated_at: '2026-06-05T07:54:49'
+relations: []

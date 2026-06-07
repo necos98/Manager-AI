@@ -137,3 +137,21 @@ def test_service_create_ignores_distro_for_non_wsl_shell(monkeypatch):
     spawn = spawns[-1]
     assert spawn["appname"].lower().endswith("cmd.exe")
     assert spawn["cmdline"] is None
+
+
+def test_service_create_rejects_shell_injection(monkeypatch):
+    """Shell containing unsafe characters must raise ValueError."""
+    from app.services import terminal_service as ts
+    monkeypatch.setattr(ts, "PTY", _make_fake_pty([]))
+    svc = ts.TerminalService()
+    bad_shells = [
+        r'cmd" /c "rm -rf /',       # embedded quote
+        "cmd.exe;rm -rf /",          # semicolon
+        r"cmd.exe`malicious`",       # backtick
+    ]
+    for bad in bad_shells:
+        with pytest.raises(ValueError, match="shell contains unsafe characters"):
+            svc.create(
+                issue_id="i", project_id="p", project_path="C:\\x",
+                shell=bad,
+            )

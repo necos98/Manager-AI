@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import platform
+import shlex
 import shutil
 import subprocess
 from functools import lru_cache
@@ -105,3 +106,14 @@ def get_host_ip_for_wsl() -> str | None:
     except (subprocess.SubprocessError, OSError):
         pass
     return None
+
+
+def quote_url_for_shell(url: str, is_wsl: bool) -> str:
+    """Quote a URL for safe insertion into a shell command.
+
+    - is_wsl=True  -> single-quoted via shlex.quote() for bash
+    - is_wsl=False -> double-quoted for cmd.exe
+    """
+    if is_wsl:
+        return shlex.quote(url)
+    return f'"{url}"'

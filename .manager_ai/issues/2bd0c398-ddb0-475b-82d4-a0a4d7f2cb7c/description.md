@@ -1,0 +1,1 @@
+Quando salvo gli eventi sugli step di una pipeline, mi compare "Unknow" al posto del nome dell'agente. Cosa sta succedendo?

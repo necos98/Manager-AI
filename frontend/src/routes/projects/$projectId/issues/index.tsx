@@ -37,8 +37,7 @@ function IssuesPage() {
   const { data: terminals } = useTerminals(projectId);
   const activeTerminalIssueIds = terminals?.map((t) => t.issue_id) ?? [];
   const blockedIssueIds = useBlockedIssueIds(issues ?? []);
-  const issueIds = issues?.map((i) => i.id) ?? [];
-  const { data: activePipelineRuns } = useActivePipelineRuns(issueIds);
+  const { data: activePipelineRuns } = useActivePipelineRuns(projectId);
   const { data: availableTags } = useProjectTags(projectId);
   const navigate = useNavigate();
   const handleTagChange = (newTag: string) => {

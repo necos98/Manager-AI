@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import shlex
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.exceptions import NotFoundError, ValidationError
+from app.models.issue import Issue
 from app.models.pipeline import Pipeline, PipelineStep
 from app.models.pipeline_run import (
     PipelineMessage,
@@ -96,15 +98,15 @@ class PipelineRunService:
                 }
             )
 
-        # Commit so _execute()'s new session can see the run.
-        # Without this, _execute() races with the router's db.commit()
-        # and its session_factory()-created session won't find the run.
-        await self.session.commit()
-
+        # Schedule _execute first so crash between here and commit
+        # doesn't leave a stuck RUNNING run in the DB — transaction
+        # rollback cleans up. _execute retries if commit not yet done.
         task = asyncio.create_task(
             self._execute(run.id, project_id, project_path)
         )
         await pipeline_task_manager.start_task(run.id, task)
+
+        await self.session.commit()
 
         return {
             "id": run.id,
@@ -118,6 +120,27 @@ class PipelineRunService:
             "finished_at": None,
             "created_at": run.created_at.isoformat() if run.created_at else None,
         }
+
+    async def resolve_rejection_target(
+        self, run_id: str, step_id: str
+    ) -> int | None:
+        """Check event rules for rejection redirect. Returns target order_index or None."""
+        from app.services.pipeline_service import PipelineService
+
+        run = await self._get_run_with_session(run_id, self.session)
+        pipeline_svc = PipelineService(self.session)
+        rule = await pipeline_svc.get_event_rule_for_step(
+            run.pipeline_id, "step_rejected", step_id
+        )
+        if rule is None:
+            return None
+        pipeline = await self.session.get(Pipeline, run.pipeline_id)
+        if pipeline is None:
+            return None
+        for s in pipeline.steps:
+            if s.id == rule.target_step_id:
+                return s.order_index
+        return None
 
     async def reject_step(
         self, run_id: str, reason: str, target_step_index: int, project_id: str
@@ -219,6 +242,9 @@ class PipelineRunService:
             "rejection_count": run.rejection_count,
         })
 
+        # Commit so _execute()'s session.refresh() sees REJECTED status + new step_run
+        await self.session.commit()
+
         # Signal _execute() to wake up and pick up changes
         current_idx = run.current_step_index
         # Need to signal at the OLD step index since that's what _execute is waiting on
@@ -245,80 +271,30 @@ class PipelineRunService:
             session = self.session_factory()
 
         try:
-            run = await self._get_run_with_session(run_id, session)
-            pipeline = await session.execute(
-                select(Pipeline)
-                .where(Pipeline.id == run.pipeline_id)
-                .options(
-                    selectinload(Pipeline.steps).selectinload(PipelineStep.agent)
-                )
-            )
-            pipeline = pipeline.unique().scalar_one_or_none()
-            if pipeline is None:
+            run, steps = await self._wait_for_run(run_id, session)
+            if run is None:
                 return
-
-            steps = sorted(pipeline.steps, key=lambda s: s.order_index)
 
             while run.current_step_index < len(steps) and run.status != PipelineRunStatus.FAILED:
                 i = run.current_step_index
                 step = steps[i]
 
-                # Fetch the LATEST step_run — reject_step creates new ones, so order by id DESC
-                step_run_result = await session.execute(
-                    select(PipelineStepRun).where(
-                        PipelineStepRun.pipeline_run_id == run_id,
-                        PipelineStepRun.pipeline_step_id == step.id,
-                    ).order_by(PipelineStepRun.started_at.desc().nulls_last())
+                term_id, agent_name, step_run, step = await self._setup_step_environment(
+                    step, run, session, project_id, project_path, run_id
                 )
-                step_run = step_run_result.scalar_one_or_none()
                 if step_run is None:
                     continue
-
-                step_run.status = PipelineStepRunStatus.RUNNING
-                step_run.started_at = datetime.now(timezone.utc)
-                run.current_step_index = i
-                await self._safe_flush_session(session)
-
-                agent = step.agent
-                agent_name = agent.name if agent else "unknown"
-                agent_prompt = agent.intent if agent else ""
-
-                term = terminal_service.create(
-                    issue_id=run.issue_id,
-                    project_id=project_id,
-                    project_path=project_path,
-                )
-                term_id = term["id"]
-                step_run.terminal_id = term_id
-                await self._safe_commit_session(session)
-
-                await event_service.emit({
-                    "type": "agent_step_started",
-                    "project_id": project_id,
-                    "issue_id": run.issue_id,
-                    "agent_name": agent_name,
-                    "step_run_id": step_run.id,
-                    "terminal_id": term_id,
-                })
-
-                await event_service.emit({
-                    "type": "terminal_created",
-                    "terminal_id": term_id,
-                    "issue_id": run.issue_id,
-                    "project_id": project_id,
-                })
 
                 try:
                     success = await self._run_step(
                         term_id=term_id,
                         agent_name=agent_name,
-                        intent=agent_prompt,
+                        intent=step.agent.intent if step.agent else "",
                         issue_id=run.issue_id,
                         run_id=run_id,
                         step_index=i,
                     )
 
-                    # Refresh to pick up rejection changes from reject_step()
                     await session.refresh(run)
                     await session.refresh(step_run)
 
@@ -327,28 +303,11 @@ class PipelineRunService:
                         await self._safe_commit_session(session)
                         continue
 
-                    if success:
-                        step_run.status = PipelineStepRunStatus.COMPLETED
-                        run.current_step_index += 1
-                        await event_service.emit({
-                            "type": "agent_step_completed",
-                            "project_id": project_id,
-                            "issue_id": run.issue_id,
-                            "agent_name": agent_name,
-                            "step_run_id": step_run.id,
-                        })
-                    else:
-                        step_run.status = PipelineStepRunStatus.FAILED
-                        run.status = PipelineRunStatus.FAILED
-                        step_run.finished_at = datetime.now(timezone.utc)
-                        await self._safe_commit_session(session)
-                        await event_service.emit({
-                            "type": "agent_step_failed",
-                            "project_id": project_id,
-                            "issue_id": run.issue_id,
-                            "agent_name": agent_name,
-                            "step_run_id": step_run.id,
-                        })
+                    should_continue = await self._handle_step_completion(
+                        run, step_run, session, success, agent_name,
+                        project_id, run.issue_id,
+                    )
+                    if not should_continue:
                         break
 
                     step_run.finished_at = datetime.now(timezone.utc)
@@ -370,26 +329,26 @@ class PipelineRunService:
                     })
                     break
                 finally:
-                    _save_recording(term_id, terminal_service.get_buffered_output(term_id))
-                    _stop_reader(term_id)
-                    _sessions.pop(term_id, None)
-                    terminal_service.kill(term_id)
+                    await self._cleanup_step(term_id)
 
-            await session.refresh(run)
-            if run.status != PipelineRunStatus.FAILED:
-                run.status = PipelineRunStatus.COMPLETED
-            run.finished_at = datetime.now(timezone.utc)
-            await self._safe_commit_session(session)
-
+            await self._finalize_run(run, session, project_id, run.issue_id, run_id)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Pipeline %s failed with unexpected error", run_id)
+            try:
+                run.status = PipelineRunStatus.FAILED
+                run.finished_at = datetime.now(timezone.utc)
+                await self._safe_commit_session(session)
+            except Exception:
+                pass
             await event_service.emit({
                 "type": "pipeline_completed",
                 "project_id": project_id,
                 "issue_id": run.issue_id,
                 "run_id": run_id,
-                "status": run.status.value,
+                "status": PipelineRunStatus.FAILED.value,
             })
-        except asyncio.CancelledError:
-            raise
         finally:
             if self.session_factory is not None:
                 try:
@@ -397,6 +356,170 @@ class PipelineRunService:
                 except Exception:
                     pass
             await pipeline_task_manager.cleanup_task(run_id)
+
+    async def _wait_for_run(
+        self, run_id: str, session: AsyncSession
+    ) -> tuple[PipelineRun | None, list[PipelineStep] | None]:
+        run = None
+        for _ in range(50):
+            try:
+                run = await self._get_run_with_session(run_id, session)
+                break
+            except NotFoundError:
+                await asyncio.sleep(0.1)
+        if run is None:
+            logger.error("Pipeline run %s not found — _execute started before commit finished", run_id)
+            return None, None
+        pipeline = await session.execute(
+            select(Pipeline)
+            .where(Pipeline.id == run.pipeline_id)
+            .options(
+                selectinload(Pipeline.steps).selectinload(PipelineStep.agent)
+            )
+        )
+        pipeline = pipeline.unique().scalar_one_or_none()
+        if pipeline is None:
+            return None, None
+
+        steps = sorted(pipeline.steps, key=lambda s: s.order_index)
+        return run, steps
+
+    async def _setup_step_environment(
+        self,
+        step: PipelineStep,
+        run: PipelineRun,
+        session: AsyncSession,
+        project_id: str,
+        project_path: str,
+        run_id: str,
+    ) -> tuple[str | None, str | None, PipelineStepRun | None, PipelineStep | None]:
+        i = run.current_step_index
+
+        step_run_result = await session.execute(
+            select(PipelineStepRun).where(
+                PipelineStepRun.pipeline_run_id == run_id,
+                PipelineStepRun.pipeline_step_id == step.id,
+            ).order_by(PipelineStepRun.started_at.desc().nulls_last())
+        )
+        step_run = step_run_result.scalars().first()
+        if step_run is None:
+            return None, None, None, step
+
+        step_run.status = PipelineStepRunStatus.RUNNING
+        step_run.started_at = datetime.now(timezone.utc)
+        run.current_step_index = i
+        await self._safe_flush_session(session)
+
+        agent = step.agent
+        agent_name = agent.name if agent else "unknown"
+
+        from app.models.project import Project
+        project_row = await session.get(Project, project_id)
+        project_shell = project_row.shell if project_row else None
+        project_wsl_distro = project_row.wsl_distro if project_row else None
+
+        term = terminal_service.create(
+            issue_id=run.issue_id,
+            project_id=project_id,
+            project_path=project_path,
+            shell=project_shell,
+            wsl_distro=project_wsl_distro,
+        )
+        term_id = term["id"]
+        step_run.terminal_id = term_id
+        await self._safe_commit_session(session)
+
+        if project_shell:
+            from app.services.wsl_support import (
+                is_wsl_shell,
+                win_to_wsl_path,
+            )
+
+            if is_wsl_shell(project_shell):
+                cwd_wsl = win_to_wsl_path(project_path)
+                pty_for_cd = terminal_service.get_pty(term_id)
+                pty_for_cd.write(f"cd {shlex.quote(cwd_wsl)}\r\n")
+
+        await event_service.emit({
+            "type": "agent_step_started",
+            "project_id": project_id,
+            "issue_id": run.issue_id,
+            "agent_name": agent_name,
+            "step_run_id": step_run.id,
+            "terminal_id": term_id,
+        })
+
+        await event_service.emit({
+            "type": "terminal_created",
+            "terminal_id": term_id,
+            "issue_id": run.issue_id,
+            "project_id": project_id,
+        })
+
+        return term_id, agent_name, step_run, step
+
+    async def _handle_step_completion(
+        self,
+        run: PipelineRun,
+        step_run: PipelineStepRun,
+        session: AsyncSession,
+        success: bool,
+        agent_name: str,
+        project_id: str,
+        issue_id: str,
+    ) -> bool:
+        if success:
+            step_run.status = PipelineStepRunStatus.COMPLETED
+            run.current_step_index += 1
+            await event_service.emit({
+                "type": "agent_step_completed",
+                "project_id": project_id,
+                "issue_id": issue_id,
+                "agent_name": agent_name,
+                "step_run_id": step_run.id,
+            })
+            return True
+        else:
+            step_run.status = PipelineStepRunStatus.FAILED
+            run.status = PipelineRunStatus.FAILED
+            step_run.finished_at = datetime.now(timezone.utc)
+            await self._safe_commit_session(session)
+            await event_service.emit({
+                "type": "agent_step_failed",
+                "project_id": project_id,
+                "issue_id": issue_id,
+                "agent_name": agent_name,
+                "step_run_id": step_run.id,
+            })
+            return False
+
+    async def _cleanup_step(self, term_id: str) -> None:
+        _save_recording(term_id, terminal_service.get_buffered_output(term_id))
+        _stop_reader(term_id)
+        _sessions.pop(term_id, None)
+        terminal_service.kill(term_id)
+
+    async def _finalize_run(
+        self,
+        run: PipelineRun,
+        session: AsyncSession,
+        project_id: str,
+        issue_id: str,
+        run_id: str,
+    ) -> None:
+        await session.refresh(run)
+        if run.status != PipelineRunStatus.FAILED:
+            run.status = PipelineRunStatus.COMPLETED
+        run.finished_at = datetime.now(timezone.utc)
+        await self._safe_commit_session(session)
+
+        await event_service.emit({
+            "type": "pipeline_completed",
+            "project_id": project_id,
+            "issue_id": issue_id,
+            "run_id": run_id,
+            "status": run.status.value,
+        })
 
     async def _safe_flush_session(self, session: AsyncSession) -> None:
         try:
@@ -606,6 +729,55 @@ class PipelineRunService:
                 "status": r.status.value,
             }
         return run_by_issue
+
+    async def get_active_runs_for_project(self, project_id: str) -> list[dict]:
+        """Return active (RUNNING) pipeline runs for a project via Issue JOIN.
+
+        PipelineRun has no project_id column, so JOIN through issues table.
+        """
+        result = await self.session.execute(
+            select(PipelineRun)
+            .join(Issue, PipelineRun.issue_id == Issue.id)
+            .where(
+                Issue.project_id == project_id,
+                PipelineRun.status == PipelineRunStatus.RUNNING,
+            )
+            .options(
+                selectinload(PipelineRun.pipeline),
+                selectinload(PipelineRun.step_runs)
+                .selectinload(PipelineStepRun.pipeline_step)
+                .selectinload(PipelineStep.agent),
+            )
+            .order_by(PipelineRun.created_at.desc())
+        )
+        runs = result.unique().scalars().all()
+        return [
+            {
+                "id": r.id,
+                "pipeline_id": r.pipeline_id,
+                "pipeline_name": r.pipeline.name if r.pipeline else "",
+                "issue_id": r.issue_id,
+                "status": r.status.value,
+                "current_step_index": r.current_step_index,
+                "steps": [
+                    {
+                        "id": sr.id,
+                        "pipeline_run_id": sr.pipeline_run_id,
+                        "pipeline_step_id": sr.pipeline_step_id,
+                        "agent_name": sr.pipeline_step.agent.name if sr.pipeline_step and sr.pipeline_step.agent else "unknown",
+                        "status": sr.status.value,
+                        "terminal_id": sr.terminal_id,
+                        "started_at": sr.started_at.isoformat() if sr.started_at else None,
+                        "finished_at": sr.finished_at.isoformat() if sr.finished_at else None,
+                    }
+                    for sr in sorted(r.step_runs, key=lambda s: s.pipeline_step.order_index if s.pipeline_step else 0)
+                ],
+                "started_at": r.started_at.isoformat() if r.started_at else None,
+                "finished_at": r.finished_at.isoformat() if r.finished_at else None,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in runs
+        ]
 
     async def cancel_run(self, run_id: str) -> bool:
         run = await self._get_run(run_id)

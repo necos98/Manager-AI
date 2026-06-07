@@ -1,16 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as api from "./api";
-import type { PipelineCreate, PipelineStepCreate, PipelineUpdate, StepReorderRequest } from "@/shared/types";
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+import { downloadBlob } from "@/shared/utils/download";
+import { saveFile } from "@/shared/utils/saveFile";
+import type { PipelineCreate, PipelineEventRuleCreate, PipelineStepCreate, PipelineUpdate, StepReorderRequest } from "@/shared/types";
 
 const onMutationError = (e: unknown) => {
   toast.error(e instanceof Error ? e.message : "Operation failed");
@@ -137,6 +130,17 @@ export function useExportPipeline() {
   });
 }
 
+export function useExportPipelinesBatch() {
+  return useMutation({
+    mutationFn: (pipelineIds: string[]) => api.exportPipelinesBatch(pipelineIds),
+    onSuccess: (blob, pipelineIds) => {
+      saveFile(blob, "pipelines-export.json");
+      toast.success(`Exported ${pipelineIds.length} pipeline${pipelineIds.length === 1 ? "" : "s"}`);
+    },
+    onError: onMutationError,
+  });
+}
+
 export function useImportPipelinesPreview() {
   return useMutation({
     mutationFn: (file: File) => api.importPipelinesPreview(file),
@@ -154,6 +158,38 @@ export function useImportPipelinesConfirm() {
       file: File;
       conflicts: Record<string, string>;
     }) => api.importPipelinesConfirm(file, conflicts),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useEventRules(pipelineId: string) {
+  return useQuery({
+    queryKey: [...pipelineKeys.detail(pipelineId), "event-rules"],
+    queryFn: () => api.fetchEventRules(pipelineId),
+    enabled: Boolean(pipelineId),
+  });
+}
+
+export function useCreateEventRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ pipelineId, data }: { pipelineId: string; data: PipelineEventRuleCreate }) =>
+      api.createEventRule(pipelineId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useDeleteEventRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ pipelineId, ruleId }: { pipelineId: string; ruleId: string }) =>
+      api.deleteEventRule(pipelineId, ruleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
     },

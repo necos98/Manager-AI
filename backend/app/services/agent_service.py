@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import NotFoundError, ValidationError
 from app.models.agent import Agent
-from app.schemas.export_import import ImportConfirmResponse
+from app.schemas.export_import import ImportConfirmResponse, format_agent_export
 
 DEFAULT_AGENTS = [
     {
@@ -196,6 +196,13 @@ class AgentService:
             skipped=skipped,
             errors=errors,
         )
+
+    async def export_batch(self, agent_ids: list[str]) -> list[dict]:
+        result = await self.session.execute(
+            select(Agent).where(Agent.id.in_(agent_ids)).order_by(Agent.name)
+        )
+        agents = result.scalars().all()
+        return [format_agent_export(a) for a in agents]
 
     async def check_agent_ids_exist(
         self, agent_ids: list[str]

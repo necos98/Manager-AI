@@ -1,0 +1,1 @@
+46. agent_service.py:11-63 — 6 agent default hardcoded inline - ELIMINARE QUELLI DI DEFAULT NON MI SERVONO

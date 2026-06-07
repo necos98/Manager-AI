@@ -12,6 +12,7 @@ class MemoryStore:
 
     def __init__(self) -> None:
         self._projects: dict[str, dict[str, dict[str, Any]]] = {}
+        self._issue_to_project: dict[str, str] = {}
 
     # --- project lifecycle ---
 
@@ -31,9 +32,15 @@ class MemoryStore:
             "records": records,
             "index": index,
         }
+        if store_type == "issues":
+            for rid in records:
+                self._issue_to_project[rid] = project_path
 
     def remove_project(self, project_path: str) -> None:
         self._projects.pop(project_path, None)
+        stale = [iid for iid, pp in self._issue_to_project.items() if pp == project_path]
+        for iid in stale:
+            self._issue_to_project.pop(iid, None)
 
     # --- CRUD ---
 
@@ -73,6 +80,8 @@ class MemoryStore:
         else:
             idx.append(index_entry)
         idx.sort(key=lambda e: (e.get("created_at", ""), e.get("id", "")))
+        if store_type == "issues":
+            self._issue_to_project[record_id] = project_path
 
     def delete(self, project_path: str, store_type: str, record_id: str) -> None:
         store = self._projects.get(project_path, {}).get(store_type)
@@ -80,9 +89,15 @@ class MemoryStore:
             return
         store["records"].pop(record_id, None)
         store["index"] = [e for e in store["index"] if e.get("id") != record_id]
+        if store_type == "issues":
+            self._issue_to_project.pop(record_id, None)
 
     def reset(self) -> None:
         self._projects.clear()
+        self._issue_to_project.clear()
+
+    def find_issue_project(self, issue_id: str) -> str | None:
+        return self._issue_to_project.get(issue_id)
 
     def _ensure(self, project_path: str, store_type: str) -> dict:
         p = self._projects.setdefault(project_path, {})

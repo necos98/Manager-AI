@@ -1,0 +1,48 @@
+schema_version: 1
+id: a1ce9fc4-fcce-483f-8cbc-97fe8f8d2268
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Refactor mcp/server.py — extract duplicated patterns into shared helpers
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-05T10:16:07.181181'
+updated_at: '2026-06-05T14:02:00.919331'
+finished_at: '2026-06-05T14:02:00.919344'
+tasks:
+- id: f8e8399a-8e93-487b-a5b8-2e87cc8f860d
+  name: Add `import functools` and 4 helper definitions (`_issue_display_name`, `_serialize_agent`, `_serialize_pipeline`, `mcp_tool_wrapper`)
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T13:48:21'
+  updated_at: '2026-06-05T13:48:51'
+- id: a236509b-877e-4ace-9972-7654b11af802
+  name: Apply `_issue_display_name` to 11 inline occurrences
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T13:48:21'
+  updated_at: '2026-06-05T13:50:09'
+- id: 88c72aa1-9718-482f-93aa-e0a37b805084
+  name: Apply `_serialize_agent` to 4 agent tool dict constructions
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T13:48:21'
+  updated_at: '2026-06-05T13:50:33'
+- id: cadde015-9968-4b0f-a1a0-7f1972e528e6
+  name: Apply `_serialize_pipeline` to 6 pipeline tool dict constructions
+  status: Completed
+  order: 3
+  created_at: '2026-06-05T13:48:21'
+  updated_at: '2026-06-05T13:51:24'
+- id: 99d5aca8-3639-415b-852c-df1d0b5d8009
+  name: Apply `@mcp_tool_wrapper` decorator to tools fitting async-session/try/except/commit pattern
+  status: Completed
+  order: 4
+  created_at: '2026-06-05T13:48:21'
+  updated_at: '2026-06-05T13:54:42'
+- id: 43b623e1-222a-49bb-b1e3-9ec4ecf0545f
+  name: Run `python -m pytest` and verify zero failures
+  status: Completed
+  order: 5
+  created_at: '2026-06-05T13:48:21'
+  updated_at: '2026-06-05T14:01:52'
+relations: []

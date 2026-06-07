@@ -1,0 +1,48 @@
+schema_version: 1
+id: cdc049c7-b3c2-4ad6-bab9-ce722ae9c5e4
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Optimize pipeline-runs/active-by-issue endpoint and polling
+status: Finished
+priority: 3
+category: Improvement
+created_at: '2026-06-05T07:28:44.755631'
+updated_at: '2026-06-05T07:58:45.331235'
+finished_at: '2026-06-05T07:58:45.331248'
+tasks:
+- id: ed664e7c-fb05-4d00-bb64-52f5b6e4912a
+  name: Add `get_active_runs_for_project` method to PipelineRunService with Issue JOIN query
+  status: Completed
+  order: 0
+  created_at: '2026-06-05T07:46:22'
+  updated_at: '2026-06-05T07:51:00'
+- id: 37991d84-8133-4117-a2d8-5fed9c3d98a9
+  name: Add `GET /api/pipeline-runs/active-by-project` endpoint to router, remove old `active-by-issue` endpoint
+  status: Completed
+  order: 1
+  created_at: '2026-06-05T07:46:22'
+  updated_at: '2026-06-05T07:51:01'
+- id: 7ef7c292-8b8d-4a5f-855e-ac05fba320b2
+  name: Update frontend API layer — replace fetchActivePipelineRuns with fetchActivePipelineRunsByProject
+  status: Completed
+  order: 2
+  created_at: '2026-06-05T07:46:22'
+  updated_at: '2026-06-05T07:51:01'
+- id: 6c6fc172-ad03-4e5b-a084-168ccf4d084e
+  name: Rewrite useActivePipelineRuns hook — projectId param, smart polling, new query key, transform response
+  status: Completed
+  order: 3
+  created_at: '2026-06-05T07:46:22'
+  updated_at: '2026-06-05T07:51:01'
+- id: d5fdc8fc-f422-422a-8e12-d1604c62025d
+  name: Update issues page caller — pass projectId instead of issueIds, remove issueIds variable
+  status: Completed
+  order: 4
+  created_at: '2026-06-05T07:46:22'
+  updated_at: '2026-06-05T07:51:02'
+- id: db235815-4f2c-4308-8166-bb3fb7af24d9
+  name: Record architectural decisions in project memory
+  status: Completed
+  order: 5
+  created_at: '2026-06-05T07:46:22'
+  updated_at: '2026-06-05T07:51:02'
+relations: []
