@@ -166,10 +166,13 @@ function SettingsPage() {
       </div>
 
       {activeTab === "Server" && (
-        <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-800 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-300 flex items-start gap-2">
-          <AlertTriangle className="size-4 mt-0.5 flex-shrink-0" />
-          Server name changes take effect after restarting the backend.
-        </div>
+        <>
+          <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-800 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-300 flex items-start gap-2">
+            <AlertTriangle className="size-4 mt-0.5 flex-shrink-0" />
+            Server name changes take effect after restarting the backend.
+          </div>
+          <HermesIntegrationPanel />
+        </>
       )}
       {activeTab === "Tool Descriptions" && (
         <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-800 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-300 flex items-start gap-2">
