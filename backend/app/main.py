@@ -241,7 +241,11 @@ async def _startup_cleanup_orphaned_runs(db_session) -> None:
         async with db_session() as cleanup_session:
             orphaned = await cleanup_session.execute(
                 select(PipelineRun).where(
-                    PipelineRun.status == PipelineRunStatus.RUNNING
+                    PipelineRun.status.in_([
+                        PipelineRunStatus.RUNNING,
+                        PipelineRunStatus.WAITING_FOR_STEP,
+                        PipelineRunStatus.PAUSED,
+                    ])
                 )
             )
             count = 0

@@ -14,6 +14,10 @@ from app.schemas.pipeline_run import (
     PipelineRunResponse,
     PipelineRunStart,
     PipelineStepRunResponse,
+    StartStepRequest,
+    StartStepResponse,
+    AdvancePipelineResponse,
+    PipelineControlResponse,
 )
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 from app.schemas.task import TaskBulkCreate, TaskCreate, TaskResponse, TaskUpdate
@@ -40,6 +44,10 @@ __all__ = [
     "PipelineRunResponse",
     "PipelineRunStart",
     "PipelineStepRunResponse",
+    "StartStepRequest",
+    "StartStepResponse",
+    "AdvancePipelineResponse",
+    "PipelineControlResponse",
     "TaskBulkCreate",
     "TaskCreate",
     "TaskResponse",

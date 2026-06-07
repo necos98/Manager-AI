@@ -49,12 +49,15 @@ class PipelineRunService:
         existing = await self.session.execute(
             select(PipelineRun).where(
                 PipelineRun.issue_id == issue_id,
-                PipelineRun.status == PipelineRunStatus.RUNNING,
+                PipelineRun.status.in_([
+                    PipelineRunStatus.RUNNING,
+                    PipelineRunStatus.WAITING_FOR_STEP,
+                ]),
             )
         )
         if existing.scalar_one_or_none() is not None:
             raise ValidationError(
-                f"A pipeline is already running for issue {issue_id}"
+                f"A pipeline is already running or waiting for step for issue {issue_id}"
             )
 
         pipeline = await self.session.execute(
@@ -152,7 +155,7 @@ class PipelineRunService:
         """
         run = await self._get_run_with_session(run_id, self.session)
 
-        if run.status != PipelineRunStatus.RUNNING:
+        if run.status in (PipelineRunStatus.COMPLETED, PipelineRunStatus.FAILED):
             raise ValidationError("Can only reject steps in a running pipeline")
 
         if target_step_index < 0:
@@ -774,7 +777,7 @@ class PipelineRunService:
     async def cancel_run(self, run_id: str) -> bool:
         run = await self._get_run(run_id)
         if run.status != PipelineRunStatus.RUNNING:
-            raise ValidationError("Can only cancel running pipelines")
+            raise ValidationError(f"Can only cancel active pipelines (status: {run.status.value})")
         await pipeline_task_manager.cancel_task(run_id)
         run.status = PipelineRunStatus.FAILED
         run.finished_at = now()
@@ -816,3 +819,277 @@ class PipelineRunService:
             }
             for m in msgs
         ]
+
+
+    # ── Orchestrated pipeline methods (Hermes orchestrator) ──────────
+
+    async def start_step(
+        self, run_id: str, project_id: str, project_path: str,
+    ) -> dict:
+        """Spawn the PTY terminal + Claude for the current pipeline step.
+
+        Called by Hermes via the start_pipeline_step MCP tool.
+        The pipeline MUST be in WAITING_FOR_STEP status.
+        """
+        run = await self._get_run(run_id)
+        if run.status != PipelineRunStatus.WAITING_FOR_STEP:
+            raise ValidationError(
+                f"Cannot start step: pipeline is {run.status.value}, "
+                f"expected WAITING_FOR_STEP"
+            )
+
+        pipeline = await self.session.execute(
+            select(Pipeline)
+            .where(Pipeline.id == run.pipeline_id)
+            .options(selectinload(Pipeline.steps).selectinload(PipelineStep.agent))
+        )
+        pipeline = pipeline.unique().scalar_one_or_none()
+        if pipeline is None:
+            raise NotFoundError(f"Pipeline not found: {run.pipeline_id}")
+
+        steps = sorted(pipeline.steps, key=lambda s: s.order_index)
+        i = run.current_step_index
+        if i >= len(steps):
+            raise ValidationError(
+                f"No more steps available (index {i} >= {len(steps)})"
+            )
+
+        step = steps[i]
+
+        step_run_result = await self.session.execute(
+            select(PipelineStepRun).where(
+                PipelineStepRun.pipeline_run_id == run_id,
+                PipelineStepRun.pipeline_step_id == step.id,
+            ).order_by(PipelineStepRun.started_at.desc().nulls_last())
+        )
+        step_run = step_run_result.scalars().first()
+        if step_run is None:
+            raise NotFoundError(f"StepRun not found for pipeline_step {step.id}")
+
+        if step_run.status != PipelineStepRunStatus.PENDING:
+            raise ValidationError(
+                f"Step {i} is {step_run.status.value}, expected PENDING"
+            )
+
+        term = terminal_service.create(
+            issue_id=run.issue_id,
+            project_id=project_id,
+            project_path=project_path,
+        )
+        term_id = term["id"]
+        step_run.terminal_id = term_id
+        step_run.status = PipelineStepRunStatus.RUNNING
+        step_run.started_at = now()
+        run.status = PipelineRunStatus.RUNNING
+        await self._safe_commit_session(self.session)
+
+        agent_name = step.agent.name if step.agent else "unknown"
+        pty = terminal_service.get_pty(term_id)
+        command = f'claude --dangerously-skip-permissions "/run-pipeline {run.issue_id}"'
+        pty.write(f"{command}; exit\r\n")
+
+        event = asyncio.Event()
+        _step_completion_events[(run_id, i)] = event
+
+        asyncio.create_task(self._monitor_step(
+            run_id=run_id, step_index=i, term_id=term_id,
+        ))
+
+        await event_service.emit({
+            "type": "agent_step_started",
+            "project_id": project_id,
+            "issue_id": run.issue_id,
+            "agent_name": agent_name,
+            "step_run_id": step_run.id,
+            "terminal_id": term_id,
+        })
+
+        return {
+            "term_id": term_id,
+            "agent_name": agent_name,
+            "agent_intent": step.agent.intent if step.agent else "",
+            "step_index": i,
+            "step_run_id": step_run.id,
+        }
+
+    async def _monitor_step(
+        self, run_id: str, step_index: int, term_id: str,
+    ) -> None:
+        """Background task: wait for step completion or PTY death."""
+        from app.services.terminal_session import (
+            TerminalSession, _sessions, _ensure_reader,
+        )
+
+        session = TerminalSession()
+        _sessions[term_id] = session
+        _ensure_reader(term_id, terminal_service)
+
+        event = _step_completion_events.get((run_id, step_index))
+
+        async def wait_pty_death():
+            await session.pty_dead.wait()
+
+        if event is None:
+            logger.warning(
+                "_monitor_step: no completion event for (%s, %d)",
+                run_id, step_index,
+            )
+            return
+
+        pty_task = asyncio.create_task(wait_pty_death())
+        event_task = asyncio.create_task(event.wait())
+
+        try:
+            done, pending = await asyncio.wait(
+                [pty_task, event_task],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            for t in pending:
+                t.cancel()
+
+            if pty_task in done and event_task not in done:
+                logger.error(
+                    "Step %d of run %s: PTY died before finished_pipeline_step",
+                    step_index, run_id,
+                )
+                async with async_session() as fresh_session:
+                    run = await self._get_run_with_session(run_id, fresh_session)
+                    if run.status == PipelineRunStatus.RUNNING:
+                        run.status = PipelineRunStatus.FAILED
+                        run.finished_at = now()
+                        for sr in run.step_runs:
+                            if (
+                                sr.pipeline_step
+                                and sr.pipeline_step.order_index == step_index
+                                and sr.status == PipelineStepRunStatus.RUNNING
+                            ):
+                                sr.status = PipelineStepRunStatus.FAILED
+                                sr.finished_at = now()
+                                break
+                        await fresh_session.commit()
+        finally:
+            _step_completion_events.pop((run_id, step_index), None)
+
+    async def advance_step(self, run_id: str) -> dict:
+        """Advance the pipeline to the next step."""
+        run = await self._get_run(run_id)
+        if run.status != PipelineRunStatus.WAITING_FOR_STEP:
+            raise ValidationError(
+                f"Cannot advance: pipeline is {run.status.value}, "
+                f"expected WAITING_FOR_STEP"
+            )
+
+        i = run.current_step_index
+        current_completed = False
+        for sr in run.step_runs:
+            if sr.pipeline_step and sr.pipeline_step.order_index == i:
+                if sr.status == PipelineStepRunStatus.COMPLETED:
+                    current_completed = True
+                break
+
+        if not current_completed:
+            raise ValidationError(
+                f"Cannot advance: step {i} is not COMPLETED"
+            )
+
+        total_steps = len(run.step_runs)
+        if i + 1 >= total_steps:
+            run.status = PipelineRunStatus.COMPLETED
+            run.finished_at = now()
+            await self._safe_commit_session(self.session)
+
+            issue = await self.session.get(Issue, run.issue_id)
+
+            await event_service.emit({
+                "type": "pipeline_completed",
+                "project_id": issue.project_id if issue else "",
+                "issue_id": run.issue_id,
+                "run_id": run_id,
+                "status": PipelineRunStatus.COMPLETED.value,
+            })
+            return {
+                "status": "COMPLETED",
+                "next_step_index": None,
+                "pipeline_finished": True,
+            }
+
+        run.current_step_index = i + 1
+        run.status = PipelineRunStatus.WAITING_FOR_STEP
+        await self._safe_commit_session(self.session)
+
+        await event_service.emit({
+            "type": "pipeline_step_advanced",
+            "run_id": run_id,
+            "issue_id": run.issue_id,
+            "from_step": i,
+            "to_step": i + 1,
+            "status": PipelineRunStatus.WAITING_FOR_STEP.value,
+        })
+
+        return {
+            "status": "WAITING_FOR_STEP",
+            "next_step_index": i + 1,
+            "pipeline_finished": False,
+        }
+
+    async def pause_run(self, run_id: str) -> dict:
+        """Pause a pipeline run."""
+        run = await self._get_run(run_id)
+        if run.status not in (
+            PipelineRunStatus.RUNNING,
+            PipelineRunStatus.WAITING_FOR_STEP,
+        ):
+            raise ValidationError(
+                f"Cannot pause: pipeline is {run.status.value}, "
+                f"expected RUNNING or WAITING_FOR_STEP"
+            )
+
+        if run.status == PipelineRunStatus.RUNNING:
+            step_idx = run.current_step_index
+            for sr in run.step_runs:
+                if (
+                    sr.pipeline_step
+                    and sr.pipeline_step.order_index == step_idx
+                    and sr.terminal_id
+                ):
+                    _save_recording(
+                        sr.terminal_id,
+                        terminal_service.get_buffered_output(sr.terminal_id),
+                    )
+                    _stop_reader(sr.terminal_id)
+                    _sessions.pop(sr.terminal_id, None)
+                    terminal_service.kill(sr.terminal_id)
+                    sr.status = PipelineStepRunStatus.FAILED
+                    sr.finished_at = now()
+                    break
+
+        run.status = PipelineRunStatus.PAUSED
+        await self._safe_commit_session(self.session)
+
+        await event_service.emit({
+            "type": "pipeline_paused",
+            "run_id": run_id,
+            "issue_id": run.issue_id,
+        })
+
+        return {"status": "PAUSED"}
+
+    async def resume_run(self, run_id: str) -> dict:
+        """Resume a paused pipeline."""
+        run = await self._get_run(run_id)
+        if run.status != PipelineRunStatus.PAUSED:
+            raise ValidationError(
+                f"Cannot resume: pipeline is {run.status.value}, "
+                f"expected PAUSED"
+            )
+
+        run.status = PipelineRunStatus.WAITING_FOR_STEP
+        await self._safe_commit_session(self.session)
+
+        await event_service.emit({
+            "type": "pipeline_resumed",
+            "run_id": run_id,
+            "issue_id": run.issue_id,
+        })
+
+        return {"status": "WAITING_FOR_STEP"}

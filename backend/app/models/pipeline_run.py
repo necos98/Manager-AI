@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -11,6 +11,8 @@ from app.database import Base
 
 class PipelineRunStatus(str, enum.Enum):
     RUNNING = "RUNNING"
+    WAITING_FOR_STEP = "WAITING_FOR_STEP"
+    PAUSED = "PAUSED"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
@@ -32,6 +34,7 @@ class PipelineRun(Base):
     status: Mapped[PipelineRunStatus] = mapped_column(Enum(PipelineRunStatus), nullable=False, default=PipelineRunStatus.RUNNING)
     current_step_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     rejection_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    orchestrated: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

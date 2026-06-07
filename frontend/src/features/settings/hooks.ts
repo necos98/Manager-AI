@@ -42,10 +42,27 @@ export function useResetSetting() {
 export function useResetAllSettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api.resetAllSettings(),
+    mutationFn: api.resetAllSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingKeys.all });
+      toast.success("All settings reset to defaults");
     },
     onError: onMutationError,
+  });
+}
+
+export function useInstallHermesMcp() {
+  return useMutation({
+    mutationFn: api.installHermesMcp,
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success("✅ " + (data.message ?? "Hermes MCP installato!"));
+      } else {
+        toast.error("❌ " + (data.error ?? "Installazione fallita"));
+      }
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : "Errore di connessione");
+    },
   });
 }

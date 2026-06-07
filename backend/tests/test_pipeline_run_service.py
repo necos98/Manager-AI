@@ -197,7 +197,7 @@ async def test_cancel_non_running_raises(db_session):
     run.status = PipelineRunStatus.FAILED
     await db_session.flush()
 
-    with pytest.raises(ValidationError, match="only cancel running"):
+    with pytest.raises(ValidationError, match="only cancel active"):
         await svc.cancel_run(started["id"])
 
 
