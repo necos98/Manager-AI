@@ -23,7 +23,7 @@ function getCategory(key: string): string {
   if (key.startsWith("server.")) return "Server";
   if (key.endsWith(".description")) return "Tool Descriptions";
   if (key.endsWith(".response_message")) return "Response Messages";
-  if (key.startsWith("claude.") || key === "ask_brainstorm_command") return "Claude";
+  if (key.startsWith("claude.") || key === "ask_brainstorm_command" || key === "agent_provider") return "Claude";
   return "Other";
 }
 
