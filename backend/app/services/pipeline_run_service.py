@@ -553,7 +553,6 @@ class PipelineRunService:
         step_index: int,
     ) -> bool:
         import platform as _platform
-        import os as _os
         from app.services.terminal_session import TerminalSession, _sessions, _ensure_reader
 
         pty = terminal_service.get_pty(term_id)
@@ -570,11 +569,9 @@ class PipelineRunService:
         else:
             pty.write(f"{command}; exit\r\n")
 
-        # Wait for step completion event, PTY death, or timeout
+        # Wait for step completion event or PTY death
         event = asyncio.Event()
         _step_completion_events[(run_id, step_index)] = event
-
-        timeout = int(_os.environ.get("MANAGER_AI_PIPELINE_STEP_TIMEOUT", "1800"))
 
         async def wait_pty_death():
             await session.pty_dead.wait()
@@ -585,7 +582,6 @@ class PipelineRunService:
         try:
             done, pending = await asyncio.wait(
                 [pty_task, event_task],
-                timeout=timeout,
                 return_when=asyncio.FIRST_COMPLETED,
             )
 
@@ -595,10 +591,6 @@ class PipelineRunService:
                 logger.error(
                     "Step %s failed: PTY died before finished_pipeline_step called", agent_name
                 )
-                success = False
-            else:
-                logger.error("Step %s timed out after %ds", agent_name, timeout)
-                terminal_service.kill(term_id)
                 success = False
 
             for t in pending:

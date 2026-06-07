@@ -1,27 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Play, Square } from "lucide-react";
-import { toast } from "sonner";
 import { useIssue } from "@/features/issues/hooks";
 import { useProject } from "@/features/projects/hooks";
-import { useTerminals, useCreateTerminal, useKillTerminal, useTerminalCount, useTerminalConfig } from "@/features/terminals/hooks";
-import { usePipelineRuns } from "@/features/pipeline-runs/hooks";
-import { PipelineProgress } from "@/features/pipeline-runs/components/PipelineProgress";
-import { IssueDetail } from "@/features/issues/components/issue-detail";
-import { TerminalWithQuestions } from "@/features/terminals/components/terminal-with-questions";
+import { useTerminalLayout } from "@/features/terminals/hooks";
+import { TerminalActionBar } from "@/features/terminals/components/terminal-action-bar";
+import { TerminalDialogs } from "@/features/terminals/components/terminal-dialogs";
+import { PendingQuestionsSection } from "@/features/questions/components/pending-questions-section";
 import { ErrorBoundary } from "@/shared/components/error-boundary";
 import { usePendingQuestions } from "@/features/questions/hooks";
-import { QuestionCard } from "@/features/questions/components/question-card";
-import { Button } from "@/shared/components/ui/button";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/shared/components/ui/dialog";
+import { Skeleton } from "@/shared/components/ui/skeleton";
+import { IssueDetail } from "@/features/issues/components/issue-detail";
+import { TerminalWithQuestions } from "@/features/terminals/components/terminal-with-questions";
+import { PipelineProgress } from "@/features/pipeline-runs/components/PipelineProgress";
 import {
   ResizableHandle, ResizablePanel, ResizablePanelGroup,
 } from "@/shared/components/ui/resizable";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
-import { Skeleton } from "@/shared/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import type { Issue, Question } from "@/shared/types";
 
 export const Route = createFileRoute("/projects/$projectId/issues/$issueId")({
   component: IssueDetailPage,
@@ -31,57 +27,14 @@ function IssueDetailPage() {
   const { projectId, issueId } = Route.useParams();
   const { data: project } = useProject(projectId);
   const { data: issue, isLoading } = useIssue(projectId, issueId);
+  const { data: pendingQuestions } = usePendingQuestions(projectId, issueId);
+  const layout = useTerminalLayout(projectId, issueId);
 
   useEffect(() => {
     const issueName = issue?.name || issue?.description;
     if (issueName && project) document.title = `${issueName} - ${project.name}`;
     else if (issueName) document.title = issueName;
   }, [issue, project]);
-
-  const { data: terminals } = useTerminals(undefined, issueId);
-  const createTerminal = useCreateTerminal();
-  const killTerminal = useKillTerminal();
-  const { data: countData } = useTerminalCount();
-  const { data: configData } = useTerminalConfig();
-  const { data: pendingQuestions } = usePendingQuestions(projectId, issueId);
-  const [showLimitWarning, setShowLimitWarning] = useState(false);
-  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-
-  const { data: pipelineRuns } = usePipelineRuns(projectId, issueId, { refetchInterval: 3000 });
-  const activeRun = pipelineRuns?.find((r) => r.status === "RUNNING") ?? null;
-
-  const terminal1 = terminals?.[0] ?? null;
-  const terminal2 = terminals?.[1] ?? null;
-  const hasAny = !!terminal1;
-  const hasSplit = !!terminal2;
-  const [rightPanel, setRightPanel] = useState<"terminal" | "pipeline">("terminal");
-
-  const handleDownload = (terminalId: string) => {
-    window.open(`/api/terminals/${terminalId}/recording`);
-  };
-
-  const doOpenTerminal = async () => {
-    setShowLimitWarning(false);
-    try {
-      await createTerminal.mutateAsync({ issue_id: issueId, project_id: projectId, run_commands: false });
-    } catch (err) {
-      toast.error("Failed to open terminal: " + (err instanceof Error ? err.message : "Unknown error"));
-    }
-  };
-
-  const openTerminal = async () => {
-    const count = countData?.count ?? 0;
-    const softLimit = configData?.soft_limit ?? 5;
-    if (count >= softLimit) { setShowLimitWarning(true); return; }
-    await doOpenTerminal();
-  };
-
-  const closeAll = async () => {
-    setShowCloseConfirm(false);
-    for (const t of terminals ?? []) {
-      try { await killTerminal.mutateAsync(t.id); } catch { /* already dead */ }
-    }
-  };
 
   if (isLoading) {
     return (
@@ -97,228 +50,125 @@ function IssueDetailPage() {
 
   return (
     <div className="h-[calc(100vh-1rem)] flex flex-col">
-      {/* Terminal action bar */}
-      <div className="flex items-center justify-end gap-2 px-6 py-2 border-b flex-shrink-0">
-        {!hasAny && (
-          <Button size="sm" onClick={openTerminal} disabled={createTerminal.isPending}>
-            <Play className="size-3 mr-1" />
-            {createTerminal.isPending ? "Opening..." : "Open Terminal"}
-          </Button>
-        )}
-        {hasAny && !hasSplit && (
-          <Button variant="destructive" size="sm" onClick={() => setShowCloseConfirm(true)}>
-            <Square className="size-3 mr-1" />
-            Close Terminal
-          </Button>
-        )}
-        {hasSplit && (
-          <Button variant="destructive" size="sm" onClick={() => setShowCloseConfirm(true)}>
-            <Square className="size-3 mr-1" />
-            Close All
-          </Button>
-        )}
-      </div>
-
-      {/* Right panel content: terminal, pipeline progress, or both togglable */}
-      {!hasAny && !activeRun ? (
-        /* No terminal, no pipeline: full-width issue detail */
-        <ScrollArea className="flex-1">
-          <ErrorBoundary>
-            <IssueDetail issue={issue} projectId={projectId} terminalId={null} />
-            {pendingQuestions && pendingQuestions.length > 0 && (
-              <div className="border-t mt-6 pt-6 px-4">
-                <h3 className="text-sm font-medium mb-3">Pending Questions</h3>
-                <div className="space-y-3">
-                  {pendingQuestions.map((q) => (
-                    <QuestionCard key={q.id} question={q} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </ErrorBoundary>
-        </ScrollArea>
-      ) : !hasAny && activeRun ? (
-        /* Pipeline progress only, no terminal */
-        <ScrollArea className="flex-1">
-          <ErrorBoundary>
-            <IssueDetail issue={issue} projectId={projectId} terminalId={null} />
-            {pendingQuestions && pendingQuestions.length > 0 && (
-              <div className="border-t mt-6 pt-6 px-4">
-                <h3 className="text-sm font-medium mb-3">Pending Questions</h3>
-                <div className="space-y-3">
-                  {pendingQuestions.map((q) => (
-                    <QuestionCard key={q.id} question={q} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </ErrorBoundary>
-          <div className="border-t h-[400px]">
-            <PipelineProgress projectId={projectId} issueId={issueId} />
-          </div>
-        </ScrollArea>
-      ) : (
-        /* Has terminal (and possibly pipeline): split view */
-        <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-          <ResizablePanel defaultSize={55} minSize={30}>
-            <ScrollArea className="h-full">
-              <ErrorBoundary>
-                <IssueDetail issue={issue} projectId={projectId} terminalId={terminal1?.id ?? null} />
-                {pendingQuestions && pendingQuestions.length > 0 && (
-                  <div className="border-t mt-6 pt-6 px-4">
-                    <h3 className="text-sm font-medium mb-3">Pending Questions</h3>
-                    <div className="space-y-3">
-                      {pendingQuestions.map((q) => (
-                        <QuestionCard key={q.id} question={q} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </ErrorBoundary>
-            </ScrollArea>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={45} minSize={20}>
-            {/* Toggle between terminal and pipeline when both exist */}
-            {activeRun && (
-              <Tabs value={rightPanel} onValueChange={(v) => setRightPanel(v as "terminal" | "pipeline")} className="h-full flex flex-col">
-                <TabsList className="mx-2 mt-1 shrink-0">
-                  <TabsTrigger value="terminal" className="text-xs">Terminal</TabsTrigger>
-                  <TabsTrigger value="pipeline" className="text-xs">Pipeline</TabsTrigger>
-                </TabsList>
-                <div className="flex-1 min-h-0">
-                  {rightPanel === "terminal" ? (
-                    !hasSplit ? (
-                      terminal1 && (
-                        <TerminalWithQuestions
-                          key={terminal1.id}
-                          terminalId={terminal1.id}
-                          projectId={projectId}
-                          issueId={terminal1.issue_id}
-                          hideQuestions
-                          onSessionEnd={() => killTerminal.mutate(terminal1.id)}
-                          onDownloadRecording={() => handleDownload(terminal1.id)}
-                        />
-                      )
-                    ) : (
-                      <ResizablePanelGroup direction="vertical">
-                        <ResizablePanel key={terminal1?.id ?? "t1"} defaultSize={50} minSize={20}>
-                          {terminal1 && (
-                            <TerminalWithQuestions
-                              key={terminal1.id}
-                              terminalId={terminal1.id}
-                              projectId={projectId}
-                              issueId={terminal1.issue_id}
-                              hideQuestions
-                              onSessionEnd={() => killTerminal.mutate(terminal1.id)}
-                              onDownloadRecording={() => handleDownload(terminal1.id)}
-                            />
-                          )}
-                        </ResizablePanel>
-                        <ResizableHandle withHandle />
-                        <ResizablePanel key={terminal2?.id ?? "t2"} defaultSize={50} minSize={20}>
-                          {terminal2 && (
-                            <TerminalWithQuestions
-                              key={terminal2.id}
-                              terminalId={terminal2.id}
-                              projectId={projectId}
-                              issueId={terminal2.issue_id}
-                              hideQuestions
-                              onSessionEnd={() => killTerminal.mutate(terminal2.id)}
-                              onDownloadRecording={() => handleDownload(terminal2.id)}
-                            />
-                          )}
-                        </ResizablePanel>
-                      </ResizablePanelGroup>
-                    )
-                  ) : (
-                    <PipelineProgress projectId={projectId} issueId={issueId} />
-                  )}
-                </div>
-              </Tabs>
-            )}
-            {!activeRun && (
-              !hasSplit ? (
-                terminal1 && (
-                  <TerminalWithQuestions
-                    key={terminal1.id}
-                    terminalId={terminal1.id}
-                    projectId={projectId}
-                    issueId={terminal1.issue_id}
-                    hideQuestions
-                    onSessionEnd={() => killTerminal.mutate(terminal1.id)}
-                    onDownloadRecording={() => handleDownload(terminal1.id)}
-                  />
-                )
-              ) : (
-                <ResizablePanelGroup direction="vertical">
-                  <ResizablePanel key={terminal1?.id ?? "t1"} defaultSize={50} minSize={20}>
-                    {terminal1 && (
-                      <TerminalWithQuestions
-                        key={terminal1.id}
-                        terminalId={terminal1.id}
-                        projectId={projectId}
-                        issueId={terminal1.issue_id}
-                        hideQuestions
-                        onSessionEnd={() => killTerminal.mutate(terminal1.id)}
-                        onDownloadRecording={() => handleDownload(terminal1.id)}
-                      />
-                    )}
-                  </ResizablePanel>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel key={terminal2?.id ?? "t2"} defaultSize={50} minSize={20}>
-                    {terminal2 && (
-                      <TerminalWithQuestions
-                        key={terminal2.id}
-                        terminalId={terminal2.id}
-                        projectId={projectId}
-                        issueId={terminal2.issue_id}
-                        hideQuestions
-                        onSessionEnd={() => killTerminal.mutate(terminal2.id)}
-                        onDownloadRecording={() => handleDownload(terminal2.id)}
-                      />
-                    )}
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              )
-            )}
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      )}
-
-      {/* Limit warning */}
-      <Dialog open={showLimitWarning} onOpenChange={setShowLimitWarning}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Terminal Limit Reached</DialogTitle>
-            <DialogDescription>
-              You have reached the soft limit of open terminals. Consider closing unused terminals.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLimitWarning(false)}>Cancel</Button>
-            <Button onClick={doOpenTerminal}>Open Anyway</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Close confirmation */}
-      <Dialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Close Terminal{hasSplit ? "s" : ""}?</DialogTitle>
-            <DialogDescription>
-              This will kill the terminal process{hasSplit ? "es" : ""}. Any running commands will be terminated.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCloseConfirm(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={closeAll}>
-              Close {hasSplit ? "All" : "Terminal"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TerminalActionBar
+        hasAny={layout.hasAny}
+        hasSplit={layout.hasSplit}
+        openTerminal={layout.openTerminal}
+        onRequestClose={() => layout.setShowCloseConfirm(true)}
+        isOpening={layout.isOpening}
+      />
+      <ErrorBoundary>
+        <LayoutContent
+          layout={layout}
+          issue={issue}
+          issueId={issueId}
+          pendingQuestions={pendingQuestions}
+          projectId={projectId}
+        />
+      </ErrorBoundary>
+      <TerminalDialogs
+        showLimitWarning={layout.showLimitWarning}
+        setShowLimitWarning={layout.setShowLimitWarning}
+        openAnyway={layout.doOpenTerminal}
+        showCloseConfirm={layout.showCloseConfirm}
+        setShowCloseConfirm={layout.setShowCloseConfirm}
+        closeAll={layout.closeAll}
+        hasSplit={layout.hasSplit}
+      />
     </div>
+  );
+}
+
+function LayoutContent({
+  layout, issue, issueId, pendingQuestions, projectId,
+}: {
+  layout: ReturnType<typeof useTerminalLayout>;
+  issue: Issue;
+  issueId: string;
+  pendingQuestions: Question[] | undefined;
+  projectId: string;
+}) {
+  const leftPanel = (
+    <>
+      <IssueDetail issue={issue} projectId={projectId} terminalId={layout.terminal1?.id ?? null} />
+      <PendingQuestionsSection pendingQuestions={pendingQuestions} />
+    </>
+  );
+
+  const terminalPanel = (terminal: typeof layout.terminal1) =>
+    terminal && (
+      <TerminalWithQuestions
+        key={terminal.id}
+        terminalId={terminal.id}
+        projectId={projectId}
+        issueId={terminal.issue_id}
+        hideQuestions
+        onSessionEnd={layout.handleSessionEnd}
+        onDownloadRecording={layout.handleDownload}
+      />
+    );
+
+  const splitTerminals = (t1: typeof layout.terminal1, t2: typeof layout.terminal2) => (
+    <ResizablePanelGroup direction="vertical">
+      <ResizablePanel defaultSize={50} minSize={20}>
+        {terminalPanel(t1)}
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel defaultSize={50} minSize={20}>
+        {terminalPanel(t2)}
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  );
+
+  const rightContent = layout.layoutMode === 'issue-only' ? null
+    : layout.layoutMode === 'issue-pipeline' ? (
+      <div className="border-t h-[400px]">
+        <PipelineProgress projectId={projectId} issueId={issueId} />
+      </div>
+    ) : layout.layoutMode === 'tabs-mode' ? (
+      <Tabs value={layout.rightPanel} onValueChange={(v) => layout.setRightPanel(v as "terminal" | "pipeline")} className="h-full flex flex-col">
+        <TabsList className="mx-2 mt-1 shrink-0">
+          <TabsTrigger value="terminal" className="text-xs">Terminal</TabsTrigger>
+          <TabsTrigger value="pipeline" className="text-xs">Pipeline</TabsTrigger>
+        </TabsList>
+        <div className="flex-1 min-h-0">
+          {layout.rightPanel === "terminal"
+            ? layout.hasSplit
+              ? splitTerminals(layout.terminal1, layout.terminal2)
+              : terminalPanel(layout.terminal1)
+            : <PipelineProgress projectId={projectId} issueId={issueId} />
+          }
+        </div>
+      </Tabs>
+    ) : ( /* single-terminal */
+      layout.hasSplit
+        ? splitTerminals(layout.terminal1, layout.terminal2)
+        : terminalPanel(layout.terminal1)
+    );
+
+  if (layout.layoutMode === 'issue-only') {
+    return <ScrollArea className="flex-1">{leftPanel}</ScrollArea>;
+  }
+
+  if (layout.layoutMode === 'issue-pipeline') {
+    return (
+      <ScrollArea className="flex-1">
+        {leftPanel}
+        {rightContent}
+      </ScrollArea>
+    );
+  }
+
+  // Has terminals — split view with terminal in right panel
+  return (
+    <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
+      <ResizablePanel defaultSize={55} minSize={30}>
+        <ScrollArea className="h-full">{leftPanel}</ScrollArea>
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel defaultSize={45} minSize={20}>
+        {rightContent}
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }

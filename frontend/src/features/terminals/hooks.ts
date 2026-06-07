@@ -1,6 +1,8 @@
+import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as api from "./api";
+import { usePipelineRuns } from "@/features/pipeline-runs/hooks";
 import type { AskTerminalCreate, LogTerminalCreate, ManageAgentTerminalCreate, TerminalCreate, TerminalCommandUpdate } from "@/shared/types";
 
 const onMutationError = (e: unknown) => {
@@ -186,4 +188,65 @@ export function useTerminalCommandTemplates() {
     queryFn: api.fetchTerminalCommandTemplates,
     staleTime: Infinity,
   });
+}
+
+export function useTerminalLayout(projectId: string, issueId: string) {
+  const { data: terminals } = useTerminals(undefined, issueId);
+  const createTerminal = useCreateTerminal();
+  const killTerminal = useKillTerminal();
+  const { data: countData } = useTerminalCount();
+  const { data: configData } = useTerminalConfig();
+  const { data: pipelineRuns } = usePipelineRuns(projectId, issueId, { refetchInterval: 3000 });
+
+  const activeRun = pipelineRuns?.find((r) => r.status === "RUNNING") ?? null;
+  const terminal1 = terminals?.[0] ?? null;
+  const terminal2 = terminals?.[1] ?? null;
+  const hasAny = !!terminal1;
+  const hasSplit = !!terminal2;
+
+  const [showLimitWarning, setShowLimitWarning] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [rightPanel, setRightPanel] = useState<"terminal" | "pipeline">("terminal");
+
+  const doOpenTerminal = useCallback(async () => {
+    setShowLimitWarning(false);
+    try {
+      await createTerminal.mutateAsync({ issue_id: issueId, project_id: projectId, run_commands: false });
+    } catch (err) {
+      toast.error("Failed to open terminal: " + (err instanceof Error ? err.message : "Unknown error"));
+    }
+  }, [createTerminal, issueId, projectId]);
+
+  const openTerminal = useCallback(async () => {
+    const count = countData?.count ?? 0;
+    const softLimit = configData?.soft_limit ?? 5;
+    if (count >= softLimit) { setShowLimitWarning(true); return; }
+    await doOpenTerminal();
+  }, [countData, configData, doOpenTerminal]);
+
+  const closeAll = useCallback(async () => {
+    setShowCloseConfirm(false);
+    for (const t of terminals ?? []) {
+      try { await killTerminal.mutateAsync(t.id); } catch { /* already dead */ }
+    }
+  }, [terminals, killTerminal]);
+
+  const handleSessionEnd = useCallback((id: string) => killTerminal.mutate(id), [killTerminal]);
+  const handleDownload = useCallback((id: string) => { window.open(`/api/terminals/${id}/recording`); }, []);
+
+  const layoutMode: 'issue-only' | 'issue-pipeline' | 'tabs-mode' | 'single-terminal' = !hasAny && !activeRun ? 'issue-only'
+    : !hasAny && activeRun ? 'issue-pipeline'
+    : activeRun ? 'tabs-mode'
+    : 'single-terminal';
+
+  return {
+    terminals, terminal1, terminal2, hasAny, hasSplit,
+    activeRun, layoutMode, createTerminal, killTerminal,
+    openTerminal, doOpenTerminal, closeAll,
+    showLimitWarning, setShowLimitWarning,
+    showCloseConfirm, setShowCloseConfirm,
+    rightPanel, setRightPanel,
+    handleSessionEnd, handleDownload,
+    isOpening: createTerminal.isPending,
+  };
 }

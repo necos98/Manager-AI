@@ -1,0 +1,6479 @@
+{
+  "metadata": {
+    "project": "Manager AI",
+    "generated_by": "analysis/extract_topology.py",
+    "backend_files": 140,
+    "frontend_files": 158
+  },
+  "entry_points": [
+    {
+      "file": "routers/activity",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/agents",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/credentials",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/credentials_editor",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/events",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/files",
+      "type": "APIRouter",
+      "name": "formats_router"
+    },
+    {
+      "file": "routers/files",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/import_export",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/issue_relations",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/issue_relations",
+      "type": "APIRouter",
+      "name": "batch_router"
+    },
+    {
+      "file": "routers/issues",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/library",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/memories",
+      "type": "APIRouter",
+      "name": "project_scoped"
+    },
+    {
+      "file": "routers/memories",
+      "type": "APIRouter",
+      "name": "flat"
+    },
+    {
+      "file": "routers/network",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/pipeline_runs",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/pipelines",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/plugins",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/plugins",
+      "type": "APIRouter",
+      "name": "catalog_router"
+    },
+    {
+      "file": "routers/project_links",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/project_settings",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/project_skills",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/project_templates",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/project_variables",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/projects",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/projects",
+      "type": "APIRouter",
+      "name": "dashboard_router"
+    },
+    {
+      "file": "routers/questions",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/settings",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/system",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/tasks",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/terminal_commands",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "routers/terminals",
+      "type": "APIRouter",
+      "name": "router"
+    },
+    {
+      "file": "main",
+      "type": "FastAPI_app",
+      "name": "FastAPI"
+    },
+    {
+      "file": "main",
+      "type": "React_entry",
+      "name": "createRoot"
+    }
+  ],
+  "call_graph": {
+    "directed_edges": [
+      {
+        "source": "database",
+        "target": "config",
+        "type": "import"
+      },
+      {
+        "source": "hooks/__init__",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/__init__",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/__init__",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/__init__",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/__init__",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/__init__",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/handlers/__init__",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/handlers/enrich_context",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/handlers/enrich_context",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/handlers/enrich_context",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/handlers/enrich_context",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/handlers/enrich_context",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/handlers/enrich_context",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "hooks/handlers/enrich_context",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/registry",
+        "target": "config",
+        "type": "import"
+      },
+      {
+        "source": "hooks/registry",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "hooks/registry",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "hooks/registry",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "config",
+        "type": "import"
+      },
+      {
+        "source": "main",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "main",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "main",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "db_to_files",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "middleware",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "routers",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/catalog",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/catalog",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/catalog",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_config",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_manager",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_proxy",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/plugin_proxy",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "mcp/server",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "mcp/server",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "middleware/__init__",
+        "target": "middleware/error_logger",
+        "type": "import"
+      },
+      {
+        "source": "models/__init__",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/__init__",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/activity_log",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/agent",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/credential_preset",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/issue",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/issue_feedback",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/issue_relation",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/memory",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/pipeline",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/pipeline_event_rule",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/pipeline_log",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/pipeline_log",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "models/pipeline_run",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/project",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/project_credential",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/project_file",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/project_link",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/project_skill",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/project_variable",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/prompt_template",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/question",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/setting",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/task",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "models/terminal_command",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/activity",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/activity",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/activity",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/activity",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/agents",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/agents",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "routers/agents",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/agents",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/agents",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/agents",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/agents",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/agents",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/agents",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/agents",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/agents",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/agents",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/credentials",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/credentials",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/credentials",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/credentials",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/credentials_editor",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/credentials_editor",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/credentials_editor",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/credentials_editor",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/credentials_editor",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/credentials_editor",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/events",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/events",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/events",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/events",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/events",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/files",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/files",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/files",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/files",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/files",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/import_export",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/import_export",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/import_export",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/import_export",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/import_export",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/import_export",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/import_export",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/import_export",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/import_export",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issue_relations",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/issue_relations",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issue_relations",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issue_relations",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issue_relations",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issue_relations",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/issues",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/issues",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/issues",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/library",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/library",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/library",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/library",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/library",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/library",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/memories",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/memories",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "routers/memories",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/memories",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/memories",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/memories",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/memories",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/memories",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipeline_runs",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/pipeline_runs",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/pipeline_runs",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "routers/pipeline_runs",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipeline_runs",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipeline_runs",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipeline_runs",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipeline_runs",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipeline_runs",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_links",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/project_links",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_links",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_links",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_links",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_settings",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/project_settings",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_settings",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_settings",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_skills",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/project_skills",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_skills",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_skills",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_skills",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_templates",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/project_templates",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_templates",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_templates",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_variables",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/project_variables",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_variables",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_variables",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_variables",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/project_variables",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "config",
+        "type": "import"
+      },
+      {
+        "source": "routers/projects",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/projects",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "mcp",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/projects",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/questions",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/questions",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/questions",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/questions",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/settings",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/settings",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/settings",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/settings",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/system",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/system",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/system",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/system",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/system",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminal_commands",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/terminal_commands",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminal_commands",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminal_commands",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminal_commands",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminal_commands",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminal_commands",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminal_commands",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "config",
+        "type": "import"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "database",
+        "type": "import"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "config",
+        "type": "import"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/__init__",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/issue",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/issue",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/issue",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/issue_relation",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "schemas/task",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/activity_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/agent_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/agent_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/agent_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/agent_service",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/agent_service",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/artifact_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/credential_editor_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/credential_editor_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/credential_editor_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/credential_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/credential_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/file_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/file_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/file_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/file_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/file_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_relation_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/issue_relation_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/issue_relation_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_relation_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_relation_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_relation_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_relation_service",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "hooks",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/mcp_tool_description_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/memory_events",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/memory_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/memory_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/memory_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/memory_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/memory_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_log_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/project_link_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/project_link_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/project_link_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/project_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/project_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/project_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/project_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/project_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/project_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/project_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/project_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/project_setting_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/project_variable_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/prompt_template_service",
+        "target": "config",
+        "type": "import"
+      },
+      {
+        "source": "services/prompt_template_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/prompt_template_service",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/question_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/question_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/question_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/settings_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/settings_service",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/skill_library_service",
+        "target": "config",
+        "type": "import"
+      },
+      {
+        "source": "services/skill_library_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/skill_library_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/skill_library_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/skill_library_service",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/skill_library_service",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/skill_library_service",
+        "target": "schemas",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/task_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/task_service",
+        "target": "exceptions",
+        "type": "import"
+      },
+      {
+        "source": "services/task_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/task_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/task_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/task_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/task_service",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/terminal_command_service",
+        "target": "models",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/terminal_service",
+        "target": "config",
+        "type": "import"
+      },
+      {
+        "source": "services/terminal_service",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "services/terminal_session",
+        "target": "config",
+        "type": "import"
+      },
+      {
+        "source": "services/terminal_session",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/__init__",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/__init__",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/__init__",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/background_writer",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/background_writer",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/background_writer",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/background_writer",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/background_writer",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/background_writer",
+        "target": "services",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/background_writer",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/background_writer",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/background_writer",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/background_writer",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/cache",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/cache",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/file_store",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/file_store",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/file_store",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/issue_store",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/issue_store",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/issue_store",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/issue_store",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/issue_store",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/memory_store",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/memory_store",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/memory_store",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/project_loader",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/project_loader",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/project_loader",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/project_loader",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/project_loader",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/project_loader",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/project_loader",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/project_loader",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/project_loader",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "storage/project_loader",
+        "target": "storage",
+        "type": "import_resolved"
+      },
+      {
+        "source": "main",
+        "target": "models/agent",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/pipeline",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/pipeline",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/project",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/project",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/project",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/project",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/project",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/credentials",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/credentials",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/files",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/files",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/issue",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/issue",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/issue",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/task",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/setting",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/terminals",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/terminal_command",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/project",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/events",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/activity",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/library",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/memories",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/memories",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/project",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/plugins",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/plugins",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/network",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "models/question",
+        "type": "router"
+      },
+      {
+        "source": "main",
+        "target": "routers/system",
+        "type": "router"
+      },
+      {
+        "source": "routers/activity",
+        "target": "routers/activity",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/agents",
+        "target": "routers/agents",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/credentials",
+        "target": "routers/credentials",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/credentials_editor",
+        "target": "routers/credentials_editor",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/events",
+        "target": "routers/events",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/files",
+        "target": "routers/files",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/files",
+        "target": "routers/files",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/import_export",
+        "target": "routers/import_export",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/issue_relations",
+        "target": "routers/issue_relations",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/issue_relations",
+        "target": "routers/issue_relations",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/issues",
+        "target": "routers/issues",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/library",
+        "target": "routers/library",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/memories",
+        "target": "routers/memories",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/memories",
+        "target": "routers/memories",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/network",
+        "target": "routers/network",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/pipeline_runs",
+        "target": "routers/pipeline_runs",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/pipelines",
+        "target": "routers/pipelines",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "routers/plugins",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/plugins",
+        "target": "routers/plugins",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/project_links",
+        "target": "routers/project_links",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/project_settings",
+        "target": "routers/project_settings",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/project_skills",
+        "target": "routers/project_skills",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/project_templates",
+        "target": "routers/project_templates",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/project_variables",
+        "target": "routers/project_variables",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/projects",
+        "target": "routers/projects",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/projects",
+        "target": "routers/projects",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/questions",
+        "target": "routers/questions",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/settings",
+        "target": "routers/settings",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/system",
+        "target": "routers/system",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "routers/tasks",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/terminal_commands",
+        "target": "routers/terminal_commands",
+        "type": "router_def"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "routers/terminals",
+        "type": "router_def"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/__root",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/terminals",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/settings",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/questions",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/pipelines",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/library",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/dashboard",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/agents",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "shared/types/index",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/tools/credentials-editor",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/new",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/archived",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/$projectId",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/$projectId/variables",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/$projectId/plugins",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/pipelines",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/$projectId/memories",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/library",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/$projectId/issues",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/$projectId/health",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/$projectId/files",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/$projectId/commands",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/$projectId/ask",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/$projectId/activity",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "shared/types/index",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routeTree.gen",
+        "target": "routes/projects/$projectId/issues/$issueId",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/utils/saveFile",
+        "target": "shared/utils/download",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/activity/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/activity/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/hooks",
+        "target": "shared/utils/download",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/hooks",
+        "target": "shared/utils/saveFile",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/files/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/files/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/import/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/import/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/import/hooks",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/import/hooks",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/api-relations",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/hooks-relations",
+        "target": "features/issues/api-relations",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/library/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/library/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/memories/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/memories/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/hooks",
+        "target": "shared/utils/download",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/hooks",
+        "target": "shared/utils/saveFile",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/api-dashboard",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/api-settings",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/api-skills",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/api-templates",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/api-variables",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/hooks-credentials",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/hooks-credentials",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/hooks-dashboard",
+        "target": "features/projects/api-dashboard",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/hooks-settings",
+        "target": "features/projects/api-settings",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/hooks-skills",
+        "target": "features/projects/api-skills",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/hooks-templates",
+        "target": "features/projects/api-templates",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/hooks-variables",
+        "target": "features/projects/api-variables",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/questions/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/questions/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/api-plugins",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/hooks-plugins",
+        "target": "features/settings/api-plugins",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/system/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/system/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/api",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/hooks",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/hooks/use-global-image-paste",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/hooks/use-global-image-paste",
+        "target": "features/terminals/contexts/terminal-context",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/hooks/use-global-image-paste",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "main",
+        "target": "shared/api/client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "main",
+        "target": "routeTree.gen",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/agents",
+        "target": "features/agents/components/AgentsTab",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/dashboard",
+        "target": "features/projects/hooks-dashboard",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/dashboard",
+        "target": "features/issues/components/status-badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/dashboard",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/dashboard",
+        "target": "shared/components/ui/card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/index",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/index",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/index",
+        "target": "shared/components/ui/card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/index",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/index",
+        "target": "features/issues/components/status-badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/library",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/library",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/library",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/library",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/library",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/library",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/library",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/pipelines",
+        "target": "features/pipelines/components/PipelinesTab",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/questions",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/questions",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/questions",
+        "target": "features/questions/components/question-card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/questions",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/questions",
+        "target": "shared/components/ui/collapsible",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/settings",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/settings",
+        "target": "features/settings/components/settings-form",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/settings",
+        "target": "features/settings/components/voice-panel",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/settings",
+        "target": "features/terminals/components/terminal-commands-editor",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/settings",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/settings",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/settings",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/terminals",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/terminals",
+        "target": "features/terminals/components/terminal-grid",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/terminals",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/__root",
+        "target": "shared/lib/query-client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/__root",
+        "target": "shared/components/app-sidebar",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/__root",
+        "target": "shared/components/app-sidebar",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/__root",
+        "target": "shared/components/project-sidebar",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/__root",
+        "target": "shared/context/event-context",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/__root",
+        "target": "shared/components/error-boundary",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/__root",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/__root",
+        "target": "features/terminals/contexts/terminal-context",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/__root",
+        "target": "features/terminals/hooks/use-global-image-paste",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/app-sidebar",
+        "target": "shared/components/app-sidebar",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/app-sidebar",
+        "target": "features/projects/components/project-settings-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/app-sidebar",
+        "target": "features/projects/components/mcp-setup-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/error-boundary",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ImportPreviewModal",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ImportPreviewModal",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ImportPreviewModal",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ImportPreviewModal",
+        "target": "shared/components/ui/scroll-area",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ImportPreviewModal",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/project-sidebar",
+        "target": "shared/components/app-sidebar",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/project-sidebar",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/project-sidebar",
+        "target": "shared/components/theme-toggle",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/project-sidebar",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/project-sidebar",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/project-sidebar",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/smartphone-qr-dialog",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/speech-modal",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/speech-modal",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/speech-modal",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/speech-modal",
+        "target": "shared/hooks/use-speech-recognition",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/theme-toggle",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/context/event-context",
+        "target": "shared/lib/query-client",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/badge",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/button",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/card",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/dialog",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/dialog",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/dropdown-menu",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/input",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/resizable",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/scroll-area",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/select",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/separator",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/sheet",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/sidebar",
+        "target": "shared/hooks/use-mobile",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/sidebar",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/sidebar",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/sidebar",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/sidebar",
+        "target": "shared/components/ui/separator",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/sidebar",
+        "target": "shared/components/ui/sheet",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/sidebar",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/sidebar",
+        "target": "shared/components/ui/tooltip",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/skeleton",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/tabs",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/textarea",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "shared/components/ui/tooltip",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/archived",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/archived",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/archived",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/new",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/new",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/new",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/new",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/tools/credentials-editor",
+        "target": "routes/tools/credentials-editor",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/activity",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/activity",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/activity",
+        "target": "features/activity/components/activity-timeline",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/activity",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/ask",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/ask",
+        "target": "features/terminals/components/terminal-panel",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/ask",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/ask",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/commands",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/commands",
+        "target": "features/terminals/components/terminal-commands-editor",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/files",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/files",
+        "target": "features/files/components/file-gallery",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/health",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/health",
+        "target": "features/projects/components/health-panel",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/library",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/library",
+        "target": "features/projects/components/library-tab",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/memories",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/memories",
+        "target": "features/memories/components/memory-tree",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/memories",
+        "target": "features/memories/components/memory-detail",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/memories",
+        "target": "features/memories/components/memory-search",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/pipelines",
+        "target": "features/pipelines/components/PipelinesTab",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/pipelines",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/plugins",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/plugins",
+        "target": "features/settings/components/plugins-panel",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/variables",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/variables",
+        "target": "features/projects/components/project-variables-editor",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "features/pipeline-runs/components/PipelineProgress",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "features/issues/components/issue-detail",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "features/terminals/components/terminal-with-questions",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "shared/components/error-boundary",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "features/questions/components/question-card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "shared/components/ui/resizable",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "shared/components/ui/scroll-area",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/$issueId",
+        "target": "shared/components/ui/tabs",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/index",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/index",
+        "target": "features/issues/components/new-issue-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/index",
+        "target": "features/issues/hooks-relations",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/index",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/index",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/index",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/index",
+        "target": "features/issues/components/kanban-board",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/index",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/index",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "routes/projects/$projectId/issues/index",
+        "target": "shared/components/error-boundary",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/conflicts/ConflictModal",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/conflicts/ConflictModal",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/conflicts/ConflictModal",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/conflicts/ConflictModal",
+        "target": "shared/components/ui/scroll-area",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-commands-editor",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-commands-editor",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-commands-editor",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-commands-editor",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-commands-editor",
+        "target": "shared/components/ui/dropdown-menu",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-commands-editor",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-grid",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-grid",
+        "target": "features/terminals/components/terminal-with-questions",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-panel",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-panel",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-panel",
+        "target": "features/terminals/themes",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-panel",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-panel",
+        "target": "features/terminals/contexts/terminal-context",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-panel",
+        "target": "features/files/components/file-gallery-modal",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-panel",
+        "target": "shared/components/speech-modal",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-with-questions",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-with-questions",
+        "target": "features/questions/components/question-card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/terminals/components/terminal-with-questions",
+        "target": "features/terminals/components/terminal-panel",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/plugins-panel",
+        "target": "features/settings/hooks-plugins",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/plugins-panel",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/plugins-panel",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/plugins-panel",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/plugins-panel",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/plugins-panel",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/settings-form",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/settings-form",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/settings-form",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/settings-form",
+        "target": "shared/components/ui/tooltip",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/settings-form",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/settings-form",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/voice-panel",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/settings/components/voice-panel",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/questions/components/question-card",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/questions/components/question-card",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/questions/components/question-card",
+        "target": "shared/components/ui/card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/questions/components/question-card",
+        "target": "shared/components/markdown-viewer",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/questions/components/question-card",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/health-panel",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/health-panel",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/health-panel",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/health-panel",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/library-tab",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/library-tab",
+        "target": "features/projects/hooks-skills",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/library-tab",
+        "target": "features/projects/hooks-templates",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/library-tab",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/library-tab",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/library-tab",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/mcp-setup-dialog",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/mcp-setup-dialog",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/mcp-setup-dialog",
+        "target": "shared/components/ui/separator",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-settings-dialog",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-settings-dialog",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-settings-dialog",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-settings-dialog",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-settings-dialog",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-settings-dialog",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-settings-dialog",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-settings-dialog",
+        "target": "features/projects/hooks-credentials",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-switcher",
+        "target": "shared/components/ui/dropdown-menu",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-switcher",
+        "target": "shared/components/app-sidebar",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-switcher",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-variables-editor",
+        "target": "features/projects/hooks-variables",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-variables-editor",
+        "target": "features/projects/api-variables",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-variables-editor",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-variables-editor",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/project-variables-editor",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/work-queue-status",
+        "target": "shared/context/event-context",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/work-queue-status",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/work-queue-status",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/projects/components/work-queue-status",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/components/PipelinesTab",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/components/PipelinesTab",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/components/PipelinesTab",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/components/PipelinesTab",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/components/PipelinesTab",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/components/PipelinesTab",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/components/PipelinesTab",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/components/PipelinesTab",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipelines/components/PipelinesTab",
+        "target": "shared/components/ImportPreviewModal",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/AgentChat",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/AgentChat",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/AgentChat",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/AgentChat",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/AgentChat",
+        "target": "shared/components/ui/scroll-area",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/AgentChat",
+        "target": "shared/components/markdown-viewer",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/AgentChat",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineLogViewer",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineLogViewer",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineLogViewer",
+        "target": "shared/components/ui/card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineLogViewer",
+        "target": "shared/components/ui/collapsible",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineLogViewer",
+        "target": "shared/components/ui/scroll-area",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineLogViewer",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineLogViewer",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineLogViewer",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineProgress",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineProgress",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineProgress",
+        "target": "shared/components/ui/scroll-area",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineProgress",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineProgress",
+        "target": "features/terminals/components/terminal-panel",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineProgress",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineProgress",
+        "target": "shared/context/event-context",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineRunButton",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineRunButton",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineRunButton",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/pipeline-runs/components/PipelineRunButton",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/memories/components/memory-detail",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/memories/components/memory-detail",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/memories/components/memory-search",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/memories/components/memory-tree",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/memories/components/memory-tree",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/editable-task-list",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/editable-task-list",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/editable-task-list",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/inline-edit-field",
+        "target": "shared/lib/utils",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-actions",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-actions",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-actions",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-actions",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-actions",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-actions",
+        "target": "features/pipeline-runs/components/PipelineRunButton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "shared/components/ui/card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "shared/components/ui/tabs",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "shared/components/markdown-viewer",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/issues/components/status-badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/issues/components/issue-actions",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/issues/components/plan-feedback",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/issues/components/editable-task-list",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/issues/components/inline-edit-field",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/issues/components/tag-input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/pipeline-runs/components/AgentChat",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/issues/components/issue-relations-tab",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-detail",
+        "target": "features/issues/components/new-issue-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-list",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-list",
+        "target": "shared/components/ui/card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-list",
+        "target": "features/issues/components/status-badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-relations-tab",
+        "target": "features/issues/components/issue-relations-graph",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-relations-tab",
+        "target": "features/issues/hooks-relations",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-relations-tab",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-relations-tab",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/issue-relations-tab",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-board",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-board",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-board",
+        "target": "features/issues/components/kanban-column",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-board",
+        "target": "features/issues/components/kanban-card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-board",
+        "target": "features/issues/components/kanban-filters",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-board",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-card",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-card",
+        "target": "shared/components/ui/card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-card",
+        "target": "features/issues/components/status-badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-column",
+        "target": "features/issues/components/kanban-card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-column",
+        "target": "features/issues/components/status-badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-column",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-filters",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/kanban-filters",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/new-issue-dialog",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/new-issue-dialog",
+        "target": "features/issues/components/tag-input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/new-issue-dialog",
+        "target": "features/files/components/file-gallery-modal",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/new-issue-dialog",
+        "target": "shared/components/speech-modal",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/new-issue-dialog",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/new-issue-dialog",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/new-issue-dialog",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/new-issue-dialog",
+        "target": "shared/components/ui/select",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/plan-feedback",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/plan-feedback",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/plan-feedback",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/status-badge",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/tag-input",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/tag-input",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/issues/components/task-list",
+        "target": "features/issues/components/status-badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/files/components/file-gallery-modal",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/files/components/file-gallery-modal",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/files/components/file-gallery-modal",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/files/components/file-gallery-modal",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/files/components/file-gallery-modal",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/files/components/file-gallery",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/files/components/file-gallery",
+        "target": "features/activity/api",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/files/components/file-gallery",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/files/components/file-gallery",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/components/credentials-editor",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/components/credentials-editor",
+        "target": "features/credentials-editor/components/env-editor",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/components/credentials-editor",
+        "target": "features/credentials-editor/components/presets-panel",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/components/env-editor",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/components/env-editor",
+        "target": "shared/components/ui/card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/components/env-editor",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/components/env-editor",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/components/presets-panel",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/components/presets-panel",
+        "target": "shared/components/ui/card",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/components/presets-panel",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/credentials-editor/components/presets-panel",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/components/AgentsTab",
+        "target": "shared/components/ui/button",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/components/AgentsTab",
+        "target": "shared/components/ui/input",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/components/AgentsTab",
+        "target": "shared/components/ui/textarea",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/components/AgentsTab",
+        "target": "shared/components/ui/badge",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/components/AgentsTab",
+        "target": "shared/components/ui/skeleton",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/components/AgentsTab",
+        "target": "shared/components/smartphone-qr-dialog",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/components/AgentsTab",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/components/AgentsTab",
+        "target": "features/activity/hooks",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/components/AgentsTab",
+        "target": "features/terminals/components/terminal-panel",
+        "type": "import_frontend"
+      },
+      {
+        "source": "features/agents/components/AgentsTab",
+        "target": "shared/components/ImportPreviewModal",
+        "type": "import_frontend"
+      }
+    ],
+    "edge_count": 1112
+  },
+  "data_dependencies": {
+    "edges": [
+      {
+        "source": "models/activity_log",
+        "target": "ActivityLog",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/agent",
+        "target": "Agent",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/credential_preset",
+        "target": "CredentialPreset",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/issue",
+        "target": "Issue",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/issue_feedback",
+        "target": "IssueFeedback",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/issue_relation",
+        "target": "IssueRelation",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/memory",
+        "target": "Memory",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/memory",
+        "target": "MemoryLink",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/pipeline",
+        "target": "Pipeline",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/pipeline",
+        "target": "PipelineStep",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/pipeline_event_rule",
+        "target": "PipelineEventRule",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/pipeline_log",
+        "target": "PipelineLog",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/pipeline_run",
+        "target": "PipelineRun",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/pipeline_run",
+        "target": "PipelineStepRun",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/pipeline_run",
+        "target": "PipelineMessage",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/project",
+        "target": "Project",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/project_credential",
+        "target": "ProjectCredential",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/project_file",
+        "target": "ProjectFile",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/project_link",
+        "target": "ProjectLink",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/project_skill",
+        "target": "ProjectSkill",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/project_variable",
+        "target": "ProjectVariable",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/prompt_template",
+        "target": "PromptTemplate",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/question",
+        "target": "Question",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/setting",
+        "target": "Setting",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/task",
+        "target": "Task",
+        "type": "defines_model"
+      },
+      {
+        "source": "models/terminal_command",
+        "target": "TerminalCommand",
+        "type": "defines_model"
+      },
+      {
+        "source": "main",
+        "target": "PipelineRun",
+        "type": "accesses_table"
+      },
+      {
+        "source": "main",
+        "target": "Issue",
+        "type": "accesses_table"
+      },
+      {
+        "source": "main",
+        "target": "Issue.id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "main",
+        "target": "Project",
+        "type": "accesses_table"
+      },
+      {
+        "source": "mcp/plugin_client",
+        "target": "None",
+        "type": "accesses_table"
+      },
+      {
+        "source": "mcp/server",
+        "target": "project_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "mcp/server",
+        "target": "AI",
+        "type": "accesses_table"
+      },
+      {
+        "source": "mcp/server",
+        "target": "task_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "mcp/server",
+        "target": "agent_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "mcp/server",
+        "target": "memory_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/agents",
+        "target": "agent_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/credentials",
+        "target": "project_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/files",
+        "target": "project_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/import_export",
+        "target": "step",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/issues",
+        "target": "issue_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/project_links",
+        "target": "link_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/project_settings",
+        "target": "project_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/project_variables",
+        "target": "var_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/projects",
+        "target": "project_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/tasks",
+        "target": "task_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/terminal_commands",
+        "target": "cmd_id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "routers/terminals",
+        "target": "DB",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/activity_service",
+        "target": "ActivityLog",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/agent_service",
+        "target": "agent",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/agent_service",
+        "target": "self",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/agent_service",
+        "target": "Agent.id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/agent_service",
+        "target": "Agent",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/credential_editor_service",
+        "target": "CredentialPreset",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/credential_editor_service",
+        "target": "preset",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/credential_service",
+        "target": "cred",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/credential_service",
+        "target": "ProjectCredential.role",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/credential_service",
+        "target": "ProjectCredential",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/credential_service",
+        "target": "self",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/file_service",
+        "target": "self",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/issue_service",
+        "target": "self",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/memory_service",
+        "target": "self",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_log_service",
+        "target": "sa_func.count",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_log_service",
+        "target": "PipelineLog",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "PipelineMessage",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "PipelineRun",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "Pipeline",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_run_service",
+        "target": "PipelineStepRun",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "step",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "PipelineEventRule",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "rule",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "PipelineStep",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "Pipeline",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "pipeline",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "r",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/pipeline_service",
+        "target": "func.max",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_link_service",
+        "target": "ProjectLink",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_link_service",
+        "target": "self",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_link_service",
+        "target": "link",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_service",
+        "target": "ProjectLink",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_service",
+        "target": "Project",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_service",
+        "target": "self",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_service",
+        "target": "link",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_setting_service",
+        "target": "row",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_setting_service",
+        "target": "Setting",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_setting_service",
+        "target": "self",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_variable_service",
+        "target": "row",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_variable_service",
+        "target": "self",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/project_variable_service",
+        "target": "ProjectVariable",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/prompt_template_service",
+        "target": "PromptTemplate",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/prompt_template_service",
+        "target": "row",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/question_service",
+        "target": "Project.id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/question_service",
+        "target": "Issue.id",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/question_service",
+        "target": "Question",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/settings_service",
+        "target": "JSON",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/settings_service",
+        "target": "Setting",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/settings_service",
+        "target": "row",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/skill_library_service",
+        "target": "skill",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/skill_library_service",
+        "target": "ProjectSkill",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/task_service",
+        "target": "self",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/terminal_command_service",
+        "target": "TerminalCommand",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/terminal_command_service",
+        "target": "row",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/terminal_command_service",
+        "target": "self",
+        "type": "accesses_table"
+      },
+      {
+        "source": "services/wsl_support",
+        "target": "Windows",
+        "type": "accesses_table"
+      },
+      {
+        "source": "storage/background_writer",
+        "target": "WriteQueue",
+        "type": "accesses_table"
+      },
+      {
+        "source": "storage/file_store",
+        "target": "project_path",
+        "type": "accesses_table"
+      },
+      {
+        "source": "storage/file_store",
+        "target": "RAM",
+        "type": "accesses_table"
+      },
+      {
+        "source": "storage/issue_store",
+        "target": "project_path",
+        "type": "accesses_table"
+      },
+      {
+        "source": "storage/memory_store",
+        "target": "project_path",
+        "type": "accesses_table"
+      },
+      {
+        "source": "storage/memory_store_core",
+        "target": "self",
+        "type": "accesses_table"
+      }
+    ],
+    "edge_count": 110
+  },
+  "dead_end_candidates": [
+    "__init__",
+    "_ensure_proactor",
+    "desktop_icon",
+    "features/agents/api",
+    "features/agents/hooks",
+    "features/conflicts/ConflictModal",
+    "features/credentials-editor/api",
+    "features/credentials-editor/components/credentials-editor",
+    "features/credentials-editor/hooks",
+    "features/files/api",
+    "features/files/hooks",
+    "features/import/api",
+    "features/import/hooks",
+    "features/issues/api",
+    "features/issues/components/issue-list",
+    "features/issues/components/task-list",
+    "features/issues/hooks",
+    "features/library/api",
+    "features/library/hooks",
+    "features/memories/api",
+    "features/memories/hooks",
+    "features/pipeline-runs/api",
+    "features/pipeline-runs/components/PipelineLogViewer",
+    "features/pipeline-runs/hooks",
+    "features/pipelines/api",
+    "features/pipelines/hooks",
+    "features/projects/api",
+    "features/projects/components/project-switcher",
+    "features/projects/components/work-queue-status",
+    "features/projects/hooks",
+    "features/projects/hooks-settings",
+    "features/questions/api",
+    "features/questions/hooks",
+    "features/settings/api",
+    "features/settings/hooks",
+    "features/system/api",
+    "features/system/hooks",
+    "features/terminals/api",
+    "features/terminals/hooks",
+    "hooks/__init__",
+    "hooks/handlers/__init__",
+    "hooks/handlers/enrich_context",
+    "hooks/registry",
+    "mcp/__init__",
+    "mcp/catalog",
+    "mcp/plugin_client",
+    "mcp/plugin_config",
+    "mcp/plugin_manager",
+    "mcp/plugin_proxy",
+    "mcp/server",
+    "middleware/__init__",
+    "models/__init__",
+    "models/_uuid",
+    "models/activity_log",
+    "models/credential_preset",
+    "models/issue_feedback",
+    "models/issue_relation",
+    "models/memory",
+    "models/pipeline_event_rule",
+    "models/pipeline_log",
+    "models/pipeline_run",
+    "models/project_credential",
+    "models/project_file",
+    "models/project_link",
+    "models/project_skill",
+    "models/project_variable",
+    "models/prompt_template",
+    "routers/__init__",
+    "routes/index",
+    "routes/projects/$projectId/issues/index",
+    "routes/projects/$projectId/library",
+    "routes/projects/$projectId/pipelines",
+    "schemas/__init__",
+    "schemas/activity",
+    "schemas/agent",
+    "schemas/credential",
+    "schemas/credential_preset",
+    "schemas/export_import",
+    "schemas/issue",
+    "schemas/issue_relation",
+    "schemas/library",
+    "schemas/memory",
+    "schemas/pipeline",
+    "schemas/pipeline_event_rule",
+    "schemas/pipeline_run",
+    "schemas/project",
+    "schemas/project_file",
+    "schemas/project_link",
+    "schemas/project_setting",
+    "schemas/project_variable",
+    "schemas/prompt_template",
+    "schemas/question",
+    "schemas/setting",
+    "schemas/system",
+    "schemas/task",
+    "schemas/terminal",
+    "schemas/terminal_command",
+    "services/__init__",
+    "services/activity_service",
+    "services/agent_service",
+    "services/artifact_service",
+    "services/credential_editor_service",
+    "services/credential_service",
+    "services/event_service",
+    "services/file_reader",
+    "services/file_service",
+    "services/issue_relation_service",
+    "services/issue_service",
+    "services/mcp_tool_description_service",
+    "services/memory_events",
+    "services/memory_service",
+    "services/pipeline_log_service",
+    "services/pipeline_run_service",
+    "services/pipeline_service",
+    "services/pipeline_task_manager",
+    "services/project_link_service",
+    "services/project_service",
+    "services/project_setting_service",
+    "services/project_variable_service",
+    "services/prompt_template_service",
+    "services/question_service",
+    "services/settings_service",
+    "services/skill_library_service",
+    "services/task_service",
+    "services/terminal_command_service",
+    "services/terminal_condition",
+    "services/terminal_service",
+    "services/terminal_session",
+    "services/wsl_support",
+    "shared/components/ui/dialog",
+    "shared/components/ui/sidebar",
+    "shared/components/ui/sonner",
+    "storage/__init__",
+    "storage/atomic",
+    "storage/background_writer",
+    "storage/cache",
+    "storage/file_store",
+    "storage/issue_store",
+    "storage/memory_store",
+    "storage/memory_store_core",
+    "storage/paths",
+    "storage/project_loader",
+    "storage/write_queue"
+  ],
+  "clusters": {
+    "backend": {
+      "Routers": 28,
+      "Services": 32,
+      "Models": 24,
+      "Schemas": 25,
+      "Storage": 11,
+      "Hooks": 4,
+      "MCP": 7,
+      "Middleware": 2,
+      "Core": 7
+    },
+    "frontend": {
+      "Entry": 2,
+      "Shared": 35,
+      "feat:activity": 3,
+      "feat:agents": 3,
+      "feat:credentials-editor": 5,
+      "feat:files": 4,
+      "feat:import": 2,
+      "feat:issues": 20,
+      "feat:library": 2,
+      "feat:memories": 5,
+      "feat:pipeline-runs": 6,
+      "feat:pipelines": 3,
+      "feat:projects": 20,
+      "feat:questions": 3,
+      "feat:settings": 7,
+      "feat:system": 2,
+      "feat:terminals": 9,
+      "Routes": 26,
+      "feat:conflicts": 1
+    }
+  }
+}

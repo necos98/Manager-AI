@@ -1,0 +1,203 @@
+graph LR
+    file_models_activity_log["activity_log"]
+    file_models_activity_log -.->|defines| model_ActivityLog
+    file_models_agent["agent"]
+    file_models_agent -.->|defines| model_Agent
+    file_models_credential_preset["credential_preset"]
+    file_models_credential_preset -.->|defines| model_CredentialPreset
+    file_models_issue["issue"]
+    file_models_issue -.->|defines| model_Issue
+    file_models_issue_feedback["issue_feedback"]
+    file_models_issue_feedback -.->|defines| model_IssueFeedback
+    file_models_issue_relation["issue_relation"]
+    file_models_issue_relation -.->|defines| model_IssueRelation
+    file_models_memory["memory"]
+    file_models_memory -.->|defines| model_Memory
+    file_models_memory -.->|defines| model_MemoryLink
+    file_models_pipeline["pipeline"]
+    file_models_pipeline -.->|defines| model_Pipeline
+    file_models_pipeline -.->|defines| model_PipelineStep
+    file_models_pipeline_event_rule["pipeline_event_rule"]
+    file_models_pipeline_event_rule -.->|defines| model_PipelineEventRule
+    file_models_pipeline_log["pipeline_log"]
+    file_models_pipeline_log -.->|defines| model_PipelineLog
+    file_models_pipeline_run["pipeline_run"]
+    file_models_pipeline_run -.->|defines| model_PipelineRun
+    file_models_pipeline_run -.->|defines| model_PipelineStepRun
+    file_models_pipeline_run -.->|defines| model_PipelineMessage
+    file_models_project["project"]
+    file_models_project -.->|defines| model_Project
+    file_models_project_credential["project_credential"]
+    file_models_project_credential -.->|defines| model_ProjectCredential
+    file_models_project_file["project_file"]
+    file_models_project_file -.->|defines| model_ProjectFile
+    file_models_project_link["project_link"]
+    file_models_project_link -.->|defines| model_ProjectLink
+    file_models_project_skill["project_skill"]
+    file_models_project_skill -.->|defines| model_ProjectSkill
+    file_models_project_variable["project_variable"]
+    file_models_project_variable -.->|defines| model_ProjectVariable
+    file_models_prompt_template["prompt_template"]
+    file_models_prompt_template -.->|defines| model_PromptTemplate
+    file_models_question["question"]
+    file_models_question -.->|defines| model_Question
+    file_models_setting["setting"]
+    file_models_setting -.->|defines| model_Setting
+    file_models_task["task"]
+    file_models_task -.->|defines| model_Task
+    file_models_terminal_command["terminal_command"]
+    file_models_terminal_command -.->|defines| model_TerminalCommand
+    file_main["main"]
+    file_main ==>|accesses| tbl_PipelineRun
+    file_main ==>|accesses| tbl_Issue
+    file_main ==>|accesses| tbl_Issue_id
+    file_main ==>|accesses| tbl_Project
+    file_mcp_plugin_client["plugin_client"]
+    file_mcp_plugin_client ==>|accesses| tbl_None
+    file_mcp_server["server"]
+    file_mcp_server ==>|accesses| tbl_project_id
+    file_mcp_server ==>|accesses| tbl_AI
+    file_mcp_server ==>|accesses| tbl_task_id
+    file_mcp_server ==>|accesses| tbl_agent_id
+    file_mcp_server ==>|accesses| tbl_memory_id
+    file_routers_agents["agents"]
+    file_routers_agents ==>|accesses| tbl_agent_id
+    file_routers_credentials["credentials"]
+    file_routers_credentials ==>|accesses| tbl_project_id
+    file_routers_files["files"]
+    file_routers_files ==>|accesses| tbl_project_id
+    file_routers_import_export["import_export"]
+    file_routers_import_export ==>|accesses| tbl_step
+    file_routers_issues["issues"]
+    file_routers_issues ==>|accesses| tbl_issue_id
+    file_routers_project_links["project_links"]
+    file_routers_project_links ==>|accesses| tbl_link_id
+    file_routers_project_settings["project_settings"]
+    file_routers_project_settings ==>|accesses| tbl_project_id
+    file_routers_project_variables["project_variables"]
+    file_routers_project_variables ==>|accesses| tbl_var_id
+    file_routers_projects["projects"]
+    file_routers_projects ==>|accesses| tbl_project_id
+    file_routers_tasks["tasks"]
+    file_routers_tasks ==>|accesses| tbl_task_id
+    file_routers_terminal_commands["terminal_commands"]
+    file_routers_terminal_commands ==>|accesses| tbl_cmd_id
+    file_routers_terminals["terminals"]
+    file_routers_terminals ==>|accesses| tbl_DB
+    file_services_activity_service["activity_service"]
+    file_services_activity_service ==>|accesses| tbl_ActivityLog
+    file_services_agent_service["agent_service"]
+    file_services_agent_service ==>|accesses| tbl_agent
+    file_services_agent_service ==>|accesses| tbl_self
+    file_services_agent_service ==>|accesses| tbl_Agent_id
+    file_services_agent_service ==>|accesses| tbl_Agent
+    file_services_credential_editor_service["credential_editor_service"]
+    file_services_credential_editor_service ==>|accesses| tbl_CredentialPreset
+    file_services_credential_editor_service ==>|accesses| tbl_preset
+    file_services_credential_service["credential_service"]
+    file_services_credential_service ==>|accesses| tbl_cred
+    file_services_credential_service ==>|accesses| tbl_ProjectCredential_role
+    file_services_credential_service ==>|accesses| tbl_ProjectCredential
+    file_services_credential_service ==>|accesses| tbl_self
+    file_services_file_service["file_service"]
+    file_services_file_service ==>|accesses| tbl_self
+    file_services_issue_service["issue_service"]
+    file_services_issue_service ==>|accesses| tbl_self
+    file_services_memory_service["memory_service"]
+    file_services_memory_service ==>|accesses| tbl_self
+    file_services_pipeline_log_service["pipeline_log_service"]
+    file_services_pipeline_log_service ==>|accesses| tbl_sa_func_count
+    file_services_pipeline_log_service ==>|accesses| tbl_PipelineLog
+    file_services_pipeline_run_service["pipeline_run_service"]
+    file_services_pipeline_run_service ==>|accesses| tbl_PipelineMessage
+    file_services_pipeline_run_service ==>|accesses| tbl_PipelineRun
+    file_services_pipeline_run_service ==>|accesses| tbl_Pipeline
+    file_services_pipeline_run_service ==>|accesses| tbl_PipelineStepRun
+    file_services_pipeline_service["pipeline_service"]
+    file_services_pipeline_service ==>|accesses| tbl_step
+    file_services_pipeline_service ==>|accesses| tbl_PipelineEventRule
+    file_services_pipeline_service ==>|accesses| tbl_rule
+    file_services_pipeline_service ==>|accesses| tbl_PipelineStep
+    file_services_pipeline_service ==>|accesses| tbl_Pipeline
+    file_services_pipeline_service ==>|accesses| tbl_pipeline
+    file_services_pipeline_service ==>|accesses| tbl_r
+    file_services_pipeline_service ==>|accesses| tbl_func_max
+    file_services_project_link_service["project_link_service"]
+    file_services_project_link_service ==>|accesses| tbl_ProjectLink
+    file_services_project_link_service ==>|accesses| tbl_self
+    file_services_project_link_service ==>|accesses| tbl_link
+    file_services_project_service["project_service"]
+    file_services_project_service ==>|accesses| tbl_ProjectLink
+    file_services_project_service ==>|accesses| tbl_Project
+    file_services_project_service ==>|accesses| tbl_self
+    file_services_project_service ==>|accesses| tbl_link
+    file_services_project_setting_service["project_setting_service"]
+    file_services_project_setting_service ==>|accesses| tbl_row
+    file_services_project_setting_service ==>|accesses| tbl_Setting
+    file_services_project_setting_service ==>|accesses| tbl_self
+    file_services_project_variable_service["project_variable_service"]
+    file_services_project_variable_service ==>|accesses| tbl_row
+    file_services_project_variable_service ==>|accesses| tbl_self
+    file_services_project_variable_service ==>|accesses| tbl_ProjectVariable
+    file_services_prompt_template_service["prompt_template_service"]
+    file_services_prompt_template_service ==>|accesses| tbl_PromptTemplate
+    file_services_prompt_template_service ==>|accesses| tbl_row
+    file_services_question_service["question_service"]
+    file_services_question_service ==>|accesses| tbl_Project_id
+    file_services_question_service ==>|accesses| tbl_Issue_id
+    file_services_question_service ==>|accesses| tbl_Question
+    file_services_settings_service["settings_service"]
+    file_services_settings_service ==>|accesses| tbl_JSON
+    file_services_settings_service ==>|accesses| tbl_Setting
+    file_services_settings_service ==>|accesses| tbl_row
+    file_services_skill_library_service["skill_library_service"]
+    file_services_skill_library_service ==>|accesses| tbl_skill
+    file_services_skill_library_service ==>|accesses| tbl_ProjectSkill
+    file_services_task_service["task_service"]
+    file_services_task_service ==>|accesses| tbl_self
+    file_services_terminal_command_service["terminal_command_service"]
+    file_services_terminal_command_service ==>|accesses| tbl_TerminalCommand
+    file_services_terminal_command_service ==>|accesses| tbl_row
+    file_services_terminal_command_service ==>|accesses| tbl_self
+    file_services_wsl_support["wsl_support"]
+    file_services_wsl_support ==>|accesses| tbl_Windows
+    file_storage_background_writer["background_writer"]
+    file_storage_background_writer ==>|accesses| tbl_WriteQueue
+    file_storage_file_store["file_store"]
+    file_storage_file_store ==>|accesses| tbl_project_path
+    file_storage_file_store ==>|accesses| tbl_RAM
+    file_storage_issue_store["issue_store"]
+    file_storage_issue_store ==>|accesses| tbl_project_path
+    file_storage_memory_store["memory_store"]
+    file_storage_memory_store ==>|accesses| tbl_project_path
+    file_storage_memory_store_core["memory_store_core"]
+    file_storage_memory_store_core ==>|accesses| tbl_self
+    model_ProjectLink(["ProjectLink"])
+    model_IssueFeedback(["IssueFeedback"])
+    model_PipelineMessage(["PipelineMessage"])
+    model_ProjectVariable(["ProjectVariable"])
+    model_Pipeline(["Pipeline"])
+    model_PipelineRun(["PipelineRun"])
+    model_PipelineLog(["PipelineLog"])
+    model_CredentialPreset(["CredentialPreset"])
+    model_ProjectFile(["ProjectFile"])
+    model_Question(["Question"])
+    model_PromptTemplate(["PromptTemplate"])
+    model_TerminalCommand(["TerminalCommand"])
+    model_IssueRelation(["IssueRelation"])
+    model_MemoryLink(["MemoryLink"])
+    model_Memory(["Memory"])
+    model_ProjectCredential(["ProjectCredential"])
+    model_PipelineStep(["PipelineStep"])
+    model_Issue(["Issue"])
+    model_ActivityLog(["ActivityLog"])
+    model_Agent(["Agent"])
+    model_Project(["Project"])
+    model_PipelineStepRun(["PipelineStepRun"])
+    model_PipelineEventRule(["PipelineEventRule"])
+    model_Setting(["Setting"])
+    model_Task(["Task"])
+    model_ProjectSkill(["ProjectSkill"])
+
+    style model fill:#3a7ca5,stroke:#5ba3d9,color:#d4d4d4
+    style tbl fill:#8b5cf6,stroke:#a78bfa,color:#d4d4d4

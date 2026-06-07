@@ -1,12 +1,66 @@
 schema_version: 1
 id: 3c933e0b-ca8a-4661-a77e-484b96e64bab
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: New
+name: 'Unify primary keys: auto-increment integers with UUID columns'
+status: Finished
 priority: 3
 category: null
 created_at: '2026-06-05T10:50:58.285641'
-updated_at: '2026-06-05T10:50:58.285641'
-finished_at: null
-tasks: []
+updated_at: '2026-06-07T10:07:49.615008'
+finished_at: '2026-06-07T10:07:49.615018'
+tasks:
+- id: 6f25c05b-99f4-47af-9849-f65322b6366c
+  name: Add uuid + Integer PK to 18 UUID-PK model files
+  status: Completed
+  order: 0
+  created_at: '2026-06-07T09:37:12'
+  updated_at: '2026-06-07T09:39:04'
+- id: 42be5612-9db6-4c73-9b2a-d1d5b7c0726a
+  name: Handle MemoryLink composite PK special case (from_id/to_id → Integer, add uuid)
+  status: Completed
+  order: 1
+  created_at: '2026-06-07T09:37:12'
+  updated_at: '2026-06-07T09:39:11'
+- id: 63631017-5e28-48f3-96de-6fb2ba3db50d
+  name: Add uuid column to 5 Integer-PK model files
+  status: Completed
+  order: 2
+  created_at: '2026-06-07T09:37:12'
+  updated_at: '2026-06-07T09:39:42'
+- id: 180a6f0e-b564-4e6d-9be5-76aa273dc76d
+  name: Convert all FK columns from String(36)→Integer across affected model files
+  status: Completed
+  order: 3
+  created_at: '2026-06-07T09:37:12'
+  updated_at: '2026-06-07T09:39:59'
+- id: 9b4ce550-b4ce-4f31-8c3e-4630a001c702
+  name: Verify/correct imports (Integer import, uuid import cleanup)
+  status: Completed
+  order: 4
+  created_at: '2026-06-07T09:37:12'
+  updated_at: '2026-06-07T09:40:34'
+- id: 399ec20b-8d6b-4050-a14b-d457ef4425a6
+  name: Create Alembic migration — rename+recreate with FK remapping
+  status: Completed
+  order: 5
+  created_at: '2026-06-07T09:37:12'
+  updated_at: '2026-06-07T09:44:15'
+- id: 125aa7b9-b18e-4efa-8f93-52245da516fe
+  name: Update service layer session.get() calls for API-facing lookups
+  status: Completed
+  order: 6
+  created_at: '2026-06-07T09:37:12'
+  updated_at: '2026-06-07T09:46:19'
+- id: b37285d2-a689-43b2-8f3a-3d4bf6c83ba5
+  name: Update service layer .where(Model.id ==) queries for API-facing lookups
+  status: Completed
+  order: 7
+  created_at: '2026-06-07T09:37:12'
+  updated_at: '2026-06-07T09:50:32'
+- id: 76c5923f-d888-462d-88b2-33d5efa7f1ac
+  name: Run tests and verify — python -m pytest
+  status: Completed
+  order: 8
+  created_at: '2026-06-07T09:37:12'
+  updated_at: '2026-06-07T10:07:40'
 relations: []

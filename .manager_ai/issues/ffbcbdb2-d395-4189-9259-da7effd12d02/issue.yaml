@@ -1,12 +1,48 @@
 schema_version: 1
 id: ffbcbdb2-d395-4189-9259-da7effd12d02
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: New
+name: Extract _find_task_issue utility from duplicated code in MCP server
+status: Finished
 priority: 3
 category: null
 created_at: '2026-06-05T10:49:29.933161'
-updated_at: '2026-06-05T10:49:29.933161'
-finished_at: null
-tasks: []
+updated_at: '2026-06-07T09:14:37.470995'
+finished_at: '2026-06-07T09:14:37.471006'
+tasks:
+- id: d5aeca15-1dce-4273-9a3f-9f00136184bd
+  name: Add `Any` to typing imports in server.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-07T09:01:49'
+  updated_at: '2026-06-07T09:03:01'
+- id: 0f985357-bda9-4b55-86d7-74cc84f94efe
+  name: Insert `_find_task_issue` helper function before `mcp_tool_wrapper` decorator
+  status: Completed
+  order: 1
+  created_at: '2026-06-07T09:01:49'
+  updated_at: '2026-06-07T09:03:13'
+- id: 45106d89-eed6-46e6-93cd-778db73509cd
+  name: Replace duplicated scan in `update_task_status` with helper call
+  status: Completed
+  order: 2
+  created_at: '2026-06-07T09:01:49'
+  updated_at: '2026-06-07T09:03:23'
+- id: ebe648ce-5ded-4970-9b34-fcc1d1760cf4
+  name: Replace duplicated scan in `update_task_name` with helper call
+  status: Completed
+  order: 3
+  created_at: '2026-06-07T09:01:49'
+  updated_at: '2026-06-07T09:03:32'
+- id: d159a32e-b595-4c88-ba90-5876679d703d
+  name: Replace duplicated scan in `delete_task` with helper call and remove redundant comment
+  status: Completed
+  order: 4
+  created_at: '2026-06-07T09:01:49'
+  updated_at: '2026-06-07T09:03:39'
+- id: 1df387a3-4cf6-4e3f-9560-34642f9cdc68
+  name: Run backend tests to verify no regressions
+  status: Completed
+  order: 5
+  created_at: '2026-06-07T09:01:49'
+  updated_at: '2026-06-07T09:09:38'
 relations: []

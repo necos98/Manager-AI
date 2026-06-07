@@ -1,12 +1,60 @@
 schema_version: 1
 id: 7181b7a5-96a5-4cde-b27f-cee70a3898df
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: New
+name: Replace threading.Lock with asyncio.Lock in TerminalService
+status: Finished
 priority: 3
 category: null
 created_at: '2026-06-05T10:51:14.133601'
-updated_at: '2026-06-05T10:51:14.133601'
-finished_at: null
-tasks: []
+updated_at: '2026-06-07T09:40:48.091208'
+finished_at: '2026-06-07T09:40:48.091215'
+tasks:
+- id: 3b39b4e6-5c6a-4cbf-96dd-2ecd9cf116df
+  name: Replace threading.Lock with asyncio.Lock and convert all 10 lock-using methods in terminal_service.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-07T09:08:24'
+  updated_at: '2026-06-07T09:40:39'
+- id: 9d2acec5-b294-457e-9f38-7b91fbd3d7d3
+  name: Add get_log_queue() public helper method to TerminalService
+  status: Completed
+  order: 1
+  created_at: '2026-06-07T09:08:24'
+  updated_at: '2026-06-07T09:40:40'
+- id: 774d7e54-392e-4048-b44e-78267545b7a5
+  name: Refactor _terminal_reader() in terminal_session.py to use public async methods and add await
+  status: Completed
+  order: 2
+  created_at: '2026-06-07T09:08:24'
+  updated_at: '2026-06-07T09:40:40'
+- id: 5c269d2f-3483-4cf2-a342-c29cbba59f65
+  name: Add await to TerminalService calls in terminals.py router
+  status: Completed
+  order: 3
+  created_at: '2026-06-07T09:08:24'
+  updated_at: '2026-06-07T09:40:40'
+- id: d9059013-e476-4315-94a1-c7b0e3e43d42
+  name: Add await to TerminalService calls in projects.py router
+  status: Completed
+  order: 4
+  created_at: '2026-06-07T09:08:24'
+  updated_at: '2026-06-07T09:40:40'
+- id: 4c17e542-a1f9-43bc-a05d-0f4e654fc10f
+  name: Add await to TerminalService calls in pipeline_run_service.py
+  status: Completed
+  order: 5
+  created_at: '2026-06-07T09:08:24'
+  updated_at: '2026-06-07T09:40:41'
+- id: 95095b06-b2bc-4687-a173-ca6fc4f37725
+  name: Convert test_terminal_service.py to async — fixture, test methods, and concurrent test rewrite
+  status: Completed
+  order: 6
+  created_at: '2026-06-07T09:08:24'
+  updated_at: '2026-06-07T09:40:42'
+- id: 92cabf9e-39e5-425b-a83f-40a75e1b701a
+  name: Verify no remaining threading import usage and remove import threading
+  status: Completed
+  order: 7
+  created_at: '2026-06-07T09:08:24'
+  updated_at: '2026-06-07T09:40:42'
 relations: []

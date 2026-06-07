@@ -1,0 +1,1 @@
+Quando vengono importate delle pipeline o degli agenti, non vengono refreshate le query frontend delle sezioni Agents e Pipelines, quindi mi ritrovo con le pipeline con i nomi "Unknow". Far si che tutte le query vengano refreshate e controllare bene

@@ -1,0 +1,40 @@
+flowchart TD
+    A["HTTP Request"]:::entry --> B["FastAPI Router"]
+    subgraph Routing
+        B --> C["issues.py"]
+        B --> D["projects.py"]
+        B --> E["terminals.py"]
+        B --> F["memories.py"]
+        B --> G["agents.py"]
+        B --> H["pipelines.py"]
+    end
+    subgraph Services
+        C --> I["issue_service"]
+        D --> J["project_service"]
+        E --> K["terminal_service"]
+        F --> L["memory_service"]
+        G --> M["agent_service"]
+        H --> N["pipeline_service"]
+    end
+    subgraph Storage
+        I --> O["issue_store"]
+        J --> P["WriteQueue"]
+        L --> Q["memory_store"]
+        K --> R["PTY Session"]
+        N --> S["Pipeline Runs"]
+    end
+    subgraph Data
+        O --> T["SQLite (issues)"]
+        Q --> U["SQLite (memories)"]
+        P --> V["SQLite (pending_writes)"]
+        S --> W["SQLite (pipeline_runs)"]
+    end
+    A --> X["MCP /mcp"]:::mcp
+    X --> Y["MCP Server"]
+    Y --> Z["MCP Tools"]
+    Z --> C
+    Z --> I
+    Z --> L
+
+    classDef entry fill:#cc785c,stroke:#e8a87c,color:#1e1e1e,font-weight:bold
+    classDef mcp fill:#6b4c8a,stroke:#9b6fcc,color:#d4d4d4

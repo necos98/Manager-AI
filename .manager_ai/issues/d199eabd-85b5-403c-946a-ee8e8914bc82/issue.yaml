@@ -1,0 +1,42 @@
+schema_version: 1
+id: d199eabd-85b5-403c-946a-ee8e8914bc82
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Frontend queries not refreshed after agent/pipeline import — stale data and "Unknown" names
+status: Finished
+priority: 3
+category: Bug
+created_at: '2026-06-07T08:10:17.014865'
+updated_at: '2026-06-07T08:48:35.132990'
+finished_at: '2026-06-07T08:48:35.133003'
+tasks:
+- id: 0a99dc90-bcbc-45af-b85b-ce784d8ac6fe
+  name: Add cross-entity query invalidation to useImportAgentsConfirm
+  status: Completed
+  order: 0
+  created_at: '2026-06-07T08:28:34'
+  updated_at: '2026-06-07T08:31:54'
+- id: c6173ef7-7b95-4012-b375-1bd33bad5add
+  name: Add cross-entity query invalidation to useImportPipelinesConfirm
+  status: Completed
+  order: 1
+  created_at: '2026-06-07T08:28:34'
+  updated_at: '2026-06-07T08:31:55'
+- id: c9610128-9c9f-4c30-ba0b-cb18156d062b
+  name: Add WebSocket event emission to agent router endpoints
+  status: Completed
+  order: 2
+  created_at: '2026-06-07T08:28:34'
+  updated_at: '2026-06-07T08:31:56'
+- id: d183d4b2-f510-445e-b5b5-b6c535f971c8
+  name: Add WebSocket event emission to pipeline router endpoints
+  status: Completed
+  order: 3
+  created_at: '2026-06-07T08:28:34'
+  updated_at: '2026-06-07T08:31:57'
+- id: e8fd012b-bf02-49a0-97c4-0acb2ae46311
+  name: Add agent and pipeline event handling in EventProvider
+  status: Completed
+  order: 4
+  created_at: '2026-06-07T08:28:34'
+  updated_at: '2026-06-07T08:31:57'
+relations: []
