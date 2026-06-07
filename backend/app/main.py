@@ -5,6 +5,7 @@ import sys
 from contextlib import asynccontextmanager
 from typing import Any
 
+import anyio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
@@ -81,29 +82,32 @@ if sys.platform == "win32":
             return
         loop.default_exception_handler(context)
 
-@asynccontextmanager
-async def _noop_lifespan(_app):
-    """No-op lifespan for the mounted StreamableHTTP Starlette app.
-
-    The real session-manager lifecycle is driven by the main FastAPI lifespan
-    below (via mcp.session_manager.run()).  The mounted app MUST NOT have its
-    own lifespan because Starlette does not enter Mounted-app lifespans and
-    we don't want two callers competing for the single-run session manager.
-    """
-    yield
-
-
 # Create the MCP StreamableHTTP ASGI app so the session manager is initialized.
 _streamable_app = mcp.streamable_http_app()
-# Clear the lifespan on the mounted app — we manage the session manager
-# explicitly in the main lifespan.  Without this, Starlette may try to use
-# the mounted app's lifespan (which also calls session_manager.run()),
-# leading to "can only be called once" errors that tear down the task group.
-_streamable_app.router.lifespan_context = _noop_lifespan
+# Note: we keep the original lifespan on the mounted app. Starlette does not
+# forward lifespan messages to mounted apps, so we call it manually from the
+# main FastAPI lifespan below using _streamable_app.router.lifespan_context.
+# Keeping it on the app means a future Starlette update that does honour
+# mounted lifespans will work without changes.
 
 # Suppress ERROR logs for ClientDisconnect in the MCP streamable HTTP handler.
 # Client disconnects are normal — the library logs them at ERROR with full
 # traceback via logger.exception, which is noise.
+# Patch: initialize task group lazily on first request if needed.
+# The lifespan creates a task group, but there may be a timing issue
+# where handle_request is called before _task_group is set.
+_sm_original_handle = mcp.session_manager.handle_request
+
+async def _mcp_init_on_demand(scope, receive, send):
+    if mcp.session_manager._task_group is None:
+        logger.warning("MCP task group not set yet — creating lazily")
+        mcp.session_manager._has_started = True
+        tg = await anyio.create_task_group().__aenter__()
+        mcp.session_manager._task_group = tg
+    await _sm_original_handle(scope, receive, send)
+
+mcp.session_manager.handle_request = _mcp_init_on_demand
+
 logging.getLogger("mcp.server.streamable_http").addFilter(
     _SuppressClientDisconnectFilter()
 )
@@ -306,10 +310,22 @@ async def lifespan(app):
     except Exception:
         logger.exception("Non-critical startup ops failed; continuing")
 
-    async with mcp.session_manager.run():
+    # Initialize MCP session manager.
+    # Starlette does not forward lifespan messages to mounted apps, and
+    # mcp.session_manager.run() can have issues with ProactorEventLoop
+    # on Windows when called from inside another lifespan. We create the
+    # task group directly and assign it to the session manager.
+    _sm = mcp.session_manager
+    logger.info("MCP session manager state: _task_group=%s _has_started=%s",
+                _sm._task_group is not None, _sm._has_started)
+    _sm._has_started = True
+    async with anyio.create_task_group() as _mcp_tg:
+        _sm._task_group = _mcp_tg
+        logger.info("MCP task group created: %s", _mcp_tg)
         try:
             yield
         finally:
+            _sm._task_group = None
             await _shutdown(rows, bw, wq)
 
 
