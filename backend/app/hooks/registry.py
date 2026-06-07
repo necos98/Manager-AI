@@ -5,7 +5,7 @@ import asyncio
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from app.utils.datetime import iso_now
 from enum import Enum
 from typing import Callable
 
@@ -74,7 +74,7 @@ class HookRegistry:
         self, hook_class: type[BaseHook], context: HookContext
     ) -> None:
         hook = hook_class()
-        now = datetime.now(timezone.utc).isoformat()
+        now = iso_now()
 
         await event_service.emit(
             {
@@ -104,7 +104,7 @@ class HookRegistry:
                     "issue_name": context.metadata.get("issue_name", ""),
                     "project_name": context.metadata.get("project_name", ""),
                     "error": error_msg,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": iso_now(),
                 }
             )
             await self._log_activity(context.project_id, context.issue_id, "hook_failed", {
@@ -122,7 +122,7 @@ class HookRegistry:
                     "issue_name": context.metadata.get("issue_name", ""),
                     "project_name": context.metadata.get("project_name", ""),
                     "error": str(exc),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": iso_now(),
                 }
             )
             await self._log_activity(context.project_id, context.issue_id, "hook_failed", {
@@ -140,7 +140,7 @@ class HookRegistry:
                     "issue_name": context.metadata.get("issue_name", ""),
                     "project_name": context.metadata.get("project_name", ""),
                     "output": result.output,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": iso_now(),
                 }
             )
             await self._log_activity(context.project_id, context.issue_id, "hook_completed", {
@@ -157,7 +157,7 @@ class HookRegistry:
                     "issue_name": context.metadata.get("issue_name", ""),
                     "project_name": context.metadata.get("project_name", ""),
                     "error": result.error,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": iso_now(),
                 }
             )
             await self._log_activity(context.project_id, context.issue_id, "hook_failed", {

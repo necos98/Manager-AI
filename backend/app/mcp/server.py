@@ -6,8 +6,8 @@ import functools
 
 from mcp.server.fastmcp import FastMCP
 
-from datetime import datetime, timezone
 
+from app.utils.datetime import iso_now
 from sqlalchemy import select
 
 from app.database import async_session
@@ -139,7 +139,7 @@ async def update_project_context(session, project_id: str, description: str | No
     await event_service.emit({
         "type": "project_updated",
         "project_id": project_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": iso_now(),
     })
     return {
         "id": project.id,
@@ -162,7 +162,7 @@ async def set_issue_name(session, project_id: str, issue_id: str, name: str) -> 
         "project_id": project_id,
         "issue_id": issue_id,
         "issue_name": issue.name or "",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": iso_now(),
     })
     return {"id": issue.id, "name": issue.name}
 
@@ -190,7 +190,7 @@ async def complete_issue(session, project_id: str, issue_id: str, recap: str) ->
         "project_id": project_id,
         "issue_id": issue_id_val,
         "issue_name": issue_name,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": iso_now(),
     })
 
     return {"id": issue_id_val, "status": issue_status, "recap": issue.recap}
@@ -235,7 +235,7 @@ async def create_issue_spec(session, project_id: str, issue_id: str, spec: str) 
         "project_id": project_id,
         "issue_id": issue_id,
         "issue_name": _issue_display_name(issue),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": iso_now(),
     })
     return {"id": issue.id, "status": issue.status, "specification": issue.specification}
 
@@ -252,7 +252,7 @@ async def edit_issue_spec(session, project_id: str, issue_id: str, spec: str) ->
         "project_id": project_id,
         "issue_id": issue_id,
         "issue_name": _issue_display_name(issue),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": iso_now(),
     })
     return {"id": issue.id, "status": issue.status, "specification": issue.specification}
 
@@ -269,7 +269,7 @@ async def create_issue_plan(session, project_id: str, issue_id: str, plan: str) 
         "project_id": project_id,
         "issue_id": issue_id,
         "issue_name": _issue_display_name(issue),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": iso_now(),
     })
     return {"id": issue.id, "status": issue.status, "plan": issue.plan}
 
@@ -286,7 +286,7 @@ async def edit_issue_plan(session, project_id: str, issue_id: str, plan: str) ->
         "project_id": project_id,
         "issue_id": issue_id,
         "issue_name": _issue_display_name(issue),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": iso_now(),
     })
     return {"id": issue.id, "status": issue.status, "plan": issue.plan}
 @mcp.tool(description=_desc["tool.accept_issue.description"])
@@ -303,7 +303,7 @@ async def accept_issue(session, project_id: str, issue_id: str) -> dict:
         "project_id": project_id,
         "issue_id": issue_id,
         "issue_name": issue_name_val,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": iso_now(),
     })
 
     return {"id": issue_id, "status": issue_status}
@@ -323,7 +323,7 @@ async def cancel_issue(session, project_id: str, issue_id: str) -> dict:
         "project_id": project_id,
         "issue_id": issue_id,
         "issue_name": issue_name_val,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": iso_now(),
     })
     return {"id": issue_id, "status": issue_status}
 
@@ -342,7 +342,7 @@ async def force_finish_issue(session, project_id: str, issue_id: str, recap: str
         "project_id": project_id,
         "issue_id": issue_id,
         "issue_name": issue_name_val,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": iso_now(),
     })
     return {"id": issue_id, "status": issue_status}
 
@@ -366,7 +366,7 @@ async def send_notification(project_id: str, issue_id: str, title: str, message:
             "issue_id": issue_id,
             "issue_name": issue_name,
             "project_name": project_name,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": iso_now(),
         })
         return {"success": True}
 
@@ -387,7 +387,7 @@ async def create_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
                     "type": "task_updated",
                     "project_id": issue.project_id,
                     "issue_id": issue_id,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": iso_now(),
                 })
             return {"tasks": [{"id": t.id, "name": t.name, "status": t.status, "order": t.order} for t in created]}
         except AppError as e:
@@ -407,7 +407,7 @@ async def replace_plan_tasks(issue_id: str, tasks: list[dict]) -> dict:
                     "type": "task_updated",
                     "project_id": issue.project_id,
                     "issue_id": issue_id,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": iso_now(),
                 })
             return {"tasks": [{"id": t.id, "name": t.name, "status": t.status, "order": t.order} for t in created]}
         except AppError as e:
@@ -446,7 +446,7 @@ async def update_task_status(task_id: str, status: str) -> dict:
                     "project_id": issue.project_id,
                     "issue_id": task_issue_id,
                     "task_id": task_id_val,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": iso_now(),
                 })
             if all_done and issue:
                 from app.hooks.registry import HookContext, HookEvent, hook_registry
@@ -495,7 +495,7 @@ async def update_task_name(task_id: str, name: str) -> dict:
                     "project_id": issue.project_id,
                     "issue_id": task_issue_id,
                     "task_id": task_id_val,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": iso_now(),
                 })
             return {"id": task_id_val, "name": task_name}
         except AppError as e:
@@ -525,7 +525,7 @@ async def delete_task(task_id: str) -> dict:
                     "type": "task_updated",
                     "project_id": project_id,
                     "issue_id": task_issue_id,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": iso_now(),
                 })
             return {"deleted": True}
         except AppError as e:
@@ -922,7 +922,7 @@ async def ask_user_question(issue_id: str, question: str, options: list[str] | N
             "issue_id": issue_id,
             "question": q.question,
             "options": q.options,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": iso_now(),
         })
 
         issue_name = _issue_display_name(issue) or "Untitled issue"
@@ -936,7 +936,7 @@ async def ask_user_question(issue_id: str, question: str, options: list[str] | N
             "issue_id": issue_id,
             "issue_name": issue_name,
             "project_name": project_name,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": iso_now(),
         })
 
     event = question_store.wait(q.id)
@@ -954,7 +954,7 @@ async def ask_user_question(issue_id: str, question: str, options: list[str] | N
             "project_id": project_id,
             "issue_id": issue_id,
             "status": "timed_out",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": iso_now(),
         })
         return {"timed_out": True, "question_id": q.id}
 

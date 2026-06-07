@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 import os
 import uuid
-from datetime import datetime, timezone
 
+from app.utils.datetime import naive_utc_now
 from sqlalchemy import delete as sa_delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -80,7 +80,7 @@ class ProjectService:
     async def archive(self, project_id: str) -> Project:
         project = await self.get_by_id(project_id)
         if project.archived_at is None:
-            project.archived_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            project.archived_at = naive_utc_now()
             await self.session.flush()
         return project
 

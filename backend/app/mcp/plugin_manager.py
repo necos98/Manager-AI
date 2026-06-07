@@ -4,8 +4,8 @@ import asyncio
 import logging
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 
+from app.utils.datetime import iso_now, utc_timestamp
 from mcp.server.fastmcp import FastMCP
 
 from app.mcp.plugin_client import PluginClient, _extract_error_message
@@ -163,7 +163,7 @@ class PluginManager:
             return False
 
         state = ps
-        now = datetime.now(timezone.utc).timestamp()
+        now = utc_timestamp()
 
         if state.cooldown_until > now:
             logger.warning("Plugin %s in cooldown until %s", plugin_key, state.cooldown_until)
@@ -294,7 +294,7 @@ class PluginManager:
                 "project_id": project_id,
                 "plugin_key": plugin_key,
                 "detail": detail,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": iso_now(),
             })
         except Exception:
             pass

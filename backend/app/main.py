@@ -38,8 +38,7 @@ from app.models.project import Project
 from app.services.agent_service import AgentService
 from app.services.pipeline_service import PipelineService
 from app.models.pipeline_run import PipelineRun, PipelineRunStatus
-from datetime import datetime, timezone
-
+from app.utils.datetime import now
 logger = logging.getLogger(__name__)
 
 
@@ -248,7 +247,7 @@ async def _startup_cleanup_orphaned_runs(db_session) -> None:
             count = 0
             for run in orphaned.scalars().all():
                 run.status = PipelineRunStatus.FAILED
-                run.finished_at = datetime.now(timezone.utc)
+                run.finished_at = now()
                 count += 1
             if count:
                 await cleanup_session.commit()

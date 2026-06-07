@@ -1,0 +1,51 @@
+{
+  "repository_type": "monorepo",
+  "parts": [
+    {
+      "part_id": "backend",
+      "project_type_id": "backend",
+      "display_name": "Backend API",
+      "root_path": "backend/",
+      "tech_stack": "Python 3.12+, FastAPI 0.115, SQLAlchemy 2.0, SQLite, Pydantic v2, FastMCP 1.9",
+      "entry_point": "backend/app/main.py:create_app()"
+    },
+    {
+      "part_id": "frontend",
+      "project_type_id": "web",
+      "display_name": "Frontend Web",
+      "root_path": "frontend/",
+      "tech_stack": "React 19, TypeScript 6, Vite 5, TanStack Router 1.168, TanStack Query 5.95, Tailwind 4",
+      "entry_point": "frontend/src/main.jsx -> App.jsx"
+    }
+  ],
+  "integration_points": [
+    {
+      "from": "frontend",
+      "to": "backend",
+      "type": "REST API",
+      "protocol": "HTTP/1.1 via Vite proxy",
+      "details": "All /api/* requests proxied to backend :8000"
+    },
+    {
+      "from": "frontend",
+      "to": "backend",
+      "type": "WebSocket",
+      "protocol": "WS",
+      "details": "Real-time events at /api/events/ws"
+    },
+    {
+      "from": "frontend",
+      "to": "backend",
+      "type": "Terminal WebSocket",
+      "protocol": "WS",
+      "details": "PTY I/O at /api/terminals/{id}/ws"
+    },
+    {
+      "from": "Claude Code",
+      "to": "backend",
+      "type": "MCP",
+      "protocol": "StreamableHTTP (SSE)",
+      "details": "MCP tools at /mcp"
+    }
+  ]
+}

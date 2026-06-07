@@ -1,8 +1,8 @@
 import asyncio
 import logging
 import shlex
-from datetime import datetime, timezone
 
+from app.utils.datetime import now
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -73,7 +73,7 @@ class PipelineRunService:
             issue_id=issue_id,
             status=PipelineRunStatus.RUNNING,
             current_step_index=0,
-            started_at=datetime.now(timezone.utc),
+            started_at=now(),
         )
         self.session.add(run)
         await self.session.flush()
@@ -179,7 +179,7 @@ class PipelineRunService:
 
         # Mark current step as REJECTED
         current_sr.status = PipelineStepRunStatus.REJECTED
-        current_sr.finished_at = datetime.now(timezone.utc)
+        current_sr.finished_at = now()
 
         # Find pipeline step at target index and create new step run
         pipeline = await self.session.execute(
@@ -207,7 +207,7 @@ class PipelineRunService:
             status=PipelineStepRunStatus.RUNNING,
         )
         self.session.add(new_step_run)
-        new_step_run.started_at = datetime.now(timezone.utc)
+        new_step_run.started_at = now()
         await self.session.flush()
 
         # Update run state
@@ -217,7 +217,7 @@ class PipelineRunService:
         max_reached = False
         if run.rejection_count >= 3:
             run.status = PipelineRunStatus.FAILED
-            run.finished_at = datetime.now(timezone.utc)
+            run.finished_at = now()
             max_reached = True
 
         # Save rejection reason as pipeline message
@@ -299,7 +299,7 @@ class PipelineRunService:
                     await session.refresh(step_run)
 
                     if step_run.status == PipelineStepRunStatus.REJECTED:
-                        step_run.finished_at = datetime.now(timezone.utc)
+                        step_run.finished_at = now()
                         await self._safe_commit_session(session)
                         continue
 
@@ -310,7 +310,7 @@ class PipelineRunService:
                     if not should_continue:
                         break
 
-                    step_run.finished_at = datetime.now(timezone.utc)
+                    step_run.finished_at = now()
                     await self._safe_commit_session(session)
                 except asyncio.CancelledError:
                     raise
@@ -318,7 +318,7 @@ class PipelineRunService:
                     logger.exception("Step %s failed with exception", agent_name)
                     step_run.status = PipelineStepRunStatus.FAILED
                     run.status = PipelineRunStatus.FAILED
-                    step_run.finished_at = datetime.now(timezone.utc)
+                    step_run.finished_at = now()
                     await self._safe_commit_session(session)
                     await event_service.emit({
                         "type": "agent_step_failed",
@@ -338,7 +338,7 @@ class PipelineRunService:
             logger.exception("Pipeline %s failed with unexpected error", run_id)
             try:
                 run.status = PipelineRunStatus.FAILED
-                run.finished_at = datetime.now(timezone.utc)
+                run.finished_at = now()
                 await self._safe_commit_session(session)
             except Exception:
                 pass
@@ -406,7 +406,7 @@ class PipelineRunService:
             return None, None, None, step
 
         step_run.status = PipelineStepRunStatus.RUNNING
-        step_run.started_at = datetime.now(timezone.utc)
+        step_run.started_at = now()
         run.current_step_index = i
         await self._safe_flush_session(session)
 
@@ -482,7 +482,7 @@ class PipelineRunService:
         else:
             step_run.status = PipelineStepRunStatus.FAILED
             run.status = PipelineRunStatus.FAILED
-            step_run.finished_at = datetime.now(timezone.utc)
+            step_run.finished_at = now()
             await self._safe_commit_session(session)
             await event_service.emit({
                 "type": "agent_step_failed",
@@ -510,7 +510,7 @@ class PipelineRunService:
         await session.refresh(run)
         if run.status != PipelineRunStatus.FAILED:
             run.status = PipelineRunStatus.COMPLETED
-        run.finished_at = datetime.now(timezone.utc)
+        run.finished_at = now()
         await self._safe_commit_session(session)
 
         await event_service.emit({
@@ -777,7 +777,7 @@ class PipelineRunService:
             raise ValidationError("Can only cancel running pipelines")
         await pipeline_task_manager.cancel_task(run_id)
         run.status = PipelineRunStatus.FAILED
-        run.finished_at = datetime.now(timezone.utc)
+        run.finished_at = now()
         await self._safe_flush_session(self.session)
         return True
 

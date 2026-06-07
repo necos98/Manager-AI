@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import traceback
 import json
-from datetime import datetime, timezone
+from app.utils.datetime import date_str, iso_now
 from pathlib import Path
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def _log_file_path() -> Path:
     """Return the path for today's log file, e.g. logs/2026-05-27.log."""
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = date_str("%Y-%m-%d")
     return LOGS_DIR / f"{today}.log"
 
 
@@ -48,7 +48,7 @@ class ErrorLoggerMiddleware(BaseHTTPMiddleware):
             return Response(status_code=499)
         except Exception:
             entry = {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": iso_now(),
                 "method": request.method,
                 "path": request.url.path,
                 "query_string": str(request.query_params),

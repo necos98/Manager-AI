@@ -7,8 +7,8 @@ import re
 import shutil
 import threading
 import uuid
-from datetime import datetime, timezone
 
+from app.utils.datetime import now
 from app.config import settings
 from app.services.wsl_support import is_wsl_shell
 
@@ -156,7 +156,7 @@ class TerminalService:
             "project_path": project_path,
             "pty": pty,
             "status": "active",
-            "created_at": datetime.now(timezone.utc),
+            "created_at": now(),
             "cols": cols,
             "rows": rows,
         }
@@ -184,7 +184,7 @@ class TerminalService:
             "status": "active",
             "mode": "log",
             "label": label,
-            "created_at": datetime.now(timezone.utc),
+            "created_at": now(),
             "cols": cols,
             "rows": rows,
         }

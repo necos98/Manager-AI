@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from app.utils.datetime import date_str
 from typing import Literal
 
 from pydantic import BaseModel
@@ -41,7 +41,7 @@ def build_export_wrapper(
     return {
         "version": 1,
         "type": type_,
-        "exported_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "exported_at": date_str("%Y-%m-%dT%H:%M:%SZ"),
         "items": items,
     }
 

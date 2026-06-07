@@ -1,7 +1,7 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
 
+from app.utils.datetime import iso_now
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -83,7 +83,7 @@ async def _prepare_tts_event(event: dict, db: AsyncSession) -> dict | None:
         "terminal_id": event.get("terminal_id"),
         "issue_id": event.get("issue_id"),
         "project_id": event.get("project_id"),
-        "timestamp": event.get("timestamp") or datetime.now(timezone.utc).isoformat(),
+        "timestamp": event.get("timestamp") or iso_now(),
     }
 
 
@@ -106,7 +106,7 @@ async def post_event(event: dict, db: AsyncSession = Depends(get_db)):
             pass
 
     if "timestamp" not in event:
-        event["timestamp"] = datetime.now(timezone.utc).isoformat()
+        event["timestamp"] = iso_now()
 
     await event_service.emit(event)
     return {"ok": True}

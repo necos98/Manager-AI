@@ -1,7 +1,7 @@
 import asyncio
 import uuid
-from datetime import datetime, timezone
 
+from app.utils.datetime import now
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,7 +33,7 @@ class QuestionStore:
         q.status = "answered"
         q.answer = answer
         q.selected_option = selected_option
-        q.answered_at = datetime.now(timezone.utc)
+        q.answered_at = now()
         event = self._events.get(question_id)
         if event:
             event.set()
@@ -44,7 +44,7 @@ class QuestionStore:
         if q is None:
             return None
         q.status = "timed_out"
-        q.answered_at = datetime.now(timezone.utc)
+        q.answered_at = now()
         event = self._events.get(question_id)
         if event:
             event.set()
@@ -92,7 +92,7 @@ class QuestionService:
         q.status = "answered"
         q.answer = answer
         q.selected_option = selected_option
-        q.answered_at = datetime.now(timezone.utc)
+        q.answered_at = now()
         await self.session.commit()
         question_store.answer(question_id, answer, selected_option)
         return q
@@ -102,7 +102,7 @@ class QuestionService:
         if q is None:
             return None
         q.status = "timed_out"
-        q.answered_at = datetime.now(timezone.utc)
+        q.answered_at = now()
         await self.session.commit()
         question_store.timeout(question_id)
         return q

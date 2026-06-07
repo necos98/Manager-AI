@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import logging
 import shutil
-from datetime import datetime
 from pathlib import Path
+
+from app.utils.datetime import now
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ def backup_database(db_path: str, backup_dir: str, keep: int = 5) -> Path | None
     backup_path = Path(backup_dir)
     backup_path.mkdir(parents=True, exist_ok=True)
 
-    timestamp = datetime.now().strftime("%Y-%m-%dT%H%M%S")
+    timestamp = now().strftime("%Y-%m-%dT%H%M%S")
     dest = backup_path / f"manager_ai_{timestamp}.db"
     shutil.copy2(db_file, dest)
     logger.info("Database backed up to %s", dest)

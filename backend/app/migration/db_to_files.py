@@ -10,7 +10,8 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
+from app.utils.datetime import iso_now
 from typing import Callable
 
 from sqlalchemy import select
@@ -239,7 +240,7 @@ def _seal_sentinel(project_path: str, summary: MigrationSummary) -> None:
         paths.migration_sentinel(project_path),
         {
             "schema_version": SCHEMA_VERSION,
-            "migrated_at": datetime.now(timezone.utc).isoformat(),
+            "migrated_at": iso_now(),
             "counts": {
                 "issues": summary.issues,
                 "memories": summary.memories,

@@ -39,8 +39,8 @@ async def client(mock_service, db_session):
 
 
 async def test_create_ask_terminal(client, mock_service):
-    with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path, \
-         patch("app.routers.terminals.os.path.isdir", return_value=True):
+    with patch("app.services.terminal_operations.get_project_path", new_callable=AsyncMock) as mock_path, \
+         patch("app.services.terminal_operations.os.path.isdir", return_value=True):
         mock_path.return_value = "C:/fake"
         resp = await client.post("/api/terminals/ask", json={"project_id": "proj-1"})
         assert resp.status_code == 201
@@ -50,15 +50,15 @@ async def test_create_ask_terminal(client, mock_service):
 
 
 async def test_create_ask_terminal_invalid_project(client, mock_service):
-    with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path:
+    with patch("app.services.terminal_operations.get_project_path", new_callable=AsyncMock) as mock_path:
         mock_path.side_effect = ValueError("Project not found")
         resp = await client.post("/api/terminals/ask", json={"project_id": "nonexistent"})
         assert resp.status_code == 400
 
 
 async def test_create_ask_terminal_invalid_path(client, mock_service):
-    with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path, \
-         patch("app.routers.terminals.os.path.isdir", return_value=False):
+    with patch("app.services.terminal_operations.get_project_path", new_callable=AsyncMock) as mock_path, \
+         patch("app.services.terminal_operations.os.path.isdir", return_value=False):
         mock_path.return_value = "C:/does-not-exist"
         resp = await client.post("/api/terminals/ask", json={"project_id": "proj-1"})
         assert resp.status_code == 400
@@ -80,9 +80,9 @@ async def test_create_ask_terminal_kills_existing(client, mock_service):
     ])
     mock_service.get_buffered_output = MagicMock(return_value="")
     mock_service.kill = MagicMock()
-    with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path, \
-         patch("app.routers.terminals.os.path.isdir", return_value=True), \
-         patch("app.routers.terminals._save_recording"):
+    with patch("app.services.terminal_operations.get_project_path", new_callable=AsyncMock) as mock_path, \
+         patch("app.services.terminal_operations.os.path.isdir", return_value=True), \
+         patch("app.services.terminal_session._save_recording"):
         mock_path.return_value = "C:/fake"
         resp = await client.post("/api/terminals/ask", json={"project_id": "proj-1"})
         assert resp.status_code == 201
@@ -91,8 +91,8 @@ async def test_create_ask_terminal_kills_existing(client, mock_service):
 
 
 async def test_create_ask_terminal_writes_command(client, mock_service):
-    with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path, \
-         patch("app.routers.terminals.os.path.isdir", return_value=True):
+    with patch("app.services.terminal_operations.get_project_path", new_callable=AsyncMock) as mock_path, \
+         patch("app.services.terminal_operations.os.path.isdir", return_value=True):
         mock_path.return_value = "C:/fake"
         resp = await client.post("/api/terminals/ask", json={"project_id": "proj-1"})
         assert resp.status_code == 201

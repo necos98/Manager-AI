@@ -5,9 +5,9 @@ from sqlalchemy.orm import selectinload
 from app.exceptions import NotFoundError
 from app.models.pipeline import Pipeline, PipelineStep
 from app.models.pipeline_event_rule import PipelineEventRule
-from app.models.agent import Agent
 from app.services.agent_service import AgentService
-from app.schemas.export_import import ImportConfirmResponse, format_pipeline_export
+from app.schemas.pipeline import PipelineResponse, PipelineStepResponse
+from app.schemas.pipeline_event_rule import PipelineEventRuleResponse
 
 
 class PipelineService:
@@ -141,215 +141,6 @@ class PipelineService:
 
         return steps
 
-    # ── Export / Import ────────────────────────────────────────────────
-
-    async def export_batch(self, pipeline_ids: list[str]) -> list[dict]:
-        result = await self.session.execute(
-            select(Pipeline)
-            .where(Pipeline.id.in_(pipeline_ids))
-            .options(
-                selectinload(Pipeline.steps).selectinload(PipelineStep.agent),
-                selectinload(Pipeline.event_rules),
-            )
-            .order_by(Pipeline.name)
-        )
-        pipelines = result.unique().scalars().all()
-        return [format_pipeline_export(p) for p in pipelines]
-
-    async def export_all(self) -> list[Pipeline]:
-        result = await self.session.execute(
-            select(Pipeline)
-            .options(
-                selectinload(Pipeline.steps).selectinload(PipelineStep.agent),
-                selectinload(Pipeline.event_rules),
-            )
-            .order_by(Pipeline.name)
-        )
-        return list(result.unique().scalars().all())
-
-    async def export_by_id(self, pipeline_id: str) -> Pipeline:
-        result = await self.session.execute(
-            select(Pipeline)
-            .where(Pipeline.id == pipeline_id)
-            .options(
-                selectinload(Pipeline.steps).selectinload(PipelineStep.agent),
-                selectinload(Pipeline.event_rules),
-            )
-        )
-        pipeline = result.scalar_one_or_none()
-        if pipeline is None:
-            raise NotFoundError(f"Pipeline not found: {pipeline_id}")
-        return pipeline
-
-    async def replace_steps(
-        self,
-        pipeline_id: str,
-        steps_data: list[dict],
-    ) -> list[PipelineStep]:
-        """Delete all existing steps and create new ones with exact order_index."""
-        # Delete existing steps
-        result = await self.session.execute(
-            select(PipelineStep).where(PipelineStep.pipeline_id == pipeline_id)
-        )
-        for step in result.scalars().all():
-            await self.session.delete(step)
-        await self.session.flush()
-
-        # Create new steps
-        new_steps = []
-        for sd in steps_data:
-            step = PipelineStep(
-                pipeline_id=pipeline_id,
-                agent_id=sd["agent_id"],
-                order_index=sd.get("order_index", 0),
-            )
-            self.session.add(step)
-            new_steps.append(step)
-        await self.session.flush()
-        return new_steps
-
-    async def import_pipelines(
-        self,
-        pipelines_data: list[dict],
-        file_agents: list[dict],  # agents from the same file's step.agent fields
-        conflict_map: dict[str, str],
-        agent_service: AgentService,
-    ) -> ImportConfirmResponse:
-        imported = 0
-        skipped = 0
-        errors = []
-
-        # First pass: ensure all referenced agents exist
-        all_agent_ids_in_file = {a.get("id") for a in file_agents if a.get("id")}
-        existing_agent_ids = await agent_service.check_agent_ids_exist(
-            list(all_agent_ids_in_file)
-        )
-
-        for item in pipelines_data:
-            pipeline_id = item.get("id")
-            if not pipeline_id:
-                errors.append(f"Pipeline item missing id: {item.get('name', '?')}")
-                continue
-
-            try:
-                existing_pipeline = await self.get_pipeline(pipeline_id)
-                action = conflict_map.get(pipeline_id, "skip")
-                if action != "overwrite":
-                    skipped += 1
-                    continue
-
-                # Overwrite: update name and replace steps
-                existing_pipeline.name = item.get("name", existing_pipeline.name)
-                steps_data = item.get("steps", [])
-                # Ensure referenced agents exist
-                for sd in steps_data:
-                    agent_id = sd.get("agent_id")
-                    agent_data = sd.get("agent")
-                    if agent_id and agent_id not in existing_agent_ids and agent_data:
-                        # Create the agent
-                        agent = Agent(
-                            id=agent_id,
-                            name=agent_data.get("name", "Unknown"),
-                            model=agent_data.get("model"),
-                            allowed_tools=agent_data.get("allowed_tools"),
-                            intent=agent_data.get("intent", ""),
-                        )
-                        self.session.add(agent)
-                        existing_agent_ids.add(agent_id)
-                await self.session.flush()
-                new_steps = await self.replace_steps(pipeline_id, steps_data)
-                await self._import_event_rules(
-                    pipeline_id, item.get("event_rules", []), steps_data, new_steps
-                )
-                imported += 1
-
-            except NotFoundError:
-                # New pipeline
-                pipeline = Pipeline(
-                    id=pipeline_id,
-                    name=item.get("name", "Unknown"),
-                )
-                self.session.add(pipeline)
-                await self.session.flush()
-
-                steps_data = item.get("steps", [])
-                for sd in steps_data:
-                    agent_id = sd.get("agent_id")
-                    agent_data = sd.get("agent")
-                    if agent_id and agent_id not in existing_agent_ids and agent_data:
-                        agent = Agent(
-                            id=agent_id,
-                            name=agent_data.get("name", "Unknown"),
-                            model=agent_data.get("model"),
-                            allowed_tools=agent_data.get("allowed_tools"),
-                            intent=agent_data.get("intent", ""),
-                        )
-                        self.session.add(agent)
-                        existing_agent_ids.add(agent_id)
-                await self.session.flush()
-                new_steps = await self.replace_steps(pipeline.id, steps_data)
-                await self._import_event_rules(
-                    pipeline.id, item.get("event_rules", []), steps_data, new_steps
-                )
-                imported += 1
-
-            except Exception as e:
-                errors.append(f"Error importing pipeline {pipeline_id}: {e}")
-
-        return ImportConfirmResponse(
-            imported=imported,
-            skipped=skipped,
-            errors=errors,
-        )
-
-    async def _import_event_rules(
-        self,
-        pipeline_id: str,
-        event_rules_data: list[dict],
-        steps_data: list[dict],
-        new_steps: list[PipelineStep],
-    ) -> None:
-        """Import event rules, mapping old step IDs to newly created ones.
-
-        new_steps must be the exact list returned by replace_steps (same order
-        as steps_data) so that old→new step ID mapping is correct.
-        """
-        if not event_rules_data:
-            return
-
-        # Delete existing rules for this pipeline
-        existing = await self.session.execute(
-            select(PipelineEventRule).where(
-                PipelineEventRule.pipeline_id == pipeline_id
-            )
-        )
-        for r in existing.scalars().all():
-            await self.session.delete(r)
-        await self.session.flush()
-
-        # Build map from import step IDs to new step IDs
-        # new_steps is in steps_data order (insertion order from replace_steps),
-        # so new_steps[i] always corresponds to steps_data[i].
-        old_to_new = {}
-        for i, sd in enumerate(steps_data):
-            old_id = sd.get("id")
-            if old_id and i < len(new_steps):
-                old_to_new[old_id] = new_steps[i].id
-
-        for rule_data in event_rules_data:
-            new_source = old_to_new.get(rule_data.get("source_step_id", ""))
-            new_target = old_to_new.get(rule_data.get("target_step_id", ""))
-            if new_source and new_target:
-                rule = PipelineEventRule(
-                    pipeline_id=pipeline_id,
-                    event_type=rule_data["event_type"],
-                    source_step_id=new_source,
-                    target_step_id=new_target,
-                    enabled=rule_data.get("enabled", True),
-                )
-                self.session.add(rule)
-        await self.session.flush()
-
     # ── Event Rule CRUD ─────────────────────────────────────────────
 
     async def add_event_rule(
@@ -407,3 +198,38 @@ class PipelineService:
             )
         )
         return result.scalar_one_or_none()
+
+
+# ── Serializers ──────────────────────────────────────────────
+
+
+def _step_response(step) -> PipelineStepResponse:
+    return PipelineStepResponse(
+        id=step.id,
+        pipeline_id=step.pipeline_id,
+        agent_id=step.agent_id,
+        order_index=step.order_index,
+    )
+
+
+def _response(pipeline) -> PipelineResponse:
+    return PipelineResponse(
+        id=pipeline.id,
+        name=pipeline.name,
+        steps=[_step_response(s) for s in (pipeline.steps or [])],
+        created_at=str(pipeline.created_at) if pipeline.created_at else None,
+        updated_at=str(pipeline.updated_at) if pipeline.updated_at else None,
+    )
+
+
+def _rule_response(rule) -> PipelineEventRuleResponse:
+    return PipelineEventRuleResponse(
+        id=rule.id,
+        pipeline_id=rule.pipeline_id,
+        event_type=rule.event_type,
+        source_step_id=rule.source_step_id,
+        target_step_id=rule.target_step_id,
+        enabled=rule.enabled,
+        created_at=str(rule.created_at) if rule.created_at else None,
+        updated_at=str(rule.updated_at) if rule.updated_at else None,
+    )

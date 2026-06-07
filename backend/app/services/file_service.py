@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timezone
+from app.utils.datetime import format_ts
 from typing import Any
 
 from fastapi import UploadFile
@@ -62,7 +62,7 @@ def _get_extension(filename: str) -> str:
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep="T", timespec="microseconds")
+    return format_ts(sep="T", timespec="microseconds")
 
 
 async def _transcribe_async(project_path: str, record: FileRecord) -> None:

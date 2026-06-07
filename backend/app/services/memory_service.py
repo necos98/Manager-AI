@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime
+from app.utils.datetime import format_ts
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,7 +23,7 @@ from app.storage.memory_store import MemoryLinkRecord, MemoryRecord
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep="T", timespec="microseconds")
+    return format_ts(sep="T", timespec="microseconds")
 
 
 class MemoryService:

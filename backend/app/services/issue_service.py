@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from datetime import datetime, timezone
+from app.utils.datetime import format_ts
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,7 +40,7 @@ _issue_completion_locks: dict[str, asyncio.Lock] = {}
 
 def _now_iso() -> str:
     # Microsecond resolution so sequential writes remain strictly ordered.
-    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep="T", timespec="microseconds")
+    return format_ts(sep="T", timespec="microseconds")
 
 
 def _normalize_tags(raw: list[str] | None) -> list[str]:

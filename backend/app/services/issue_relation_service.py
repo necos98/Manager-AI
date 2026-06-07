@@ -9,7 +9,7 @@ paths instead of issuing SQL.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from app.utils.datetime import format_ts
 from typing import Iterable
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,7 +22,7 @@ from app.storage.issue_store import RelationRecord
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep="T", timespec="microseconds")
+    return format_ts(sep="T", timespec="microseconds")
 
 
 @dataclass

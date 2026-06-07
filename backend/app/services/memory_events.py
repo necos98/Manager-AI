@@ -1,10 +1,10 @@
-from datetime import datetime, timezone
 
+from app.utils.datetime import iso_now
 from app.services.event_service import event_service
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return iso_now()
 
 
 async def emit_created(*, project_id: str, memory_id: str) -> None:

@@ -8,8 +8,8 @@ the issue whose tasks are being mutated).
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
 
+from app.utils.datetime import format_ts
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import InvalidTransitionError, NotFoundError
@@ -20,7 +20,7 @@ from app.storage.issue_store import TaskRecord
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep="T", timespec="seconds")
+    return format_ts(sep="T", timespec="seconds")
 
 
 class TaskService:

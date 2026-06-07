@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import shutil
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from app.utils.datetime import now
 from typing import Any
 
 from app.storage import atomic, paths
@@ -64,7 +64,7 @@ _write_queue: Any = None
 
 def _now_iso() -> str:
     return (
-        datetime.now(timezone.utc)
+        now()
         .replace(tzinfo=None)
         .isoformat(sep="T", timespec="microseconds")
     )

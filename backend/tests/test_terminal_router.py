@@ -58,8 +58,8 @@ async def test_list_terminals_empty(client, mock_service):
 
 @pytest.mark.asyncio
 async def test_create_terminal(client, mock_service):
-    with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path, \
-         patch("app.routers.terminals.os.path.isdir", return_value=True):
+    with patch("app.services.terminal_operations.get_project_path", new_callable=AsyncMock) as mock_path, \
+         patch("app.services.terminal_operations.os.path.isdir", return_value=True):
         mock_path.return_value = "C:/fake"
         resp = await client.post("/api/terminals", json={
             "issue_id": "task-1",
@@ -73,7 +73,7 @@ async def test_create_terminal(client, mock_service):
 
 @pytest.mark.asyncio
 async def test_create_terminal_invalid_project(client, mock_service):
-    with patch("app.routers.terminals.get_project_path", new_callable=AsyncMock) as mock_path:
+    with patch("app.services.terminal_operations.get_project_path", new_callable=AsyncMock) as mock_path:
         mock_path.side_effect = ValueError("Project not found")
         resp = await client.post("/api/terminals", json={
             "issue_id": "task-1",
