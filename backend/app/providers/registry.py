@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from app.providers.base import AgentProvider
 from app.providers.claude_provider import ClaudeProvider
+from app.providers.hermes_provider import HermesProvider
 
 
 class AgentProviderRegistry:
@@ -39,6 +40,7 @@ class AgentProviderRegistry:
 def register_builtin_providers() -> None:
     """Registra i provider built-in (chiamato all'avvio dell'app)."""
     AgentProviderRegistry.register("claude", ClaudeProvider)
+    AgentProviderRegistry.register("hermes", HermesProvider)
 
 
 # Auto-register built-in providers on import

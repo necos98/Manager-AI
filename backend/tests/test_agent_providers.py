@@ -4,6 +4,7 @@ import pytest
 
 from app.providers.base import AgentProvider
 from app.providers.claude_provider import ClaudeProvider
+from app.providers.hermes_provider import HermesProvider
 from app.providers.registry import AgentProviderRegistry
 
 
@@ -127,6 +128,65 @@ class TestClaudeProvider:
 
 
 # ==============================================================================
+# HermesProvider
+# ==============================================================================
+
+
+@pytest.fixture
+def hermes() -> HermesProvider:
+    return HermesProvider()
+
+
+class TestHermesProvider:
+    def test_name(self, hermes: HermesProvider):
+        assert hermes.name == "hermes"
+
+    def test_build_run_issue_command(self, hermes: HermesProvider):
+        cmd = hermes.build_run_issue_command("iss-1")
+        assert cmd.startswith("hermes")
+        assert "run-issue" in cmd
+        assert "--yolo" in cmd
+        assert "iss-1" in cmd
+
+    def test_build_run_pipeline_command(self, hermes: HermesProvider):
+        cmd = hermes.build_run_pipeline_command("iss-1")
+        assert cmd.startswith("hermes")
+        assert "run-pipeline" in cmd
+        assert "--yolo" in cmd
+        assert "iss-1" in cmd
+
+    def test_build_ask_brainstorm_command(self, hermes: HermesProvider):
+        cmd = hermes.build_ask_brainstorm_command("proj-1")
+        assert cmd.startswith("hermes")
+        assert "ask-and-brainstorm" in cmd
+        assert "--yolo" in cmd
+        assert "proj-1" in cmd
+
+    def test_build_manage_agent_no_intent(self, hermes: HermesProvider):
+        cmd = hermes.build_manage_agent_command()
+        assert cmd.startswith("hermes")
+        assert "manage-agent" in cmd
+        assert "--yolo" in cmd
+
+    def test_build_manage_agent_with_intent(self, hermes: HermesProvider):
+        cmd = hermes.build_manage_agent_command("Review bugs")
+        assert cmd.startswith("hermes")
+        assert "manage-agent" in cmd
+        assert "Review" in cmd
+
+    def test_build_hook_command(self, hermes: HermesProvider):
+        cmd = hermes.build_hook_command("Hello")
+        assert cmd[0] == "hermes"
+        assert cmd[1] == "-z"
+        assert "Hello" in cmd
+
+    def test_build_hook_command_with_guidance(self, hermes: HermesProvider):
+        cmd = hermes.build_hook_command("Analyze", tool_guidance="tool X")
+        assert cmd[0] == "hermes"
+        assert "-z" in cmd or "-s" in cmd
+
+
+# ==============================================================================
 # AgentProviderRegistry
 # ==============================================================================
 
@@ -143,9 +203,15 @@ class TestAgentProviderRegistry:
         assert "nonexistent" in str(exc.value)
         assert "claude" in str(exc.value)
 
-    def test_available_providers_includes_claude(self):
+    def test_available_providers_includes_claude_and_hermes(self):
         available = AgentProviderRegistry.available()
         assert "claude" in available
+        assert "hermes" in available
+
+    def test_get_hermes_provider(self):
+        provider = AgentProviderRegistry.get("hermes")
+        assert isinstance(provider, HermesProvider)
+        assert provider.name == "hermes"
 
     def test_register_and_get_custom(self):
         class DummyProvider(AgentProvider):
