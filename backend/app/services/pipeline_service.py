@@ -148,7 +148,8 @@ class PipelineService:
             select(Pipeline)
             .where(Pipeline.id.in_(pipeline_ids))
             .options(
-                selectinload(Pipeline.steps).selectinload(PipelineStep.agent)
+                selectinload(Pipeline.steps).selectinload(PipelineStep.agent),
+                selectinload(Pipeline.event_rules),
             )
             .order_by(Pipeline.name)
         )
