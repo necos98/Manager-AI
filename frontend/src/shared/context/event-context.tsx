@@ -22,30 +22,7 @@ export type WsEventData = Record<string, unknown> & {
   relation?: string;
   question_id?: string;
   text?: string;
-  voice?: string;
-  rate?: number;
-  pitch?: number;
 };
-
-function speakTts(data: WsEventData) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  const text = typeof data.text === "string" ? data.text : "";
-  if (!text) return;
-  try {
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    const voiceName = typeof data.voice === "string" ? data.voice : "";
-    if (voiceName) {
-      const v = window.speechSynthesis.getVoices().find((x) => x.name === voiceName);
-      if (v) u.voice = v;
-    }
-    if (typeof data.rate === "number") u.rate = data.rate;
-    if (typeof data.pitch === "number") u.pitch = data.pitch;
-    window.speechSynthesis.speak(u);
-  } catch {
-    // speechSynthesis unavailable
-  }
-}
 
 type EventSubscriber = (event: WsEventData) => void;
 
@@ -165,9 +142,6 @@ function buildToastContent(data: WsEventData): ToastContent {
     case "task_updated":
       return { title: "", message: "", variant: "default", silent: true };
 
-    case "tts":
-      return { title: "", message: "", variant: "default", silent: true };
-
     case "agent_step_started":
     case "agent_step_completed":
     case "agent_terminal_created":
@@ -273,10 +247,6 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
 
         // Notify all subscribers
         subscribersRef.current.forEach((fn) => fn(data));
-
-        if (data.type === "tts") {
-          speakTts(data);
-        }
 
         const projectId = data.project_id;
         const issueId = data.issue_id;

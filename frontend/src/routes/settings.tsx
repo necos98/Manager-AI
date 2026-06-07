@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle } from "lucide-react";
 import { useSettings, useResetAllSettings } from "@/features/settings/hooks";
 import { SettingsForm } from "@/features/settings/components/settings-form";
-import { VoicePanel } from "@/features/settings/components/voice-panel";
 import { TerminalCommandsEditor } from "@/features/terminals/components/terminal-commands-editor";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -17,11 +16,10 @@ import {
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import type { Setting } from "@/shared/types";
 
-const TABS = ["Server", "Tool Descriptions", "Response Messages", "Terminal", "Claude", "Preferences", "Voice"] as const;
+const TABS = ["Server", "Tool Descriptions", "Response Messages", "Terminal", "Claude", "Preferences"] as const;
 type SettingsTab = (typeof TABS)[number];
 
 function getCategory(key: string): string {
-  if (key.startsWith("tts.")) return "Voice";
   if (key.startsWith("server.")) return "Server";
   if (key.endsWith(".description")) return "Tool Descriptions";
   if (key.endsWith(".response_message")) return "Response Messages";
@@ -141,13 +139,11 @@ function SettingsPage() {
         </div>
       ) : activeTab === "Preferences" ? (
         <PreferencesPanel />
-      ) : activeTab === "Voice" ? (
-        <VoicePanel />
       ) : (
         <SettingsForm settings={filteredSettings} />
       )}
 
-      {activeTab !== "Terminal" && activeTab !== "Preferences" && activeTab !== "Voice" && (
+      {activeTab !== "Terminal" && activeTab !== "Preferences" && (
         <div className="mt-8 pt-6 border-t">
           <Button
             variant="ghost"

@@ -7,10 +7,6 @@
           {
             "type": "command",
             "command": "python -I \"$env:CLAUDE_PROJECT_DIR\\.claude\\scripts\\notify-hook.py\" --default-title \"Claude finished\" --default-message \"Response complete\""
-          },
-          {
-            "type": "command",
-            "command": "python -I \"$env:CLAUDE_PROJECT_DIR\\.claude\\scripts\\tts-hook.py\""
           }
         ]
       }
