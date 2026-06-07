@@ -21,6 +21,7 @@
   "tool.get_plan_tasks.description": "Get all atomic plan tasks for an issue, ordered by execution order.",
   "tool.send_notification.description": "Send a notification to the user via the Manager AI web interface. Use this to notify the user when:\n- You need their input or a decision (e.g., plan is ready for review)\n- A significant milestone is reached (e.g., all tasks completed)\n- An error or blocker requires their attention\n\nDo NOT use this for routine status updates — update task statuses instead so the user can track progress in the UI.",
   "terminal_soft_limit": "5",
+  "agent_provider": "claude",
   "tool.update_project_context.description": "Update the project context (description and/or tech_stack). Only updates fields that are provided.",
   "work_queue_paused": "false",
   "tool.get_next_issue.description": "Get the next workable issue for a project, ordered by priority. Returns an ACCEPTED issue (ready for implementation) first, then a NEW issue (needs planning). Returns null if no workable issues exist. Only call this when the user explicitly asks for the next issue — do NOT use it to automatically chain work.",

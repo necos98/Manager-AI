@@ -17,6 +17,7 @@ from app.models.pipeline_run import (
     PipelineStepRun,
     PipelineStepRunStatus,
 )
+from app.providers.registry import AgentProviderRegistry
 from app.services.event_service import event_service
 from app.services.pipeline_task_manager import pipeline_task_manager
 from app.services.terminal_service import terminal_service
@@ -562,7 +563,8 @@ class PipelineRunService:
         _ensure_reader(term_id, terminal_service)
 
         is_windows = _platform.system() == "Windows"
-        command = f'claude --dangerously-skip-permissions "/run-pipeline {issue_id}"'
+        provider = AgentProviderRegistry.get("claude")
+        command = provider.build_run_pipeline_command(issue_id)
 
         if is_windows:
             pty.write(f"{command} & exit\r\n")

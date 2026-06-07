@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings as app_settings
+from app.providers.registry import AgentProviderRegistry
 from app.models.project import Project
 from app.services.terminal_helpers import _inject_terminal_env, _teardown_terminal
 from app.services.terminal_service import TerminalService
@@ -205,15 +206,10 @@ async def create_ask_terminal(
         from app.services.settings_service import SettingsService
 
         settings_svc = SettingsService(db)
-        cmd = await settings_svc.get("ask_brainstorm_command")
-        skip_perms = (
-            await settings_svc.get("claude.skip_permissions") == "true"
-        )
-        if skip_perms and cmd.startswith("claude "):
-            cmd = (
-                "claude --dangerously-skip-permissions "
-                + cmd[len("claude ") :]
-            )
+        provider_name = await settings_svc.get("agent_provider")
+        provider = AgentProviderRegistry.get(provider_name)
+        cmd = provider.build_ask_brainstorm_command(data.project_id)
+
         variables = {
             "$project_id": data.project_id,
             "$project_path": win_to_wsl_path(project_path)
@@ -309,17 +305,11 @@ async def create_manage_agent_terminal(
         from app.services.settings_service import SettingsService
 
         settings_svc = SettingsService(db)
-        cmd = await settings_svc.get("manage_agent_command")
-        skip_perms = (
-            await settings_svc.get("claude.skip_permissions") == "true"
+        provider_name = await settings_svc.get("agent_provider")
+        provider = AgentProviderRegistry.get(provider_name)
+        cmd = provider.build_manage_agent_command(
+            agent_intent if data.agent_id else ""
         )
-        if skip_perms and cmd.startswith("claude "):
-            cmd = (
-                "claude --dangerously-skip-permissions "
-                + cmd[len("claude ") :]
-            )
-        if data.agent_id and agent_intent:
-            cmd += f' "{agent_intent}"'
         logger.info(
             "Manage-agent terminal %s command: %s", terminal["id"], cmd
         )
