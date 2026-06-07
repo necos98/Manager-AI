@@ -493,17 +493,29 @@ async def list_terminals(
 ):
     from app.models.project import Project
     from app.services.issue_service import IssueService
+    from sqlalchemy import select
 
     terminals = service.list_active(project_id=project_id, issue_id=issue_id)
     # Filter out manage-agent terminals (project_id="" AND issue_id="") from global view
     # These are section-internal terminals for AGENTS, Pipelines, etc., not project terminals
     terminals = [t for t in terminals if not (t["project_id"] == "" and t["issue_id"] == "")]
     issue_svc = IssueService(db)
+
+    # Batch-fetch projects to avoid N+1
+    project_ids = {t["project_id"] for t in terminals if t["project_id"]}
+    if project_ids:
+        project_rows = await db.execute(
+            select(Project).where(Project.id.in_(project_ids))
+        )
+        project_map = {p.id: p for p in project_rows.scalars().all()}
+    else:
+        project_map = {}
+
     for term in terminals:
-        project = await db.get(Project, term["project_id"])
-        issue = await issue_svc.get_by_id(term["issue_id"])
-        term["project_name"] = project.name if project else None
-        term["issue_name"] = (issue.name or issue.description[:50]) if issue else None
+        proj = project_map.get(term["project_id"])
+        term["project_name"] = proj.name if proj else None
+        iss = await issue_svc.get_by_id(term["issue_id"])
+        term["issue_name"] = (iss.name or iss.description[:50]) if iss else None
     return terminals
 
 
