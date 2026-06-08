@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from "./routes/__root"
 import { Route as TerminalsRouteImport } from "./routes/terminals"
 import { Route as SettingsRouteImport } from "./routes/settings"
 import { Route as QuestionsRouteImport } from "./routes/questions"
+import { Route as ProvidersRouteImport } from "./routes/providers"
 import { Route as PipelinesRouteImport } from "./routes/pipelines"
 import { Route as LibraryRouteImport } from "./routes/library"
 import { Route as DashboardRouteImport } from "./routes/dashboard"
@@ -49,6 +50,11 @@ const QuestionsRoute = QuestionsRouteImport.update({
   path: "/questions",
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProvidersRoute = ProvidersRouteImport.update({
+  id: "/providers",
+  path: "/providers",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PipelinesRoute = PipelinesRouteImport.update({
   id: "/pipelines",
   path: "/pipelines",
@@ -72,9 +78,6 @@ const AgentsRoute = AgentsRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: "/",
   path: "/",
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ToolsCredentialsEditorRoute = ToolsCredentialsEditorRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
@@ -173,6 +176,7 @@ export interface FileRoutesByFullPath {
   "/dashboard": typeof DashboardRoute
   "/library": typeof LibraryRoute
   "/pipelines": typeof PipelinesRoute
+  "/providers": typeof ProvidersRoute
   "/questions": typeof QuestionsRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
@@ -199,6 +203,7 @@ export interface FileRoutesByTo {
   "/dashboard": typeof DashboardRoute
   "/library": typeof LibraryRoute
   "/pipelines": typeof PipelinesRoute
+  "/providers": typeof ProvidersRoute
   "/questions": typeof QuestionsRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
@@ -225,6 +230,7 @@ export interface FileRoutesById {
   "/dashboard": typeof DashboardRoute
   "/library": typeof LibraryRoute
   "/pipelines": typeof PipelinesRoute
+  "/providers": typeof ProvidersRoute
   "/questions": typeof QuestionsRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
@@ -253,6 +259,7 @@ export interface FileRouteTypes {
     | "/dashboard"
     | "/library"
     | "/pipelines"
+    | "/providers"
     | "/questions"
     | "/settings"
     | "/terminals"
@@ -279,6 +286,7 @@ export interface FileRouteTypes {
     | "/dashboard"
     | "/library"
     | "/pipelines"
+    | "/providers"
     | "/questions"
     | "/settings"
     | "/terminals"
@@ -304,6 +312,7 @@ export interface FileRouteTypes {
     | "/dashboard"
     | "/library"
     | "/pipelines"
+    | "/providers"
     | "/questions"
     | "/settings"
     | "/terminals"
@@ -331,13 +340,13 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LibraryRoute: typeof LibraryRoute
   PipelinesRoute: typeof PipelinesRoute
+  ProvidersRoute: typeof ProvidersRoute
   QuestionsRoute: typeof QuestionsRoute
   SettingsRoute: typeof SettingsRoute
   TerminalsRoute: typeof TerminalsRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
   ProjectsArchivedRoute: typeof ProjectsArchivedRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
-  ToolsCredentialsEditorRoute: typeof ToolsCredentialsEditorRoute
 }
 
 declare module "@tanstack/react-router" {
@@ -361,6 +370,13 @@ declare module "@tanstack/react-router" {
       path: "/questions"
       fullPath: "/questions"
       preLoaderRoute: typeof QuestionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/providers": {
+      id: "/providers"
+      path: "/providers"
+      fullPath: "/providers"
+      preLoaderRoute: typeof ProvidersRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/pipelines": {
@@ -396,9 +412,6 @@ declare module "@tanstack/react-router" {
       path: "/"
       fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-      preLoaderRoute: typeof ToolsCredentialsEditorRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/projects/new": {
@@ -569,13 +582,13 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LibraryRoute: LibraryRoute,
   PipelinesRoute: PipelinesRoute,
+  ProvidersRoute: ProvidersRoute,
   QuestionsRoute: QuestionsRoute,
   SettingsRoute: SettingsRoute,
   TerminalsRoute: TerminalsRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,
   ProjectsArchivedRoute: ProjectsArchivedRoute,
   ProjectsNewRoute: ProjectsNewRoute,
-  ToolsCredentialsEditorRoute: ToolsCredentialsEditorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

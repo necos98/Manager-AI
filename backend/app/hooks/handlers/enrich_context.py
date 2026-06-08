@@ -56,11 +56,11 @@ Non aggiungere dettagli specifici di singole issue."""
             # Legge il provider hooks dalle impostazioni (default: "claude")
             async with async_session() as settings_session:
                 try:
-                    hook_provider = await SettingsService(settings_session).get("hook_provider")
+                    provider_name = await SettingsService(settings_session).get("agent_provider")
                 except KeyError:
-                    hook_provider = "claude"
+                    provider_name = "claude"
 
-            provider = AgentProviderRegistry.get(hook_provider)
+            provider = AgentProviderRegistry.get(provider_name)
             cmd = provider.build_hook_command(prompt, tool_guidance)
             proc = await asyncio.create_subprocess_exec(
                 *cmd,

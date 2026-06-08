@@ -54,6 +54,7 @@ async def execute(
                 continue
 
             try:
+                provider_name = step.agent.provider if step.agent else "claude"
                 success = await _run_step(
                     term_id=term_id,
                     agent_name=agent_name,
@@ -61,6 +62,7 @@ async def execute(
                     issue_id=run.issue_id,
                     run_id=run_id,
                     step_index=i,
+                    provider_name=provider_name,
                 )
 
                 await exec_session.refresh(run)
@@ -292,6 +294,7 @@ async def _run_step(
     issue_id: str,
     run_id: str,
     step_index: int,
+    provider_name: str = "claude",
 ) -> bool:
     """Execute a single step via PTY and wait for completion."""
     import platform as _platform
@@ -303,7 +306,7 @@ async def _run_step(
     _ensure_reader(term_id, terminal_service)
 
     is_windows = _platform.system() == "Windows"
-    provider = AgentProviderRegistry.get("claude")
+    provider = AgentProviderRegistry.get(provider_name)
     command = provider.build_run_pipeline_command(issue_id)
 
     pty.write(f"{command} {'&' if is_windows else ';'} exit\r\n")

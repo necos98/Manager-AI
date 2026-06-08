@@ -84,6 +84,7 @@ class AgentService:
             agent = Agent(
                 name=data["name"],
                 intent=data.get("intent", ""),
+                provider=data.get("provider", "claude"),
             )
             self.session.add(agent)
             agents.append(agent)

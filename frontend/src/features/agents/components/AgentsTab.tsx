@@ -14,6 +14,13 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
+import {
   useAgents,
   useCreateAgent,
   useUpdateAgent,
@@ -40,6 +47,7 @@ interface AgentsTabProps {
 
 interface AgentFormData {
   name: string;
+  provider: string;
   intent: string;
   model: string;
   allowed_tools: string;
@@ -47,6 +55,7 @@ interface AgentFormData {
 
 const EMPTY_FORM: AgentFormData = {
   name: "",
+  provider: "claude",
   intent: "",
   model: "",
   allowed_tools: "",
@@ -55,6 +64,7 @@ const EMPTY_FORM: AgentFormData = {
 function agentToForm(a: Agent): AgentFormData {
   return {
     name: a.name,
+    provider: a.provider ?? "claude",
     intent: a.intent ?? "",
     model: a.model ?? "",
     allowed_tools: a.allowed_tools?.join(", ") ?? "",
@@ -64,6 +74,7 @@ function agentToForm(a: Agent): AgentFormData {
 function formToCreate(data: AgentFormData): AgentCreate {
   return {
     name: data.name.trim(),
+    provider: data.provider,
     intent: data.intent.trim() || undefined,
     model: data.model.trim() || null,
     allowed_tools: data.allowed_tools
@@ -75,6 +86,7 @@ function formToCreate(data: AgentFormData): AgentCreate {
 function formToUpdate(data: AgentFormData): AgentUpdate {
   return {
     name: data.name.trim(),
+    provider: data.provider,
     intent: data.intent.trim() || null,
     model: data.model.trim() || null,
     allowed_tools: data.allowed_tools
@@ -387,6 +399,7 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
                   />
                 </th>
                 <th className="text-left px-4 py-3 text-sm font-medium">Name</th>
+                <th className="text-left px-4 py-3 text-sm font-medium">Provider</th>
                 <th className="text-left px-4 py-3 text-sm font-medium">Model</th>
                 <th className="text-left px-4 py-3 text-sm font-medium">Tools</th>
                 <th className="w-0 px-4 py-3" />
@@ -408,6 +421,15 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
                       <Bot className="size-4 text-muted-foreground" />
                       <span className="font-medium text-sm">{agent.name}</span>
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {agent.provider ? (
+                      <Badge variant={agent.provider === "claude" ? "default" : "secondary"} className="text-xs font-mono">
+                        {agent.provider}
+                      </Badge>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">
                     {agent.model ?? "—"}
@@ -495,6 +517,21 @@ export function AgentsTab({ projectId: _projectId }: AgentsTabProps) {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="SpecWriter"
               />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Provider</label>
+              <Select
+                value={form.provider}
+                onValueChange={(v) => setForm({ ...form, provider: v })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="claude">Claude Code</SelectItem>
+                  <SelectItem value="hermes">Hermes Agent</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="text-sm font-medium">Intent</label>

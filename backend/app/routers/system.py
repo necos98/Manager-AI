@@ -111,3 +111,10 @@ async def install_hermes_skills() -> dict:
             "Riavvia Hermes o esegui /reload-skills per usarle."
         ),
     }
+
+
+@router.get("/agent-providers")
+async def list_agent_providers():
+    from app.providers.registry import AgentProviderRegistry
+
+    return AgentProviderRegistry.available()
