@@ -45,7 +45,8 @@ class PipelineRunService:
         self.session_factory = session_factory
 
     async def start(
-        self, pipeline_id: str, issue_id: str, project_id: str, project_path: str
+        self, pipeline_id: str, issue_id: str, project_id: str, project_path: str,
+        orchestrated: bool = False,
     ) -> dict:
         existing = await self.session.execute(
             select(PipelineRun).where(
@@ -75,8 +76,9 @@ class PipelineRunService:
         run = PipelineRun(
             pipeline_id=pipeline_id,
             issue_id=issue_id,
-            status=PipelineRunStatus.RUNNING,
+            status=PipelineRunStatus.WAITING_FOR_STEP if orchestrated else PipelineRunStatus.RUNNING,
             current_step_index=0,
+            orchestrated=orchestrated,
             started_at=now(),
         )
         self.session.add(run)
@@ -102,15 +104,16 @@ class PipelineRunService:
                 }
             )
 
-        # Schedule _execute first so crash between here and commit
-        # doesn't leave a stuck RUNNING run in the DB — transaction
-        # rollback cleans up. _execute retries if commit not yet done.
-        task = asyncio.create_task(
-            self._execute(run.id, project_id, project_path)
-        )
-        await pipeline_task_manager.start_task(run.id, task)
-
-        await self.session.commit()
+        if orchestrated:
+            # Orchestrated mode: no auto-execution — Hermes controls each step
+            await self.session.commit()
+        else:
+            # Auto mode: spawn background execution
+            task = asyncio.create_task(
+                self._execute(run.id, project_id, project_path)
+            )
+            await pipeline_task_manager.start_task(run.id, task)
+            await self.session.commit()
 
         return {
             "id": run.id,
@@ -885,10 +888,22 @@ class PipelineRunService:
         run.status = PipelineRunStatus.RUNNING
         await self._safe_commit_session(self.session)
 
-        agent_name = step.agent.name if step.agent else "unknown"
+        agent = step.agent
+        agent_name = agent.name if agent else "unknown"
+        provider_name = getattr(agent, "provider", "claude") if agent else "claude"
+
         pty = terminal_service.get_pty(term_id)
-        command = f'claude --dangerously-skip-permissions "/run-pipeline {run.issue_id}"'
-        pty.write(f"{command}; exit\r\n")
+        try:
+            provider = AgentProviderRegistry.get(provider_name)
+            command = provider.build_run_pipeline_command(run.issue_id)
+        except KeyError:
+            logger.warning(
+                "Unknown provider %r for agent %r, falling back to claude",
+                provider_name, agent_name,
+            )
+            provider = AgentProviderRegistry.get("claude")
+            command = provider.build_run_pipeline_command(run.issue_id)
+        pty.write(command + "\r\n")
 
         event = asyncio.Event()
         _step_completion_events[(run_id, i)] = event

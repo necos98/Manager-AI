@@ -39,6 +39,7 @@ def _serialize_agent(agent) -> dict:
     return {
         "id": agent.id,
         "name": agent.name,
+        "provider": agent.provider,
         "intent": agent.intent,
         "model": agent.model,
         "allowed_tools": agent.allowed_tools,
@@ -972,13 +973,14 @@ async def ask_user_question(issue_id: str, question: str, options: list[str] | N
 
 @mcp.tool(description=_desc["tool.create_agent.description"])
 @mcp_tool_wrapper
-async def create_agent(session, name: str, intent: str = "", model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
+async def create_agent(session, name: str, intent: str = "", model: str | None = None, allowed_tools: list[str] | None = None, provider: str | None = None) -> dict:
     svc = AgentService(session)
     agent = await svc.create(
         name=name,
         model=model,
         allowed_tools=allowed_tools,
         intent=intent,
+        provider=provider,
     )
     await session.commit()
     return _serialize_agent(agent)
@@ -1004,7 +1006,7 @@ async def get_agent(session, agent_id: str) -> dict:
 
 @mcp.tool(description=_desc["tool.update_agent.description"])
 @mcp_tool_wrapper
-async def update_agent(session, agent_id: str, name: str | None = None, intent: str | None = None, model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
+async def update_agent(session, agent_id: str, name: str | None = None, intent: str | None = None, model: str | None = None, allowed_tools: list[str] | None = None, provider: str | None = None) -> dict:
     svc = AgentService(session)
     kwargs = {}
     if name is not None:
@@ -1015,6 +1017,8 @@ async def update_agent(session, agent_id: str, name: str | None = None, intent: 
         kwargs["model"] = model
     if allowed_tools is not None:
         kwargs["allowed_tools"] = allowed_tools
+    if provider is not None:
+        kwargs["provider"] = provider
     agent = await svc.update(agent_id, **kwargs)
     await session.commit()
     return _serialize_agent(agent)
@@ -1199,6 +1203,7 @@ async def run_pipeline(project_id: str, pipeline_id: str, issue_id: str,
                 issue_id=issue_id,
                 project_id=project_id,
                 project_path=project.path,
+                orchestrated=orchestrated,
             )
             await session.commit()
             return result

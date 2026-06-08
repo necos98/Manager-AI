@@ -32,6 +32,13 @@ def _claude_resources_source() -> str:
     )
 
 
+def _hermes_skills_source() -> str:
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+        "hermes_skills",
+    )
+
+
 def install_claude_resources_to(project_path: str) -> dict:
     src = _claude_resources_source()
     if not os.path.isdir(src):

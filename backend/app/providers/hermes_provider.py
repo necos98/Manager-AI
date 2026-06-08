@@ -50,10 +50,7 @@ class HermesProvider(AgentProvider):
     def build_hook_command(
         self, prompt: str, tool_guidance: str = ""
     ) -> list[str]:
-        cmd = ["hermes", "-z", prompt]
+        cmd = ["hermes", "chat", "-q", prompt, "--quiet"]
         if tool_guidance:
-            # Hermes non supporta --append-system-prompt; usiamo -s per skill
-            cmd += ["-s", "tool-guidance", "-q", prompt]
-        # --quiet evita banner/spinner in output programmatico
-        cmd += ["--quiet"]
+            cmd += ["-s", "tool-guidance"]
         return cmd

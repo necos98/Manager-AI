@@ -51,8 +51,16 @@ Non aggiungere dettagli specifici di singole issue."""
 
         try:
             from app.providers.registry import AgentProviderRegistry
+            from app.services.settings_service import SettingsService
 
-            provider = AgentProviderRegistry.get("claude")
+            # Legge il provider hooks dalle impostazioni (default: "claude")
+            async with async_session() as settings_session:
+                try:
+                    hook_provider = await SettingsService(settings_session).get("hook_provider")
+                except KeyError:
+                    hook_provider = "claude"
+
+            provider = AgentProviderRegistry.get(hook_provider)
             cmd = provider.build_hook_command(prompt, tool_guidance)
             proc = await asyncio.create_subprocess_exec(
                 *cmd,

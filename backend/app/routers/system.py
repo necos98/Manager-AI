@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import platform
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.schemas.system import SystemInfoResponse
 from app.services.wsl_support import (
@@ -107,3 +107,41 @@ async def install_hermes_mcp() -> dict:
             "stderr": "",
             "exit_code": -1,
         }
+
+
+@router.post("/install-hermes-skills")
+async def install_hermes_skills(project_path: str) -> dict:
+    """Copia le skill Hermes (hermes_skills/) in un progetto.
+
+    Copia hermes_skills/* in <project_path>/.hermes/skills/ e
+    hermes_skills/AGENTS.md in <project_path>/AGENTS.md.
+    """
+    import os
+    import shutil
+
+    src = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        "hermes_skills",
+    )
+    if not os.path.isdir(src):
+        raise HTTPException(status_code=404, detail="hermes_skills folder not found")
+
+    if not project_path or not os.path.isdir(project_path):
+        raise HTTPException(status_code=400, detail=f"Invalid project_path: {project_path}")
+
+    hermes_dir = os.path.join(project_path, ".hermes")
+    os.makedirs(hermes_dir, exist_ok=True)
+
+    copied = []
+    for item in os.listdir(src):
+        if item.startswith("."):
+            continue
+        s = os.path.join(src, item)
+        d = os.path.join(hermes_dir, item) if item != "AGENTS.md" else os.path.join(project_path, item)
+        if os.path.isdir(s):
+            shutil.copytree(s, d, dirs_exist_ok=True)
+        else:
+            shutil.copy2(s, d)
+        copied.append(item)
+
+    return {"path": hermes_dir, "copied": copied}

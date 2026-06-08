@@ -10,6 +10,7 @@ from app.schemas.export_import import ImportConfirmResponse, format_agent_export
 DEFAULT_AGENTS = [
     {
         "name": "CodebaseExplorer",
+        "provider": "claude",
         "intent": (
             "Explore the codebase to understand structure, patterns, and dependencies. "
             "Trace relevant code paths. Identify files that need changes. "
@@ -18,6 +19,7 @@ DEFAULT_AGENTS = [
     },
     {
         "name": "BrainstormingAgent",
+        "provider": "claude",
         "intent": (
             "Analyze the issue description and brainstorm requirements. "
             "Ask clarifying questions if needed. Write a detailed specification "
@@ -26,6 +28,7 @@ DEFAULT_AGENTS = [
     },
     {
         "name": "SpecWriter",
+        "provider": "claude",
         "intent": (
             "Analyze the issue description, ask clarifying questions if needed, "
             "write a detailed specification covering requirements, constraints, "
@@ -35,6 +38,7 @@ DEFAULT_AGENTS = [
     },
     {
         "name": "PlanWriter",
+        "provider": "claude",
         "intent": (
             "Review the specification. Design an implementation plan with concrete steps, "
             "identify files to create/modify, and define atomic tasks. "
@@ -43,6 +47,7 @@ DEFAULT_AGENTS = [
     },
     {
         "name": "Developer",
+        "provider": "claude",
         "intent": (
             "Read the plan tasks via get_plan_tasks. Implement each task sequentially — "
             "update status to In Progress when starting, Completed when done. "
@@ -52,6 +57,7 @@ DEFAULT_AGENTS = [
     },
     {
         "name": "Reviewer",
+        "provider": "claude",
         "intent": (
             "Review all code changes for bugs, logic errors, security issues, "
             "and adherence to project conventions. Run the test suite. "
@@ -92,12 +98,14 @@ class AgentService:
         model: str | None = None,
         allowed_tools: list[str] | None = None,
         intent: str = "",
+        provider: str | None = None,
     ) -> Agent:
         agent = Agent(
             name=name,
             model=model,
             allowed_tools=allowed_tools,
             intent=intent,
+            provider=provider or "claude",
         )
         self.session.add(agent)
         await self.session.flush()

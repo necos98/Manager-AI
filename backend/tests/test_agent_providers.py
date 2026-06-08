@@ -177,13 +177,17 @@ class TestHermesProvider:
     def test_build_hook_command(self, hermes: HermesProvider):
         cmd = hermes.build_hook_command("Hello")
         assert cmd[0] == "hermes"
-        assert cmd[1] == "-z"
+        assert cmd[1] == "chat"
+        assert cmd[2] == "-q"
         assert "Hello" in cmd
+        assert "--quiet" in cmd
 
     def test_build_hook_command_with_guidance(self, hermes: HermesProvider):
         cmd = hermes.build_hook_command("Analyze", tool_guidance="tool X")
         assert cmd[0] == "hermes"
-        assert "-z" in cmd or "-s" in cmd
+        assert cmd[1] == "chat"
+        assert "-s" in cmd
+        assert "tool-guidance" in cmd
 
 
 # ==============================================================================
