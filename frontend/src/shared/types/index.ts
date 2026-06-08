@@ -480,6 +480,17 @@ export interface PipelineExportItem {
   id: string;
   name: string;
   steps: PipelineStepExportItem[];
+  event_rules: PipelineEventRuleExportItem[];
+}
+
+export interface PipelineEventRuleExportItem {
+  id: string;
+  event_type: string;
+  source_step_id: string;
+  target_step_id: string;
+  enabled: boolean;
+  action_type: string;
+  action_params: Record<string, unknown> | null;
 }
 
 export interface ExportWrapper<T> {
@@ -604,6 +615,8 @@ export interface PipelineEventRule {
   event_type: string;
   source_step_id: string;
   target_step_id: string;
+  action_type: string;
+  action_params: Record<string, unknown> | null;
   enabled: boolean;
   created_at: string | null;
   updated_at: string | null;
@@ -613,6 +626,8 @@ export interface PipelineEventRuleCreate {
   event_type: string;
   source_step_id: string;
   target_step_id: string;
+  action_type?: string;
+  action_params?: Record<string, unknown> | null;
 }
 
 // ── Pipeline Run ──

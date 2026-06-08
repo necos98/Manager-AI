@@ -22,3 +22,13 @@ class PipelineEventRuleCreate(BaseModel):
     target_step_id: str = Field(..., min_length=1)
     action_type: str = Field(default="redirect", min_length=1, max_length=50)
     action_params: dict[str, Any] | None = None
+
+
+class PipelineEventRuleUpdate(BaseModel):
+    """All fields optional — only provided fields will be updated."""
+    event_type: str | None = Field(default=None, min_length=1, max_length=50)
+    source_step_id: str | None = Field(default=None, min_length=1)
+    target_step_id: str | None = Field(default=None, min_length=1)
+    action_type: str | None = Field(default=None, min_length=1, max_length=50)
+    action_params: dict[str, Any] | None = None
+    enabled: bool | None = None

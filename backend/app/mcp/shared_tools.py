@@ -1082,6 +1082,47 @@ async def list_pipeline_event_rules_tool(session: AsyncSession, pipeline_id: str
     }
 
 
+async def update_pipeline_event_rule_tool(
+    session: AsyncSession,
+    rule_id: str,
+    event_type: str | None = None,
+    source_step_id: str | None = None,
+    target_step_id: str | None = None,
+    action_type: str | None = None,
+    action_params: dict | None = None,
+    enabled: bool | None = None,
+) -> dict:
+    svc = PipelineService(session)
+    kwargs = {}
+    if event_type is not None:
+        kwargs["event_type"] = event_type
+    if source_step_id is not None:
+        kwargs["source_step_id"] = source_step_id
+    if target_step_id is not None:
+        kwargs["target_step_id"] = target_step_id
+    if action_type is not None:
+        kwargs["action_type"] = action_type
+    if action_params is not None:
+        kwargs["action_params"] = action_params
+    if enabled is not None:
+        kwargs["enabled"] = enabled
+    try:
+        rule = await svc.update_event_rule(rule_id, **kwargs)
+        await session.commit()
+        return {
+            "id": rule.id,
+            "pipeline_id": rule.pipeline_id,
+            "event_type": rule.event_type,
+            "source_step_id": rule.source_step_id,
+            "target_step_id": rule.target_step_id,
+            "action_type": rule.action_type,
+            "action_params": rule.action_params,
+            "enabled": rule.enabled,
+        }
+    except AppError as e:
+        return {"error": e.message}
+
+
 # ── Pipeline Run Tools ────────────────────────────────────────────────────────
 
 

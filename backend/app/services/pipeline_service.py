@@ -203,6 +203,24 @@ class PipelineService:
         )
         return result.scalar_one_or_none()
 
+    async def update_event_rule(
+        self, rule_id: str, **kwargs: object,
+    ) -> PipelineEventRule:
+        """Update specific fields on an event rule. Only provided kwargs are set."""
+        result = await self.session.execute(
+            select(PipelineEventRule).where(PipelineEventRule.id == rule_id)
+        )
+        rule = result.scalar_one_or_none()
+        if rule is None:
+            raise NotFoundError(f"PipelineEventRule not found: {rule_id}")
+
+        for key, value in kwargs.items():
+            if value is not None and hasattr(rule, key):
+                setattr(rule, key, value)
+
+        await self.session.flush()
+        return rule
+
 
 # ── Serializers ──────────────────────────────────────────────
 

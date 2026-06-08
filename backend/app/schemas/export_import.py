@@ -79,6 +79,8 @@ def format_pipeline_event_rule_export(rule) -> dict:
         "source_step_id": rule.source_step_id,
         "target_step_id": rule.target_step_id,
         "enabled": rule.enabled,
+        "action_type": rule.action_type,
+        "action_params": rule.action_params,
     }
 
 

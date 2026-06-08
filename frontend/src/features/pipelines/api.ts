@@ -84,3 +84,11 @@ export function createEventRule(pipelineId: string, data: PipelineEventRuleCreat
 export function deleteEventRule(pipelineId: string, ruleId: string): Promise<null> {
   return apiDelete(`/pipelines/${pipelineId}/event-rules/${ruleId}`);
 }
+
+export function updateEventRule(
+  pipelineId: string,
+  ruleId: string,
+  data: Partial<PipelineEventRuleCreate>,
+): Promise<PipelineEventRule> {
+  return apiPut<PipelineEventRule>(`/pipelines/${pipelineId}/event-rules/${ruleId}`, data);
+}
