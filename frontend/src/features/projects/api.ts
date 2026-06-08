@@ -1,5 +1,5 @@
 import { apiGet, apiPost, apiPut, apiDelete } from "@/shared/api/client";
-import type { CredentialUpsert, Project, ProjectCreate, ProjectCredential, ProjectLink, ProjectLinkCreate, ProjectLinkUpdate, ProjectUpdate, Terminal } from "@/shared/types";
+import type { Project, ProjectCreate, ProjectLink, ProjectLinkCreate, ProjectLinkUpdate, ProjectUpdate, Terminal } from "@/shared/types";
 
 export interface ProjectHealth {
   manager_json: { installed: boolean; path: string };
@@ -78,22 +78,6 @@ export function fetchCodebaseIndexStatus(projectId: string): Promise<CodebaseInd
 
 export function triggerCodebaseIndex(projectId: string): Promise<{ status: string }> {
   return apiPost<{ status: string }>(`/projects/${projectId}/index-codebase`);
-}
-
-export function fetchCredentials(projectId: string): Promise<string[]> {
-  return apiGet<string[]>(`/projects/${projectId}/credentials`);
-}
-
-export function fetchCredential(projectId: string, role: string): Promise<ProjectCredential> {
-  return apiGet<ProjectCredential>(`/projects/${projectId}/credentials/${encodeURIComponent(role)}`);
-}
-
-export function upsertCredential(projectId: string, data: CredentialUpsert): Promise<ProjectCredential> {
-  return apiPost<ProjectCredential>(`/projects/${projectId}/credentials`, data);
-}
-
-export function deleteCredential(projectId: string, role: string): Promise<void> {
-  return apiDelete(`/projects/${projectId}/credentials/${encodeURIComponent(role)}`);
 }
 
 export function fetchProjectLinks(projectId: string): Promise<ProjectLink[]> {
