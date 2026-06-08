@@ -26,6 +26,7 @@ def _response(agent) -> AgentResponse:
         name=agent.name,
         intent=agent.intent,
         model=agent.model,
+        provider=agent.provider,
         allowed_tools=agent.allowed_tools,
         created_at=str(agent.created_at) if agent.created_at else None,
         updated_at=str(agent.updated_at) if agent.updated_at else None,
@@ -48,6 +49,7 @@ async def create_agent(data: AgentCreate, db: AsyncSession = Depends(get_db)):
     agent = await svc.create(
         name=data.name,
         model=data.model,
+        provider=data.provider,
         allowed_tools=data.allowed_tools,
         intent=data.intent or "",
     )
@@ -214,6 +216,8 @@ async def update_agent(
         kwargs["intent"] = data.intent
     if data.model is not None:
         kwargs["model"] = data.model
+    if data.provider is not None:
+        kwargs["provider"] = data.provider
     if data.allowed_tools is not None:
         kwargs["allowed_tools"] = data.allowed_tools
     agent = await svc.update(agent_id, **kwargs)

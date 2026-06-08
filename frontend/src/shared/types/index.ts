@@ -447,6 +447,7 @@ export interface ProjectLink {
 export interface AgentExportItem {
   id: string;
   name: string;
+  provider: string | null;
   model: string | null;
   allowed_tools: string[] | null;
   intent: string;
@@ -524,6 +525,7 @@ export interface QuestionAnswer {
 export interface Agent {
   id: string;
   name: string;
+  provider: string | null;
   model: string | null;
   allowed_tools: string[] | null;
   intent: string;
@@ -533,6 +535,7 @@ export interface Agent {
 
 export interface AgentCreate {
   name: string;
+  provider?: string | null;
   model?: string | null;
   allowed_tools?: string[] | null;
   intent?: string;
@@ -540,6 +543,7 @@ export interface AgentCreate {
 
 export interface AgentUpdate {
   name?: string;
+  provider?: string | null;
   model?: string | null;
   allowed_tools?: string[] | null;
   intent?: string | null;

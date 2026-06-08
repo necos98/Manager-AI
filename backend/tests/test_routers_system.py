@@ -22,3 +22,15 @@ async def test_system_info_shape(monkeypatch):
     assert body["default_distro"] == "Ubuntu-22.04"
     assert body["host_ip_for_wsl"] is None
     assert "platform" in body
+
+
+@pytest.mark.asyncio
+async def test_agent_providers_endpoint_returns_providers():
+    """GET /api/system/agent-providers returns at least 'claude' and 'hermes'."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        r = await c.get("/api/system/agent-providers")
+    assert r.status_code == 200
+    body = r.json()
+    assert isinstance(body, list)
+    assert "claude" in body
+    assert "hermes" in body

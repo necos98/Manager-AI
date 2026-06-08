@@ -264,6 +264,12 @@ class TestAgentProviderRegistry:
         assert p1 is not p2
         assert p1.build_run_issue_command("x") == p2.build_run_issue_command("x")
 
+    def test_registry_provider_names_match_class(self):
+        """Provider name in registry matches the name property of the provider class."""
+        for name in AgentProviderRegistry.available():
+            provider = AgentProviderRegistry.get(name)
+            assert provider.name == name
+
     def test_register_cannot_overwrite_existing(self):
         """Il registry permette di sovrascrivere — test che funzioni."""
         original = AgentProviderRegistry.get("claude")
