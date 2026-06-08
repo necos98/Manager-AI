@@ -290,6 +290,8 @@ async def _import_event_rules(
                 source_step_id=new_source,
                 target_step_id=new_target,
                 enabled=rule_data.get("enabled", True),
+                action_type=rule_data.get("action_type", "redirect"),
+                action_params=rule_data.get("action_params"),
             )
             db.add(rule)
     await db.flush()

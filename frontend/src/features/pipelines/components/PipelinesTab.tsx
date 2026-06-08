@@ -15,6 +15,8 @@ import {
   Pencil,
   Download,
   Upload,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -52,6 +54,7 @@ import {
   useEventRules,
   useCreateEventRule,
   useDeleteEventRule,
+  useUpdateEventRule,
 } from "@/features/pipelines/hooks";
 import { useAgents } from "@/features/agents/hooks";
 import { ImportPreviewModal } from "@/shared/components/ImportPreviewModal";
@@ -91,6 +94,38 @@ function ruleStepName(
   return agents.get(step.agent_id) ?? "Unknown";
 }
 
+const EVENT_TYPE_LABELS: Record<string, { label: string; verb: string }> = {
+  step_completed: { label: "Step Completed", verb: "completes" },
+  step_rejected: { label: "Step Rejected", verb: "is rejected" },
+  step_failed: { label: "Step Failed", verb: "fails" },
+  pipeline_completed: { label: "Pipeline Completed", verb: "pipeline completes" },
+};
+
+const ACTION_TYPE_LABELS: Record<string, string> = {
+  redirect: "Redirect",
+  set_issue_status: "Set Issue Status",
+  emit_event: "Emit Custom Event",
+};
+
+function ruleDescription(rule: PipelineEventRule, steps: PipelineStep[], agents: Map<string, string>): string {
+  const sourceName = ruleStepName(rule.source_step_id, steps, agents);
+  const targetName = ruleStepName(rule.target_step_id, steps, agents);
+  const evLabel = EVENT_TYPE_LABELS[rule.event_type]?.verb ?? rule.event_type;
+
+  if (rule.action_type === "redirect") {
+    return `When ${sourceName} ${evLabel} → go to ${targetName}`;
+  }
+  if (rule.action_type === "set_issue_status") {
+    const status = (rule.action_params as Record<string, unknown> | null)?.status ?? "?";
+    return `When ${sourceName} ${evLabel} → set issue status to ${status}`;
+  }
+  if (rule.action_type === "emit_event") {
+    const eventName = (rule.action_params as Record<string, unknown> | null)?.event_type ?? "?";
+    return `When ${sourceName} ${evLabel} → emit "${eventName}"`;
+  }
+  return `When ${sourceName} ${evLabel} → ${rule.action_type}`;
+}
+
 function EventRulesSection({
   pipelineId,
   steps,
@@ -103,28 +138,68 @@ function EventRulesSection({
   const { data: rules = [] } = useEventRules(pipelineId);
   const createRule = useCreateEventRule();
   const deleteRule = useDeleteEventRule();
+  const updateRule = useUpdateEventRule();
+
+  // Form state
+  const [eventType, setEventType] = useState("step_rejected");
   const [sourceId, setSourceId] = useState("");
   const [targetId, setTargetId] = useState("");
+  const [actionType, setActionType] = useState("redirect");
+  const [issueStatus, setIssueStatus] = useState("PLANNED");
+  const [customEventType, setCustomEventType] = useState("");
+
+  const resetForm = () => {
+    setSourceId("");
+    setTargetId("");
+    setActionType("redirect");
+    setIssueStatus("PLANNED");
+    setCustomEventType("");
+  };
 
   const handleAdd = () => {
-    if (!sourceId || !targetId) return;
+    if (!sourceId) return;
+    let actionParams: Record<string, unknown> | null = null;
+    let effectiveTargetId = targetId;
+
+    if (actionType === "set_issue_status") {
+      actionParams = { status: issueStatus };
+      effectiveTargetId = sourceId; // target_step is ignored for this action
+    } else if (actionType === "emit_event") {
+      if (!customEventType) return;
+      actionParams = { event_type: customEventType };
+      effectiveTargetId = sourceId; // target_step is ignored for this action
+    } else {
+      // redirect — target_step_id is the navigation target
+      if (!targetId) return;
+    }
+
     createRule.mutate(
       {
         pipelineId,
         data: {
-          event_type: "step_rejected",
+          event_type: eventType,
           source_step_id: sourceId,
-          target_step_id: targetId,
+          target_step_id: effectiveTargetId,
+          action_type: actionType,
+          action_params: actionParams,
         },
       },
-      {
-        onSuccess: () => {
-          setSourceId("");
-          setTargetId("");
-        },
-      }
+      { onSuccess: resetForm }
     );
   };
+
+  const handleToggleEnabled = (rule: PipelineEventRule) => {
+    updateRule.mutate({
+      pipelineId,
+      ruleId: rule.id,
+      data: { enabled: !rule.enabled },
+    });
+  };
+
+  const isValid =
+    sourceId &&
+    (actionType === "redirect" ? targetId : true) &&
+    (actionType === "emit_event" ? customEventType : true);
 
   return (
     <div className="space-y-2">
@@ -139,21 +214,41 @@ function EventRulesSection({
               key={rule.id}
               className="flex items-center gap-2 bg-muted/30 rounded px-3 py-2 text-sm"
             >
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs shrink-0">
                 {rule.event_type}
               </Badge>
-              <span className="text-muted-foreground">when</span>
-              <span className="font-medium">
-                {ruleStepName(rule.source_step_id, steps, agents)}
+              <Badge
+                variant="secondary"
+                className={`text-xs shrink-0 ${
+                  rule.action_type === "set_issue_status"
+                    ? "bg-blue-500/10 text-blue-600"
+                    : rule.action_type === "emit_event"
+                      ? "bg-purple-500/10 text-purple-600"
+                      : ""
+                }`}
+              >
+                {ACTION_TYPE_LABELS[rule.action_type] ?? rule.action_type}
+              </Badge>
+              <span className="text-xs text-muted-foreground truncate flex-1">
+                {ruleDescription(rule, steps, agents)}
               </span>
-              <span className="text-muted-foreground">rejects →</span>
-              <span className="font-medium">
-                {ruleStepName(rule.target_step_id, steps, agents)}
-              </span>
+              <button
+                type="button"
+                className="size-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                disabled={updateRule.isPending}
+                onClick={() => handleToggleEnabled(rule)}
+                title={rule.enabled ? "Disable rule" : "Enable rule"}
+              >
+                {rule.enabled ? (
+                  <ToggleRight className="size-4 text-green-600" />
+                ) : (
+                  <ToggleLeft className="size-4 text-muted-foreground" />
+                )}
+              </button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-6 ml-auto text-destructive hover:text-destructive"
+                className="size-6 text-destructive hover:text-destructive"
                 disabled={deleteRule.isPending}
                 onClick={() =>
                   deleteRule.mutate({ pipelineId, ruleId: rule.id })
@@ -167,7 +262,36 @@ function EventRulesSection({
       )}
 
       {/* Add rule form */}
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        {/* Event type */}
+        <Select value={eventType} onValueChange={setEventType}>
+          <SelectTrigger className="h-8 w-40 text-xs">
+            <SelectValue placeholder="Event type..." />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(EVENT_TYPE_LABELS).map(([key, val]) => (
+              <SelectItem key={key} value={key}>
+                {val.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Action type */}
+        <Select value={actionType} onValueChange={setActionType}>
+          <SelectTrigger className="h-8 w-36 text-xs">
+            <SelectValue placeholder="Action..." />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(ACTION_TYPE_LABELS).map(([key, val]) => (
+              <SelectItem key={key} value={key}>
+                {val}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Source step */}
         <Select value={sourceId} onValueChange={setSourceId}>
           <SelectTrigger className="h-8 w-36 text-xs">
             <SelectValue placeholder="When step..." />
@@ -180,26 +304,66 @@ function EventRulesSection({
             ))}
           </SelectContent>
         </Select>
-        <span className="text-xs text-muted-foreground">rejects → go to</span>
-        <Select value={targetId} onValueChange={setTargetId}>
-          <SelectTrigger className="h-8 w-36 text-xs">
-            <SelectValue placeholder="Target step..." />
-          </SelectTrigger>
-          <SelectContent>
-            {steps.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {ruleStepName(s.id, steps, agents)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        {/* Conditional fields based on action_type */}
+        {actionType === "redirect" && (
+          <>
+            <span className="text-xs text-muted-foreground">→ go to</span>
+            <Select value={targetId} onValueChange={setTargetId}>
+              <SelectTrigger className="h-8 w-36 text-xs">
+                <SelectValue placeholder="Target step..." />
+              </SelectTrigger>
+              <SelectContent>
+                {steps.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {ruleStepName(s.id, steps, agents)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        )}
+
+        {actionType === "set_issue_status" && (
+          <>
+            <span className="text-xs text-muted-foreground">→ set status</span>
+            <Select value={issueStatus} onValueChange={setIssueStatus}>
+              <SelectTrigger className="h-8 w-28 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PLANNED">PLANNED</SelectItem>
+                <SelectItem value="ACCEPTED">ACCEPTED</SelectItem>
+                <SelectItem value="FINISHED">FINISHED</SelectItem>
+                <SelectItem value="CANCELED">CANCELED</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
+        )}
+
+        {actionType === "emit_event" && (
+          <>
+            <span className="text-xs text-muted-foreground">→ emit</span>
+            <Input
+              value={customEventType}
+              onChange={(e) => setCustomEventType(e.target.value)}
+              placeholder="event_type..."
+              className="h-8 w-36 text-xs"
+            />
+          </>
+        )}
+
         <Button
           size="sm"
           className="h-8 text-xs"
-          disabled={!sourceId || !targetId || createRule.isPending}
+          disabled={!isValid || createRule.isPending}
           onClick={handleAdd}
         >
-          <Plus className="size-3 mr-1" />
+          {createRule.isPending ? (
+            <Loader2 className="size-3 mr-1 animate-spin" />
+          ) : (
+            <Plus className="size-3 mr-1" />
+          )}
           Add Rule
         </Button>
       </div>

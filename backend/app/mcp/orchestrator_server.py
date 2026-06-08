@@ -44,6 +44,7 @@ from app.mcp.shared_tools import (
     add_pipeline_event_rule as _add_pipeline_event_rule,
     remove_pipeline_event_rule as _remove_pipeline_event_rule,
     list_pipeline_event_rules_tool as _list_pipeline_event_rules_tool,
+    update_pipeline_event_rule_tool as _update_pipeline_event_rule_tool,
     # Pipeline runs
     run_pipeline as _run_pipeline,
     get_pipeline_run_status as _get_pipeline_run_status,
@@ -224,6 +225,24 @@ async def remove_pipeline_event_rule(rule_id: str) -> dict:
 async def list_pipeline_event_rules(pipeline_id: str) -> dict:
     async with async_session() as session:
         return await _list_pipeline_event_rules_tool(session, pipeline_id)
+
+
+@orchestrator_mcp.tool(description=_desc["tool.update_pipeline_event_rule.description"])
+async def update_pipeline_event_rule(
+    rule_id: str,
+    event_type: str | None = None,
+    source_step_id: str | None = None,
+    target_step_id: str | None = None,
+    action_type: str | None = None,
+    action_params: dict | None = None,
+    enabled: bool | None = None,
+) -> dict:
+    async with async_session() as session:
+        return await _update_pipeline_event_rule_tool(
+            session, rule_id, event_type,
+            source_step_id, target_step_id,
+            action_type, action_params, enabled,
+        )
 
 
 # ── 5) Pipeline Run Tools ─────────────────────────────────────────────────────

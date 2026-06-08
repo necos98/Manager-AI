@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.exceptions import AppError
 from app.schemas.pipeline import PipelineCreate, PipelineResponse, PipelineStepCreate, PipelineStepResponse, PipelineUpdate, StepReorderRequest
-from app.schemas.pipeline_event_rule import PipelineEventRuleCreate, PipelineEventRuleResponse
+from app.schemas.pipeline_event_rule import PipelineEventRuleCreate, PipelineEventRuleResponse, PipelineEventRuleUpdate
 from app.schemas.export_import import ImportConfirmResponse, PipelineBatchExportRequest, PipelineImportPreviewResponse
 from app.services.pipeline_service import PipelineService, _response, _rule_response, _step_response
 from app.services.pipeline_export import export_pipelines_all as _export_all, export_pipelines_batch as _export_batch, export_pipeline_single as _export_single
@@ -110,6 +110,18 @@ async def create_event_rule(pipeline_id: str, data: PipelineEventRuleCreate, db:
     svc = PipelineService(db)
     try:
         rule = await svc.add_event_rule(pipeline_id=pipeline_id, event_type=data.event_type, source_step_id=data.source_step_id, target_step_id=data.target_step_id)
+    except AppError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    await db.commit()
+    return _rule_response(rule)
+
+@router.put("/{pipeline_id}/event-rules/{rule_id}", response_model=PipelineEventRuleResponse)
+async def update_event_rule(pipeline_id: str, rule_id: str, data: PipelineEventRuleUpdate, db: AsyncSession = Depends(get_db)):
+    """Update specific fields on an event rule. Only provided fields are changed."""
+    svc = PipelineService(db)
+    try:
+        kwargs = data.model_dump(exclude_none=True)
+        rule = await svc.update_event_rule(rule_id, **kwargs)
     except AppError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     await db.commit()

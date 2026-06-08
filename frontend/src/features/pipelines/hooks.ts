@@ -196,3 +196,22 @@ export function useDeleteEventRule() {
     onError: onMutationError,
   });
 }
+
+export function useUpdateEventRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      pipelineId,
+      ruleId,
+      data,
+    }: {
+      pipelineId: string;
+      ruleId: string;
+      data: Partial<PipelineEventRuleCreate>;
+    }) => api.updateEventRule(pipelineId, ruleId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.all() });
+    },
+    onError: onMutationError,
+  });
+}
