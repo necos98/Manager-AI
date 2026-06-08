@@ -440,25 +440,9 @@ export interface ProjectLinkUpdate {
   description: string;
 }
 
-// ── Credentials ──
-
-export interface ProjectCredential {
-  id: string;
-  project_id: string;
-  role: string;
-  url: string;
-  fields: Record<string, string>;
-  created_at?: string | null;
-  updated_at?: string | null;
-}
-
-export interface CredentialUpsert {
-  role: string;
-  url: string;
-  fields: Record<string, string>;
-}
-
 // ── Export / Import ──
+
+export interface ProjectLink {
 
 export interface AgentExportItem {
   id: string;

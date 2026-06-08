@@ -740,7 +740,6 @@ async def get_project_links(project_id: str) -> dict:
 
 # ── Playwright / Credential tools ──────────────────────────────────────────
 
-from app.services.credential_service import CredentialService
 from app.mcp.catalog import catalog_loader
 from app.mcp.plugin_manager import plugin_manager
 from app.mcp.plugin_config import load_plugins, get_plugin_config, PluginsFile
@@ -752,45 +751,6 @@ async def get_project_url(project_id: str) -> dict:
         try:
             project = await ProjectService(session).get_by_id(project_id)
             return {"url": project.url}
-        except AppError as e:
-            return {"error": e.message}
-
-
-@mcp.tool(description=_desc["tool.list_credentials.description"])
-async def list_credentials(project_id: str) -> dict:
-    async with async_session() as session:
-        svc = CredentialService(session)
-        roles = await svc.list_roles(project_id)
-        return {"roles": roles}
-
-
-@mcp.tool(description=_desc["tool.get_credential.description"])
-async def get_credential(project_id: str, role: str) -> dict:
-    async with async_session() as session:
-        svc = CredentialService(session)
-        try:
-            return await svc.get(project_id, role)
-        except AppError as e:
-            return {"error": e.message}
-
-
-@mcp.tool(description=_desc["tool.set_credential.description"])
-async def set_credential(project_id: str, role: str, url: str, fields: dict) -> dict:
-    async with async_session() as session:
-        svc = CredentialService(session)
-        cred = await svc.upsert(project_id, role, url, fields)
-        await session.commit()
-        return {"id": cred.id, "role": cred.role, "url": cred.url}
-
-
-@mcp.tool(description=_desc["tool.delete_credential.description"])
-async def delete_credential(project_id: str, role: str) -> dict:
-    async with async_session() as session:
-        svc = CredentialService(session)
-        try:
-            await svc.delete(project_id, role)
-            await session.commit()
-            return {"deleted": True}
         except AppError as e:
             return {"error": e.message}
 
