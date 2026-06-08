@@ -15,6 +15,18 @@ from app.models.project_variable import ProjectVariable  # noqa: F401
 
 
 @pytest.fixture(autouse=True)
+def _mock_event_service(monkeypatch):
+    """Mock event_service.emit to a no-op in all tests.
+    Prevents MissingGreenlet errors from WebSocket emit calls
+    and keeps tests deterministic.
+    """
+    async def _noop_emit(event: dict) -> None:
+        pass
+    from app.services import event_service as evt_mod
+    monkeypatch.setattr(evt_mod.event_service, "emit", _noop_emit)
+
+
+@pytest.fixture(autouse=True)
 def _clear_store_caches(tmp_path_factory):
     """Reset RAM store and flush pending writes before and after each test."""
     import tempfile

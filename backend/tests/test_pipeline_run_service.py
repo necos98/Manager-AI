@@ -16,7 +16,7 @@ from app.models.pipeline_run import (
 )
 from app.models.project import Project
 from app.services.issue_service import IssueService
-from app.services.pipeline_run_service import PipelineRunService
+from app.services.pipeline_run import PipelineRunService
 from app.services.project_service import ProjectService
 
 

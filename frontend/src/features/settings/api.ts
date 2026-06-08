@@ -19,11 +19,17 @@ export function resetAllSettings(): Promise<null> {
 
 export function installHermesMcp(): Promise<{
   success: boolean;
+  commands?: string[];
   message?: string;
-  error?: string;
-  stdout?: string;
-  stderr?: string;
-  exit_code: number;
 }> {
   return apiPost("/system/install-hermes-mcp");
+}
+
+export function installHermesSkills(): Promise<{
+  success: boolean;
+  copied: { name: string; status: string }[];
+  path: string;
+  message: string;
+}> {
+  return apiPost("/system/install-hermes-skills");
 }

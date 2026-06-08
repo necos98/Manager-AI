@@ -1,0 +1,12 @@
+schema_version: 1
+id: 8aae24e0-b67f-459a-98be-213e6581e35b
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Test flusso MCA - Hermes Orchestrator
+status: New
+priority: 3
+category: null
+created_at: '2026-06-08T11:26:16.613308+00:00'
+updated_at: '2026-06-08T11:26:20.185664+00:00'
+finished_at: null
+tasks: []
+relations: []

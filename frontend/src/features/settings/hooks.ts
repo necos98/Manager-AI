@@ -55,10 +55,30 @@ export function useInstallHermesMcp() {
   return useMutation({
     mutationFn: api.installHermesMcp,
     onSuccess: (data) => {
+      if (data.success && data.command) {
+        // Copia il comando negli appunti
+        navigator.clipboard.writeText(data.command).catch(() => {});
+        toast.success("📋 Comando copiato negli appunti!");
+      }
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : "Errore di connessione");
+    },
+  });
+}
+
+export function useInstallHermesSkills() {
+  return useMutation({
+    mutationFn: api.installHermesSkills,
+    onSuccess: (data) => {
       if (data.success) {
-        toast.success("✅ " + (data.message ?? "Hermes MCP installato!"));
+        const skills = data.copied
+          .filter((c) => c.name !== "AGENTS.md")
+          .map((c) => `${c.name} (${c.status})`)
+          .join(", ");
+        toast.success(`✅ Skill Hermes: ${skills}`);
       } else {
-        toast.error("❌ " + (data.error ?? "Installazione fallita"));
+        toast.error("❌ Installazione skill fallita");
       }
     },
     onError: (e) => {

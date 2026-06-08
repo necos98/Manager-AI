@@ -1,0 +1,1 @@
+Issue di test per verificare il funzionamento del flusso di Manager AI tramite Hermes MCP. Testare: creazione issue, specifica, piano, task, pipeline orchestrata, avanzamento step, e completamento.

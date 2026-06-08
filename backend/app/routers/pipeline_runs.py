@@ -10,7 +10,7 @@ from app.schemas.pipeline_run import (
     PipelineRunResponse,
     PipelineRunStart,
 )
-from app.services.pipeline_run_service import PipelineRunService
+from app.services.pipeline_run import PipelineRunService
 
 router = APIRouter(prefix="/api/pipeline-runs", tags=["pipeline-runs"])
 

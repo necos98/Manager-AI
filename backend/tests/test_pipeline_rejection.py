@@ -10,14 +10,14 @@ from app.models.pipeline_run import (
     PipelineStepRun,
     PipelineStepRunStatus,
 )
-from app.services.pipeline_run_service import PipelineRunService
+from app.services.pipeline_run import PipelineRunService
 
 
 @pytest.fixture(autouse=True)
 def _clear_step_completion_events():
     """Clear _step_completion_events between tests to avoid cross-test pollution."""
-    from app.services.pipeline_run_service import _step_completion_events
-    _step_completion_events.clear()
+    from app.services.pipeline_run._completion import _completion_events
+    _completion_events.clear()
     yield
 
 
@@ -349,11 +349,12 @@ async def test_reject_non_running_pipeline_raises(db_session):
 @pytest.mark.asyncio
 async def test_set_step_completed_signals_event(db_session):
     """set_step_completed correctly signals the asyncio.Event for a step."""
-    from app.services.pipeline_run_service import set_step_completed, _step_completion_events
+    from app.services.pipeline_run import set_step_completed
+    from app.services.pipeline_run._completion import _completion_events
     import asyncio
 
     evt = asyncio.Event()
-    _step_completion_events[("run-1", 0)] = evt
+    _completion_events[("run-1", 0)] = evt
 
     assert evt.is_set() is False
     result = set_step_completed("run-1", 0)

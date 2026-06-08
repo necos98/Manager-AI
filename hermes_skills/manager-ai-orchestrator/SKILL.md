@@ -18,25 +18,33 @@ Manager AI must be running (`python start.py` from the Manager-AI repo) and
 Hermes MCP must be connected:
 
 ```bash
-hermes mcp add manager-ai --url http://localhost:8000/mcp
+hermes mcp add manager-ai-orchestrator --url http://localhost:8000/mcp-orchestrator
 ```
 
-Verify with: `hermes mcp list` — the `manager-ai` server should appear with
+Verify with: `hermes mcp list` — the `manager-ai-orchestrator` server should appear with
 all its tools listed.
 
 ## Key Concepts
 
-### Issue Lifecycle
+### Orchestrator Flow — Hermes fa solo orchestrazione
+
+Hermes **crea la issue**, poi **avvia la pipeline orchestrata**. Il resto
+(specifica, piano, task, implementazione) lo fanno gli agenti worker via Claude Code.
 
 ```
-NEW ──[create_issue_spec]──> REASONING ──[create_issue_plan]──> PLANNED
-  ──[accept_issue]──> ACCEPTED ──[implement + complete_issue]──> FINISHED
+Hermes: create_issue → run_pipeline(orchestrated=True)
+                        │
+        start_pipeline_step(run_id, project_id) → spawna worker
+            │
+            ├── Worker (Claude Code): esegue lo step
+            │   • create_issue_spec / create_issue_plan
+            │   • implementa codice
+            │   • finished_pipeline_step(summary)
+            │
+        advance_pipeline(run_id) → step successivo
+            │
+            └── Repeat fino a pipeline COMPLETED
 ```
-
-Cancel from any state with `cancel_issue`. Force-finish edge cases with
-`force_finish_issue`.
-
-### Pipeline System
 
 A **pipeline** is a sequence of **agents** (steps). Each agent has a `name`,
 `intent` (what it should do), and a `provider` (`"claude"` or `"hermes"`).
@@ -84,23 +92,12 @@ memory_search(project_id=..., query="<keywords>")
 memory_list(project_id=..., parent_id="")
 ```
 
-### 2. Create an Issue
+### 2. Create an Issue (e poi avvia pipeline)
 
 ```python
-# Create the issue
+# Hermes crea solo la issue grezza — specifica e piano li fa il worker
 create_issue(project_id=..., description="...", priority=3)
-
-# Write a specification (moves to REASONING)
-create_issue_spec(project_id=..., issue_id=..., spec="...")
-
-# Write a plan (moves to PLANNED)
-create_issue_plan(project_id=..., issue_id=..., plan="...")
-
-# Create atomic tasks
-create_plan_tasks(issue_id=..., tasks=[{"name": "..."}, ...])
-
-# Accept the plan (moves to ACCEPTED)
-accept_issue(project_id=..., issue_id=...)
+# → issue in stato NEW, pronta per pipeline
 ```
 
 ### 3. Run an Orchestrated Pipeline

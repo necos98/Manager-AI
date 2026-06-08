@@ -17,6 +17,7 @@ from app.exceptions import AppError
 from app.hooks import hook_registry
 import app.hooks.handlers  # noqa: F401 — triggers @hook decorator registration
 from app.mcp.server import mcp
+from app.mcp.orchestrator_server import orchestrator_mcp
 from app.mcp.catalog import catalog_loader
 from app.mcp.plugin_manager import plugin_manager
 from app.migration.db_to_files import migrate_all_projects
@@ -84,6 +85,8 @@ if sys.platform == "win32":
 
 # Create the MCP StreamableHTTP ASGI app so the session manager is initialized.
 _streamable_app = mcp.streamable_http_app()
+# Create the orchestrator MCP app (Hermes) — separate session manager.
+_orchestrator_app = orchestrator_mcp.streamable_http_app()
 # Note: we keep the original lifespan on the mounted app. Starlette does not
 # forward lifespan messages to mounted apps, so we call it manually from the
 # main FastAPI lifespan below using _streamable_app.router.lifespan_context.
@@ -108,6 +111,19 @@ async def _mcp_init_on_demand(scope, receive, send):
 
 mcp.session_manager.handle_request = _mcp_init_on_demand
 
+# Same lazy-init patch for the orchestrator MCP session manager.
+_osm_original_handle = orchestrator_mcp.session_manager.handle_request
+
+async def _osm_init_on_demand(scope, receive, send):
+    if orchestrator_mcp.session_manager._task_group is None:
+        logger.warning("Orchestrator MCP task group not set yet — creating lazily")
+        orchestrator_mcp.session_manager._has_started = True
+        tg = await anyio.create_task_group().__aenter__()
+        orchestrator_mcp.session_manager._task_group = tg
+    await _osm_original_handle(scope, receive, send)
+
+orchestrator_mcp.session_manager.handle_request = _osm_init_on_demand
+
 logging.getLogger("mcp.server.streamable_http").addFilter(
     _SuppressClientDisconnectFilter()
 )
@@ -117,6 +133,12 @@ logging.getLogger("mcp.server.streamable_http").addFilter(
 @_streamable_app.exception_handler(ClientDisconnect)
 async def _client_disconnect_handler(request, exc):
     logger.debug("Client disconnected during MCP request to %s", request.url.path)
+    return Response(status_code=499)
+
+
+@_orchestrator_app.exception_handler(ClientDisconnect)
+async def _orchestrator_client_disconnect_handler(request, exc):
+    logger.debug("Client disconnected during orchestrator MCP request to %s", request.url.path)
     return Response(status_code=499)
 
 
@@ -310,22 +332,28 @@ async def lifespan(app):
     except Exception:
         logger.exception("Non-critical startup ops failed; continuing")
 
-    # Initialize MCP session manager.
+    # Initialize MCP session managers (worker + orchestrator).
     # Starlette does not forward lifespan messages to mounted apps, and
     # mcp.session_manager.run() can have issues with ProactorEventLoop
     # on Windows when called from inside another lifespan. We create the
-    # task group directly and assign it to the session manager.
+    # task group directly and assign it to both session managers.
     _sm = mcp.session_manager
-    logger.info("MCP session manager state: _task_group=%s _has_started=%s",
+    _osm = orchestrator_mcp.session_manager
+    logger.info("Worker MCP session manager: _task_group=%s _has_started=%s",
                 _sm._task_group is not None, _sm._has_started)
+    logger.info("Orchestrator MCP session manager: _task_group=%s _has_started=%s",
+                _osm._task_group is not None, _osm._has_started)
     _sm._has_started = True
+    _osm._has_started = True
     async with anyio.create_task_group() as _mcp_tg:
         _sm._task_group = _mcp_tg
-        logger.info("MCP task group created: %s", _mcp_tg)
+        _osm._task_group = _mcp_tg
+        logger.info("MCP task group created (shared): %s", _mcp_tg)
         try:
             yield
         finally:
             _sm._task_group = None
+            _osm._task_group = None
             await _shutdown(rows, bw, wq)
 
 
@@ -380,6 +408,7 @@ app.include_router(questions.router)
 app.include_router(system.router)
 
 app.mount("/mcp", _streamable_app)
+app.mount("/mcp-orchestrator", _orchestrator_app)
 
 
 @app.get("/health")

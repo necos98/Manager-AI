@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config import settings
 from app.database import Base, ensure_data_dir
-from app.models import Project, Question, Task  # noqa: F401 — ensure models are registered
+from app.models import Project, Question, Task, PipelineEventRule  # noqa: F401 — ensure models are registered
 
 config = context.config
 if config.config_file_name is not None:

@@ -262,10 +262,25 @@ class TerminalService:
             self._queues.pop(terminal_id, None)
         if entry is None:
             return  # Already cleaned up (e.g., by mark_closed after PTY EOF)
+        pty = entry["pty"]
+        if pty is None:
+            return
         try:
-            pty = entry["pty"]
+            # winpty PTY has cancel_io() but no close() — cancel any
+            # blocking read() in the executor thread FIRST so it can
+            # detect EOF and unblock, preventing a zombie thread.
+            if hasattr(pty, "cancel_io"):
+                pty.cancel_io()
             if hasattr(pty, "close"):
                 pty.close()
+            elif hasattr(pty, "pid"):
+                # winpty: terminate the underlying process so the PTY
+                # agent exits and the executor thread's read() returns.
+                try:
+                    import signal
+                    os.kill(pty.pid, signal.SIGTERM)
+                except (ImportError, ProcessLookupError, OSError):
+                    pass
         except Exception:
             pass
 

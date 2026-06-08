@@ -7,7 +7,7 @@ from app.models.pipeline import Pipeline, PipelineStep
 from app.models.pipeline_event_rule import PipelineEventRule
 from app.models.pipeline_run import PipelineRun, PipelineRunStatus, PipelineStepRun, PipelineStepRunStatus
 from app.services.pipeline_service import PipelineService
-from app.services.pipeline_run_service import PipelineRunService
+from app.services.pipeline_run import PipelineRunService
 
 
 def _make_agents(db_session, names):
@@ -72,15 +72,45 @@ async def test_add_and_list_event_rules(db_session):
         event_type="step_rejected",
         source_step_id=steps["Reviewer"].id,
         target_step_id=steps["Dev"].id,
+        action_type="redirect",
+        action_params=None,
     )
     assert rule.event_type == "step_rejected"
     assert rule.source_step_id == steps["Reviewer"].id
     assert rule.target_step_id == steps["Dev"].id
+    assert rule.action_type == "redirect"
+    assert rule.action_params is None
     assert rule.enabled is True
 
     rules = await svc.list_event_rules(pipeline.id)
     assert len(rules) == 1
     assert rules[0].id == rule.id
+
+
+@pytest.mark.asyncio
+async def test_add_event_rule_with_action_params(db_session):
+    svc = PipelineService(db_session)
+    agents = _make_agents(db_session, ["SpecWriter", "Developer"])
+    pipeline, steps = await _make_pipeline(db_session, agents, [
+        ("SpecWriter", 0),
+        ("Developer", 1),
+    ])
+
+    rule = await svc.add_event_rule(
+        pipeline_id=pipeline.id,
+        event_type="step_completed",
+        source_step_id=steps["SpecWriter"].id,
+        target_step_id=steps["SpecWriter"].id,
+        action_type="set_issue_status",
+        action_params={"status": "PLANNED"},
+    )
+    assert rule.action_type == "set_issue_status"
+    assert rule.action_params == {"status": "PLANNED"}
+    assert rule.event_type == "step_completed"
+
+    rules = await svc.list_event_rules(pipeline.id)
+    assert len(rules) == 1
+    assert rules[0].action_params == {"status": "PLANNED"}
 
 
 @pytest.mark.asyncio

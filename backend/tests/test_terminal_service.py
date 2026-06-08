@@ -76,9 +76,10 @@ class TestTerminalServiceRegistry:
             service.kill(term["id"])
             assert len(service.list_active()) == 0
 
-    def test_kill_nonexistent_raises(self, service):
-        with pytest.raises(KeyError):
-            service.kill("nonexistent")
+    def test_kill_nonexistent_does_not_raise(self, service):
+        # kill() on a nonexistent terminal is a silent no-op
+        service.kill("nonexistent")
+        assert len(service.list_active()) == 0
 
     def test_get_by_id(self, service):
         with patch("app.services.terminal_service.PTY") as MockPTY:

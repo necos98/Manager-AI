@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Loader2, Bot } from "lucide-react";
-import { useSettings, useResetAllSettings, useInstallHermesMcp } from "@/features/settings/hooks";
+import { AlertTriangle, Loader2, Bot, BookOpen } from "lucide-react";
+import { toast } from "sonner";
+import { useSettings, useResetAllSettings, useInstallHermesMcp, useInstallHermesSkills } from "@/features/settings/hooks";
 import { SettingsForm } from "@/features/settings/components/settings-form";
 import { TerminalCommandsEditor } from "@/features/terminals/components/terminal-commands-editor";
 import { Button } from "@/shared/components/ui/button";
@@ -33,45 +34,115 @@ export const Route = createFileRoute("/settings")({
 
 
 function HermesIntegrationPanel() {
-  const install = useInstallHermesMcp();
+  const installMcp = useInstallHermesMcp();
+  const installSkills = useInstallHermesSkills();
 
   return (
-    <div className="border rounded-lg p-4 mt-5">
+    <div className="border rounded-lg p-4 mt-5 space-y-4">
+      {/* MCP install row */}
       <div className="flex items-start gap-3">
         <Bot className="size-5 mt-0.5 text-primary" />
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm">Hermes Agent Integration</p>
+          <p className="font-medium text-sm">Connessione MCP</p>
           <p className="text-xs text-muted-foreground mt-1">
             Connect Hermes Agent to the Manager AI MCP server. This allows
             Hermes to directly manage issues, pipelines, memories, and more
             through the Manager AI backend.
           </p>
+          <div className="mt-3">
+            <div className="flex items-center gap-3 mb-2">
+              <Button
+                size="sm"
+                onClick={() => installMcp.mutate()}
+                disabled={installMcp.isPending}
+              >
+                {installMcp.isPending ? (
+                  <>
+                    <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Genera comando MCP"
+                )}
+              </Button>
+            </div>
+            {installMcp.data?.commands && installMcp.data.commands.length > 0 && (
+              <div className="bg-muted rounded-md border">
+                <div className="flex items-center justify-between px-3 py-2 border-b">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Esegui nel terminale del tuo progetto:
+                  </span>
+                </div>
+                {installMcp.data.commands.map((cmd, i) => (
+                  <div key={i} className="flex items-center justify-between px-3 py-2 border-b last:border-b-0">
+                    <pre className="flex-1 text-sm font-mono overflow-x-auto whitespace-pre-wrap break-all mr-2">
+                      {cmd}
+                    </pre>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-xs shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(cmd);
+                        toast.success("📋 Copiato!");
+                      }}
+                    >
+                      Copia
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {installMcp.isError && (
+            <p className="mt-2 text-xs text-destructive">
+              {installMcp.error?.message ?? "Errore di connessione"}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Skills install row */}
+      <div className="flex items-start gap-3 pt-3 border-t">
+        <BookOpen className="size-5 mt-0.5 text-primary" />
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm">Skill di Orchestrazione</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Installa le skill manager-ai-orchestrator e manager-ai-issue-worker
+            in Hermes. Necessario per orchestrar e pipeline tramite Hermes.
+          </p>
           <div className="mt-3 flex items-center gap-3">
             <Button
               size="sm"
-              onClick={() => install.mutate()}
-              disabled={install.isPending}
+              onClick={() => installSkills.mutate()}
+              disabled={installSkills.isPending}
             >
-              {install.isPending ? (
+              {installSkills.isPending ? (
                 <>
                   <Loader2 className="size-3.5 mr-1.5 animate-spin" />
                   Installing...
                 </>
               ) : (
-                "Installa MCP su Hermes"
+                "Installa Skill Hermes"
               )}
             </Button>
             <span className="text-xs text-muted-foreground">
-              Esegue: hermes mcp add manager-ai --url http://localhost:8000/mcp
+              Copia le skill in ~/.hermes/skills/
             </span>
           </div>
-          {install.data && !install.data.success && install.data.error && (
-            <p className="mt-2 text-xs text-destructive">{install.data.error}</p>
-          )}
-          {install.data?.stdout && (
-            <pre className="mt-2 text-xs bg-muted p-2 rounded max-h-24 overflow-auto">
-              {install.data.stdout}
-            </pre>
+          {installSkills.data?.copied && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              {installSkills.data.copied
+                .filter((c) => c.name !== "AGENTS.md")
+                .map((c) => (
+                  <span key={c.name} className="inline-flex items-center gap-1 mr-3">
+                    <span className={c.status === "installed" || c.status === "updated" ? "text-green-600" : "text-amber-600"}>
+                      {c.status === "installed" ? "✅" : c.status === "updated" ? "🔄" : "⚠️"}
+                    </span>
+                    {c.name}
+                  </span>
+                ))}
+            </div>
           )}
         </div>
       </div>

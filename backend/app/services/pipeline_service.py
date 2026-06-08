@@ -149,6 +149,8 @@ class PipelineService:
         event_type: str,
         source_step_id: str,
         target_step_id: str,
+        action_type: str = "redirect",
+        action_params: dict | None = None,
     ) -> PipelineEventRule:
         """Add an event rule with step ID validation."""
         pipeline = await self.get_pipeline(pipeline_id)
@@ -162,6 +164,8 @@ class PipelineService:
             event_type=event_type,
             source_step_id=source_step_id,
             target_step_id=target_step_id,
+            action_type=action_type,
+            action_params=action_params,
         )
         self.session.add(rule)
         await self.session.flush()
@@ -229,6 +233,8 @@ def _rule_response(rule) -> PipelineEventRuleResponse:
         event_type=rule.event_type,
         source_step_id=rule.source_step_id,
         target_step_id=rule.target_step_id,
+        action_type=rule.action_type,
+        action_params=rule.action_params,
         enabled=rule.enabled,
         created_at=str(rule.created_at) if rule.created_at else None,
         updated_at=str(rule.updated_at) if rule.updated_at else None,

@@ -29,119 +29,85 @@ async def system_info() -> SystemInfoResponse:
 
 @router.post("/install-hermes-mcp")
 async def install_hermes_mcp() -> dict:
-    """Esegue 'hermes mcp add manager-ai' per connettere Hermes all'MCP server.
+    """Restituisce i comandi per connettere Hermes all'MCP orchestrator.
 
-    Spawna un subprocess che viene killato dopo l'esecuzione.
-    Restituisce stdout, stderr e codice di uscita.
+    Mostra all'utente i comandi da copiare ed eseguire nel terminale.
     """
     import os
 
-    base_url = "http://localhost:8000/mcp"
+    backend_port = os.environ.get("BACKEND_PORT", "8000")
+    base_url = f"http://localhost:{backend_port}/mcp"
+    orch_url = f"http://localhost:{backend_port}/mcp-orchestrator"
 
-    cmd = [
-        "hermes", "mcp", "add", "manager-ai",
-        "--url", base_url,
-    ]
-
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            env=os.environ.copy(),
-        )
-
-        try:
-            stdout, stderr = await asyncio.wait_for(
-                proc.communicate(input=b"n\ny\ny\n"), timeout=30
-            )
-        except asyncio.TimeoutError:
-            proc.kill()
-            await proc.wait()
-            return {
-                "success": False,
-                "error": "Timeout dopo 30 secondi. Assicurati che Hermes sia nel PATH.",
-                "stdout": "",
-                "stderr": "",
-                "exit_code": -1,
-            }
-
-        exit_code = proc.returncode
-        stdout_text = stdout.decode("utf-8", errors="replace").strip() if stdout else ""
-        stderr_text = stderr.decode("utf-8", errors="replace").strip() if stderr else ""
-
-        if exit_code == 0:
-            return {
-                "success": True,
-                "message": "Hermes MCP connesso con successo! "
-                          "Riavvia la sessione Hermes per vedere i nuovi tool MCP.",
-                "stdout": stdout_text,
-                "stderr": stderr_text,
-                "exit_code": exit_code,
-            }
-        else:
-            error_msg = stderr_text or stdout_text or f"Exit code: {exit_code}"
-            return {
-                "success": False,
-                "error": f"Comando fallito: {error_msg}",
-                "stdout": stdout_text,
-                "stderr": stderr_text,
-                "exit_code": exit_code,
-            }
-
-    except FileNotFoundError:
-        return {
-            "success": False,
-            "error": "Hermes non trovato nel PATH. "
-                     "Assicurati che 'hermes' sia installato e accessibile dal terminale.",
-            "stdout": "",
-            "stderr": "",
-            "exit_code": -1,
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": f"Errore imprevisto: {e}",
-            "stdout": "",
-            "stderr": "",
-            "exit_code": -1,
-        }
+    return {
+        "success": True,
+        "commands": [
+            f'hermes mcp add manager-ai-orchestrator --url {orch_url}',
+        ],
+        "message": (
+            f"Esegui questo comando nel terminale del tuo progetto:\n\n"
+            f"  hermes mcp add manager-ai-orchestrator --url {orch_url}\n\n"
+            f"Poi riavvia la sessione Hermes per vedere i nuovi tool MCP.\n"
+            f"Hermes si connette a /mcp-orchestrator ({orch_url}) con 81 tool di orchestrazione e amministrazione.\n"
+            f"Claude Code continua a usare /mcp (39 tool worker) — non serve configurarlo."
+        ),
+    }
 
 
 @router.post("/install-hermes-skills")
-async def install_hermes_skills(project_path: str) -> dict:
-    """Copia le skill Hermes (hermes_skills/) in un progetto.
+async def install_hermes_skills() -> dict:
+    """Installa globalmente le skill Hermes in ~/.hermes/skills/.
 
-    Copia hermes_skills/* in <project_path>/.hermes/skills/ e
-    hermes_skills/AGENTS.md in <project_path>/AGENTS.md.
+    Copia hermes_skills/manager-ai-orchestrator e
+    hermes_skills/manager-ai-issue-worker nella directory
+    globale delle skill Hermes.
     """
     import os
     import shutil
 
     src = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
         "hermes_skills",
     )
     if not os.path.isdir(src):
         raise HTTPException(status_code=404, detail="hermes_skills folder not found")
 
-    if not project_path or not os.path.isdir(project_path):
-        raise HTTPException(status_code=400, detail=f"Invalid project_path: {project_path}")
+    hermes_home = os.environ.get(
+        "HERMES_HOME",
+        os.path.join(os.path.expanduser("~"), "AppData", "Local", "hermes"),
+    )
+    hermes_skills_dir = os.path.join(hermes_home, "skills", "autonomous-ai-agents")
+    os.makedirs(hermes_skills_dir, exist_ok=True)
 
-    hermes_dir = os.path.join(project_path, ".hermes")
-    os.makedirs(hermes_dir, exist_ok=True)
-
+    skill_names = ["manager-ai-orchestrator", "manager-ai-issue-worker"]
     copied = []
-    for item in os.listdir(src):
-        if item.startswith("."):
-            continue
-        s = os.path.join(src, item)
-        d = os.path.join(hermes_dir, item) if item != "AGENTS.md" else os.path.join(project_path, item)
-        if os.path.isdir(s):
-            shutil.copytree(s, d, dirs_exist_ok=True)
-        else:
-            shutil.copy2(s, d)
-        copied.append(item)
 
-    return {"path": hermes_dir, "copied": copied}
+    for name in skill_names:
+        s = os.path.join(src, name)
+        if not os.path.isdir(s):
+            copied.append({"name": name, "status": "skipped", "reason": "source not found"})
+            continue
+        d = os.path.join(hermes_skills_dir, name)
+        if os.path.isdir(d):
+            # Aggiorna SKILL.md esistente
+            shutil.copy2(os.path.join(s, "SKILL.md"), os.path.join(d, "SKILL.md"))
+            copied.append({"name": name, "status": "updated"})
+        else:
+            shutil.copytree(s, d)
+            copied.append({"name": name, "status": "installed"})
+
+    # Copia anche AGENTS.md come riferimento
+    agents_md_src = os.path.join(src, "AGENTS.md")
+    if os.path.isfile(agents_md_src):
+        shutil.copy2(agents_md_src, hermes_skills_dir)
+        copied.append({"name": "AGENTS.md", "status": "installed"})
+
+    return {
+        "success": True,
+        "copied": copied,
+        "path": hermes_skills_dir,
+        "message": (
+            f"Skill installate in {hermes_skills_dir}. "
+            "Riavvia Hermes o esegui /reload-skills per usarle."
+        ),
+    }
