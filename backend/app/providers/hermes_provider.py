@@ -9,8 +9,8 @@ class HermesProvider(AgentProvider):
     """Provider per Hermes Agent CLI.
 
     Hermes usa il sottocomando ``chat`` per sessioni interattive e il flag
-    ``-z`` per chiamate one-shot (hook). I flag ``--yolo`` e ``--worktree``
-    permettono di bypassare le conferme e isolare il lavoro in un worktree.
+    ``-z`` per chiamate one-shot (hook). Il flag ``--yolo`` permette di
+    bypassare le conferme.
 
     Rispetto a Claude Code, Hermes non ha i comandi built-in ``/run-issue``,
     ``/run-pipeline``, ecc. Questi sono definiti come skill Hermes nel progetto.
@@ -23,13 +23,13 @@ class HermesProvider(AgentProvider):
 
     def build_run_issue_command(self, issue_id: str) -> str:
         return (
-            f"hermes chat --skills run-issue --worktree --yolo "
+            f"hermes chat --skills run-issue --yolo "
             f"-q \"Work on issue {shlex.quote(issue_id)}\""
         )
 
     def build_run_pipeline_command(self, issue_id: str) -> str:
         return (
-            f"hermes chat --skills run-pipeline --worktree --yolo "
+            f"hermes chat --skills run-pipeline --yolo "
             f"-q \"Execute pipeline step for issue {shlex.quote(issue_id)}\""
         )
 
