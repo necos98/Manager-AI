@@ -250,3 +250,15 @@ export function useTerminalLayout(projectId: string, issueId: string) {
     isOpening: createTerminal.isPending,
   };
 }
+
+export function useCreateHermesTerminal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (command: string) => api.createHermesTerminal(command),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: terminalKeys.all });
+      queryClient.invalidateQueries({ queryKey: terminalKeys.count });
+    },
+    onError: onMutationError,
+  });
+}

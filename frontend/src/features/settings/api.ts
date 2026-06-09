@@ -1,5 +1,5 @@
 import { apiGet, apiPut, apiDelete, apiPost } from "@/shared/api/client";
-import type { Setting } from "@/shared/types";
+import type { HermesCommand, Setting } from "@/shared/types";
 
 export function fetchSettings(): Promise<Setting[]> {
   return apiGet<Setting[]>("/settings");
@@ -32,4 +32,15 @@ export function installHermesSkills(): Promise<{
   message: string;
 }> {
   return apiPost("/system/install-hermes-skills");
+}
+
+export async function fetchHermesCommands(): Promise<HermesCommand[]> {
+  const settings = await fetchSettings();
+  const raw = settings.find((s) => s.key === "hermes_commands")?.value;
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as HermesCommand[];
+  } catch {
+    return [];
+  }
 }

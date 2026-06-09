@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Loader2, Bot, BookOpen } from "lucide-react";
+import { AlertTriangle, Loader2, Bot, BookOpen, Play, Terminal } from "lucide-react";
 import { toast } from "sonner";
-import { useSettings, useResetAllSettings, useInstallHermesMcp, useInstallHermesSkills } from "@/features/settings/hooks";
+import { useSettings, useResetAllSettings, useInstallHermesMcp, useInstallHermesSkills, useHermesCommands } from "@/features/settings/hooks";
 import { SettingsForm } from "@/features/settings/components/settings-form";
 import { TerminalCommandsEditor } from "@/features/terminals/components/terminal-commands-editor";
+import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
+import { useCreateHermesTerminal, useKillTerminal } from "@/features/terminals/hooks";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -17,7 +19,7 @@ import {
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import type { Setting } from "@/shared/types";
 
-const TABS = ["Server", "Tool Descriptions", "Response Messages", "Terminal", "Agent CLI", "Preferences"] as const;
+const TABS = ["Server", "Tool Descriptions", "Response Messages", "Terminal", "Agent CLI", "Hermes", "Preferences"] as const;
 type SettingsTab = (typeof TABS)[number];
 
 function getCategory(key: string): string {
@@ -151,6 +153,106 @@ function HermesIntegrationPanel() {
   );
 }
 
+function HermesCommandsPanel() {
+  const { data: commands, isLoading } = useHermesCommands();
+  const createHermesTerminal = useCreateHermesTerminal();
+  const killTerminal = useKillTerminal();
+  const [activeTerminalId, setActiveTerminalId] = useState<string | null>(null);
+  const [activeDialogOpen, setActiveDialogOpen] = useState(false);
+
+  async function handleRun(cmd: { name: string; command: string }) {
+    try {
+      const terminal = await createHermesTerminal.mutateAsync(cmd.command);
+      setActiveTerminalId(terminal.id);
+      setActiveDialogOpen(true);
+    } catch {
+      // toast already handled by mutation
+    }
+  }
+
+  function handleDialogClose(open: boolean) {
+    if (!open && activeTerminalId) {
+      killTerminal.mutate(activeTerminalId);
+      setActiveTerminalId(null);
+    }
+    setActiveDialogOpen(open);
+  }
+
+  function handleSessionEnd() {
+    setActiveTerminalId(null);
+    setActiveDialogOpen(false);
+  }
+
+  return (
+    <>
+      {isLoading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-16" />
+          <Skeleton className="h-16" />
+          <Skeleton className="h-16" />
+        </div>
+      ) : !commands || commands.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Nessun comando Hermes configurato. Aggiungi il setting <code>hermes_commands</code>.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {commands.map((cmd, i) => (
+            <div
+              key={i}
+              className="border rounded-lg p-4 flex items-start gap-3"
+            >
+              <Terminal className="size-5 mt-0.5 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm">{cmd.name}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {cmd.description}
+                </p>
+                <pre className="mt-2 text-xs font-mono bg-muted rounded px-2 py-1 overflow-x-auto">
+                  {cmd.command}
+                </pre>
+              </div>
+              <Button
+                size="sm"
+                className="shrink-0 mt-1"
+                onClick={() => handleRun(cmd)}
+                disabled={createHermesTerminal.isPending}
+              >
+                {createHermesTerminal.isPending ? (
+                  <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Play className="size-3.5 mr-1.5" />
+                )}
+                Run
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={activeDialogOpen} onOpenChange={handleDialogClose}>
+        <DialogContent className="max-w-3xl h-[70vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Terminale Hermes</DialogTitle>
+            <DialogDescription>
+              Terminale interattivo per comandi Hermes Agent
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            {activeTerminalId && (
+              <TerminalPanel
+                terminalId={activeTerminalId}
+                projectId=""
+                onSessionEnd={handleSessionEnd}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function PreferencesPanel() {
   const [soundEnabled, setSoundEnabled] = useState(
     () => localStorage.getItem("manager_ai_sound") !== "false"
@@ -260,13 +362,15 @@ function SettingsPage() {
           </div>
           <TerminalCommandsEditor projectId={null} />
         </div>
+      ) : activeTab === "Hermes" ? (
+        <HermesCommandsPanel />
       ) : activeTab === "Preferences" ? (
         <PreferencesPanel />
       ) : (
         <SettingsForm settings={filteredSettings} />
       )}
 
-      {activeTab !== "Terminal" && activeTab !== "Preferences" && (
+      {activeTab !== "Terminal" && activeTab !== "Hermes" && activeTab !== "Preferences" && (
         <div className="mt-8 pt-6 border-t">
           <Button
             variant="ghost"

@@ -66,8 +66,8 @@ export function useInstallHermesMcp() {
     },
   });
 }
-
 export function useInstallHermesSkills() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.installHermesSkills,
     onSuccess: (data) => {
@@ -84,5 +84,13 @@ export function useInstallHermesSkills() {
     onError: (e) => {
       toast.error(e instanceof Error ? e.message : "Errore di connessione");
     },
+  });
+}
+
+export function useHermesCommands() {
+  return useQuery({
+    queryKey: ["settings", "hermes-commands"],
+    queryFn: api.fetchHermesCommands,
+    staleTime: 30_000,
   });
 }

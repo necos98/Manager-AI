@@ -189,6 +189,12 @@ export interface LogTerminalCreate {
 
 export interface ManageAgentTerminalCreate { agent_id?: string }
 
+export interface HermesCommand {
+  name: string;
+  command: string;
+  description: string;
+}
+
 // ── Terminal Command ──
 
 export interface TerminalCommand {

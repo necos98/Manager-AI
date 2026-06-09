@@ -73,3 +73,7 @@ export function fetchManageAgentTerminals(): Promise<TerminalListItem[]> {
 export function fetchTerminalCommandTemplates(): Promise<TerminalCommandTemplate[]> {
   return apiGet<TerminalCommandTemplate[]>("/terminal-commands/templates");
 }
+
+export function createHermesTerminal(command: string): Promise<Terminal> {
+  return apiPost<Terminal>("/terminals/hermes", { command });
+}

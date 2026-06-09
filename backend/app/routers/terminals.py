@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.terminal import (
     AskTerminalCreate,
+    HermesTerminalCreate,
     LogTerminalCreate,
     ManageAgentTerminalCreate,
     TerminalCreate,
@@ -61,6 +62,14 @@ async def create_log_terminal(
     service: TerminalService = Depends(get_terminal_service),
 ):
     return await ops.create_log_terminal(data, db, service)
+
+
+@router.post("/hermes", response_model=TerminalResponse, status_code=201)
+async def create_hermes_terminal(
+    data: HermesTerminalCreate,
+    service: TerminalService = Depends(get_terminal_service),
+):
+    return await ops.create_hermes_terminal(data, service)
 
 
 # NOTE: /ask, /manage-agent, /config, /count MUST be defined before

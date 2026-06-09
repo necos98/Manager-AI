@@ -325,6 +325,48 @@ async def create_manage_agent_terminal(
     return terminal
 
 
+async def create_hermes_terminal(
+    data, service: TerminalService
+) -> dict:
+    """Create a Hermes CLI terminal (system-level, no project/issue)."""
+    project_path = str(
+        Path(app_settings.database_url).parent.parent.resolve()
+    )
+    if not os.path.isdir(project_path):
+        project_path = str(
+            Path(__file__).resolve().parent.parent.parent
+        )
+
+    try:
+        terminal = service.create(
+            issue_id="",
+            project_id="",
+            project_path=project_path,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to spawn terminal: {e}"
+        )
+
+    # Write the Hermes command into the PTY
+    try:
+        pty = service.get_pty(terminal["id"])
+        for line in data.command.split("\n"):
+            line = line.strip()
+            if line:
+                pty.write(line + "\r\n")
+    except Exception:
+        logger.warning(
+            "Failed to inject Hermes command for terminal %s",
+            terminal["id"],
+            exc_info=True,
+        )
+
+    return terminal
+
+
 async def create_log_terminal(
     data, db: AsyncSession, service: TerminalService
 ) -> dict:

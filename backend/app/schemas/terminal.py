@@ -24,6 +24,10 @@ class ManageAgentTerminalCreate(BaseModel):
     agent_id: str | None = None
 
 
+class HermesTerminalCreate(BaseModel):
+    command: str
+
+
 class TerminalResponse(BaseModel):
     id: str
     issue_id: str
