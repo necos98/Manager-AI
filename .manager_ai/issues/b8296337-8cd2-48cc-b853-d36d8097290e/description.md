@@ -1,0 +1,1 @@
+Test notifica Telegram issue completata

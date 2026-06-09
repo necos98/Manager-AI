@@ -1,4 +1,4 @@
-"""Pipeline run lifecycle: start, pause, resume, cancel, advance_step, finalize."""
+"""Pipeline run lifecycle: start, pause, resume, cancel, finalize."""
 
 import asyncio
 import logging
@@ -17,7 +17,6 @@ from app.models.pipeline_run import (
     PipelineStepRunStatus,
 )
 from app.services.pipeline_run import (
-    _completion,
     _events,
     _execution,
     _queries,
@@ -36,11 +35,10 @@ async def start(
     issue_id: str,
     project_id: str,
     project_path: str,
-    orchestrated: bool,
     session: AsyncSession,
     session_factory=None,
 ) -> dict:
-    """Start a pipeline run. Returns run details with step runs."""
+    """Start a pipeline run (always auto-mode). Returns run details with step runs."""
     # Guard: no concurrent runs
     existing = await session.execute(
         select(PipelineRun).where(
@@ -66,13 +64,12 @@ async def start(
     if pipeline is None:
         raise NotFoundError(f"Pipeline not found: {pipeline_id}")
 
-    # Create run
+    # Create run — always RUNNING (auto-mode)
     run = PipelineRun(
         pipeline_id=pipeline_id,
         issue_id=issue_id,
-        status=PipelineRunStatus.WAITING_FOR_STEP if orchestrated else PipelineRunStatus.RUNNING,
+        status=PipelineRunStatus.RUNNING,
         current_step_index=0,
-        orchestrated=orchestrated,
         started_at=now(),
     )
     session.add(run)
@@ -90,14 +87,11 @@ async def start(
         await session.flush()
         step_responses.append(_responses.start_step_run_to_dict(step_run))
 
-    if orchestrated:
-        await session.commit()
-    else:
-        task = asyncio.create_task(
-            _execution.execute(run.id, project_id, project_path, session, session_factory)
-        )
-        await pipeline_task_manager.start_task(run.id, task)
-        await session.commit()
+    task = asyncio.create_task(
+        _execution.execute(run.id, project_id, project_path, session, session_factory)
+    )
+    await pipeline_task_manager.start_task(run.id, task)
+    await session.commit()
 
     return {
         "id": run.id,
@@ -136,10 +130,7 @@ async def pause_run(run_id: str, session: AsyncSession) -> dict:
                 sr.finished_at = now()
                 break
 
-        if not run.orchestrated:
-            await pipeline_task_manager.cancel_task(run_id)
-        else:
-            _completion.set_step_completed(run_id, step_idx)
+        await pipeline_task_manager.cancel_task(run_id)
 
     run.status = PipelineRunStatus.PAUSED
     await _safe_session.safe_commit(session)
@@ -169,6 +160,10 @@ async def cancel_run(run_id: str, session: AsyncSession) -> bool:
             f"Can only cancel active pipelines (status: {run.status.value})"
         )
 
+    # Look up project_id from issue
+    issue = await session.get(Issue, run.issue_id)
+    project_id = issue.project_id if issue else ""
+
     # Kill active terminal first so the reader thread unblocks
     for sr in run.step_runs:
         if sr.status == PipelineStepRunStatus.RUNNING and sr.terminal_id:
@@ -177,79 +172,27 @@ async def cancel_run(run_id: str, session: AsyncSession) -> bool:
             sr.finished_at = now()
             break
 
-    # Cancel background task (auto-mode _execute, orchestrated _monitor_step)
+    # Cancel background task
     await pipeline_task_manager.cancel_task(run_id)
 
     run.status = PipelineRunStatus.FAILED
     run.finished_at = now()
-    await _safe_session.safe_flush(session)
-    return True
 
-
-async def advance_step(run_id: str, session: AsyncSession) -> dict:
-    """Advance the pipeline to the next step (orchestrated mode)."""
-    run = await _queries.get_run_with_session(run_id, session)
-    if run.status not in (PipelineRunStatus.WAITING_FOR_STEP, PipelineRunStatus.RUNNING):
-        raise ValidationError(
-            f"Cannot advance: pipeline is {run.status.value}, "
-            f"expected WAITING_FOR_STEP or RUNNING"
-        )
-
-    i = run.current_step_index
-    current_completed = any(
-        sr.pipeline_step
-        and sr.pipeline_step.order_index == i
-        and sr.status == PipelineStepRunStatus.COMPLETED
-        for sr in run.step_runs
-    )
-    if not current_completed:
-        raise ValidationError(f"Cannot advance: step {i} is not COMPLETED")
-
-    total_steps = len(run.step_runs)
-    if i + 1 >= total_steps:
-        # Pipeline finished -- cleanup final terminal
-        _cleanup_current_terminal(run, i)
-
-        run.status = PipelineRunStatus.COMPLETED
-        run.finished_at = now()
-        # Fire event engine BEFORE commit — action handlers run in same transaction
-        issue = await session.get(Issue, run.issue_id)
+    # Fire event engine BEFORE flush — action handlers run in same transaction
+    try:
         await _events.fire_pipeline_event(
             run.pipeline_id, "pipeline_completed", None,
-            run_id=run_id, issue_id=run.issue_id,
-            project_id=issue.project_id if issue else "",
-            metadata={"status": PipelineRunStatus.COMPLETED.value},
+            run_id=run_id, issue_id=run.issue_id, project_id=project_id,
+            metadata={"status": PipelineRunStatus.FAILED.value, "reason": "cancelled"},
             session=session,
         )
-        await _safe_session.safe_commit(session)
+    except Exception:
+        logger.exception("Event engine pipeline_completed action failed for cancel on run %s", run_id)
 
-        issue = await session.get(Issue, run.issue_id)
-        await _events.emit_pipeline_completed(
-            project_id=issue.project_id if issue else "",
-            issue_id=run.issue_id,
-            run_id=run_id,
-            status=PipelineRunStatus.COMPLETED.value,
-        )
-        return {"status": "COMPLETED", "next_step_index": None, "pipeline_finished": True}
+    await _safe_session.safe_flush(session)
 
-    run.current_step_index = i + 1
-    run.status = PipelineRunStatus.WAITING_FOR_STEP
-    await _safe_session.safe_commit(session)
-
-    # Defensive cleanup of previous step's terminal
-    _cleanup_current_terminal(run, i)
-
-    await _events.emit_step_advanced(run_id, run.issue_id, i, i + 1)
-    return {"status": "WAITING_FOR_STEP", "next_step_index": i + 1, "pipeline_finished": False}
-
-
-def _cleanup_current_terminal(run: PipelineRun, step_index: int) -> None:
-    """Clean up terminal for a specific step, if present."""
-    for sr in run.step_runs:
-        if (
-            sr.pipeline_step
-            and sr.pipeline_step.order_index == step_index
-            and sr.terminal_id
-        ):
-            _terminal.cleanup_terminal(sr.terminal_id)
-            break
+    # WS emit (fire-and-forget, no session needed)
+    await _events.emit_pipeline_completed(
+        project_id, run.issue_id, run_id, PipelineRunStatus.FAILED.value,
+    )
+    return True

@@ -5,6 +5,8 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from sqlalchemy.exc import IntegrityError
+
 from app.exceptions import NotFoundError
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
 from app.schemas.export_import import (
@@ -26,7 +28,6 @@ def _response(agent) -> AgentResponse:
         name=agent.name,
         intent=agent.intent,
         model=agent.model,
-        provider=agent.provider,
         allowed_tools=agent.allowed_tools,
         created_at=str(agent.created_at) if agent.created_at else None,
         updated_at=str(agent.updated_at) if agent.updated_at else None,
@@ -49,12 +50,21 @@ async def create_agent(data: AgentCreate, db: AsyncSession = Depends(get_db)):
     agent = await svc.create(
         name=data.name,
         model=data.model,
-        provider=data.provider,
         allowed_tools=data.allowed_tools,
         intent=data.intent or "",
     )
+    try:
+        await db.commit()
+    except IntegrityError as e:
+        await db.rollback()
+        print(f"[DEBUG] IntegrityError caught: {e}", flush=True)
+        raise HTTPException(status_code=409, detail=f"Agent '{data.name}' already exists")
+    except Exception as e:
+        await db.rollback()
+        print(f"[DEBUG] Other error during commit: {type(e).__name__}: {e}", flush=True)
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {type(e).__name__}")
+    await db.refresh(agent)
     resp = _response(agent)
-    await db.commit()
     return resp
 
 
@@ -62,8 +72,10 @@ async def create_agent(data: AgentCreate, db: AsyncSession = Depends(get_db)):
 async def seed_agents(db: AsyncSession = Depends(get_db)):
     svc = AgentService(db)
     agents = await svc.seed_defaults()
-    resp = [_response(a) for a in agents]
     await db.commit()
+    for a in agents:
+        await db.refresh(a)
+    resp = [_response(a) for a in agents]
     return resp
 
 
@@ -216,13 +228,16 @@ async def update_agent(
         kwargs["intent"] = data.intent
     if data.model is not None:
         kwargs["model"] = data.model
-    if data.provider is not None:
-        kwargs["provider"] = data.provider
     if data.allowed_tools is not None:
         kwargs["allowed_tools"] = data.allowed_tools
-    agent = await svc.update(agent_id, **kwargs)
-    resp = _response(agent)
+    try:
+        agent = await svc.update(agent_id, **kwargs)
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail=f"Agent name '{data.name}' already exists")
     await db.commit()
+    await db.refresh(agent)
+    resp = _response(agent)
     return resp
 
 

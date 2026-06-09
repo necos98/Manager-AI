@@ -5,7 +5,7 @@ Issues (CRUD), Agents (CRUD), Pipelines (CRUD + Steps + Event Rules),
 Pipeline Runs (execution lifecycle), read-only Project queries, and
 Project Context.
 
-Mounted at ``/mcp-orchestrator`` on the FastAPI app.
+Mounted at ``/mcp-orchestrator/`` on the FastAPI app.
 """
 
 import json
@@ -21,7 +21,10 @@ from app.mcp.shared_tools import (
     # Issue
     get_issue_details as _get_issue_details,
     get_issue_status as _get_issue_status,
+    list_issues as _list_issues,
+    get_issue_statuses as _get_issue_statuses,
     create_issue as _create_issue,
+    set_issue_name as _set_issue_name,
     delete_issue as _delete_issue,
     # Project (essentials only)
     get_project_context as _get_project_context,
@@ -47,19 +50,23 @@ from app.mcp.shared_tools import (
     update_pipeline_event_rule_tool as _update_pipeline_event_rule_tool,
     # Pipeline runs
     run_pipeline as _run_pipeline,
+    run_issue as _run_issue,
     get_pipeline_run_status as _get_pipeline_run_status,
     get_active_agent as _get_active_agent,
     get_active_pipeline_run as _get_active_pipeline_run,
     send_agent_message as _send_agent_message,
     get_pipeline_messages as _get_pipeline_messages,
-    finished_pipeline_step as _finished_pipeline_step,
-    start_pipeline_step as _start_pipeline_step,
-    advance_pipeline as _advance_pipeline,
     pause_pipeline as _pause_pipeline,
     resume_pipeline as _resume_pipeline,
+    cancel_pipeline as _cancel_pipeline,
     # Projects (read-only essentials)
     list_projects as _list_projects,
     get_project as _get_project,
+    # Plugins
+    enable_plugin_tool as _enable_plugin_tool,
+    disable_plugin_tool as _disable_plugin_tool,
+    # Memory search
+    memory_search as _memory_search,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,6 +97,24 @@ async def get_issue_status(project_id: str, issue_id: str) -> dict:
         return await _get_issue_status(session, project_id, issue_id)
 
 
+@orchestrator_mcp.tool(description=_desc["tool.list_issues.description"])
+async def list_issues(
+    project_id: str,
+    status: str | None = None,
+    search: str | None = None,
+    tag: str | None = None,
+    limit: int | None = None,
+    offset: int = 0,
+) -> dict:
+    async with async_session() as session:
+        return await _list_issues(session, project_id, status=status, search=search, tag=tag, limit=limit, offset=offset)
+
+
+@orchestrator_mcp.tool(description=_desc["tool.get_issue_statuses.description"])
+async def get_issue_statuses() -> dict:
+    return await _get_issue_statuses()
+
+
 @orchestrator_mcp.tool(description=_desc["tool.create_issue.description"])
 async def create_issue(project_id: str, description: str, priority: int = 3) -> dict:
     async with async_session() as session:
@@ -100,6 +125,12 @@ async def create_issue(project_id: str, description: str, priority: int = 3) -> 
 async def delete_issue(project_id: str, issue_id: str) -> dict:
     async with async_session() as session:
         return await _delete_issue(session, project_id, issue_id)
+
+
+@orchestrator_mcp.tool(description=_desc["tool.set_issue_name.description"])
+async def set_issue_name(project_id: str, issue_id: str, name: str) -> dict:
+    async with async_session() as session:
+        return await _set_issue_name(session, project_id, issue_id, name)
 
 
 # ── 2) Project Context Tools ─────────────────────────────────────────────────
@@ -115,9 +146,9 @@ async def get_project_context(project_id: str) -> dict:
 
 
 @orchestrator_mcp.tool(description=_desc["tool.create_agent.description"])
-async def create_agent(name: str, intent: str = "", model: str | None = None, allowed_tools: list[str] | None = None, provider: str | None = None) -> dict:
+async def create_agent(name: str, intent: str = "", model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
     async with async_session() as session:
-        return await _create_agent(session, name, intent=intent, model=model, allowed_tools=allowed_tools, provider=provider)
+        return await _create_agent(session, name, intent=intent, model=model, allowed_tools=allowed_tools)
 
 
 @orchestrator_mcp.tool(description=_desc["tool.list_agents.description"])
@@ -133,9 +164,9 @@ async def get_agent(agent_id: str) -> dict:
 
 
 @orchestrator_mcp.tool(description=_desc["tool.update_agent.description"])
-async def update_agent(agent_id: str, name: str | None = None, intent: str | None = None, model: str | None = None, allowed_tools: list[str] | None = None, provider: str | None = None) -> dict:
+async def update_agent(agent_id: str, name: str | None = None, intent: str | None = None, model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
     async with async_session() as session:
-        return await _update_agent(session, agent_id, name=name, intent=intent, model=model, allowed_tools=allowed_tools, provider=provider)
+        return await _update_agent(session, agent_id, name=name, intent=intent, model=model, allowed_tools=allowed_tools)
 
 
 @orchestrator_mcp.tool(description=_desc["tool.delete_agent.description"])
@@ -249,9 +280,21 @@ async def update_pipeline_event_rule(
 
 
 @orchestrator_mcp.tool(description=_desc["tool.run_pipeline.description"])
-async def run_pipeline(project_id: str, pipeline_id: str, issue_id: str, orchestrated: bool = False) -> dict:
+async def run_pipeline(project_id: str, pipeline_id: str, issue_id: str) -> dict:
     async with async_session() as session:
-        return await _run_pipeline(session, project_id, pipeline_id, issue_id, orchestrated)
+        return await _run_pipeline(session, project_id, pipeline_id, issue_id)
+
+
+@orchestrator_mcp.tool(
+    description="Run a single issue directly — spawn a terminal with the configured agent provider and let it work autonomously. "
+                "No pipeline, no multi-agent orchestration. Just fire the agent at the issue. "
+                "Parameters: project_id (required), issue_id (required), provider_name (optional — defaults to the configured agent_provider). "
+                "Returns: {term_id, status, provider, issue_id, project_id}. "
+                "The terminal is visible in the Manager AI web UI."
+)
+async def run_issue(project_id: str, issue_id: str, provider_name: str | None = None) -> dict:
+    async with async_session() as session:
+        return await _run_issue(session, project_id, issue_id, provider_name=provider_name)
 
 
 @orchestrator_mcp.tool(description=_desc["tool.get_pipeline_run_status.description"])
@@ -284,35 +327,6 @@ async def get_pipeline_messages(run_id: str) -> dict:
         return await _get_pipeline_messages(session, run_id)
 
 
-@orchestrator_mcp.tool(description=_desc["tool.finished_pipeline_step.description"])
-async def finished_pipeline_step(
-    issue_id: str,
-    summary: str,
-    rejected: bool = False,
-    rejection_reason: str | None = None,
-    target_step_index: int | None = None,
-) -> dict:
-    async with async_session() as session:
-        return await _finished_pipeline_step(
-            session, issue_id, summary,
-            rejected=rejected,
-            rejection_reason=rejection_reason,
-            target_step_index=target_step_index,
-        )
-
-
-@orchestrator_mcp.tool(description=_desc["tool.start_pipeline_step.description"])
-async def start_pipeline_step(run_id: str, project_id: str) -> dict:
-    async with async_session() as session:
-        return await _start_pipeline_step(session, run_id, project_id)
-
-
-@orchestrator_mcp.tool(description=_desc["tool.advance_pipeline.description"])
-async def advance_pipeline(run_id: str) -> dict:
-    async with async_session() as session:
-        return await _advance_pipeline(session, run_id)
-
-
 @orchestrator_mcp.tool(description=_desc["tool.pause_pipeline.description"])
 async def pause_pipeline(run_id: str) -> dict:
     async with async_session() as session:
@@ -323,6 +337,12 @@ async def pause_pipeline(run_id: str) -> dict:
 async def resume_pipeline(run_id: str) -> dict:
     async with async_session() as session:
         return await _resume_pipeline(session, run_id)
+
+
+@orchestrator_mcp.tool(description=_desc["tool.cancel_pipeline.description"])
+async def cancel_pipeline(run_id: str) -> dict:
+    async with async_session() as session:
+        return await _cancel_pipeline(session, run_id)
 
 
 # ── 6) Project Tools (read-only) ─────────────────────────────────────────────
@@ -344,3 +364,30 @@ async def list_projects(archived: bool = False) -> dict:
 async def get_project(project_id: str) -> dict:
     async with async_session() as session:
         return await _get_project(session, project_id)
+
+
+# ── 6.5) Memory Search Tool ────────────────────────────────────────────────────
+
+
+@orchestrator_mcp.tool(
+    description="Full-text search across a project's memory titles "
+                "and descriptions. Returns matches with snippet and rank."
+)
+async def memory_search(project_id: str, query: str, limit: int = 20) -> dict:
+    async with async_session() as session:
+        return await _memory_search(session, project_id, query, limit)
+
+
+# ── 7) Plugin Tools ────────────────────────────────────────────────────────────
+
+
+@orchestrator_mcp.tool(description=_desc["tool.enable_plugin.description"])
+async def enable_plugin(project_id: str, plugin_name: str) -> dict:
+    async with async_session() as session:
+        return await _enable_plugin_tool(session, project_id, plugin_name)
+
+
+@orchestrator_mcp.tool(description=_desc["tool.disable_plugin.description"])
+async def disable_plugin(project_id: str, plugin_name: str) -> dict:
+    async with async_session() as session:
+        return await _disable_plugin_tool(session, project_id, plugin_name)

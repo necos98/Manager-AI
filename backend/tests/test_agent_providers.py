@@ -21,10 +21,10 @@ def test_abc_cannot_be_instantiated():
 def test_abc_has_all_abstract_methods():
     expected = {
         "name": property,
-        "build_run_issue_command": ...,
-        "build_run_pipeline_command": ...,
-        "build_ask_brainstorm_command": ...,
-        "build_manage_agent_command": ...,
+        "build_run_issue_commands": ...,
+        "build_run_pipeline_commands": ...,
+        "build_ask_brainstorm_commands": ...,
+        "build_manage_agent_commands": ...,
         "build_hook_command": ...,
     }
     for method_name in expected:
@@ -34,7 +34,7 @@ def test_abc_has_all_abstract_methods():
 
 
 # ==============================================================================
-# ClaudeProvider — generation commands
+# ClaudeProvider — generation commands (plural, list[str])
 # ==============================================================================
 
 
@@ -47,63 +47,72 @@ class TestClaudeProvider:
     def test_name(self, claude: ClaudeProvider):
         assert claude.name == "claude"
 
-    def test_build_run_issue_command(self, claude: ClaudeProvider):
-        cmd = claude.build_run_issue_command("iss-1")
-        assert cmd.startswith("claude")
-        assert "--dangerously-skip-permissions" in cmd
-        assert "/run-issue iss-1" in cmd
+    def test_build_run_issue_commands(self, claude: ClaudeProvider):
+        cmds = claude.build_run_issue_commands("iss-1")
+        assert isinstance(cmds, list)
+        assert len(cmds) == 1
+        assert cmds[0].startswith("claude")
+        assert "--dangerously-skip-permissions" in cmds[0]
+        assert "/run-issue iss-1" in cmds[0]
 
-    def test_build_run_issue_command_quotes_id(self, claude: ClaudeProvider):
-        cmd = claude.build_run_issue_command("abc-123")
-        assert "/run-issue abc-123" in cmd
+    def test_build_run_issue_commands_quotes_id(self, claude: ClaudeProvider):
+        cmds = claude.build_run_issue_commands("abc-123")
+        assert "/run-issue abc-123" in cmds[0]
 
-    def test_build_run_pipeline_command(self, claude: ClaudeProvider):
-        cmd = claude.build_run_pipeline_command("iss-1")
-        assert cmd.startswith("claude")
-        assert "--dangerously-skip-permissions" in cmd
-        assert "/run-pipeline iss-1" in cmd
+    def test_build_run_pipeline_commands(self, claude: ClaudeProvider):
+        cmds = claude.build_run_pipeline_commands("iss-1")
+        assert isinstance(cmds, list)
+        assert len(cmds) == 1
+        assert cmds[0].startswith("claude")
+        assert "--dangerously-skip-permissions" in cmds[0]
+        assert "/run-pipeline iss-1" in cmds[0]
 
-    def test_build_run_pipeline_command_quotes_id(self, claude: ClaudeProvider):
-        cmd = claude.build_run_pipeline_command("abc-123")
-        assert "/run-pipeline abc-123" in cmd
+    def test_build_run_pipeline_commands_quotes_id(self, claude: ClaudeProvider):
+        cmds = claude.build_run_pipeline_commands("abc-123")
+        assert "/run-pipeline abc-123" in cmds[0]
 
-    def test_build_ask_brainstorm_command(self, claude: ClaudeProvider):
-        cmd = claude.build_ask_brainstorm_command("proj-1")
-        assert cmd.startswith("claude")
-        assert "--dangerously-skip-permissions" in cmd
-        assert "/ask-and-brainstorm proj-1" in cmd
+    def test_build_ask_brainstorm_commands(self, claude: ClaudeProvider):
+        cmds = claude.build_ask_brainstorm_commands("proj-1")
+        assert isinstance(cmds, list)
+        assert len(cmds) == 1
+        assert cmds[0].startswith("claude")
+        assert "--dangerously-skip-permissions" in cmds[0]
+        assert "/ask-and-brainstorm proj-1" in cmds[0]
 
-    def test_build_ask_brainstorm_command_quotes_id(self, claude: ClaudeProvider):
-        cmd = claude.build_ask_brainstorm_command("abc-123")
-        assert "/ask-and-brainstorm abc-123" in cmd
+    def test_build_ask_brainstorm_commands_quotes_id(self, claude: ClaudeProvider):
+        cmds = claude.build_ask_brainstorm_commands("abc-123")
+        assert "/ask-and-brainstorm abc-123" in cmds[0]
 
-    def test_build_manage_agent_no_intent(self, claude: ClaudeProvider):
-        cmd = claude.build_manage_agent_command()
-        assert cmd.startswith("claude")
-        assert "--dangerously-skip-permissions" in cmd
-        assert "/manage-agent" in cmd
+    def test_build_manage_agent_commands_no_intent(self, claude: ClaudeProvider):
+        cmds = claude.build_manage_agent_commands()
+        assert isinstance(cmds, list)
+        assert len(cmds) == 1
+        assert cmds[0].startswith("claude")
+        assert "--dangerously-skip-permissions" in cmds[0]
+        assert "/manage-agent" in cmds[0]
         # No trailing intent beyond the quoted /manage-agent
-        assert cmd.endswith('"')  # /manage-agent" closes the quotes
-        # Verify there's no extra argument after the closing quote
-        # split('"') -> ['prefix...', '/manage-agent', '']
-        parts = cmd.split('"')
-        assert parts[-1] == "", f"Expected nothing after closing quote: {cmd!r}"
-        assert len(parts) == 3, f"Expected exactly 2 quotes: {cmd!r}"
+        assert cmds[0].endswith('"')  # /manage-agent" closes the quotes
+        parts = cmds[0].split('"')
+        assert parts[-1] == "", f"Expected nothing after closing quote: {cmds[0]!r}"
+        assert len(parts) == 3, f"Expected exactly 2 quotes: {cmds[0]!r}"
 
-    def test_build_manage_agent_with_intent(self, claude: ClaudeProvider):
-        cmd = claude.build_manage_agent_command("Review the codebase for bugs")
-        assert cmd.startswith("claude")
-        assert "--dangerously-skip-permissions" in cmd
-        assert "/manage-agent" in cmd
-        assert "Review" in cmd
+    def test_build_manage_agent_commands_with_intent(self, claude: ClaudeProvider):
+        cmds = claude.build_manage_agent_commands("Review the codebase for bugs")
+        assert isinstance(cmds, list)
+        assert len(cmds) == 1
+        assert cmds[0].startswith("claude")
+        assert "--dangerously-skip-permissions" in cmds[0]
+        assert "/manage-agent" in cmds[0]
+        assert "Review" in cmds[0]
 
-    def test_build_manage_agent_with_empty_string(self, claude: ClaudeProvider):
-        cmd = claude.build_manage_agent_command("")
-        assert cmd.startswith("claude")
-        assert "/manage-agent" in cmd
-        assert '"' in cmd  # the base command wraps /manage-agent in quotes
-        # No extra intent at the end
-        parts = cmd.split('"')
+    def test_build_manage_agent_commands_with_empty_string(self, claude: ClaudeProvider):
+        cmds = claude.build_manage_agent_commands("")
+        assert isinstance(cmds, list)
+        assert len(cmds) == 1
+        assert cmds[0].startswith("claude")
+        assert "/manage-agent" in cmds[0]
+        assert '"' in cmds[0]  # the base command wraps /manage-agent in quotes
+        parts = cmds[0].split('"')
         assert len(parts) <= 2 or parts[-1].strip() == ""
 
     def test_build_hook_command(self, claude: ClaudeProvider):
@@ -141,38 +150,55 @@ class TestHermesProvider:
     def test_name(self, hermes: HermesProvider):
         assert hermes.name == "hermes"
 
-    def test_build_run_issue_command(self, hermes: HermesProvider):
-        cmd = hermes.build_run_issue_command("iss-1")
-        assert cmd.startswith("hermes")
-        assert "run-issue" in cmd
-        assert "--yolo" in cmd
-        assert "iss-1" in cmd
+    def test_build_run_issue_commands(self, hermes: HermesProvider):
+        cmds = hermes.build_run_issue_commands("iss-1")
+        assert isinstance(cmds, list)
+        assert len(cmds) == 2
+        assert cmds[0].startswith("hermes")
+        assert "run-issue" in cmds[0]
+        assert "--yolo" in cmds[0]
+        assert "-q" not in cmds[0], "Hermes should NOT use -q in interactive mode"
+        assert "iss-1" in cmds[1]
+        assert "Work on issue" in cmds[1]
 
-    def test_build_run_pipeline_command(self, hermes: HermesProvider):
-        cmd = hermes.build_run_pipeline_command("iss-1")
-        assert cmd.startswith("hermes")
-        assert "run-pipeline" in cmd
-        assert "--yolo" in cmd
-        assert "iss-1" in cmd
+    def test_build_run_pipeline_commands(self, hermes: HermesProvider):
+        cmds = hermes.build_run_pipeline_commands("iss-1")
+        assert isinstance(cmds, list)
+        assert len(cmds) == 2
+        assert cmds[0].startswith("hermes")
+        assert "run-pipeline" in cmds[0]
+        assert "--yolo" in cmds[0]
+        assert "-q" not in cmds[0]
+        assert "iss-1" in cmds[1]
 
-    def test_build_ask_brainstorm_command(self, hermes: HermesProvider):
-        cmd = hermes.build_ask_brainstorm_command("proj-1")
-        assert cmd.startswith("hermes")
-        assert "ask-and-brainstorm" in cmd
-        assert "--yolo" in cmd
-        assert "proj-1" in cmd
+    def test_build_ask_brainstorm_commands(self, hermes: HermesProvider):
+        cmds = hermes.build_ask_brainstorm_commands("proj-1")
+        assert isinstance(cmds, list)
+        assert len(cmds) == 2
+        assert cmds[0].startswith("hermes")
+        assert "ask-and-brainstorm" in cmds[0]
+        assert "--yolo" in cmds[0]
+        assert "-q" not in cmds[0]
+        assert "proj-1" in cmds[1]
 
-    def test_build_manage_agent_no_intent(self, hermes: HermesProvider):
-        cmd = hermes.build_manage_agent_command()
-        assert cmd.startswith("hermes")
-        assert "manage-agent" in cmd
-        assert "--yolo" in cmd
+    def test_build_manage_agent_commands_no_intent(self, hermes: HermesProvider):
+        cmds = hermes.build_manage_agent_commands()
+        assert isinstance(cmds, list)
+        assert len(cmds) == 1
+        assert cmds[0].startswith("hermes")
+        assert "manage-agent" in cmds[0]
+        assert "--yolo" in cmds[0]
+        assert "-q" not in cmds[0]
 
-    def test_build_manage_agent_with_intent(self, hermes: HermesProvider):
-        cmd = hermes.build_manage_agent_command("Review bugs")
-        assert cmd.startswith("hermes")
-        assert "manage-agent" in cmd
-        assert "Review" in cmd
+    def test_build_manage_agent_commands_with_intent(self, hermes: HermesProvider):
+        cmds = hermes.build_manage_agent_commands("Review bugs")
+        assert isinstance(cmds, list)
+        assert len(cmds) == 2
+        assert cmds[0].startswith("hermes")
+        assert "manage-agent" in cmds[0]
+        assert "--yolo" in cmds[0]
+        assert "-q" not in cmds[0]
+        assert "Review bugs" in cmds[1]
 
     def test_build_hook_command(self, hermes: HermesProvider):
         cmd = hermes.build_hook_command("Hello")
@@ -223,18 +249,18 @@ class TestAgentProviderRegistry:
             def name(self) -> str:
                 return "dummy"
 
-            def build_run_issue_command(self, issue_id: str) -> str:
-                return f"dummy run {issue_id}"
+            def build_run_issue_commands(self, issue_id: str) -> list[str]:
+                return [f"dummy run {issue_id}"]
 
-            def build_run_pipeline_command(self, issue_id: str) -> str:
-                return f"dummy pipeline {issue_id}"
+            def build_run_pipeline_commands(self, issue_id: str) -> list[str]:
+                return [f"dummy pipeline {issue_id}"]
 
-            def build_ask_brainstorm_command(self, project_id: str) -> str:
-                return f"dummy ask {project_id}"
+            def build_ask_brainstorm_commands(self, project_id: str) -> list[str]:
+                return [f"dummy ask {project_id}"]
 
-            def build_manage_agent_command(self, intent: str = "") -> str:
+            def build_manage_agent_commands(self, intent: str = "") -> list[str]:
                 base = "dummy manage"
-                return f"{base} {intent}" if intent else base
+                return [f"{base} {intent}"] if intent else [base]
 
             def build_hook_command(
                 self, prompt: str, tool_guidance: str = ""
@@ -245,9 +271,9 @@ class TestAgentProviderRegistry:
         try:
             provider = AgentProviderRegistry.get("dummy")
             assert provider.name == "dummy"
-            assert provider.build_run_issue_command("x") == "dummy run x"
+            cmds = provider.build_run_issue_commands("x")
+            assert cmds == ["dummy run x"]
         finally:
-            # Clean up — remove from registry
             AgentProviderRegistry._providers.pop("dummy", None)
 
     def test_register_invalid_provider_raises_typeerror(self):
@@ -262,7 +288,9 @@ class TestAgentProviderRegistry:
         p1 = AgentProviderRegistry.get("claude")
         p2 = AgentProviderRegistry.get("claude")
         assert p1 is not p2
-        assert p1.build_run_issue_command("x") == p2.build_run_issue_command("x")
+        cmds1 = p1.build_run_issue_commands("x")
+        cmds2 = p2.build_run_issue_commands("x")
+        assert cmds1 == cmds2
 
     def test_registry_provider_names_match_class(self):
         """Provider name in registry matches the name property of the provider class."""
@@ -275,7 +303,6 @@ class TestAgentProviderRegistry:
         original = AgentProviderRegistry.get("claude")
         assert isinstance(original, ClaudeProvider)
 
-        # Re-register is allowed (it's a dict)
         AgentProviderRegistry.register("claude", ClaudeProvider)
         provider = AgentProviderRegistry.get("claude")
         assert isinstance(provider, ClaudeProvider)

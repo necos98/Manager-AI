@@ -8,6 +8,11 @@ class AgentProvider(ABC):
 
     Ogni provider (Claude Code, Hermes, etc.) implementa questi metodi
     per generare i comandi corretti per ogni scenario di spawn.
+
+    I metodi ``build_*_commands()`` tornano ``list[str]`` invece di una
+    singola stringa perche' alcuni provider (Hermes) richiedono piu'
+    scritture nel PTY: comando d'avvio + messaggio iniziale.
+    Il chiamante itera sulla lista e scrive ogni elemento nel PTY.
     """
 
     @property
@@ -17,40 +22,30 @@ class AgentProvider(ABC):
         ...
 
     @abstractmethod
-    def build_run_issue_command(self, issue_id: str) -> str:
-        """Comando per eseguire una issue (scritto nel PTY del terminale).
+    def build_run_issue_commands(self, issue_id: str) -> list[str]:
+        """Comandi per eseguire una issue (scritti nel PTY del terminale).
 
-        Esempio output (Claude):
-          claude --dangerously-skip-permissions "/run-issue abc-123"
+        Il chiamante itera sulla lista e scrive ogni elemento nel PTY.
+        Per Claude:  [``claude ... "/run-issue abc-123"``]
+        Per Hermes:  [``hermes chat --skills run-issue ...``, ``Work on issue abc-123``]
         """
         ...
 
     @abstractmethod
-    def build_run_pipeline_command(self, issue_id: str) -> str:
-        """Comando per eseguire uno step di pipeline (scritto nel PTY).
-
-        Esempio output (Claude):
-          claude --dangerously-skip-permissions "/run-pipeline abc-123"
-        """
+    def build_run_pipeline_commands(self, issue_id: str) -> list[str]:
+        """Comandi per eseguire uno step di pipeline (scritti nel PTY)."""
         ...
 
     @abstractmethod
-    def build_ask_brainstorm_command(self, project_id: str) -> str:
-        """Comando per Ask & Brainstorm (scritto nel PTY).
-
-        Esempio output (Claude):
-          claude --dangerously-skip-permissions "/ask-and-brainstorm proj-1"
-        """
+    def build_ask_brainstorm_commands(self, project_id: str) -> list[str]:
+        """Comandi per Ask & Brainstorm (scritti nel PTY)."""
         ...
 
     @abstractmethod
-    def build_manage_agent_command(self, intent: str = "") -> str:
-        """Comando per Manage Agent (scritto nel PTY).
+    def build_manage_agent_commands(self, intent: str = "") -> list[str]:
+        """Comandi per Manage Agent (scritti nel PTY).
 
-        Esempio output (Claude):
-          claude --dangerously-skip-permissions "/manage-agent"
-
-        Se intent è fornito, viene aggiunto come argomento finale.
+        Se intent è fornito, può essere incluso come comando separato.
         """
         ...
 

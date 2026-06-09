@@ -35,7 +35,6 @@ from app.services.memory_service import MemoryService
 from app.services import memory_events
 from app.services.activity_service import ActivityService
 from app.services.project_link_service import ProjectLinkService
-from app.services.credential_service import CredentialService
 from app.services.question_service import QuestionService, question_store
 from app.mcp.catalog import catalog_loader
 from app.mcp.plugin_manager import plugin_manager
@@ -69,7 +68,6 @@ def serialize_agent(agent) -> dict:
     return {
         "id": agent.id,
         "name": agent.name,
-        "provider": agent.provider,
         "intent": agent.intent,
         "model": agent.model,
         "allowed_tools": agent.allowed_tools,
@@ -155,6 +153,63 @@ async def get_issue_status(session: AsyncSession, project_id: str, issue_id: str
     issue_service = IssueService(session)
     issue = await issue_service.get_for_project(issue_id, project_id)
     return {"id": issue.id, "status": issue.status}
+
+
+async def list_issues(
+    session: AsyncSession,
+    project_id: str,
+    status: str | None = None,
+    search: str | None = None,
+    tag: str | None = None,
+    limit: int | None = None,
+    offset: int = 0,
+) -> dict:
+    """List issues for a project with optional filters."""
+    issue_service = IssueService(session)
+    status_enum = IssueStatus(status) if status else None
+    records = await issue_service.list_by_project(
+        project_id,
+        status=status_enum,
+        search=search,
+        tag=tag,
+        limit=limit,
+        offset=offset,
+    )
+    return {
+        "issues": [
+            {
+                "id": r.id,
+                "project_id": r.project_id,
+                "name": r.name,
+                "description": r.description,
+                "status": r.status,
+                "priority": r.priority,
+                "category": getattr(r, "category", None),
+                "created_at": r.created_at or None,
+                "updated_at": r.updated_at or None,
+            }
+            for r in records
+        ],
+        "total": len(records),
+    }
+
+
+async def get_issue_statuses() -> dict:
+    """Return the valid issue statuses and their lifecycle."""
+    return {
+        "statuses": [s.value for s in IssueStatus],
+        "lifecycle": "New → Reasoning → Planned → Accepted → Finished",
+        "cancelable_from_any": True,
+        "force_finish_from_any": True,
+        "transitions": {
+            "New": ["Reasoning"],
+            "Reasoning": ["Planned"],
+            "Planned": ["Accepted"],
+            "Accepted": ["Finished"],
+            "Finished": [],
+            "Canceled": [],
+        },
+    }
 
 
 async def create_issue(session: AsyncSession, project_id: str, description: str, priority: int = 3) -> dict:
@@ -640,6 +695,28 @@ async def memory_unlink(session: AsyncSession, from_id: str, to_id: str, relatio
     return {"deleted": bool(deleted)}
 
 
+async def memory_search(session: AsyncSession, project_id: str, query: str, limit: int = 20) -> dict:
+    """Search across a project's memory titles and descriptions."""
+    svc = MemoryService(session)
+    try:
+        results = await svc.search(project_id=project_id, query=query, limit=limit)
+        return {
+            "results": [
+                {
+                    "id": r["memory"].id,
+                    "title": r["memory"].title,
+                    "snippet": r["snippet"],
+                    "rank": r["rank"],
+                    "created_at": r["memory"].created_at,
+                }
+                for r in results
+            ],
+            "count": len(results),
+        }
+    except AppError as e:
+        return {"error": e.message}
+
+
 # ── Project File Tools ───────────────────────────────────────────────────────
 
 
@@ -695,40 +772,6 @@ async def send_notification(session: AsyncSession, project_id: str, issue_id: st
         "timestamp": iso_now(),
     })
     return {"success": True}
-
-
-# ── Credential Tools ─────────────────────────────────────────────────────────
-
-
-async def list_credentials(session: AsyncSession, project_id: str) -> dict:
-    svc = CredentialService(session)
-    roles = await svc.list_roles(project_id)
-    return {"roles": roles}
-
-
-async def get_credential(session: AsyncSession, project_id: str, role: str) -> dict:
-    svc = CredentialService(session)
-    try:
-        return await svc.get(project_id, role)
-    except AppError as e:
-        return {"error": e.message}
-
-
-async def set_credential(session: AsyncSession, project_id: str, role: str, url: str, fields: dict) -> dict:
-    svc = CredentialService(session)
-    cred = await svc.upsert(project_id, role, url, fields)
-    await session.commit()
-    return {"id": cred.id, "role": cred.role, "url": cred.url}
-
-
-async def delete_credential(session: AsyncSession, project_id: str, role: str) -> dict:
-    svc = CredentialService(session)
-    try:
-        await svc.delete(project_id, role)
-        await session.commit()
-        return {"deleted": True}
-    except AppError as e:
-        return {"error": e.message}
 
 
 # ── Plugin Tools ─────────────────────────────────────────────────────────────
@@ -895,14 +938,13 @@ async def ask_user_question(session: AsyncSession, issue_id: str, question: str,
 # ── Agent Tools ──────────────────────────────────────────────────────────────
 
 
-async def create_agent(session: AsyncSession, name: str, intent: str = "", model: str | None = None, allowed_tools: list[str] | None = None, provider: str | None = None) -> dict:
+async def create_agent(session: AsyncSession, name: str, intent: str = "", model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
     svc = AgentService(session)
     agent = await svc.create(
         name=name,
         model=model,
         allowed_tools=allowed_tools,
         intent=intent,
-        provider=provider,
     )
     await session.commit()
     return serialize_agent(agent)
@@ -920,7 +962,7 @@ async def get_agent(session: AsyncSession, agent_id: str) -> dict:
     return serialize_agent(agent)
 
 
-async def update_agent(session: AsyncSession, agent_id: str, name: str | None = None, intent: str | None = None, model: str | None = None, allowed_tools: list[str] | None = None, provider: str | None = None) -> dict:
+async def update_agent(session: AsyncSession, agent_id: str, name: str | None = None, intent: str | None = None, model: str | None = None, allowed_tools: list[str] | None = None) -> dict:
     svc = AgentService(session)
     kwargs = {}
     if name is not None:
@@ -931,8 +973,6 @@ async def update_agent(session: AsyncSession, agent_id: str, name: str | None = 
         kwargs["model"] = model
     if allowed_tools is not None:
         kwargs["allowed_tools"] = allowed_tools
-    if provider is not None:
-        kwargs["provider"] = provider
     agent = await svc.update(agent_id, **kwargs)
     await session.commit()
     return serialize_agent(agent)
@@ -1126,7 +1166,7 @@ async def update_pipeline_event_rule_tool(
 # ── Pipeline Run Tools ────────────────────────────────────────────────────────
 
 
-async def run_pipeline(session: AsyncSession, project_id: str, pipeline_id: str, issue_id: str, orchestrated: bool = False) -> dict:
+async def run_pipeline(session: AsyncSession, project_id: str, pipeline_id: str, issue_id: str) -> dict:
     try:
         project = await ProjectService(session).get_by_id(project_id)
     except AppError as e:
@@ -1138,7 +1178,6 @@ async def run_pipeline(session: AsyncSession, project_id: str, pipeline_id: str,
             issue_id=issue_id,
             project_id=project_id,
             project_path=project.path,
-            orchestrated=orchestrated,
         )
         await session.commit()
         return result
@@ -1276,34 +1315,6 @@ async def finished_pipeline_step(session: AsyncSession, issue_id: str, summary: 
     return result
 
 
-async def start_pipeline_step(session: AsyncSession, run_id: str, project_id: str) -> dict:
-    try:
-        project = await ProjectService(session).get_by_id(project_id)
-    except AppError as e:
-        return {"error": e.message}
-    svc = PipelineRunService(session, session_factory=async_session)
-    try:
-        result = await svc.start_step(
-            run_id=run_id,
-            project_id=project_id,
-            project_path=project.path,
-        )
-        await session.commit()
-        return result
-    except AppError as e:
-        return {"error": e.message}
-
-
-async def advance_pipeline(session: AsyncSession, run_id: str) -> dict:
-    svc = PipelineRunService(session)
-    try:
-        result = await svc.advance_step(run_id)
-        await session.commit()
-        return result
-    except AppError as e:
-        return {"error": e.message}
-
-
 async def pause_pipeline(session: AsyncSession, run_id: str) -> dict:
     svc = PipelineRunService(session)
     try:
@@ -1320,6 +1331,16 @@ async def resume_pipeline(session: AsyncSession, run_id: str) -> dict:
         result = await svc.resume_run(run_id)
         await session.commit()
         return result
+    except AppError as e:
+        return {"error": e.message}
+
+
+async def cancel_pipeline(session: AsyncSession, run_id: str) -> dict:
+    svc = PipelineRunService(session)
+    try:
+        await svc.cancel_run(run_id)
+        await session.commit()
+        return {"success": True}
     except AppError as e:
         return {"error": e.message}
 
@@ -1519,6 +1540,30 @@ async def get_pipeline_runs_for_issue(session: AsyncSession, issue_id: str) -> d
     svc = PipelineRunService(session)
     runs = await svc.get_runs_for_issue(issue_id)
     return {"runs": runs}
+
+
+# ── 🆕 Run Issue Tool ─────────────────────────────────────────────────────────
+
+
+async def run_issue(session: AsyncSession, project_id: str, issue_id: str, provider_name: str | None = None) -> dict:
+    """Spawn an agent terminal for a single issue and let it work autonomously.
+
+    Creates a PTY terminal, writes the agent provider's run-issue commands,
+    and returns immediately with the terminal ID. The agent inside the terminal
+    works through the issue lifecycle (spec → plan → tasks → implementation →
+    completion) independently.
+
+    This is simpler than ``run_pipeline`` — no pipeline/step/agent records,
+    no multi-step orchestration. Just fire the agent at the issue.
+    """
+    from app.services.run_issue_service import run_issue as _run_service
+
+    return await _run_service(
+        issue_id=issue_id,
+        project_id=project_id,
+        provider_name=provider_name,
+        session=session,
+    )
 
 
 # ── 🆕 Delete Issue Tool ─────────────────────────────────────────────────────

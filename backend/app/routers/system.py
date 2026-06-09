@@ -36,20 +36,22 @@ async def install_hermes_mcp() -> dict:
     import os
 
     backend_port = os.environ.get("BACKEND_PORT", "8000")
-    base_url = f"http://localhost:{backend_port}/mcp"
-    orch_url = f"http://localhost:{backend_port}/mcp-orchestrator"
+    base_url = f"http://localhost:{backend_port}/mcp/"
+    orch_url = f"http://localhost:{backend_port}/mcp-orchestrator/"
 
     return {
         "success": True,
         "commands": [
             f'hermes mcp add manager-ai-orchestrator --url {orch_url}',
+            f'hermes mcp add manager-ai-worker --url {base_url}',
         ],
         "message": (
-            f"Esegui questo comando nel terminale del tuo progetto:\n\n"
-            f"  hermes mcp add manager-ai-orchestrator --url {orch_url}\n\n"
+            f"Esegui questi comandi nel terminale del tuo progetto:\n\n"
+            f"  hermes mcp add manager-ai-orchestrator --url {orch_url}\n"
+            f"  hermes mcp add manager-ai-worker --url {base_url}\n\n"
             f"Poi riavvia la sessione Hermes per vedere i nuovi tool MCP.\n"
-            f"Hermes si connette a /mcp-orchestrator ({orch_url}) con 81 tool di orchestrazione e amministrazione.\n"
-            f"Claude Code continua a usare /mcp (39 tool worker) — non serve configurarlo."
+            f"Hermes si connette a /mcp-orchestrator/ ({orch_url}) con 39 tool di orchestrazione e amministrazione.\n"
+            f"Hermes si connette a /mcp/ ({base_url}) con 37 tool worker per spawn auto-mode (run-issue, pipeline, ecc.)."
         ),
     }
 
@@ -79,7 +81,14 @@ async def install_hermes_skills() -> dict:
     hermes_skills_dir = os.path.join(hermes_home, "skills", "autonomous-ai-agents")
     os.makedirs(hermes_skills_dir, exist_ok=True)
 
-    skill_names = ["manager-ai-orchestrator", "manager-ai-issue-worker"]
+    skill_names = [
+        "manager-ai-orchestrator",
+        "manager-ai-issue-worker",
+        "run-issue",
+        "run-pipeline",
+        "ask-and-brainstorm",
+        "manage-agent",
+    ]
     copied = []
 
     for name in skill_names:

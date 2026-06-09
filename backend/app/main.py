@@ -7,6 +7,7 @@ from typing import Any
 
 import anyio
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from starlette.requests import ClientDisconnect
@@ -14,6 +15,7 @@ from starlette.requests import ClientDisconnect
 from app.config import settings
 from app.database import async_session
 from app.exceptions import AppError
+from app.logging_config import configure_error_logging, ErrorLoggerService
 from app.hooks import hook_registry
 import app.hooks.handlers  # noqa: F401 — triggers @hook decorator registration
 from app.mcp.server import mcp
@@ -38,6 +40,7 @@ from sqlalchemy import select, update
 from app.models.issue import Issue
 from app.models.project import Project
 from app.services.agent_service import AgentService
+from app.services.notification_service import NotificationService
 from app.services.pipeline_service import PipelineService
 from app.models.pipeline_run import PipelineRun, PipelineRunStatus
 from app.utils.datetime import now
@@ -316,6 +319,8 @@ async def lifespan(app):
     if sys.platform == "win32":
         asyncio.get_running_loop().set_exception_handler(_suppress_windows_accept_noise)
 
+    configure_error_logging(settings.manager_ai_log_dir)
+
     _startup_resolve_secret_key()
     _startup_log_hooks()
     await _startup_migrate(async_session)
@@ -329,6 +334,7 @@ async def lifespan(app):
         await _startup_seed_defaults(async_session)
         await _startup_cleanup_orphaned_runs(async_session)
         await _startup_install_claude_resources(rows)
+        _ = NotificationService()  # register as event listener
     except Exception:
         logger.exception("Non-critical startup ops failed; continuing")
 
@@ -364,7 +370,30 @@ app.add_middleware(ErrorLoggerMiddleware)
 
 @app.exception_handler(AppError)
 async def app_error_handler(request, exc: AppError):
+    ErrorLoggerService.log_exception(
+        exc,
+        request_context={
+            "Method": request.method,
+            "Path": request.url.path,
+            "Query": str(request.query_params),
+            "Client": request.client.host if request.client else None,
+        },
+    )
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request, exc: RequestValidationError):
+    ErrorLoggerService.log_exception(
+        exc,
+        request_context={
+            "Method": request.method,
+            "Path": request.url.path,
+            "Query": str(request.query_params),
+            "Client": request.client.host if request.client else None,
+        },
+    )
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 
 app.add_middleware(

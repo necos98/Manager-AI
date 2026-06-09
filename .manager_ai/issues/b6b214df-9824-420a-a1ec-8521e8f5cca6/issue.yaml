@@ -1,0 +1,36 @@
+schema_version: 1
+id: b6b214df-9824-420a-a1ec-8521e8f5cca6
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Sezione Hermes nei Settings con comandi eseguibili
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T17:18:02.970370+00:00'
+updated_at: '2026-06-09T17:26:47.315154+00:00'
+finished_at: '2026-06-09T17:26:47.315170+00:00'
+tasks:
+- id: 4838be15-2656-48f1-89d2-1619947d831a
+  name: 'Backend: Aggiungere default setting hermes_commands in default_settings.json'
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T17:20:23+00:00'
+  updated_at: '2026-06-09T17:20:47+00:00'
+- id: 743949d5-00b1-4dbf-aed9-08312b4eb8d1
+  name: 'Backend: Aggiungere endpoint POST /terminals/hermes in terminals.py + terminal_operations.py'
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T17:20:23+00:00'
+  updated_at: '2026-06-09T17:22:35+00:00'
+- id: bc93f041-977f-4f64-9eb4-bd4a7ef9b227
+  name: 'Frontend: Aggiungere fetchHermesCommands() API e useHermesCommands() hook'
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T17:20:23+00:00'
+  updated_at: '2026-06-09T17:26:31+00:00'
+- id: bcb8fc0e-43dd-4a6f-8b66-4abaee6280f5
+  name: 'Frontend: Aggiungere tab Hermes e HermesCommandsPanel con terminal modal in settings.tsx'
+  status: Completed
+  order: 3
+  created_at: '2026-06-09T17:20:23+00:00'
+  updated_at: '2026-06-09T17:26:39+00:00'
+relations: []

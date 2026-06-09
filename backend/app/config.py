@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     database_url: str = f"sqlite+aiosqlite:///{_PROJECT_ROOT / 'data' / 'manager_ai.db'}"
     recordings_path: str = str(_PROJECT_ROOT / "data" / "recordings")
     claude_library_path: str = str(_PROJECT_ROOT / "claude_library")
+    manager_ai_log_dir: str = "backend/logs/"
     backend_port: int = 8000
     hook_timeout_seconds: int = 300
     terminal_max_buffer_bytes: int = 100_000
@@ -23,6 +24,14 @@ class Settings(BaseSettings):
         if not (1 <= v <= 65535):
             raise ValueError(f"backend_port must be 1-65535, got {v}")
         return v
+
+    @field_validator("manager_ai_log_dir")
+    @classmethod
+    def resolve_log_dir(cls, v: str) -> str:
+        p = Path(v)
+        if not p.is_absolute():
+            p = _PROJECT_ROOT / p
+        return str(p.resolve())
 
 
 settings = Settings()

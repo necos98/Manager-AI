@@ -30,7 +30,6 @@ from .pipeline_test_helpers import (
     create_project_and_issue,
     create_run,
     mark_step_running,
-    simulate_orchestrated_step_end,
     simulate_rejection,
     simulate_step_failure,
     simulate_step_running_for_test,
@@ -80,46 +79,6 @@ async def test_pipeline_3_steps_completes(db_session):
 
     assert run.status == _RStatus.COMPLETED
     assert run.finished_at is not None
-
-
-@pytest.mark.asyncio
-async def test_pipeline_orchestrated_completes(db_session):
-    """Orchestrated-mode pipeline — step by step via advance_step."""
-    agents = await create_agents(db_session, ["Writer", "Checker"])
-    pipeline, steps = await create_pipeline(db_session, agents, [
-        ("Writer", 0),
-        ("Checker", 1),
-    ])
-    project, issue = await create_project_and_issue(db_session)
-    run, _step_runs = await create_run(db_session, pipeline, issue, orchestrated=True)
-
-    # Initially WAITING_FOR_STEP
-    assert run.status == PipelineRunStatus.WAITING_FOR_STEP
-
-    # Step 0: mark RUNNING, then signal completion (don't advance index)
-    await mark_step_running(db_session, run.id, 0)
-    result = await simulate_step_success(db_session, run.id, project.id, advance_index=False)
-    assert result["status"] == "COMPLETED"
-    assert result["pipeline_finished"] is False
-
-    # Advance to step 1
-    advance = await _lifecycle.advance_step(run.id, db_session)
-    assert advance["status"] == "WAITING_FOR_STEP"
-    assert advance["next_step_index"] == 1
-
-    # Step 1: execute and finish (orchestrated — advance_step handles finalization)
-    await mark_step_running(db_session, run.id, 1)
-    result = await simulate_step_success(db_session, run.id, project.id, advance_index=False)
-    assert result["status"] == "COMPLETED"
-    assert result["pipeline_finished"] is False  # Not finished yet — advance_step needed
-
-    # Advance past last step → pipeline COMPLETED
-    advance = await _lifecycle.advance_step(run.id, db_session)
-    assert advance["status"] == "COMPLETED"
-    assert advance["pipeline_finished"] is True
-
-    await db_session.refresh(run)
-    assert run.status == PipelineRunStatus.COMPLETED
 
 
 @pytest.mark.asyncio
@@ -500,7 +459,6 @@ async def test_concurrent_run_guard(db_session):
             issue_id=issue.id,
             project_id=project.id,
             project_path="/tmp",
-            orchestrated=False,
             session=db_session,
         )
 
@@ -534,87 +492,67 @@ async def test_pipeline_messages_created(db_session):
 
 
 @pytest.mark.asyncio
-async def test_auto_mode_pipeline_uses_agent_provider(db_session, monkeypatch):
-    """Auto-mode pipeline with agent provider='hermes' uses hermes as provider_name.
-
-    Verifies that _execution.py line 57 (``step.agent.provider``) correctly
-    picks up the provider from the agent, and that ``AgentProviderRegistry.get``
-    is called with the expected name.
-    """
-    from app.services.pipeline_run._execution import _run_step
+async def test_auto_mode_pipeline_uses_agent_provider_setting(db_session, monkeypatch):
+    """Auto-mode execute() reads agent_provider from SettingsService and passes it to _run_step."""
+    from app.services.settings_service import SettingsService
+    from app.services.pipeline_run._execution import execute
     from app.providers.hermes_provider import HermesProvider
     from app.providers.registry import AgentProviderRegistry
 
-    # ── 1. Create agent with provider='hermes' ──────────────────────────
-    agents = await create_agents(
-        db_session, ["HermesAgent"], provider="hermes",
-    )
-    pipeline, steps = await create_pipeline(
-        db_session, agents, [("HermesAgent", 0)],
-    )
+    # 1. Set the global setting to "hermes"
+    await SettingsService(db_session).set("agent_provider", "hermes")
+    await db_session.commit()
+    assert await SettingsService(db_session).get("agent_provider") == "hermes"
+
+    # 2. Create pipeline with agent
+    agents = await create_agents(db_session, ["HermesAgent"])
+    pipeline, steps = await create_pipeline(db_session, agents, [("HermesAgent", 0)])
     project, issue = await create_project_and_issue(db_session)
     run, _step_runs = await create_run(db_session, pipeline, issue)
 
-    # ── 2. Verify step.agent.provider == "hermes" ──────────────────────
-    step = steps["HermesAgent"]
-    assert step.agent is not None
-    assert step.agent.provider == "hermes"
+    # 3. Mock _run_step to capture provider_name instead of actually running
+    captured_provider = []
 
-    # ── 3. Verify the provider_name computation (mirrors _execution.py) ─
-    provider_name = step.agent.provider if step.agent else "claude"
-    assert provider_name == "hermes"
-
-    # ── 4. Mock AgentProviderRegistry.get to track calls ───────────────
-    called_with = []
-
-    def _tracking_get(name: str):
-        called_with.append(name)
-        return HermesProvider()
-
-    monkeypatch.setattr(AgentProviderRegistry, "get", _tracking_get)
-
-    # ── 5. Mock terminal bits so _run_step doesn't need real PTY ───────
-    class FakePTY:
-        def write(self, data: str):
-            pass
+    async def _fake_run_step(**kwargs):
+        captured_provider.append(kwargs.get("provider_name"))
+        return True
 
     monkeypatch.setattr(
-        "app.services.pipeline_run._execution.terminal_service.get_pty",
-        lambda _tid: FakePTY(),
+        "app.services.pipeline_run._execution._run_step",
+        _fake_run_step,
     )
 
-    # Mock _ensure_reader to prevent real reader thread
+    # Mock terminal/PTY bits needed by execute() internals
+    monkeypatch.setattr(
+        "app.services.pipeline_run._execution.terminal_service.get_pty",
+        lambda _tid: None,
+    )
     monkeypatch.setattr(
         "app.services.terminal_session._ensure_reader",
         lambda _tid, _svc: None,
     )
-
-    # Mock completion event registration
-    mock_event = asyncio.Event()
-    mock_event.set()  # immediately set so wait() returns
+    # Let execute() complete without blocking on PTY death
     monkeypatch.setattr(
-        "app.services.pipeline_run._execution._completion.register_completion_event",
-        lambda _rid, _idx: mock_event,
+        "app.services.pipeline_run._execution.pipeline_task_manager",
+        type("MockTaskManager", (), {
+            "start_task": lambda _self, _rid, _task: None,
+            "cleanup_task": lambda _self, _rid: None,
+        })(),
     )
 
-    # ── 6. Actually call _run_step with provider_name='hermes' ─────────
+    # 4. Call execute() — it should read the setting and pass provider_name to _run_step
     try:
-        await _run_step(
-            term_id="test-term-pipeline-provider",
-            agent_name="HermesAgent",
-            intent="Role: HermesAgent",
-            issue_id=issue.id,
+        await execute(
             run_id=run.id,
-            step_index=0,
-            provider_name="hermes",
+            project_id=project.id,
+            project_path="/tmp/test",
+            session=db_session,
         )
     except Exception:
-        # We expect this to fail because PTY/completion won't actually work,
-        # but we should still have captured the AgentProviderRegistry.get call
         pass
 
-    # ── 7. Assert AgentProviderRegistry.get was called with 'hermes' ───
-    assert "hermes" in called_with, (
-        f"AgentProviderRegistry.get should have been called with 'hermes', "
-        f"got calls: {called_with}"
+    # 5. Verify _run_step was called with provider_name="hermes"
+    assert "hermes" in captured_provider, (
+        f"execute() should have called _run_step with provider_name='hermes', "
+        f"got: {captured_provider}"
     )

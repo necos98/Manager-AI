@@ -1,7 +1,7 @@
 ---
 name: manager-ai-orchestrator
-description: "Orchestrate Manager AI projects via MCP — create issues, manage pipelines, advance steps, write memories."
-version: 1.0.0
+description: "Orchestrate Manager AI projects via MCP — create issues, start pipeline runs, monitor status."
+version: 2.1.0
 author: Manager AI
 platforms: [windows, linux, macos]
 ---
@@ -9,175 +9,105 @@ platforms: [windows, linux, macos]
 # Manager AI Orchestrator
 
 You are connected to **Manager AI** via its MCP server (toolset `manager-ai`).
-Your role is to act as the **orchestrator**: create issues, configure and run
-pipelines, advance work, and manage project memory — all through MCP tool calls.
+Your role: **create issues → start pipeline → monitor status**.
+
+La pipeline gira **in automatico** da sola — Manager AI spawna gli agenti in
+PTY, avanza gli step, e finalizza. Tu devi solo avviarla e monitorare.
 
 ## Prerequisites
 
-Manager AI must be running (`python start.py` from the Manager-AI repo) and
-Hermes MCP must be connected:
-
 ```bash
-hermes mcp add manager-ai-orchestrator --url http://localhost:8000/mcp-orchestrator
+hermes mcp add manager-ai-orchestrator --url http://localhost:8000/mcp-orchestrator/
 ```
 
-Verify with: `hermes mcp list` — the `manager-ai-orchestrator` server should appear with
-all its tools listed.
+Il `project_id` si trova in `manager.json` alla radice del repo.
 
-## Key Concepts
+## Workflow
 
-### Orchestrator Flow — Hermes fa solo orchestrazione
+### 1. Crea una issue (SOLO issue — niente specifica)
 
-Hermes **crea la issue**, poi **avvia la pipeline orchestrata**. Il resto
-(specifica, piano, task, implementazione) lo fanno gli agenti worker via Claude Code.
-
-```
-Hermes: create_issue → run_pipeline(orchestrated=True)
-                        │
-        start_pipeline_step(run_id, project_id) → spawna worker
-            │
-            ├── Worker (Claude Code): esegue lo step
-            │   • create_issue_spec / create_issue_plan
-            │   • implementa codice
-            │   • finished_pipeline_step(summary)
-            │
-        advance_pipeline(run_id) → step successivo
-            │
-            └── Repeat fino a pipeline COMPLETED
-```
-
-A **pipeline** is a sequence of **agents** (steps). Each agent has a `name`,
-`intent` (what it should do), and a `provider` (`"claude"` or `"hermes"`).
-Pipelines run against an **issue** in a **project**.
-
-### Orchestrated vs Auto Mode
-
-| Mode | `orchestrated` | Who executes steps |
-|------|---------------|-------------------|
-| **Auto** (default) | `false` | Manager AI spawns Claude Code in a PTY subprocess for each step |
-| **Orchestrated** | `true` | **You** (Hermes) control each step via MCP tools |
-
-In **orchestrated mode**, the flow is:
-
-```
-run_pipeline(..., orchestrated=True)  → status: WAITING_FOR_STEP
-                    │
-start_pipeline_step(run_id, project_id)  → step RUNNING
-    │
-    ├── You do the work (MCP tools + filesystem)
-    │
-finished_pipeline_step(issue_id, summary="...")  → step COMPLETED
-    │
-advance_pipeline(run_id)  → next step or pipeline COMPLETED
-    │
-    └── Repeat until pipeline_finished=True
-```
-
-## Orchestration Workflow
-
-### 1. Discover Project Context
-
-Always start by understanding the project:
+Quando l'utente ti chiede di creare una issue, fai **solo** questo:
 
 ```python
-# Find project_id
-# Read manager.json from the project repo root
-# Or call the project API if you know the project exists
+# Passo 1: Crea la issue con una descrizione chiara
+issue = create_issue(
+    project_id=...,
+    description="Descrizione chiara e comprensibile di cosa va fatto",
+    priority=3,
+)
+# → {id: "iss-xxx", status: "New"}
 
-# Get project details
-get_project_context(project_id=...)
-
-# Read project memories
-memory_search(project_id=..., query="<keywords>")
-memory_list(project_id=..., parent_id="")
+# Passo 2: Imposta un nome comprensibile
+set_issue_name(
+    project_id=...,
+    issue_id=issue["id"],
+    name="Nome breve e significativo",
+)
 ```
 
-### 2. Create an Issue (e poi avvia pipeline)
+**Fermati qui.** Non creare specifica, non avviare pipeline, non fare altro.
+Solo la issue con un buon nome e una buona descrizione. Se l'utente vuole
+fare altro, te lo chiederà esplicitamente.
+
+> ⚠️ **REGOLA IMPORTANTE**: create_issue → set_issue_name → STOP.
+> Non chiamare `create_issue_spec`, non avviare `run_pipeline`, non fare
+> brainstorming. L'utente deciderà dopo cosa fare.
+
+### 2. Configura agenti e pipeline (quando richiesto)
+
+Se l'utente ti chiede esplicitamente di configurare agenti o pipeline:
 
 ```python
-# Hermes crea solo la issue grezza — specifica e piano li fa il worker
-create_issue(project_id=..., description="...", priority=3)
-# → issue in stato NEW, pronta per pipeline
-```
+# Crea agenti
+create_agent(name="SpecWriter", intent="Write specification")
+create_agent(name="Developer", intent="Implement the feature")
 
-### 3. Run an Orchestrated Pipeline
-
-```python
-# Create agents first if they don't exist
-create_agent(name="SpecWriter", provider="hermes",
-    intent="Analyze the issue and write a specification")
-create_agent(name="Developer", provider="hermes",
-    intent="Implement the issue according to the plan")
-
-# Create a pipeline with those agents
-pipeline = create_pipeline(name="My Pipeline", steps=[
+# Crea pipeline con gli step
+pipeline = create_pipeline(name="Feature Pipeline", steps=[
     {"agent_id": "<specwriter-id>", "order_index": 0},
     {"agent_id": "<developer-id>", "order_index": 1},
 ])
-
-# Run in orchestrated mode
-run = run_pipeline(project_id=..., pipeline_id=..., issue_id=...,
-                   orchestrated=True)
-# run.status = "WAITING_FOR_STEP"
 ```
 
-### 4. Execute Steps
+### 3. Avvia la pipeline (solo su richiesta esplicita)
 
-For each step of the pipeline:
+Solo quando l'utente dice esplicitamente "avvia la pipeline" o "run":
 
 ```python
-# 1. Start the step
-step_info = start_pipeline_step(run_id=run["id"], project_id=...)
-# Returns: {term_id, agent_name, agent_intent, step_index, step_run_id}
-
-# 2. Read pipeline context
-messages = get_pipeline_messages(run_id=run["id"])
-active_run = get_active_pipeline_run(issue_id=...)
-agent_info = get_active_agent(issue_id=...)
-
-# 3. Follow the agent's intent
-# The agent_name and agent_intent tell you what to do
-# If you ARE the SpecWriter → read issue → write spec
-# If you ARE the Developer → implement the code
-
-# 4. Signal completion
-finished_pipeline_step(issue_id=..., summary="<handoff text>")
-
-# 5. Advance to next step
-advance_pipeline(run_id=run["id"])
+run = run_pipeline(project_id=..., pipeline_id=..., issue_id=...)
+# → status: "RUNNING" — Manager AI fa tutto da solo
 ```
 
-### 5. Manage Multiple Projects
-
-Use project links to keep track of related projects:
+### 4. Monitora lo stato (quando richiesto)
 
 ```python
-get_project_links(project_id=...)
+# Quando vuoi vedere come sta procedendo
+status = get_pipeline_run_status(run_id=run["id"])
+# → {status: "RUNNING", current_step_index: 0, steps: [...]}
+
+active = get_active_pipeline_run(issue_id="iss-xxx")
+# → {status: "RUNNING", ...} oppure None se finita
 ```
 
-### Memory Protocol
-
-**ALWAYS write memories** after completing an issue:
+### 5. Memoria (dopo completamento)
 
 ```python
-memory_create(project_id=..., title="...", description="...")
+memory_create(project_id=..., title="Decisione", description="Cosa è stato deciso e perché")
 ```
 
-Search existing memories before creating duplicates:
+## MCP tools principali
 
-```python
-memory_search(project_id=..., query="<keywords>")
-```
-
-## Best Practices
-
-1. **Read before acting** — always check issue state, project context, and
-   memories before starting work
-2. **Write memories** — every completed issue should produce at least one
-   memory with key decisions and constraints
-3. **Use `send_notification`** for milestones — lets the user track progress
-4. **Use `ask_user_question`** only when genuinely blocked — otherwise make
-   autonomous decisions
-5. **Check pipeline status** with `get_active_pipeline_run` before advancing
-6. **Handoff summaries matter** — write clear, actionable summaries in
-   `finished_pipeline_step` so the next agent (or the human) knows what was done
+| Tool | Cosa fa |
+|------|---------|
+| `create_issue` | Crea una nuova issue (solo issue, niente spec) |
+| `set_issue_name` | Imposta un nome comprensibile alla issue |
+| `create_agent` | Crea un agente (per la pipeline) |
+| `create_pipeline` | Crea una pipeline con step |
+| `run_pipeline` | **Avvia la pipeline** (sempre auto-mode) |
+| `get_pipeline_run_status` | Mostra stato corrente della pipeline |
+| `get_active_pipeline_run` | Pipeline attiva per una issue |
+| `get_active_agent` | Agente attualmente in esecuzione |
+| `memory_create` | Salva una memoria |
+| `memory_search` | Cerca memorie esistenti |
+| `add_pipeline_event_rule` | Collega eventi pipeline ad azioni (es. auto-set issue status) |
+| `get_project_context` | Contesto del progetto |

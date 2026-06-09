@@ -39,8 +39,17 @@ export function fetchProviderDetails(): Promise<ProviderInfo[]> {
   ]);
 }
 
+interface SettingResponse {
+  key: string;
+  value: string;
+  default: string;
+  is_customized: boolean;
+}
+
 export function fetchAgentProviderSetting(): Promise<string> {
-  return apiGet<string>("/settings/agent_provider").catch(() => "claude");
+  return apiGet<SettingResponse>("/settings/agent_provider")
+    .then((r) => r.value)
+    .catch(() => "claude");
 }
 
 export function updateAgentProviderSetting(provider: string): Promise<void> {

@@ -1,0 +1,30 @@
+schema_version: 1
+id: 99ffad1f-6e30-4a9a-bb20-a4353cac2614
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Aggiungere flag --max-turns ai comandi Hermes provider
+status: Accepted
+priority: 2
+category: null
+created_at: '2026-06-09T18:00:15.448646+00:00'
+updated_at: '2026-06-09T18:01:25.549014+00:00'
+finished_at: null
+tasks:
+- id: ce514948-c95e-416d-8806-0f191d2620c0
+  name: Aggiungere --max-turns 300 in build_run_issue_command
+  status: Pending
+  order: 0
+  created_at: '2026-06-09T18:01:22+00:00'
+  updated_at: '2026-06-09T18:01:22+00:00'
+- id: 2cad15a7-69ff-427f-ac25-e36370691ae3
+  name: Aggiungere --max-turns 300 in build_run_pipeline_command
+  status: Pending
+  order: 1
+  created_at: '2026-06-09T18:01:22+00:00'
+  updated_at: '2026-06-09T18:01:22+00:00'
+- id: 8ae12901-7f0f-4e48-9696-d50ccf154651
+  name: Verificare il file risultante
+  status: Pending
+  order: 2
+  created_at: '2026-06-09T18:01:22+00:00'
+  updated_at: '2026-06-09T18:01:22+00:00'
+relations: []

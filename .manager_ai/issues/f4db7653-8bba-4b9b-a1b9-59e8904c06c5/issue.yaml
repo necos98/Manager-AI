@@ -1,0 +1,42 @@
+schema_version: 1
+id: f4db7653-8bba-4b9b-a1b9-59e8904c06c5
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Errore console all'apertura terminale nella sezione Settings
+status: Finished
+priority: 2
+category: null
+created_at: '2026-06-09T17:48:29.514735+00:00'
+updated_at: '2026-06-09T17:59:48.154835+00:00'
+finished_at: '2026-06-09T17:59:48.154847+00:00'
+tasks:
+- id: 884890d4-8502-4cf1-9eb6-9e7d4e362c13
+  name: Aggiungere useRef per terminalId attivo in HermesCommandsPanel
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T17:57:18+00:00'
+  updated_at: '2026-06-09T17:57:48+00:00'
+- id: 7a2a83a4-909b-476e-b5c4-6a839c5b1920
+  name: Modificare handleRun per aggiornare ref e state
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T17:57:18+00:00'
+  updated_at: '2026-06-09T17:58:04+00:00'
+- id: c5a6250c-296c-4142-b93a-6f2d2444db23
+  name: Modificare handleDialogClose per usare ref come guard
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T17:57:18+00:00'
+  updated_at: '2026-06-09T17:58:05+00:00'
+- id: 0a32842f-2991-4682-82e6-c81265efbd6b
+  name: Modificare handleSessionEnd per azzerare ref prima degli state
+  status: Completed
+  order: 3
+  created_at: '2026-06-09T17:57:18+00:00'
+  updated_at: '2026-06-09T17:58:07+00:00'
+- id: 50233cad-92aa-4cba-9258-1118ed2d1a9f
+  name: 'Verificare: aprire terminale Settings, test chiusura naturale e manuale'
+  status: Completed
+  order: 4
+  created_at: '2026-06-09T17:57:18+00:00'
+  updated_at: '2026-06-09T17:59:40+00:00'
+relations: []

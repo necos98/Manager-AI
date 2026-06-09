@@ -1,0 +1,12 @@
+schema_version: 1
+id: d9eb9deb-6948-42e0-85fc-c1798148d01f
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Test integratione ask_user_question con risposta via API REST
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T16:59:29.538163+00:00'
+updated_at: '2026-06-09T17:02:53.684038+00:00'
+finished_at: '2026-06-09T17:02:53.684049+00:00'
+tasks: []
+relations: []

@@ -14,7 +14,6 @@ from app.services.pipeline_run import (
     _execution,
     _lifecycle,
     _messages,
-    _orchestrated,
     _queries,
     _rejection,
 )
@@ -31,11 +30,10 @@ class PipelineRunService:
 
     async def start(
         self, pipeline_id: str, issue_id: str, project_id: str, project_path: str,
-        orchestrated: bool = False,
     ) -> dict:
         return await _lifecycle.start(
             pipeline_id, issue_id, project_id, project_path,
-            orchestrated, self.session, self.session_factory,
+            self.session, self.session_factory,
         )
 
     async def pause_run(self, run_id: str) -> dict:
@@ -46,18 +44,6 @@ class PipelineRunService:
 
     async def cancel_run(self, run_id: str) -> bool:
         return await _lifecycle.cancel_run(run_id, self.session)
-
-    async def advance_step(self, run_id: str) -> dict:
-        return await _lifecycle.advance_step(run_id, self.session)
-
-    # ── Orchestrated execution ──────────────────────────────────
-
-    async def start_step(
-        self, run_id: str, project_id: str, project_path: str,
-    ) -> dict:
-        return await _orchestrated.start_step(
-            run_id, project_id, project_path, self.session,
-        )
 
     # ── Rejection ───────────────────────────────────────────────
 

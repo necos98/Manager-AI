@@ -6,13 +6,13 @@ It provides project-specific context, conventions, and instructions.
 ## MCP Connection
 
 Manager AI runs locally at `http://localhost:8000`.
-- Worker MCP (for Claude Code): `http://localhost:8000/mcp`
-- Orchestrator MCP (for Hermes): `http://localhost:8000/mcp-orchestrator`
+| Worker MCP (for Claude Code): `http://localhost:8000/mcp/`
+- Orchestrator MCP (for Hermes): `http://localhost:8000/mcp-orchestrator/`
 
 To connect Hermes as orchestrator:
 
 ```bash
-hermes mcp add manager-ai-orchestrator --url http://localhost:8000/mcp-orchestrator
+hermes mcp add manager-ai-orchestrator --url http://localhost:8000/mcp-orchestrator/
 ```
 
 Verify: `hermes mcp list` should show `manager-ai-orchestrator` with tools.

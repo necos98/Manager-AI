@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import shlex
+import sys
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +21,7 @@ from app.models.pipeline_run import (
 from app.providers.registry import AgentProviderRegistry
 from app.services.pipeline_run import _completion, _events, _queries, _safe_session, _terminal
 from app.services.pipeline_task_manager import pipeline_task_manager
+from app.services.settings_service import SettingsService
 from app.services.terminal_service import terminal_service
 from app.utils.datetime import now
 
@@ -54,7 +56,9 @@ async def execute(
                 continue
 
             try:
-                provider_name = step.agent.provider if step.agent else "claude"
+                settings_service = SettingsService(exec_session)
+                default_provider = await settings_service.get("agent_provider")
+                provider_name = default_provider
                 success = await _run_step(
                     term_id=term_id,
                     agent_name=agent_name,
@@ -85,7 +89,12 @@ async def execute(
             except asyncio.CancelledError:
                 raise
             except Exception:
-                logger.exception("Step %s failed with exception", agent_name)
+                from app.logging_config import ErrorLoggerService
+
+                ErrorLoggerService.log_exception(
+                    sys.exc_info()[1] or Exception("Unknown pipeline step error"),
+                    metadata={"agent": agent_name},
+                )
                 step_run.status = PipelineStepRunStatus.FAILED
                 run.status = PipelineRunStatus.FAILED
                 step_run.finished_at = now()
@@ -115,7 +124,12 @@ async def execute(
     except asyncio.CancelledError:
         raise
     except Exception:
-        logger.exception("Pipeline %s failed with unexpected error", run_id)
+        from app.logging_config import ErrorLoggerService
+
+        ErrorLoggerService.log_exception(
+            sys.exc_info()[1] or Exception(f"Unknown pipeline error for run {run_id}"),
+            metadata={"run_id": run_id},
+        )
         try:
             run.status = PipelineRunStatus.FAILED
             run.finished_at = now()
@@ -249,9 +263,7 @@ async def _handle_step_completion(
         step_run.status = PipelineStepRunStatus.FAILED
         run.status = PipelineRunStatus.FAILED
         step_run.finished_at = now()
-        await _safe_session.safe_commit(session)
-        await _events.emit_step_failed(project_id, issue_id, agent_name, step_run.id)
-        # Fire event engine for step_failed
+        # Fire event engine BEFORE commit — action handlers run in same transaction
         await _events.fire_pipeline_event(
             pipeline_id, "step_failed",
             step_run.pipeline_step_id,
@@ -260,6 +272,9 @@ async def _handle_step_completion(
             step_index=run.current_step_index,
             session=session,
         )
+        await _events.emit_step_failed(project_id, issue_id, agent_name, step_run.id)
+        # No commit here — _finalize_run will commit both pipeline state and
+        # event engine changes (e.g. issue status) in the same transaction
         return False
 
 
@@ -294,10 +309,9 @@ async def _run_step(
     issue_id: str,
     run_id: str,
     step_index: int,
-    provider_name: str = "claude",
+    provider_name: str | None = None,
 ) -> bool:
     """Execute a single step via PTY and wait for completion."""
-    import platform as _platform
     from app.services.terminal_session import TerminalSession, _sessions, _ensure_reader
 
     pty = terminal_service.get_pty(term_id)
@@ -305,11 +319,12 @@ async def _run_step(
     _sessions[term_id] = tsession
     _ensure_reader(term_id, terminal_service)
 
-    is_windows = _platform.system() == "Windows"
-    provider = AgentProviderRegistry.get(provider_name)
-    command = provider.build_run_pipeline_command(issue_id)
+    effective_provider = provider_name or "claude"
+    provider = AgentProviderRegistry.get(effective_provider)
+    commands = provider.build_run_pipeline_commands(issue_id)
 
-    pty.write(f"{command} {'&' if is_windows else ';'} exit\r\n")
+    for cmd in commands:
+        pty.write(cmd + "\r\n")
 
     event = _completion.register_completion_event(run_id, step_index)
 

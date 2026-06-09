@@ -23,6 +23,15 @@ async def reset_all_settings(db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
+@router.get("/{key}", response_model=SettingOut)
+async def get_setting(key: str, db: AsyncSession = Depends(get_db)):
+    service = SettingsService(db)
+    try:
+        return await service.get_one(key)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Setting not found")
+
+
 @router.put("/{key}", response_model=SettingOut)
 async def update_setting(key: str, data: SettingUpdate, db: AsyncSession = Depends(get_db)):
     service = SettingsService(db)

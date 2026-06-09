@@ -1,0 +1,1 @@
+Test della funzione ask_user_question: creare una issue che fa una domanda all'utente tramite ask_user_question, attende la risposta e prosegue. Testare domande con e senza opzioni, e verificare che la risposta venga recepita correttamente.

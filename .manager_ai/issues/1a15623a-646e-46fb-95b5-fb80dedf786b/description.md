@@ -1,0 +1,1 @@
+issue di test, chiuderla appena viene eseguita

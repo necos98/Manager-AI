@@ -1,0 +1,12 @@
+schema_version: 1
+id: 1a15623a-646e-46fb-95b5-fb80dedf786b
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Issue di test — da chiudere
+status: Canceled
+priority: 3
+category: null
+created_at: '2026-06-09T15:34:46.386934+00:00'
+updated_at: '2026-06-09T16:58:31.148336+00:00'
+finished_at: null
+tasks: []
+relations: []

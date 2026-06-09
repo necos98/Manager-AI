@@ -26,15 +26,11 @@ from app.models.pipeline_run import (
 )
 from app.models.project import Project
 from app.services.pipeline_run import (
-    _completion,
     _events,
-    _lifecycle,
-    _orchestrated,
     _queries,
     _rejection,
     _safe_session,
 )
-from app.services.pipeline_run._orchestrated import start_step
 from app.services.pipeline_service import PipelineService
 from app.utils.datetime import now
 
@@ -47,12 +43,11 @@ from app.utils.datetime import now
 async def create_agents(
     db_session: AsyncSession,
     names: list[str],
-    provider: str = "claude",
 ) -> dict[str, Agent]:
     """Create agents by name. Returns dict {name: Agent}."""
     agents = {}
     for n in names:
-        a = Agent(name=n, provider=provider, intent=f"Role: {n}")
+        a = Agent(name=n, intent=f"Role: {n}")
         db_session.add(a)
         agents[n] = a
     await db_session.flush()
@@ -136,7 +131,6 @@ async def create_run(
     pipeline: Pipeline,
     issue: Issue,
     *,
-    orchestrated: bool = False,
     start_at_step: int = 0,
 ) -> tuple[PipelineRun, list[PipelineStepRun]]:
     """Create a pipeline run with step runs (all PENDING).
@@ -146,9 +140,8 @@ async def create_run(
     run = PipelineRun(
         pipeline_id=pipeline.id,
         issue_id=issue.id,
-        status=PipelineRunStatus.WAITING_FOR_STEP if orchestrated else PipelineRunStatus.RUNNING,
+        status=PipelineRunStatus.RUNNING,
         current_step_index=start_at_step,
-        orchestrated=orchestrated,
         started_at=now(),
     )
     db_session.add(run)
@@ -204,17 +197,11 @@ async def simulate_step_success(
     db_session: AsyncSession,
     run_id: str,
     project_id: str,
-    *,
-    advance_index: bool = True,
 ) -> dict[str, Any]:
     """Simulate a pipeline step completing successfully.
 
     Marks the current RUNNING step as COMPLETED, fires event engine,
     advances to next step (or finalizes if last step).
-    This mirrors what _handle_step_completion() does in auto mode.
-
-    Set advance_index=False for orchestrated mode (where advance_step
-    manages the index).
     """
     run = await _queries.get_run_with_session(run_id, db_session)
     idx = run.current_step_index
@@ -244,8 +231,8 @@ async def simulate_step_success(
     total_steps = len([s for s in run.step_runs if s.pipeline_step])
     is_last = idx + 1 >= total_steps
 
-    if is_last and advance_index:
-        # Auto-mode: pipeline completes when last step finishes
+    if is_last:
+        # Pipeline completes when last step finishes
         run.status = PipelineRunStatus.COMPLETED
         run.finished_at = now()
 
@@ -256,7 +243,7 @@ async def simulate_step_success(
             metadata={"status": PipelineRunStatus.COMPLETED.value},
             session=db_session,
         )
-    if advance_index and not is_last:
+    if not is_last:
         run.current_step_index = idx + 1
 
     await _safe_session.safe_commit(db_session)
@@ -265,7 +252,7 @@ async def simulate_step_success(
         "step_index": idx,
         "agent_name": agent_name,
         "status": "COMPLETED",
-        "pipeline_finished": is_last and advance_index,
+        "pipeline_finished": is_last,
     }
 
 
@@ -329,21 +316,6 @@ async def simulate_rejection(
         project_id=project_id,
         session=db_session,
     )
-
-
-async def simulate_orchestrated_step_end(
-    db_session: AsyncSession,
-    run_id: str,
-    step_index: int,
-) -> dict[str, Any]:
-    """Simulate the orchestrated step completion signal.
-
-    In orchestrated mode, this is called when the worker calls
-    finished_pipeline_step via MCP. It signals the completion event
-    so monitor_step can pick it up.
-    """
-    ok = _completion.set_step_completed(run_id, step_index)
-    return {"step_completed": ok}
 
 
 async def simulate_step_running_for_test(

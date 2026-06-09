@@ -1,0 +1,54 @@
+schema_version: 1
+id: c6dfab09-d732-4943-81b7-3af28579156d
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Backend Error Logging System — per-error files in backend/logs/
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T13:38:21.373086+00:00'
+updated_at: '2026-06-09T15:07:21.031624+00:00'
+finished_at: '2026-06-09T15:07:21.031638+00:00'
+tasks:
+- id: 249eb02a-82e0-4e04-a13e-797fc1f944b9
+  name: Add manager_ai_log_dir setting to config.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T14:49:40+00:00'
+  updated_at: '2026-06-09T14:52:08+00:00'
+- id: 8c4dda39-8fc2-4776-8512-12750dcc0421
+  name: Create error_format.py with log file format builder
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T14:49:40+00:00'
+  updated_at: '2026-06-09T14:52:08+00:00'
+- id: b465b8a4-41fb-4b96-99c5-3469130d0063
+  name: Create logging_config.py with ErrorFileHandler, ErrorLoggerService, and configure_error_logging()
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T14:49:40+00:00'
+  updated_at: '2026-06-09T14:53:55+00:00'
+- id: d88bdc63-6aae-42a1-a28c-51c279596e3b
+  name: Refactor ErrorLoggerMiddleware to use ErrorLoggerService
+  status: Completed
+  order: 3
+  created_at: '2026-06-09T14:49:40+00:00'
+  updated_at: '2026-06-09T14:55:22+00:00'
+- id: 1c137a21-00d5-4ca7-baf4-9a37034981dd
+  name: Wire error logging initialization and exception handlers in main.py
+  status: Completed
+  order: 4
+  created_at: '2026-06-09T14:49:40+00:00'
+  updated_at: '2026-06-09T14:55:23+00:00'
+- id: 0be53b18-9f66-45fc-8818-dcd2021760d5
+  name: Add error logging around PTY creation and WebSocket handlers in terminal_operations.py
+  status: Completed
+  order: 5
+  created_at: '2026-06-09T14:49:40+00:00'
+  updated_at: '2026-06-09T14:55:23+00:00'
+- id: ea2360f2-ff1f-49f1-a5f9-6fc200dc5035
+  name: Add error logging around pipeline step execution in _execution.py
+  status: Completed
+  order: 6
+  created_at: '2026-06-09T14:49:40+00:00'
+  updated_at: '2026-06-09T14:55:23+00:00'
+relations: []

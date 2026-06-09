@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Loader2, Bot, BookOpen, Play, Terminal } from "lucide-react";
 import { toast } from "sonner";
@@ -111,8 +111,9 @@ function HermesIntegrationPanel() {
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm">Skill di Orchestrazione</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Installa le skill manager-ai-orchestrator e manager-ai-issue-worker
-            in Hermes. Necessario per orchestrar e pipeline tramite Hermes.
+            Installa le skill in Hermes per abilitare orchestrazione e
+            auto-mode. Include manager-ai-orchestrator, manager-ai-issue-worker,
+            run-issue, run-pipeline, ask-and-brainstorm e manage-agent.
           </p>
           <div className="mt-3 flex items-center gap-3">
             <Button
@@ -158,11 +159,13 @@ function HermesCommandsPanel() {
   const createHermesTerminal = useCreateHermesTerminal();
   const killTerminal = useKillTerminal();
   const [activeTerminalId, setActiveTerminalId] = useState<string | null>(null);
+  const activeTerminalIdRef = useRef<string | null>(null);
   const [activeDialogOpen, setActiveDialogOpen] = useState(false);
 
   async function handleRun(cmd: { name: string; command: string }) {
     try {
       const terminal = await createHermesTerminal.mutateAsync(cmd.command);
+      activeTerminalIdRef.current = terminal.id;
       setActiveTerminalId(terminal.id);
       setActiveDialogOpen(true);
     } catch {
@@ -171,14 +174,16 @@ function HermesCommandsPanel() {
   }
 
   function handleDialogClose(open: boolean) {
-    if (!open && activeTerminalId) {
-      killTerminal.mutate(activeTerminalId);
+    if (!open && activeTerminalIdRef.current) {
+      killTerminal.mutate(activeTerminalIdRef.current);
+      activeTerminalIdRef.current = null;
       setActiveTerminalId(null);
     }
     setActiveDialogOpen(open);
   }
 
   function handleSessionEnd() {
+    activeTerminalIdRef.current = null;
     setActiveTerminalId(null);
     setActiveDialogOpen(false);
   }

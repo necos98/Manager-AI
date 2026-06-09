@@ -367,8 +367,6 @@ export function ProjectSettingsDialog({
             )}
           </div>
 
-          </div>
-
           <div className="pt-2 border-t">
             <label className="text-sm font-medium flex items-center gap-1.5 mb-2 text-destructive">
               <Archive className="size-3.5" />

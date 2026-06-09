@@ -1,8 +1,7 @@
 """Module-level step completion event signaling.
 
-Orchestrates the interaction between the auto-mode _execute loop,
-orchestrated-mode _monitor_step, and the MCP finished_pipeline_step tool.
-"""
+Orchestrates the interaction between the auto-mode _execute loop
+and the MCP finished_pipeline_step tool."""
 
 import asyncio
 import logging

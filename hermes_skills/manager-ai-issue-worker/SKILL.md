@@ -19,7 +19,7 @@ tells you.** Always call it first.
 ### Step 1: Discover Who You Are
 
 ```python
-identity = get_active_agent(issue_id="<issue_id>")
+identity = worker_get_active_agent(issue_id="<issue_id>")
 ```
 
 If `identity.active is None` → no pipeline is running. Report this and stop.
@@ -31,7 +31,7 @@ The response tells you:
 - **run_id**, **step_run_id**, **step_index** — your execution context
 - **terminal_id** — the PTY terminal you're connected to
 
-> **IMPORTANT:** `get_active_agent` is the **ONLY** source of your identity.
+> **IMPORTANT:** `worker_get_active_agent` is the **ONLY** source of your identity.
 > There are no env vars, no secondary channels. Call it once, internalize
 > the result, and act on it.
 
@@ -39,10 +39,10 @@ The response tells you:
 
 ```python
 # Full pipeline state
-active_run = get_active_pipeline_run(issue_id="<issue_id>")
+active_run = worker_get_active_pipeline_run(issue_id="<issue_id>")
 
 # Agent handoff messages from previous steps
-messages = get_pipeline_messages(run_id="<run_id>")
+messages = worker_get_pipeline_messages(run_id="<run_id>")
 ```
 
 Messages contain handoff summaries from agents that ran before you.
@@ -52,7 +52,7 @@ Read them — they contain analysis results, rationale, constraints, and hints.
 
 ```python
 # The project_id is in manager.json at the repo root
-issue = get_issue_details(project_id="<project_id>", issue_id="<issue_id>")
+issue = worker_get_issue_details(project_id="<project_id>", issue_id="<issue_id>")
 ```
 
 Read the spec, plan, tasks. Also read project memories:
@@ -67,11 +67,11 @@ Map your `agent_intent` to these action patterns:
 
 | If intent says... | Do this |
 |---|---|
-| **Spec / Design / Brainstorm** | `set_issue_name` → research → `create_issue_spec` |
+| **Spec / Design / Brainstorm** | `worker_set_issue_name` → research → `create_issue_spec` |
 | **Planning / Break down** | `create_issue_plan` → `create_plan_tasks` |
 | **Implement / Code / Build** | Read tasks → implement each → `update_task_status` → `complete_issue` |
 | **Explore / Analyze** | Read code, trace paths, document findings. Do NOT modify files. |
-| **Review / QA / Test** | Run tests, review code, report findings via `send_agent_message` |
+| **Review / QA / Test** | Run tests, review code, report findings via `worker_send_agent_message` |
 | **anything else** | Use best judgment with available MCP tools |
 
 **Implementation rules:**

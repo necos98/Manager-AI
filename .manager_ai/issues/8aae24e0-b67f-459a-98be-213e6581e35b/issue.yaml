@@ -2,11 +2,41 @@ schema_version: 1
 id: 8aae24e0-b67f-459a-98be-213e6581e35b
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Test flusso MCA - Hermes Orchestrator
-status: New
+status: Finished
 priority: 3
 category: null
 created_at: '2026-06-08T11:26:16.613308+00:00'
-updated_at: '2026-06-08T11:26:20.185664+00:00'
-finished_at: null
-tasks: []
+updated_at: '2026-06-09T09:48:35.646988+00:00'
+finished_at: '2026-06-09T09:48:35.646999+00:00'
+tasks:
+- id: d13d0370-6d63-4d43-a4b7-369659a673c1
+  name: Creare WriterAgent e CheckerAgent
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T09:41:17+00:00'
+  updated_at: '2026-06-09T09:41:37+00:00'
+- id: 6ab575ff-1146-42d0-98aa-1003727fefbe
+  name: Creare pipeline orchestrata e avviarla
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T09:41:17+00:00'
+  updated_at: '2026-06-09T09:41:56+00:00'
+- id: 9b846564-fa37-4986-88b5-c5655c43da8f
+  name: Eseguire Step 1 — WriterAgent (scrivere file di verifica)
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T09:41:17+00:00'
+  updated_at: '2026-06-09T09:42:44+00:00'
+- id: 582e62c8-6e45-4e72-8e26-9fd29eba3b62
+  name: Eseguire Step 2 — CheckerAgent (verificare file)
+  status: Completed
+  order: 3
+  created_at: '2026-06-09T09:41:17+00:00'
+  updated_at: '2026-06-09T09:44:11+00:00'
+- id: 791ba660-f176-4588-b9d2-93bc7a53ed76
+  name: Completare pipeline, scrivere recap e completare issue
+  status: Completed
+  order: 4
+  created_at: '2026-06-09T09:41:17+00:00'
+  updated_at: '2026-06-09T09:48:27+00:00'
 relations: []

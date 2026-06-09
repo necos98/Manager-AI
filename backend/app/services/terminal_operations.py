@@ -41,46 +41,96 @@ async def get_project_path(project_id: str, db: AsyncSession) -> str:
     return project.path
 
 
-async def create_terminal(
-    data, db: AsyncSession, service: TerminalService
-) -> dict:
-    """Create a PTY terminal, inject env vars and startup commands."""
-    try:
-        project_path = await get_project_path(data.project_id, db)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+async def _create_terminal_base(
+    db: AsyncSession,
+    service: TerminalService,
+    *,
+    project_id: str,
+    issue_id: str = "",
+    project_path: str | None = None,
+    shell: str | None = None,
+    wsl_distro: str | None = None,
+    reap_project_id: str | None = None,
+    reap_issue_id: str = "",
+    extra_env: dict[str, str] | None = None,
+) -> tuple[dict, str, str | None, bool]:
+    """Create a PTY terminal with shared setup: path resolution, shell/WSL,
+    terminal reap, PTY creation, env injection.
 
-    if not os.path.isdir(project_path):
+    Returns (terminal_dict, resolved_project_path, project_shell, is_wsl).
+    """
+    # ── Resolve project path ────────────────────────────────────────
+    if project_path is not None:
+        resolved_path = project_path
+    else:
+        try:
+            resolved_path = await get_project_path(project_id, db)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    if not os.path.isdir(resolved_path):
         raise HTTPException(
             status_code=400,
-            detail=f"Project path does not exist: {project_path}",
+            detail=f"Project path does not exist: {resolved_path}",
         )
 
-    project_obj = await db.get(Project, data.project_id)
-    project_shell = project_obj.shell if project_obj else None
-    project_wsl_distro = project_obj.wsl_distro if project_obj else None
+    # ── Resolve shell / WSL (load from DB if not provided) ──────────
+    if shell is None or wsl_distro is None:
+        project_obj = await db.get(Project, project_id) if project_id else None
+        if shell is None:
+            shell = project_obj.shell if project_obj else None
+        if wsl_distro is None:
+            wsl_distro = project_obj.wsl_distro if project_obj else None
 
+    # ── Reap existing terminals if requested ─────────────────────────
+    if reap_project_id is not None:
+        for existing in service.list_active(
+            project_id=reap_project_id, issue_id=reap_issue_id,
+        ):
+            await _teardown_terminal(existing["id"], service)
+
+    # ── Create PTY ──────────────────────────────────────────────────
     try:
         terminal = service.create(
-            issue_id=data.issue_id,
-            project_id=data.project_id,
-            project_path=project_path,
-            shell=project_shell,
-            wsl_distro=project_wsl_distro,
+            issue_id=issue_id,
+            project_id=project_id,
+            project_path=resolved_path,
+            shell=shell,
+            wsl_distro=wsl_distro,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to spawn terminal: {e}")
+        from app.logging_config import ErrorLoggerService
 
-    is_wsl = is_wsl_shell(project_shell)
+        ErrorLoggerService.log_exception(e)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to spawn terminal: {e}"
+        )
+
+    # ── Inject env vars ─────────────────────────────────────────────
+    is_wsl = is_wsl_shell(shell)
     await _inject_terminal_env(
         service,
         terminal["id"],
-        project_path=project_path,
-        project_shell=project_shell,
-        project_id=data.project_id,
+        project_path=resolved_path,
+        project_shell=shell,
+        project_id=project_id,
         db=db,
+        extra_env=extra_env,
+    )
+
+    return terminal, resolved_path, shell, is_wsl
+
+
+async def create_terminal(
+    data, db: AsyncSession, service: TerminalService
+) -> dict:
+    """Create a PTY terminal, inject env vars and startup commands."""
+    terminal, project_path, project_shell, is_wsl = await _create_terminal_base(
+        db, service,
+        project_id=data.project_id,
+        issue_id=data.issue_id,
         extra_env={"MANAGER_AI_ISSUE_ID": data.issue_id},
     )
 
@@ -115,37 +165,83 @@ async def create_terminal(
                     if line:
                         pty.write(line + "\r\n")
             else:
-                cmd_svc = TerminalCommandService(db)
-                commands = await cmd_svc.resolve(data.project_id)
-                if commands:
-                    pty = service.get_pty(terminal["id"])
-                    condition_vars = {
-                        "issue_status": issue_status,
-                        "issue_id": data.issue_id,
-                        "project_id": data.project_id,
-                    }
-                    for c in commands:
-                        try:
-                            passes = evaluate_condition(
-                                c.condition, condition_vars
-                            )
-                        except UnknownConditionError as exc:
-                            logger.warning(
-                                "Skipping terminal command %s: %s", c.id, exc
-                            )
-                            continue
-                        if not passes:
-                            continue
-                        cmd_text = c.command
-                        for var, val in replacements.items():
-                            cmd_text = cmd_text.replace(var, val)
-                        for line in cmd_text.split("\n"):
-                            line = line.strip()
-                            if line:
-                                pty.write(line + "\r\n")
+                # Quando il provider gestirà il run-issue (data.issue_id presente),
+                # non scrivere terminal commands dal DB — evita conflitti
+                # (es. utente con comando claude configurato che parte prima del provider)
+                if data.issue_id:
+                    logger.info(
+                        "Skipping DB terminal commands for terminal %s "
+                        "(provider will inject run-issue command)",
+                        terminal["id"],
+                    )
+                else:
+                    cmd_svc = TerminalCommandService(db)
+                    commands = await cmd_svc.resolve(data.project_id)
+                    if commands:
+                        pty = service.get_pty(terminal["id"])
+                        condition_vars = {
+                            "issue_status": issue_status,
+                            "issue_id": data.issue_id,
+                            "project_id": data.project_id,
+                        }
+                        for c in commands:
+                            try:
+                                passes = evaluate_condition(
+                                    c.condition, condition_vars
+                                )
+                            except UnknownConditionError as exc:
+                                logger.warning(
+                                    "Skipping terminal command %s: %s", c.id, exc
+                                )
+                                continue
+                            if not passes:
+                                continue
+                            cmd_text = c.command
+                            for var, val in replacements.items():
+                                cmd_text = cmd_text.replace(var, val)
+                            for line in cmd_text.split("\n"):
+                                line = line.strip()
+                                if line:
+                                    pty.write(line + "\r\n")
         except Exception:
             logger.warning(
                 "Failed to inject startup commands for terminal %s",
+                terminal["id"],
+                exc_info=True,
+            )
+
+    # ── Inietta il comando run-issue dal provider ─────────────────────
+    if data.issue_id and not data.command:
+        try:
+            from app.services.settings_service import SettingsService
+
+            settings_svc = SettingsService(db)
+            provider_name = await settings_svc.get("agent_provider")
+            provider = AgentProviderRegistry.get(provider_name)
+            cmds = provider.build_run_issue_commands(data.issue_id)
+
+            is_wsl = is_wsl_shell(project_shell)
+            replacements = {
+                "$issue_id": data.issue_id,
+                "$project_id": data.project_id,
+                "$project_path": win_to_wsl_path(project_path)
+                if is_wsl
+                else project_path,
+            }
+            pty = service.get_pty(terminal["id"])
+            for cmd in cmds:
+                resolved = cmd
+                for var, val in replacements.items():
+                    resolved = resolved.replace(var, val)
+                logger.info(
+                    "Injecting run-issue command (provider=%s): %s",
+                    provider_name,
+                    resolved,
+                )
+                pty.write(resolved + "\r\n")
+        except Exception:
+            logger.warning(
+                "Failed to inject run-issue command for terminal %s",
                 terminal["id"],
                 exc_info=True,
             )
@@ -157,49 +253,12 @@ async def create_ask_terminal(
     data, db: AsyncSession, service: TerminalService
 ) -> dict:
     """Create an Ask & Brainstorming terminal, reaping any prior one."""
-    try:
-        project_path = await get_project_path(data.project_id, db)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    if not os.path.isdir(project_path):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Project path does not exist: {project_path}",
-        )
-
-    for existing in service.list_active(
-        project_id=data.project_id, issue_id=""
-    ):
-        await _teardown_terminal(existing["id"], service)
-
-    project_obj = await db.get(Project, data.project_id)
-    project_shell = project_obj.shell if project_obj else None
-    project_wsl_distro = project_obj.wsl_distro if project_obj else None
-
-    try:
-        terminal = service.create(
-            issue_id="",
-            project_id=data.project_id,
-            project_path=project_path,
-            shell=project_shell,
-            wsl_distro=project_wsl_distro,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to spawn terminal: {e}"
-        )
-
-    is_wsl = is_wsl_shell(project_shell)
-    await _inject_terminal_env(
-        service,
-        terminal["id"],
-        project_path=project_path,
-        project_shell=project_shell,
+    terminal, project_path, project_shell, is_wsl = await _create_terminal_base(
+        db, service,
         project_id=data.project_id,
-        db=db,
+        issue_id="",
+        reap_project_id=data.project_id,
+        reap_issue_id="",
     )
 
     try:
@@ -208,7 +267,7 @@ async def create_ask_terminal(
         settings_svc = SettingsService(db)
         provider_name = await settings_svc.get("agent_provider")
         provider = AgentProviderRegistry.get(provider_name)
-        cmd = provider.build_ask_brainstorm_command(data.project_id)
+        cmds = provider.build_ask_brainstorm_commands(data.project_id)
 
         variables = {
             "$project_id": data.project_id,
@@ -216,11 +275,13 @@ async def create_ask_terminal(
             if is_wsl
             else project_path,
         }
-        for var, val in variables.items():
-            cmd = cmd.replace(var, val)
-        logger.info("Ask terminal %s command: %s", terminal["id"], cmd)
         pty = service.get_pty(terminal["id"])
-        pty.write(cmd + "\r\n")
+        for cmd in cmds:
+            resolved = cmd
+            for var, val in variables.items():
+                resolved = resolved.replace(var, val)
+            logger.info("Ask terminal %s command: %s", terminal["id"], resolved)
+            pty.write(resolved + "\r\n")
     except Exception:
         logger.warning(
             "Failed to inject ask command for terminal %s",
@@ -235,6 +296,7 @@ async def create_manage_agent_terminal(
     data, db: AsyncSession, service: TerminalService
 ) -> dict:
     """Create a Manage Agent terminal."""
+    # Calcola project_path (unico per manage-agent — non dal DB)
     project_path = str(
         Path(app_settings.database_url).parent.parent.resolve()
     )
@@ -243,22 +305,7 @@ async def create_manage_agent_terminal(
             Path(__file__).resolve().parent.parent.parent
         )
 
-    for existing in service.list_active(project_id="", issue_id=""):
-        await _teardown_terminal(existing["id"], service)
-
-    try:
-        terminal = service.create(
-            issue_id="",
-            project_id="",
-            project_path=project_path,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to spawn terminal: {e}"
-        )
-
+    # Fetch agent intent before creating terminal
     agent_intent = ""
     if data.agent_id:
         try:
@@ -274,6 +321,16 @@ async def create_manage_agent_terminal(
                 exc_info=True,
             )
 
+    terminal, project_path, project_shell, is_wsl = await _create_terminal_base(
+        db, service,
+        project_id="",
+        issue_id="",
+        project_path=project_path,
+        reap_project_id="",
+        reap_issue_id="",
+    )
+
+    # ── Env vars specifiche manage-agent (via PTY) ──────────────────
     try:
         pty = service.get_pty(terminal["id"])
         port = str(app_settings.backend_port)
@@ -307,14 +364,15 @@ async def create_manage_agent_terminal(
         settings_svc = SettingsService(db)
         provider_name = await settings_svc.get("agent_provider")
         provider = AgentProviderRegistry.get(provider_name)
-        cmd = provider.build_manage_agent_command(
+        cmds = provider.build_manage_agent_commands(
             agent_intent if data.agent_id else ""
         )
-        logger.info(
-            "Manage-agent terminal %s command: %s", terminal["id"], cmd
-        )
         pty = service.get_pty(terminal["id"])
-        pty.write(cmd + "\r\n")
+        for cmd in cmds:
+            logger.info(
+                "Manage-agent terminal %s command: %s", terminal["id"], cmd
+            )
+            pty.write(cmd + "\r\n")
     except Exception:
         logger.warning(
             "Failed to inject manage-agent command for terminal %s",
