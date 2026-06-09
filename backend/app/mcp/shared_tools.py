@@ -349,18 +349,21 @@ async def cancel_issue(session: AsyncSession, project_id: str, issue_id: str) ->
 async def force_finish_issue(session: AsyncSession, project_id: str, issue_id: str, recap: str | None = None) -> dict:
     issue_service = IssueService(session)
     issue = await issue_service.force_finish_issue(issue_id, project_id, recap=recap)
-    issue_status = issue.status
-    issue_name_val = issue_display_name(issue)
     await session.commit()
+    project = await ProjectService(session).get_by_id(project_id)
+    project_name = project.name if project else ""
     await _emit_event({
         "type": "issue_status_changed",
-        "new_status": issue_status,
+        "new_status": issue.status,
         "project_id": project_id,
+        "project_name": project_name,
         "issue_id": issue_id,
-        "issue_name": issue_name_val,
+        "issue_name": issue_display_name(issue),
+        "description": issue.description,
+        "recap": issue.recap,
         "timestamp": iso_now(),
     })
-    return {"id": issue_id, "status": issue_status}
+    return {"id": issue_id, "status": issue.status}
 
 
 async def complete_issue(session: AsyncSession, project_id: str, issue_id: str, recap: str) -> dict:
@@ -376,12 +379,17 @@ async def complete_issue(session: AsyncSession, project_id: str, issue_id: str, 
     issue_name = issue_display_name(issue)
     issue_status = issue.status
     await session.commit()
+    project = await ProjectService(session).get_by_id(project_id)
+    project_name = project.name if project else ""
     await _emit_event({
         "type": "issue_status_changed",
         "new_status": issue_status,
         "project_id": project_id,
+        "project_name": project_name,
         "issue_id": issue_id_val,
         "issue_name": issue_name,
+        "description": issue.description,
+        "recap": issue.recap,
         "timestamp": iso_now(),
     })
     return {"id": issue_id_val, "status": issue_status, "recap": issue.recap}
@@ -883,19 +891,21 @@ async def ask_user_question(session: AsyncSession, issue_id: str, question: str,
         options=options,
     )
 
+    issue_name = issue_display_name(issue) or "Untitled issue"
+    project = await ProjectService(session).get_by_id(project_id)
+    project_name = project.name if project else ""
+
     await _emit_event({
         "type": "question_asked",
         "question_id": q.id,
         "project_id": project_id,
+        "project_name": project_name,
         "issue_id": issue_id,
+        "issue_name": issue_name,
         "question": q.question,
         "options": q.options,
         "timestamp": iso_now(),
     })
-
-    issue_name = issue_display_name(issue) or "Untitled issue"
-    project = await ProjectService(session).get_by_id(project_id)
-    project_name = project.name if project else ""
     await _emit_event({
         "type": "notification",
         "title": "New question from AI",

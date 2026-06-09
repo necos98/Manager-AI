@@ -14,6 +14,8 @@ from app.schemas.issue import (
     IssueUpdate,
 )
 from app.services.issue_service import IssueService
+from app.services.project_service import ProjectService
+from app.services.event_service import event_service
 
 router = APIRouter(prefix="/api/projects/{project_id}/issues", tags=["issues"])
 
@@ -121,9 +123,25 @@ async def cancel_issue_endpoint(
 async def complete_issue(
     project_id: str, issue_id: str, data: IssueCompleteBody, db: AsyncSession = Depends(get_db)
 ):
+    from app.utils.datetime import iso_now
+
     service = IssueService(db)
     record = await service.complete_issue(issue_id, project_id, recap=data.recap)
     await db.commit()
+
+    project = await ProjectService(db).get_by_id(project_id)
+    await event_service.emit({
+        "type": "issue_status_changed",
+        "new_status": IssueStatus.FINISHED.value,
+        "project_id": project_id,
+        "project_name": project.name if project else "",
+        "issue_id": issue_id,
+        "issue_name": record.name or "Untitled",
+        "description": record.description or "",
+        "recap": record.recap or "",
+        "timestamp": iso_now(),
+    })
+
     return IssueResponse.from_record(record)
 
 
@@ -131,9 +149,25 @@ async def complete_issue(
 async def force_finish_issue_endpoint(
     project_id: str, issue_id: str, data: IssueForceFinishBody | None = None, db: AsyncSession = Depends(get_db)
 ):
+    from app.utils.datetime import iso_now
+
     service = IssueService(db)
     record = await service.force_finish_issue(issue_id, project_id, recap=data.recap if data else None)
     await db.commit()
+
+    project = await ProjectService(db).get_by_id(project_id)
+    await event_service.emit({
+        "type": "issue_status_changed",
+        "new_status": IssueStatus.FINISHED.value,
+        "project_id": project_id,
+        "project_name": project.name if project else "",
+        "issue_id": issue_id,
+        "issue_name": record.name or "Untitled",
+        "description": record.description or "",
+        "recap": record.recap or "",
+        "timestamp": iso_now(),
+    })
+
     return IssueResponse.from_record(record)
 
 

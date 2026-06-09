@@ -26,13 +26,13 @@ class HermesProvider(AgentProvider):
 
     def build_run_issue_commands(self, issue_id: str) -> list[str]:
         return [
-            "hermes chat --skills run-issue --yolo",
+            "hermes chat --skills run-issue --max-turns 300 --yolo",
             f"Work on issue {issue_id}",
         ]
 
     def build_run_pipeline_commands(self, issue_id: str) -> list[str]:
         return [
-            "hermes chat --skills run-pipeline --yolo",
+            "hermes chat --skills run-pipeline --max-turns 300 --yolo",
             f"Execute pipeline step for issue {issue_id}",
         ]
 
