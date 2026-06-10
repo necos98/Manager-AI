@@ -54,6 +54,7 @@ class RunningIssueItem(BaseModel):
 class QueueStatus(BaseModel):
     queued_count: int
     running_count: int
+    dispatching_count: int
     paused: bool
     auto_process_enabled: bool
 
@@ -208,6 +209,13 @@ async def get_queue_status(
         if t.get("project_id") and t.get("issue_id")
     )
 
+    # Count dispatching QueueEntries (in the process of being dispatched)
+    result = await db.execute(
+        select(sa_func.count(QueueEntry.id))
+        .where(QueueEntry.status == QueueEntryStatus.DISPATCHING)
+    )
+    dispatching_count: int = result.scalar() or 0
+
     paused_str = await settings_service.get("work_queue_paused")
     paused = paused_str.lower() == "true" if paused_str else False
 
@@ -217,6 +225,7 @@ async def get_queue_status(
     return QueueStatus(
         queued_count=queued_count,
         running_count=running_count,
+        dispatching_count=dispatching_count,
         paused=paused,
         auto_process_enabled=auto_process_enabled,
     )

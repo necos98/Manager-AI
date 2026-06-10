@@ -68,6 +68,39 @@ function QueuePage() {
   const running = runningData?.running ?? [];
   const isPaused = statusData?.paused ?? false;
   const isAutoProcessEnabled = statusData?.auto_process_enabled ?? false;
+  const dispatchingCount = statusData?.dispatching_count ?? 0;
+
+  // Dispatch status logic
+  const isActive = dispatchingCount > 0 || running.length > 0;
+  const isWaiting = queued.length > 0 && !isActive;
+  const isStopped = isPaused && !isActive;
+
+  let dispatchStatus: { label: string; colorClass: string; dotClass: string } | null = null;
+  if (isActive) {
+    dispatchStatus = {
+      label: "Attivo",
+      colorClass: "text-emerald-600 dark:text-emerald-400",
+      dotClass: "bg-emerald-500",
+    };
+  } else if (isWaiting) {
+    dispatchStatus = {
+      label: "In attesa",
+      colorClass: "text-amber-600 dark:text-amber-400",
+      dotClass: "bg-amber-500",
+    };
+  } else if (isStopped) {
+    dispatchStatus = {
+      label: "Fermo",
+      colorClass: "text-red-600 dark:text-red-400",
+      dotClass: "bg-red-500",
+    };
+  } else {
+    dispatchStatus = {
+      label: "Inattivo",
+      colorClass: "text-muted-foreground",
+      dotClass: "bg-muted-foreground/30",
+    };
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -92,7 +125,11 @@ function QueuePage() {
           </label>
           <span>{running.length} running</span>
           <span>{queued.length} queued</span>
-        </div>
+          {/* Dispatch status indicator */}
+          <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${dispatchStatus.colorClass}`}>
+            <span className={`inline-flex rounded-full h-2 w-2 ${dispatchStatus.dotClass}`} />
+            {dispatchStatus.label}
+          </span>
       </div>
 
       {/* In esecuzione */}

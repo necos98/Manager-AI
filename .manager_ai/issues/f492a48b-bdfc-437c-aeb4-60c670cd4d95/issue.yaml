@@ -2,11 +2,29 @@ schema_version: 1
 id: f492a48b-bdfc-437c-aeb4-60c670cd4d95
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Indicatore stato dispatch coda (attivo/in pausa/fermo)
-status: New
+status: Finished
 priority: 3
-category: null
+category: Feature
 created_at: '2026-06-10T17:01:00.448430+00:00'
-updated_at: '2026-06-10T17:01:08.700344+00:00'
-finished_at: null
-tasks: []
+updated_at: '2026-06-10T18:45:40.835357+00:00'
+finished_at: '2026-06-10T18:45:40.835379+00:00'
+tasks:
+- id: 017bf3b5-75c1-4229-a1db-128cf15c3e64
+  name: 'Backend: aggiungere dispatching_count a QueueStatus'
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T18:43:40+00:00'
+  updated_at: '2026-06-10T18:44:08+00:00'
+- id: 3d6e1f9e-3ca6-4bc0-bc5c-984e3a5d7207
+  name: 'Frontend: aggiungere dispatching_count all''interfaccia QueueStatus'
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T18:43:40+00:00'
+  updated_at: '2026-06-10T18:44:25+00:00'
+- id: 406786e2-2cce-49b8-9cad-ecc884cd177f
+  name: 'Frontend: aggiungere indicatore visivo stato dispatch nella pagina /queue'
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T18:43:40+00:00'
+  updated_at: '2026-06-10T18:45:34+00:00'
 relations: []
