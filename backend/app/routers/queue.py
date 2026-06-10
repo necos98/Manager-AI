@@ -284,14 +284,6 @@ async def add_to_queue(
     # Fallback when IssueQueueService is not initialized
     result = await _queue_add_direct(db, body.project_id, body.issue_id)
     return {**result, "message": "Issue added to queue"}
-        result = await registry.add_to_queue(db, body.project_id, body.issue_id)
-    except AppError as e:
-        raise HTTPException(status_code=400, detail=e.message)
-
-    return {
-        **result,
-        "message": "Issue added to queue",
-    }
 
 
 @router.post("/remove")
@@ -314,14 +306,6 @@ async def remove_from_queue(
     # Fallback when IssueQueueService is not initialized
     result = await _queue_remove_direct(db, body.project_id, body.issue_id)
     return {**result, "message": "Issue removed from queue"}
-        result = await registry.remove_from_queue(db, body.project_id, body.issue_id)
-    except AppError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-
-    return {
-        **result,
-        "message": "Issue removed from queue",
-    }
 
 
 @router.get("/position/{issue_id}")
