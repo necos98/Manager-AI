@@ -1,0 +1,60 @@
+schema_version: 1
+id: 38dbc835-8427-4cfc-8da3-8eabfa2589d1
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Bulk actions su Kanban board — selezione multipla e action bar
+status: Accepted
+priority: 2
+category: null
+created_at: '2026-06-10T11:08:37.257376+00:00'
+updated_at: '2026-06-10T15:52:31.804015+00:00'
+finished_at: null
+tasks:
+- id: 2bdbc953-c822-47ec-8e12-827f51d9c7aa
+  name: Backend schemas per bulk operations
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T15:52:27+00:00'
+  updated_at: '2026-06-10T15:52:55+00:00'
+- id: 9bcce4b1-5d2c-428b-8c12-48d296d75b31
+  name: Backend service methods per bulk operations
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T15:52:27+00:00'
+  updated_at: '2026-06-10T15:53:13+00:00'
+- id: a873c0dc-6bb9-470d-b286-242b415609d0
+  name: Backend router per bulk operations
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T15:52:27+00:00'
+  updated_at: '2026-06-10T15:53:52+00:00'
+- id: b7377199-4d3b-428e-b068-b1b093eb65eb
+  name: Frontend API functions per bulk
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T15:52:27+00:00'
+  updated_at: '2026-06-10T15:54:13+00:00'
+- id: dfe769e2-afb8-4874-83af-158e57be70c9
+  name: Frontend hooks per bulk
+  status: Completed
+  order: 4
+  created_at: '2026-06-10T15:52:27+00:00'
+  updated_at: '2026-06-10T15:54:43+00:00'
+- id: 09ff879a-4789-4f44-a7ce-d9e10c74a214
+  name: Select mode + checkbox su KanbanCard
+  status: Completed
+  order: 5
+  created_at: '2026-06-10T15:52:27+00:00'
+  updated_at: '2026-06-10T15:56:06+00:00'
+- id: 648fe6fa-8876-4651-8d29-b3b9c7f19ed6
+  name: BulkActionBar component
+  status: In Progress
+  order: 6
+  created_at: '2026-06-10T15:52:27+00:00'
+  updated_at: '2026-06-10T15:56:07+00:00'
+- id: 2ed9ce4a-bb06-40fa-ad75-53a922837c3d
+  name: Select all in column
+  status: Pending
+  order: 7
+  created_at: '2026-06-10T15:52:27+00:00'
+  updated_at: '2026-06-10T15:52:27+00:00'
+relations: []

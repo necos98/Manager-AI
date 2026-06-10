@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -100,3 +100,39 @@ class IssueFeedbackResponse(BaseModel):
             content=record.content,
             created_at=_parse_dt(record.created_at),
         )
+
+
+# ── Bulk operation schemas ──
+
+TagMode = Literal["add", "remove", "set"]
+
+
+class BulkStatusUpdate(BaseModel):
+    issue_ids: list[str] = Field(..., min_length=1)
+    status: IssueStatus
+
+
+class BulkTagsUpdate(BaseModel):
+    issue_ids: list[str] = Field(..., min_length=1)
+    tags: list[str] = Field(..., min_length=1)
+    mode: TagMode = "set"
+
+
+class BulkDeleteRequest(BaseModel):
+    issue_ids: list[str] = Field(..., min_length=1)
+
+
+class BulkPriorityUpdate(BaseModel):
+    issue_ids: list[str] = Field(..., min_length=1)
+    priority: int = Field(..., ge=1, le=5)
+
+
+class BulkCategoryUpdate(BaseModel):
+    issue_ids: list[str] = Field(..., min_length=1)
+    category: str | None = None
+
+
+class BulkResponse(BaseModel):
+    updated: int = 0
+    deleted: int = 0
+    errors: dict[str, str] = {}

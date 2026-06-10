@@ -80,7 +80,7 @@ _defaults_path = Path(__file__).parent / "default_settings.json"
 _desc: dict[str, str] = json.loads(_defaults_path.read_text(encoding="utf-8"))
 
 # Use a distinct server name so clients can tell which MCP they connected to
-orchestrator_mcp = FastMCP("Manager AI Orchestrator", streamable_http_path="/")
+orchestrator_mcp = FastMCP("Manager AI Orchestrator", streamable_http_path="/", stateless=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

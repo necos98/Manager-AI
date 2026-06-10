@@ -669,3 +669,23 @@ export interface PipelineMessageCreate {
   sender_agent_name: string;
   content: string;
 }
+
+// ── Global Search ──
+
+export interface SearchResultItem {
+  id: string;
+  name: string;
+  description: string;
+  type: "issue" | "project" | "page";
+  status: string | null;
+  project_id: string | null;
+  project_name: string | null;
+  priority: number | null;
+  url: string;
+}
+
+export interface SearchResults {
+  issues: SearchResultItem[];
+  projects: SearchResultItem[];
+  pages: SearchResultItem[];
+}

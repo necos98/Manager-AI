@@ -1,0 +1,12 @@
+schema_version: 1
+id: b44666eb-7892-4afb-a859-f91b57311fff
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: null
+status: Queued
+priority: 3
+category: null
+created_at: '2026-06-10T07:20:33.703931+00:00'
+updated_at: '2026-06-10T15:44:42.353003+00:00'
+finished_at: null
+tasks: []
+relations: []

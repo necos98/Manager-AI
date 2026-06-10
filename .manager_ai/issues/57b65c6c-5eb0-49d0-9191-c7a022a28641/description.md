@@ -1,5 +1,0 @@
-Agente indipendente da Claude Code che integrato con un bot telegram diventa un vero e proprio chatbot dove chiedere lo stato delle issue, gestire issue, startare issue, creare issue. Quindi creare una piccola interfaccia, una vera e propria CHAT basata sulle API universali, dove l'utente può inserire la propria api key. Bisognerà gestire i provider, come primo provider usa quello di Deepseek. L'obiettivo è un chatbot che fa tutto al posto tuo, richiamabile anche con integrazioni terze come Telegram. Chiaramente crea un sistema modulare dove è poi possibile integrare altri sistemi di messaggistica.
-
-Inquadralo come un Manager personale dove fare domande, lui può inviarti notifiche ad esempio, necessità di ricevere risposta su una domanda di una issue, oppure avvisarmi quando una issue è stata completata.
-
-Vorrei affidarmi ad un "framework" che abbia questo "flow" di chat.

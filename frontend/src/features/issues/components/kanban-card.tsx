@@ -1,5 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Terminal } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { Badge } from "@/shared/components/ui/badge";
@@ -13,6 +14,9 @@ interface KanbanCardProps {
   isBlocked?: boolean;
   projectId: string;
   activePipelineName?: string;
+  selectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (issueId: string) => void;
 }
 
 function TaskProgress({ tasks }: { tasks: Issue["tasks"] }) {
@@ -30,10 +34,11 @@ function TaskProgress({ tasks }: { tasks: Issue["tasks"] }) {
   );
 }
 
-export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId, activePipelineName }: KanbanCardProps) {
+export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId, activePipelineName, selectMode = false, isSelected = false, onToggleSelect }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: issue.id,
     data: { issue },
+    disabled: selectMode, // disable drag when in select mode
   });
   const navigate = useNavigate();
 
@@ -42,10 +47,18 @@ export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId, a
     opacity: isDragging ? 0.4 : 1,
   };
 
-  function handleClick() {
-    if (!isDragging) {
-      navigate({ to: "/projects/$projectId/issues/$issueId", params: { projectId, issueId: issue.id } });
+  function handleClick(e: React.MouseEvent) {
+    if (isDragging) return;
+    if (selectMode) {
+      onToggleSelect?.(issue.id);
+      return;
     }
+    navigate({ to: "/projects/$projectId/issues/$issueId", params: { projectId, issueId: issue.id } });
+  }
+
+  function handleCheckboxClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    onToggleSelect?.(issue.id);
   }
 
   const label = `Issue ${issue.name || issue.description}, status ${issue.status}, priority ${issue.priority}`;
@@ -60,9 +73,26 @@ export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId, a
       role="article"
       aria-label={label}
       aria-grabbed={isDragging}
+      aria-selected={selectMode ? isSelected : undefined}
     >
-      <Card onClick={handleClick} className="px-3 py-2.5 cursor-pointer hover:bg-accent/50 transition-colors">
-        <div className="flex items-start justify-between gap-2">
+      <Card
+        onClick={handleClick}
+        className={[
+          "px-3 py-2.5 cursor-pointer transition-colors",
+          isSelected
+            ? "ring-2 ring-primary bg-primary/5 hover:bg-primary/10"
+            : "hover:bg-accent/50",
+        ].join(" ")}
+      >
+        <div className="flex items-start gap-2">
+          {selectMode && (
+            <Checkbox
+              checked={isSelected}
+              onClick={handleCheckboxClick}
+              className="mt-1 flex-shrink-0"
+              aria-label={`Select ${issue.name || issue.description}`}
+            />
+          )}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               {hasTerminal && (

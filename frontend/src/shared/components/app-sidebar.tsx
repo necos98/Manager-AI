@@ -21,6 +21,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from "@/shared/components/ui/sidebar";
 import { ProjectSettingsDialog } from "@/features/projects/components/project-settings-dialog";
 import { McpSetupDialog } from "@/features/projects/components/mcp-setup-dialog";
@@ -82,7 +83,7 @@ export function AppSidebar({ activeProject, className }: AppSidebarProps) {
 
   return (
     <>
-      <Sidebar className={className}>
+      <Sidebar collapsible="icon" className={className}>
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -103,6 +104,7 @@ export function AppSidebar({ activeProject, className }: AppSidebarProps) {
                     <SidebarMenuButton
                       asChild
                       isActive={!!matchRoute({ to: item.to, params: item.params, fuzzy: true })}
+                      tooltip={item.label}
                     >
                       <Link to={item.to} params={item.params}>
                         <item.icon />
@@ -112,7 +114,7 @@ export function AppSidebar({ activeProject, className }: AppSidebarProps) {
                   </SidebarMenuItem>
                 ))}
                 <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setProjectSettingsOpen(true)}>
+                  <SidebarMenuButton onClick={() => setProjectSettingsOpen(true)} tooltip="Edit Project">
                     <Pencil />
                     <span>Edit Project</span>
                   </SidebarMenuButton>
@@ -121,6 +123,7 @@ export function AppSidebar({ activeProject, className }: AppSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={!!matchRoute({ to: "/projects/$projectId/plugins", params: { projectId }, fuzzy: true })}
+                    tooltip="MCP Plugins"
                   >
                     <Link to="/projects/$projectId/plugins" params={{ projectId }}>
                       <Plug />
@@ -129,7 +132,7 @@ export function AppSidebar({ activeProject, className }: AppSidebarProps) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setMcpSetupOpen(true)}>
+                  <SidebarMenuButton onClick={() => setMcpSetupOpen(true)} tooltip="MCP Setup">
                     <Settings />
                     <span>MCP Setup</span>
                   </SidebarMenuButton>
@@ -138,6 +141,8 @@ export function AppSidebar({ activeProject, className }: AppSidebarProps) {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
+
+        <SidebarRail />
       </Sidebar>
 
       <ProjectSettingsDialog

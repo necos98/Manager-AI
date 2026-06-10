@@ -1,4 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import { KanbanCard } from "./kanban-card";
 import { StatusBadge } from "./status-badge";
 import { Button } from "@/shared/components/ui/button";
@@ -15,14 +16,38 @@ interface KanbanColumnProps {
   hasMore?: boolean;
   isLoadingMore?: boolean;
   activeRunsByIssue?: Record<string, { pipeline_name: string; status: string } | null>;
+  selectMode?: boolean;
+  selectedIssueIds?: Set<string>;
+  onToggleSelect?: (issueId: string) => void;
+  onSelectAll?: () => void;
+  onDeselectAll?: () => void;
 }
 
-export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIssueIds, isValidTarget, projectId, onLoadMore, hasMore, isLoadingMore, activeRunsByIssue }: KanbanColumnProps) {
+export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIssueIds, isValidTarget, projectId, onLoadMore, hasMore, isLoadingMore, activeRunsByIssue, selectMode = false, selectedIssueIds = new Set(), onToggleSelect, onSelectAll, onDeselectAll }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+
+  const allSelected = issues.length > 0 && issues.every((i) => selectedIssueIds.has(i.id));
+
+  function handleHeaderCheckboxClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (allSelected) {
+      onDeselectAll?.();
+    } else {
+      onSelectAll?.();
+    }
+  }
 
   return (
     <div className="flex flex-col min-w-[220px] flex-1">
       <div className="flex items-center gap-2 mb-3">
+        {selectMode && issues.length > 0 && (
+          <Checkbox
+            checked={allSelected}
+            onClick={handleHeaderCheckboxClick}
+            className="flex-shrink-0"
+            aria-label={allSelected ? "Deselect all" : "Select all"}
+          />
+        )}
         <StatusBadge status={status} />
         <span className="text-xs text-muted-foreground">{issues.length}</span>
       </div>
@@ -44,6 +69,9 @@ export function KanbanColumn({ status, issues, activeTerminalIssueIds, blockedIs
             isBlocked={blockedIssueIds.has(issue.id)}
             projectId={projectId}
             activePipelineName={activeRunsByIssue?.[issue.id]?.pipeline_name}
+            selectMode={selectMode}
+            isSelected={selectedIssueIds.has(issue.id)}
+            onToggleSelect={onToggleSelect}
           />
         ))}
         {onLoadMore && hasMore && (

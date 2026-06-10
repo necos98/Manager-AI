@@ -1,13 +1,15 @@
-import { useState, useMemo, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { DndContext, DragStartEvent, DragEndEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { Button } from "@/shared/components/ui/button";
 import { KanbanColumn } from "./kanban-column";
 import { KanbanCard } from "./kanban-card";
 import { KanbanFilters, SortKey } from "./kanban-filters";
+import { BulkActionBar } from "./bulk-action-bar";
 import { useUpdateIssueStatus, useIssues, issueKeys } from "@/features/issues/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Issue, IssueStatus } from "@/shared/types";
+import { ListChecks, X } from "lucide-react";
 
 const COLUMNS: IssueStatus[] = ["New", "Reasoning", "Planned", "Accepted", "Finished", "Canceled"];
 
@@ -47,6 +49,8 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
   const [pending, setPending] = useState<PendingTransition | null>(null);
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
   const [finishedOffset, setFinishedOffset] = useState(0);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIssueIds, setSelectedIssueIds] = useState<Set<string>>(new Set());
   const updateStatus = useUpdateIssueStatus(projectId);
   const queryClient = useQueryClient();
 
@@ -57,10 +61,6 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
   );
 
   // Derive allFinished from React Query cache instead of duplicating state via useEffect.
-  // This fixes a race condition where the previous approach (useEffect-based sync to a
-  // separate useState) would fail to populate the Finished column on remount because the
-  // tag-reset effect could clear allFinished after the data-sync effect had populated it.
-  // By reading the cache directly we always get the correct data for every loaded page.
   const allFinished = useMemo(() => {
     const result: Issue[] = [];
     const numPages = Math.floor(finishedOffset / FINISHED_PAGE_SIZE) + 1;
@@ -80,9 +80,11 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
   }, [finishedOffset, finishedPage, resolvedTag, projectId, queryClient]);
 
   // Reset pagination when tag filter changes
-  useEffect(() => {
+  const [prevTag, setPrevTag] = useState(tag);
+  if (tag !== prevTag) {
     setFinishedOffset(0);
-  }, [tag]);
+    setPrevTag(tag);
+  }
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -110,12 +112,49 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
     return map;
   }, [filtered, allFinished]);
 
+  const handleToggleSelect = useCallback((issueId: string) => {
+    setSelectedIssueIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(issueId)) {
+        next.delete(issueId);
+      } else {
+        next.add(issueId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAllInColumn = useCallback((status: IssueStatus) => {
+    const colIssues = byStatus.get(status) ?? [];
+    setSelectedIssueIds((prev) => {
+      const next = new Set(prev);
+      for (const i of colIssues) next.add(i.id);
+      return next;
+    });
+  }, [byStatus]);
+
+  const handleDeselectAllInColumn = useCallback((status: IssueStatus) => {
+    const colIssues = byStatus.get(status) ?? [];
+    setSelectedIssueIds((prev) => {
+      const next = new Set(prev);
+      for (const i of colIssues) next.delete(i.id);
+      return next;
+    });
+  }, [byStatus]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIssueIds(new Set());
+    setSelectMode(false);
+  }, []);
+
   function handleDragStart(event: DragStartEvent) {
+    if (selectMode) return;
     setActiveIssue(event.active.data.current?.issue ?? null);
   }
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveIssue(null);
+    if (selectMode) return;
     const { active, over } = event;
     if (!over) return;
     const issue = issues.find((i) => i.id === active.id);
@@ -131,19 +170,51 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
     setPending(null);
   }
 
+  const allIssues = useMemo(() => {
+    const result: Issue[] = [];
+    for (const [, colIssues] of byStatus) {
+      result.push(...colIssues);
+    }
+    return result;
+  }, [byStatus]);
+
   return (
     <>
-      <KanbanFilters
-        search={search}
-        onSearchChange={setSearch}
-        priority={priority}
-        onPriorityChange={setPriority}
-        sort={sort}
-        onSortChange={setSort}
-        tag={tag}
-        onTagChange={onTagChange}
-        availableTags={availableTags}
-      />
+      <div className="flex items-center justify-between mb-3">
+        <KanbanFilters
+          search={search}
+          onSearchChange={setSearch}
+          priority={priority}
+          onPriorityChange={setPriority}
+          sort={sort}
+          onSortChange={setSort}
+          tag={tag}
+          onTagChange={onTagChange}
+          availableTags={availableTags}
+        />
+        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+          {selectMode ? (
+            <>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {selectedIssueIds.size} selected
+              </span>
+              <Button variant="ghost" size="sm" onClick={handleClearSelection}>
+                <X className="size-3.5 mr-1" />
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectMode(true)}
+            >
+              <ListChecks className="size-3.5 mr-1" />
+              Select
+            </Button>
+          )}
+        </div>
+      </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex gap-3 overflow-x-auto pb-4">
@@ -154,9 +225,14 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
               issues={byStatus.get(status) ?? []}
               activeTerminalIssueIds={activeTerminalIssueIds}
               blockedIssueIds={blockedIssueIds}
-              isValidTarget={activeIssue ? isValidTransition(activeIssue.status, status) : false}
+              isValidTarget={selectMode ? false : activeIssue ? isValidTransition(activeIssue.status, status) : false}
               projectId={projectId}
               activeRunsByIssue={activeRunsByIssue}
+              selectMode={selectMode}
+              selectedIssueIds={selectedIssueIds}
+              onToggleSelect={handleToggleSelect}
+              onSelectAll={() => handleSelectAllInColumn(status)}
+              onDeselectAll={() => handleDeselectAllInColumn(status)}
               {...(status === "Finished" ? {
                 onLoadMore: () => setFinishedOffset(prev => prev + FINISHED_PAGE_SIZE),
                 hasMore: finishedPage != null && finishedPage.length >= FINISHED_PAGE_SIZE,
@@ -166,7 +242,7 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
           ))}
         </div>
         <DragOverlay>
-          {activeIssue && (
+          {activeIssue && !selectMode && (
             <KanbanCard
               issue={activeIssue}
               hasTerminal={activeTerminalIssueIds.includes(activeIssue.id)}
@@ -177,12 +253,21 @@ export function KanbanBoard({ issues, projectId, activeTerminalIssueIds, blocked
         </DragOverlay>
       </DndContext>
 
+      {selectMode && selectedIssueIds.size > 0 && (
+        <BulkActionBar
+          projectId={projectId}
+          selectedIssueIds={selectedIssueIds}
+          allIssues={allIssues}
+          onComplete={handleClearSelection}
+        />
+      )}
+
       <Dialog open={!!pending} onOpenChange={(open) => !open && setPending(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Change status</DialogTitle>
             <DialogDescription>
-              Move "{pending?.issue.name || pending?.issue.description}" from {pending?.issue.status} to {pending?.to}?
+              Move &quot;{pending?.issue.name || pending?.issue.description}&quot; from {pending?.issue.status} to {pending?.to}?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

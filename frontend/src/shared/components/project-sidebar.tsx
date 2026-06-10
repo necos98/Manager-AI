@@ -25,6 +25,7 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
   SidebarSeparator,
 } from "@/shared/components/ui/sidebar";
 import { SmartphoneQrDialog } from "@/shared/components/smartphone-qr-dialog";
@@ -50,7 +51,7 @@ function ProjectSidebarItem({
 
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={isActive}>
+      <SidebarMenuButton asChild isActive={isActive} tooltip={project.name}>
         <Link to="/projects/$projectId/issues" params={{ projectId: project.id }}>
           <span>{project.name}</span>
         </Link>
@@ -83,7 +84,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
 
   return (
     <>
-      <Sidebar>
+      <Sidebar collapsible="icon">
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -115,6 +116,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={!!matchRoute({ to: "/projects/new", fuzzy: true })}
+                    tooltip="New Project"
                   >
                     <Link to="/projects/new">
                       <span className="text-muted-foreground">+ New Project</span>
@@ -135,6 +137,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={!!matchRoute({ to: "/dashboard", fuzzy: true })}
+                    tooltip="Dashboard"
                   >
                     <Link to="/dashboard">
                       <LayoutDashboard />
@@ -146,6 +149,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={!!matchRoute({ to: "/queue", fuzzy: true })}
+                    tooltip="Queue"
                   >
                     <Link to="/queue">
                       <ListOrdered />
@@ -157,6 +161,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={!!matchRoute({ to: "/terminals", fuzzy: true })}
+                    tooltip="Terminals"
                   >
                     <Link to="/terminals">
                       <Terminal />
@@ -171,6 +176,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={!!matchRoute({ to: "/agents", fuzzy: true })}
+                    tooltip="Agents"
                   >
                     <Link to="/agents">
                       <Bot />
@@ -182,6 +188,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={!!matchRoute({ to: "/providers", fuzzy: true })}
+                    tooltip="Provider"
                   >
                     <Link to="/providers">
                       <Cable />
@@ -193,6 +200,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={!!matchRoute({ to: "/questions", fuzzy: true })}
+                    tooltip="Questions"
                   >
                     <Link to="/questions">
                       <HelpCircle />
@@ -207,6 +215,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={!!matchRoute({ to: "/pipelines", fuzzy: true })}
+                    tooltip="Pipelines"
                   >
                     <Link to="/pipelines">
                       <Workflow />
@@ -218,6 +227,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={!!matchRoute({ to: "/settings", fuzzy: true })}
+                    tooltip="Settings"
                   >
                     <Link to="/settings">
                       <Settings />
@@ -233,7 +243,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="sm" onClick={() => setSmartphoneQrOpen(true)}>
+              <SidebarMenuButton size="sm" onClick={() => setSmartphoneQrOpen(true)} tooltip="Show on Smartphone">
                 <Smartphone className="h-4 w-4" />
                 <span className="text-xs">Show on Smartphone</span>
               </SidebarMenuButton>
@@ -243,6 +253,8 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
+
+        <SidebarRail />
       </Sidebar>
 
       <SmartphoneQrDialog

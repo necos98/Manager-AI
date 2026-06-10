@@ -460,3 +460,81 @@ class IssueService:
             for t in getattr(r, 'tags', []) or []:
                 tags.add(t)
         return sorted(tags)
+
+    # ── Bulk operations ──
+
+    async def bulk_update_status(
+        self, project_id: str, issue_ids: list[str], status: IssueStatus
+    ) -> dict:
+        updated = 0
+        errors: dict[str, str] = {}
+        target = status.value if isinstance(status, IssueStatus) else str(status)
+        for issue_id in issue_ids:
+            try:
+                await self.update_status(issue_id, project_id, IssueStatus(target))
+                updated += 1
+            except Exception as e:
+                errors[issue_id] = str(e)
+        return {"updated": updated, "errors": errors}
+
+    async def bulk_update_tags(
+        self, project_id: str, issue_ids: list[str], tags: list[str], mode: str = "set"
+    ) -> dict:
+        updated = 0
+        errors: dict[str, str] = {}
+        for issue_id in issue_ids:
+            try:
+                rec = await self.get_for_project(issue_id, project_id)
+                current = list(getattr(rec, 'tags', []) or [])
+                new_tags = _normalize_tags(tags)
+                if mode == "add":
+                    combined = list(dict.fromkeys(current + new_tags))  # dedup, preserve order
+                elif mode == "remove":
+                    combined = [t for t in current if t not in new_tags]
+                else:  # set
+                    combined = new_tags
+                await self.update_fields(issue_id, project_id, tags=combined)
+                updated += 1
+            except Exception as e:
+                errors[issue_id] = str(e)
+        return {"updated": updated, "errors": errors}
+
+    async def bulk_delete(self, project_id: str, issue_ids: list[str]) -> dict:
+        deleted = 0
+        errors: dict[str, str] = {}
+        for issue_id in issue_ids:
+            try:
+                await self.delete(issue_id, project_id)
+                deleted += 1
+            except Exception as e:
+                errors[issue_id] = str(e)
+        return {"deleted": deleted, "errors": errors}
+
+    async def bulk_update_priority(
+        self, project_id: str, issue_ids: list[str], priority: int
+    ) -> dict:
+        if not (1 <= priority <= 5):
+            return {"updated": 0, "errors": {i: "Priority must be 1-5" for i in issue_ids}}
+        updated = 0
+        errors: dict[str, str] = {}
+        for issue_id in issue_ids:
+            try:
+                await self.update_fields(issue_id, project_id, priority=priority)
+                updated += 1
+            except Exception as e:
+                errors[issue_id] = str(e)
+        return {"updated": updated, "errors": errors}
+
+    async def bulk_update_category(
+        self, project_id: str, issue_ids: list[str], category: str | None
+    ) -> dict:
+        updated = 0
+        errors: dict[str, str] = {}
+        for issue_id in issue_ids:
+            try:
+                kwargs: dict = {"category": category}
+                await self.update_fields(issue_id, project_id, **kwargs)
+                updated += 1
+            except Exception as e:
+                errors[issue_id] = str(e)
+        return {"updated": updated, "errors": errors}

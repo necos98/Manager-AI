@@ -69,7 +69,7 @@ logger = logging.getLogger(__name__)
 _defaults_path = Path(__file__).parent / "default_settings.json"
 _desc: dict[str, str] = json.loads(_defaults_path.read_text(encoding="utf-8"))
 
-mcp = FastMCP(_desc["server.name"], streamable_http_path="/")
+mcp = FastMCP(_desc["server.name"], streamable_http_path="/", stateless=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

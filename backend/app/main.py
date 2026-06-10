@@ -31,7 +31,7 @@ from app.storage import memory_store as memory_store_module
 from app.storage import issue_store as issue_store_module
 from app.storage import file_store as file_store_module
 from app.middleware import ErrorLoggerMiddleware
-from app.routers import activity, agents, events, files, issue_relations, issues, library, memories, network, pipeline_runs, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, queue, questions, settings as settings_router, system, tasks, terminals, terminal_commands
+from app.routers import activity, agents, events, files, issue_relations, issues, issues_bulk, library, memories, network, pipeline_runs, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, queue, questions, search, settings as settings_router, system, tasks, terminals, terminal_commands
 from app.routers.projects import install_claude_resources_to
 from cryptography.fernet import Fernet
 
@@ -88,46 +88,12 @@ if sys.platform == "win32":
             return
         loop.default_exception_handler(context)
 
-# Create the MCP StreamableHTTP ASGI app so the session manager is initialized.
+# Create MCP StreamableHTTP ASGI apps (stateless — no session tracking).
 _streamable_app = mcp.streamable_http_app()
-# Create the orchestrator MCP app (Hermes) — separate session manager.
 _orchestrator_app = orchestrator_mcp.streamable_http_app()
-# Note: we keep the original lifespan on the mounted app. Starlette does not
-# forward lifespan messages to mounted apps, so we call it manually from the
-# main FastAPI lifespan below using _streamable_app.router.lifespan_context.
-# Keeping it on the app means a future Starlette update that does honour
+# Note: Starlette does not forward lifespan messages to mounted apps.
+# Keeping lifespan on the app means a future Starlette update that does honour
 # mounted lifespans will work without changes.
-
-# Suppress ERROR logs for ClientDisconnect in the MCP streamable HTTP handler.
-# Client disconnects are normal — the library logs them at ERROR with full
-# traceback via logger.exception, which is noise.
-# Patch: initialize task group lazily on first request if needed.
-# The lifespan creates a task group, but there may be a timing issue
-# where handle_request is called before _task_group is set.
-_sm_original_handle = mcp.session_manager.handle_request
-
-async def _mcp_init_on_demand(scope, receive, send):
-    if mcp.session_manager._task_group is None:
-        logger.warning("MCP task group not set yet — creating lazily")
-        mcp.session_manager._has_started = True
-        tg = await anyio.create_task_group().__aenter__()
-        mcp.session_manager._task_group = tg
-    await _sm_original_handle(scope, receive, send)
-
-mcp.session_manager.handle_request = _mcp_init_on_demand
-
-# Same lazy-init patch for the orchestrator MCP session manager.
-_osm_original_handle = orchestrator_mcp.session_manager.handle_request
-
-async def _osm_init_on_demand(scope, receive, send):
-    if orchestrator_mcp.session_manager._task_group is None:
-        logger.warning("Orchestrator MCP task group not set yet — creating lazily")
-        orchestrator_mcp.session_manager._has_started = True
-        tg = await anyio.create_task_group().__aenter__()
-        orchestrator_mcp.session_manager._task_group = tg
-    await _osm_original_handle(scope, receive, send)
-
-orchestrator_mcp.session_manager.handle_request = _osm_init_on_demand
 
 logging.getLogger("mcp.server.streamable_http").addFilter(
     _SuppressClientDisconnectFilter()
@@ -369,23 +335,15 @@ async def lifespan(app):
     except Exception:
         logger.exception("Non-critical startup ops failed; continuing")
 
-    # Initialize MCP session managers (worker + orchestrator).
-    # Starlette does not forward lifespan messages to mounted apps, and
-    # mcp.session_manager.run() can have issues with ProactorEventLoop
-    # on Windows when called from inside another lifespan. We create the
-    # task group directly and assign it to both session managers.
+    # MCP in stateless mode — no session tracking, but session manager still
+    # needs a task group to route incoming requests.
     _sm = mcp.session_manager
     _osm = orchestrator_mcp.session_manager
-    logger.info("Worker MCP session manager: _task_group=%s _has_started=%s",
-                _sm._task_group is not None, _sm._has_started)
-    logger.info("Orchestrator MCP session manager: _task_group=%s _has_started=%s",
-                _osm._task_group is not None, _osm._has_started)
     _sm._has_started = True
     _osm._has_started = True
     async with anyio.create_task_group() as _mcp_tg:
         _sm._task_group = _mcp_tg
         _osm._task_group = _mcp_tg
-        logger.info("MCP task group created (shared): %s", _mcp_tg)
         try:
             yield
         finally:
@@ -446,6 +404,7 @@ app.include_router(project_templates.router)
 app.include_router(files.formats_router)
 app.include_router(files.router)
 app.include_router(issues.router)
+app.include_router(issues_bulk.router)
 app.include_router(issue_relations.router)
 app.include_router(issue_relations.batch_router)
 app.include_router(tasks.router)
@@ -465,6 +424,7 @@ app.include_router(plugins.catalog_router)
 app.include_router(network.router)
 app.include_router(questions.router)
 app.include_router(system.router)
+app.include_router(search.router)
 
 app.mount("/mcp", _streamable_app)
 app.mount("/mcp-orchestrator", _orchestrator_app)

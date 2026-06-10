@@ -150,7 +150,7 @@ async def list_global_running(
                 issue_name=issue_name,
                 project_id=project_id,
                 project_name=project_map.get(project_id),
-                terminal_id=term["terminal_id"],
+                terminal_id=term["id"],
                 issue_status=issue_status,
                 started_at=term.get("started_at"),
             )
