@@ -334,9 +334,9 @@ class IssueQueueService(BaseNotifier):
         """Add an issue to the FIFO queue.
 
         Validates that the issue is in NEW or ACCEPTED status.
-        Emits an ``issue_status_changed → Queued`` event so the
-        event-based queue listener picks it up and registers a
-        ``QueueEntry``.
+        Registers a ``QueueEntry`` synchronously so it exists when
+        the response reaches the caller.  Emits a
+        ``queue_entry_created`` event for other listeners.
 
         Returns ``{id, project_id, status}`` on success.
         Raises ``AppError`` on validation failure.
@@ -357,6 +357,9 @@ class IssueQueueService(BaseNotifier):
                 f"got {issue.status}",
             )
 
+        # Register synchronously so QueueEntry exists when response returns
+        await self.register(issue_id, project_id)
+
         await event_service.emit({
             "type": "queue_entry_created",
             "project_id": project_id,
@@ -364,6 +367,10 @@ class IssueQueueService(BaseNotifier):
             "issue_name": issue.name or "",
             "timestamp": iso_now(),
         })
+
+        # Auto-start if enabled (runs in background, not via event handler)
+        if self._enabled:
+            asyncio.create_task(self._maybe_auto_start_first(project_id, issue_id))
 
         return {
             "id": issue_id,
@@ -503,9 +510,18 @@ class IssueQueueService(BaseNotifier):
             )
 
     async def _on_issue_queued(self, project_id: str, issue_id: str) -> None:
-        """Handle a newly queued issue: register entry + maybe auto-start."""
+        """Handle a newly queued issue: register entry + maybe auto-start.
+
+        Registration is idempotent — skips if entry already exists
+        (e.g., from synchronous register() in add_to_queue).
+        Falls back to the original ``_maybe_auto_start_first`` logic
+        even when add_to_queue did the registration.
+        """
         try:
-            await self.register(issue_id, project_id)
+            # Check if already registered (e.g., by add_to_queue)
+            existing = await self.get_pending_entry(issue_id)
+            if existing is None:
+                await self.register(issue_id, project_id)
             if self._enabled:
                 await self._maybe_auto_start_first(project_id, issue_id)
         except Exception:

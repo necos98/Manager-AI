@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from datetime import datetime, timedelta
 from app.utils.datetime import format_ts
 from typing import Any
 
@@ -429,7 +430,32 @@ class IssueService:
         )
         return rec
 
-    async def delete(self, issue_id: str, project_id: str) -> bool:
+    async def delete(self, issue_id: str, project_id: str) -> IssueRecord:
+        """Soft-delete: set deleted_at timestamp. Issue still exists in store."""
+        path = await self._resolve_path(project_id)
+        rec = issue_store.load_issue(path, issue_id)
+        if rec is None or rec.project_id != project_id:
+            raise NotFoundError("Issue not found")
+        rec.deleted_at = _now_iso()
+        rec.updated_at = _now_iso()
+        issue_store.update_issue(path, rec)
+        return rec
+
+    async def restore(self, issue_id: str, project_id: str) -> IssueRecord:
+        """Restore a soft-deleted issue."""
+        path = await self._resolve_path(project_id)
+        rec = issue_store.load_issue(path, issue_id)
+        if rec is None or rec.project_id != project_id:
+            raise NotFoundError("Issue not found")
+        if rec.deleted_at is None:
+            raise ValidationError("Issue is not deleted")
+        rec.deleted_at = None
+        rec.updated_at = _now_iso()
+        issue_store.update_issue(path, rec)
+        return rec
+
+    async def permanently_delete(self, issue_id: str, project_id: str) -> bool:
+        """Permanently erase from RAM and disk. Used after undo window expires."""
         path = await self._resolve_path(project_id)
         if not issue_store.issue_exists(path, issue_id):
             return False
@@ -509,6 +535,24 @@ class IssueService:
             except Exception as e:
                 errors[issue_id] = str(e)
         return {"deleted": deleted, "errors": errors}
+
+    async def purge_expired_deleted(self, project_id: str, ttl_seconds: int = 30) -> int:
+        """Permanently delete issues soft-deleted longer than ttl_seconds ago."""
+        path = await self._resolve_path(project_id)
+        all_records = issue_store.list_issues_full_raw(path)
+        cutoff = datetime.utcnow() - timedelta(seconds=ttl_seconds)
+        purged = 0
+        for rec in all_records:
+            if rec.deleted_at:
+                try:
+                    deleted_time = datetime.fromisoformat(rec.deleted_at)
+                    if deleted_time < cutoff:
+                        issue_store.delete_issue(path, rec.id)
+                        issue_store.delete_issue_files(path, rec.id)
+                        purged += 1
+                except (ValueError, TypeError):
+                    continue
+        return purged
 
     async def bulk_update_priority(
         self, project_id: str, issue_ids: list[str], priority: int

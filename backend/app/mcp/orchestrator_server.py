@@ -26,6 +26,7 @@ from app.mcp.shared_tools import (
     create_issue as _create_issue,
     set_issue_name as _set_issue_name,
     delete_issue as _delete_issue,
+    restore_issue as _restore_issue,
     # Project (essentials only)
     get_project_context as _get_project_context,
     # Agents
@@ -129,10 +130,16 @@ async def create_issue(project_id: str, description: str, priority: int = 3) -> 
         return await _create_issue(session, project_id, description, priority)
 
 
-@orchestrator_mcp.tool(description="Permanently delete an issue. Irreversible.")
+@orchestrator_mcp.tool(description="Soft-delete an issue. Can be restored within the undo window.")
 async def delete_issue(project_id: str, issue_id: str) -> dict:
     async with async_session() as session:
         return await _delete_issue(session, project_id, issue_id)
+
+
+@orchestrator_mcp.tool(description="Restore a soft-deleted issue.")
+async def restore_issue(project_id: str, issue_id: str) -> dict:
+    async with async_session() as session:
+        return await _restore_issue(session, project_id, issue_id)
 
 
 @orchestrator_mcp.tool(description=_desc["tool.set_issue_name.description"])

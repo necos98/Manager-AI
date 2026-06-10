@@ -50,6 +50,7 @@ class IssueRecord:
     updated_at: str
     finished_at: str | None = None
     category: str | None = None
+    deleted_at: str | None = None
     tasks: list[TaskRecord] = field(default_factory=list)
     relations: list[RelationRecord] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
@@ -89,6 +90,7 @@ def _to_index_entry(record: IssueRecord) -> dict[str, Any]:
         "created_at": record.created_at,
         "updated_at": record.updated_at,
         "finished_at": record.finished_at,
+        "deleted_at": record.deleted_at,
     }
 
 
@@ -107,6 +109,7 @@ def _index_to_light_record(entry: dict[str, Any]) -> IssueRecord:
         created_at=_as_iso(entry.get("created_at")),
         updated_at=_as_iso(entry.get("updated_at")),
         finished_at=_as_iso(entry.get("finished_at")),
+        deleted_at=_as_iso(entry.get("deleted_at")),
     )
 
 
@@ -143,6 +146,7 @@ def load_issue(project_path: str, issue_id: str) -> IssueRecord | None:
         status=data.get("status", "New"),
         priority=int(data.get("priority", 3)),
         category=data.get("category"),
+        deleted_at=_as_iso(data.get("deleted_at")),
         description=description,
         specification=specification,
         plan=plan,
@@ -160,25 +164,45 @@ def load_issue(project_path: str, issue_id: str) -> IssueRecord | None:
 def list_issues(project_path: str) -> list[IssueRecord]:
     entries = _core.list_index(project_path, "issues")
     if entries:
-        return [_index_to_light_record(e) for e in entries]
+        records = [_index_to_light_record(e) for e in entries]
+        return [r for r in records if r.deleted_at is None]
     # Fallback: read from disk index (handles projects not yet loaded into RAM)
     data = atomic.read_yaml(paths.issues_index(project_path)) or {}
     disk_entries = data.get("issues") or []
     # Store index entries only (None records) so load_issue hits its disk fallback
     for e in disk_entries:
         _core.upsert(project_path, "issues", e.get("id", ""), None, e)
-    return [_index_to_light_record(e) for e in disk_entries]
+    records = [_index_to_light_record(e) for e in disk_entries]
+    return [r for r in records if r.deleted_at is None]
 
 
 def list_issues_full(project_path: str) -> list[IssueRecord]:
     all_records = _core.list_all(project_path, "issues")
     if all_records:
-        return [r for r in all_records if r is not None]
+        return [r for r in all_records if r is not None and r.deleted_at is None]
     # Fallback: load from disk via light index + individual loads
     light = list_issues(project_path)
     out: list[IssueRecord] = []
     for m in light:
         full = load_issue(project_path, m.id)
+        if full is not None:
+            out.append(full)
+    return out
+
+
+def list_issues_full_raw(project_path: str) -> list[IssueRecord]:
+    """Like list_issues_full but includes soft-deleted records (for purge/restore)."""
+    all_records = _core.list_all(project_path, "issues")
+    if all_records:
+        return [r for r in all_records if r is not None]
+    # Fallback: load from disk via light index + individual loads
+    light_entries = _core.list_index(project_path, "issues")
+    if not light_entries:
+        data = atomic.read_yaml(paths.issues_index(project_path)) or {}
+        light_entries = data.get("issues") or []
+    out: list[IssueRecord] = []
+    for e in light_entries:
+        full = load_issue(project_path, e.get("id", ""))
         if full is not None:
             out.append(full)
     return out
@@ -339,6 +363,7 @@ def rebuild_issues_index(project_path: str) -> int:
                     "created_at": _as_iso(data.get("created_at")),
                     "updated_at": _as_iso(data.get("updated_at")),
                     "finished_at": _as_iso(data.get("finished_at")),
+                    "deleted_at": _as_iso(data.get("deleted_at")),
                 }
             )
     entries.sort(key=lambda e: (e["created_at"], e["id"]))
@@ -364,6 +389,7 @@ def _write_issue_record(project_path: str, payload: dict[str, Any]) -> None:
         "created_at": payload.get("created_at", ""),
         "updated_at": payload.get("updated_at", ""),
         "finished_at": payload.get("finished_at"),
+        "deleted_at": payload.get("deleted_at"),
         "tasks": payload.get("tasks", []),
         "relations": payload.get("relations", []),
     }
@@ -396,6 +422,7 @@ def _record_to_payload(record: IssueRecord) -> dict[str, Any]:
         "created_at": record.created_at,
         "updated_at": record.updated_at,
         "finished_at": record.finished_at,
+        "deleted_at": record.deleted_at,
         "tasks": [asdict(t) for t in sorted(record.tasks, key=lambda t: (t.order, t.id))],
         "relations": [asdict(r) for r in sorted(record.relations, key=lambda r: (r.type, r.target_id))],
         "tags": record.tags,

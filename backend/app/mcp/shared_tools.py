@@ -1580,11 +1580,23 @@ async def run_issue(session: AsyncSession, project_id: str, issue_id: str, provi
 
 
 async def delete_issue(session: AsyncSession, project_id: str, issue_id: str) -> dict:
-    """Delete an issue permanently. Requires both project_id and issue_id."""
+    """Soft-delete an issue. Can be restored within the undo window."""
     from app.services.issue_service import IssueService
     svc = IssueService(session)
     try:
         await svc.delete(issue_id, project_id)
+        await session.commit()
+        return {"success": True, "issue_id": issue_id, "deleted": True}
+    except AppError as e:
+        return {"error": e.message}
+
+
+async def restore_issue(session: AsyncSession, project_id: str, issue_id: str) -> dict:
+    """Restore a soft-deleted issue."""
+    from app.services.issue_service import IssueService
+    svc = IssueService(session)
+    try:
+        await svc.restore(issue_id, project_id)
         await session.commit()
         return {"success": True, "issue_id": issue_id}
     except AppError as e:

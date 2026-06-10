@@ -307,6 +307,24 @@ async def lifespan(app):
         await issue_queue_service.load_state()
         # Resume queue processing: auto-start pending queued issues after restart
         asyncio.create_task(issue_queue_service.startup_resume())
+
+        # Periodic purge of soft-deleted issues
+        async def _periodic_purge_loop():
+            while True:
+                try:
+                    async with async_session() as sess:
+                        from app.services.project_service import ProjectService
+                        from app.services.issue_service import IssueService
+                        projects = await ProjectService(sess).list_all()
+                        for project in projects:
+                            svc = IssueService(sess)
+                            purged = await svc.purge_expired_deleted(project.id)
+                            if purged:
+                                logger.info("Purged %d soft-deleted issues for project %s", purged, project.id)
+                except Exception:
+                    logger.exception("Periodic soft-delete purge failed")
+                await asyncio.sleep(60)
+        asyncio.create_task(_periodic_purge_loop())
         # Read Telegram config from DB and apply to TelegramService
         # so the settings UI can control it without restart.
         try:

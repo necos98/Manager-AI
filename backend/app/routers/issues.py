@@ -94,8 +94,26 @@ async def update_issue_status(
 
 @router.delete("/{issue_id}", status_code=204)
 async def delete_issue(project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)):
+    """Soft-delete an issue. Can be restored within the undo window."""
     service = IssueService(db)
     await service.delete(issue_id, project_id)
+    await db.commit()
+
+
+@router.post("/{issue_id}/restore", response_model=IssueResponse)
+async def restore_issue(project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)):
+    """Restore a soft-deleted issue."""
+    service = IssueService(db)
+    record = await service.restore(issue_id, project_id)
+    await db.commit()
+    return IssueResponse.from_record(record)
+
+
+@router.delete("/{issue_id}/permanent", status_code=204)
+async def permanently_delete_issue(project_id: str, issue_id: str, db: AsyncSession = Depends(get_db)):
+    """Permanently delete an issue (no undo)."""
+    service = IssueService(db)
+    await service.permanently_delete(issue_id, project_id)
     await db.commit()
 
 

@@ -2,11 +2,29 @@ schema_version: 1
 id: e4700704-f5a2-4150-b17c-64b3a5bfe116
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Pulsante "Rimuovi dalla coda" nella UI globale /queue
-status: New
+status: Finished
 priority: 3
 category: null
 created_at: '2026-06-10T17:01:01.717009+00:00'
-updated_at: '2026-06-10T17:01:09.969433+00:00'
-finished_at: null
-tasks: []
+updated_at: '2026-06-10T21:23:45.597446+00:00'
+finished_at: '2026-06-10T21:23:45.597458+00:00'
+tasks:
+- id: 24ff8260-a968-4577-90b6-7af3c329b4a3
+  name: Verify backend POST /api/queue/remove endpoint and WebSocket event emission
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T21:23:12+00:00'
+  updated_at: '2026-06-10T21:23:25+00:00'
+- id: e2ffd4f4-02e7-4ff7-bc02-7e448921cfcc
+  name: Verify frontend API, hooks, button, and confirm dialog
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T21:23:12+00:00'
+  updated_at: '2026-06-10T21:23:32+00:00'
+- id: e5b68702-e85b-46ed-8dee-df19afc61490
+  name: Accept plan, write recap, complete issue
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T21:23:12+00:00'
+  updated_at: '2026-06-10T21:23:41+00:00'
 relations: []

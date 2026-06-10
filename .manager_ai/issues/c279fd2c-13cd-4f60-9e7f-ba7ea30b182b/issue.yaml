@@ -2,11 +2,35 @@ schema_version: 1
 id: c279fd2c-13cd-4f60-9e7f-ba7ea30b182b
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Snackbar undo per cancellazione issue e azioni distruttive
-status: New
+status: Accepted
 priority: 3
 category: null
 created_at: '2026-06-10T11:15:05.060462+00:00'
-updated_at: '2026-06-10T19:06:22.388200+00:00'
+updated_at: '2026-06-10T21:27:01.466468+00:00'
 finished_at: null
-tasks: []
+tasks:
+- id: 621ac2d0-b221-4a3f-aac7-2c32d35b14f3
+  name: 'Backend: Add deleted_at to IssueRecord + filter from listings'
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T21:26:56+00:00'
+  updated_at: '2026-06-10T21:27:41+00:00'
+- id: 3bb0feef-5ac5-4619-a7b0-d242c8ed0632
+  name: 'Backend: Soft-delete + restore + permanent delete in IssueService + Router + MCP'
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T21:26:56+00:00'
+  updated_at: '2026-06-10T21:28:31+00:00'
+- id: 1896f5af-9b18-4767-9e96-d621bcfcd605
+  name: 'Backend: Background purge for expired soft-deletes'
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T21:26:56+00:00'
+  updated_at: '2026-06-10T21:29:07+00:00'
+- id: d9ef8ae3-2452-47ef-8495-71ac7c8d464d
+  name: 'Frontend: Snackbar undo on issue delete with sonner toast'
+  status: In Progress
+  order: 3
+  created_at: '2026-06-10T21:26:56+00:00'
+  updated_at: '2026-06-10T21:29:08+00:00'
 relations: []

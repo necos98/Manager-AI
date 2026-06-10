@@ -1,0 +1,1 @@
+Quando aggiungo una issue alla coda, se è la seconda della coda, lo stato non diventa "In Queue" però entra comunque all'interno della coda. Ti chiedo di analizzare il problema, trovare il problema e risolverlo.

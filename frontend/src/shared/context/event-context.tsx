@@ -297,6 +297,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         if (data.type === "queue_entry_created" || data.type === "queue_entry_removed") {
           queryClient.invalidateQueries({ queryKey: ["queue", "queued"] });
           queryClient.invalidateQueries({ queryKey: ["queue", "status"] });
+          queryClient.invalidateQueries({ queryKey: ["queue", "position"] });
         }
 
         // Invalidate queue on issue status changes
