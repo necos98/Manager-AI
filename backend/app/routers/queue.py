@@ -18,7 +18,6 @@ from app.database import get_db
 from app.exceptions import AppError
 from app.models.issue import IssueStatus
 from app.models.queue_entry import QueueEntry, QueueEntryStatus
-from app.services.issue_queue_service import issue_queue_service_ref
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
 from app.services.settings_service import SettingsService
@@ -245,6 +244,7 @@ async def set_auto_process(
     await svc.set("queue_auto_process", "true" if body.enabled else "false")
     await db.commit()
 
+    from app.services.issue_queue_service import issue_queue_service_ref
     if issue_queue_service_ref is not None:
         await issue_queue_service_ref.set_enabled(body.enabled)
 
@@ -274,14 +274,16 @@ async def add_to_queue(
     Delegates to ``IssueQueueService.add_to_queue()`` for the
     shared validation and event emission logic.
     """
-    registry = issue_queue_service_ref
-    if registry is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Queue service not initialized",
-        )
+    from app.services.issue_queue_service import issue_queue_service_ref
+    from app.services.issue_queue_service import _queue_add_direct
 
-    try:
+    if issue_queue_service_ref is not None:
+        result = await issue_queue_service_ref.add_to_queue(db, body.project_id, body.issue_id)
+        return {**result, "message": "Issue added to queue"}
+
+    # Fallback when IssueQueueService is not initialized
+    result = await _queue_add_direct(db, body.project_id, body.issue_id)
+    return {**result, "message": "Issue added to queue"}
         result = await registry.add_to_queue(db, body.project_id, body.issue_id)
     except AppError as e:
         raise HTTPException(status_code=400, detail=e.message)
@@ -302,14 +304,16 @@ async def remove_from_queue(
     Delegates to ``IssueQueueService.remove_from_queue()`` for the
     shared queue membership check and event emission logic.
     """
-    registry = issue_queue_service_ref
-    if registry is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Queue service not initialized",
-        )
+    from app.services.issue_queue_service import issue_queue_service_ref
+    from app.services.issue_queue_service import _queue_remove_direct
 
-    try:
+    if issue_queue_service_ref is not None:
+        result = await issue_queue_service_ref.remove_from_queue(db, body.project_id, body.issue_id)
+        return {**result, "message": "Issue removed from queue"}
+
+    # Fallback when IssueQueueService is not initialized
+    result = await _queue_remove_direct(db, body.project_id, body.issue_id)
+    return {**result, "message": "Issue removed from queue"}
         result = await registry.remove_from_queue(db, body.project_id, body.issue_id)
     except AppError as e:
         raise HTTPException(status_code=404, detail=e.message)
@@ -331,6 +335,7 @@ async def get_queue_position(
     Returns ``{position, issue_id, in_queue, status}``.
     ``position`` is null when the issue is not in the queue.
     """
+    from app.services.issue_queue_service import issue_queue_service_ref
     registry = issue_queue_service_ref
     if registry is None:
         raise HTTPException(
