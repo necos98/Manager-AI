@@ -133,7 +133,10 @@ function RootLayout() {
             open={appSidebarOpen}
             onOpenChange={handleAppSidebarChange}
           >
-            <AppSidebar activeProject={activeProject} />
+            <AppSidebar
+              activeProject={activeProject}
+              className={projectSidebarOpen ? "left-[220px]" : "left-[3rem]"}
+            />
           </SidebarProvider>
         )}
       </div>
