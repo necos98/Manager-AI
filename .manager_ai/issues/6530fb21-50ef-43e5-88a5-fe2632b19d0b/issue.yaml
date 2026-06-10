@@ -1,0 +1,30 @@
+schema_version: 1
+id: 6530fb21-50ef-43e5-88a5-fe2632b19d0b
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Sistema notifiche Telegram su completamento issue
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T18:19:38.092457+00:00'
+updated_at: '2026-06-09T18:25:49.362390+00:00'
+finished_at: '2026-06-09T18:25:49.362401+00:00'
+tasks:
+- id: bd9b147b-d2a3-406f-864b-7ee694c90a4d
+  name: Scrivere script watchdog Python (issue_notifier.py)
+  status: In Progress
+  order: 0
+  created_at: '2026-06-09T18:21:10+00:00'
+  updated_at: '2026-06-09T18:21:19+00:00'
+- id: 05c540f4-ec86-4157-a188-a31552c4b4be
+  name: Registrare cron job Hermes
+  status: Pending
+  order: 1
+  created_at: '2026-06-09T18:21:10+00:00'
+  updated_at: '2026-06-09T18:21:10+00:00'
+- id: e8ee417a-e5c9-4127-b5bc-0667dd3035d3
+  name: Verificare l'intero sistema
+  status: Pending
+  order: 2
+  created_at: '2026-06-09T18:21:10+00:00'
+  updated_at: '2026-06-09T18:21:10+00:00'
+relations: []

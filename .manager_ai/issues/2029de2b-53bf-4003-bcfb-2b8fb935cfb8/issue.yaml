@@ -1,0 +1,12 @@
+schema_version: 1
+id: 2029de2b-53bf-4003-bcfb-2b8fb935cfb8
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Test notifiche - issue di test
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T19:39:20.543488+00:00'
+updated_at: '2026-06-09T19:41:38.595887+00:00'
+finished_at: '2026-06-09T19:41:38.595897+00:00'
+tasks: []
+relations: []

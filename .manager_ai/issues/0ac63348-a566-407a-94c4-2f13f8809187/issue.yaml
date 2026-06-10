@@ -1,0 +1,42 @@
+schema_version: 1
+id: 0ac63348-a566-407a-94c4-2f13f8809187
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Notifiche Telegram dirette via Bot API (senza Hermes CLI)
+status: Finished
+priority: 4
+category: null
+created_at: '2026-06-09T20:32:11.880342+00:00'
+updated_at: '2026-06-09T20:38:41.485858+00:00'
+finished_at: '2026-06-09T20:38:41.485868+00:00'
+tasks:
+- id: 6d91d2d5-e67e-4f9e-86e4-6933156841ac
+  name: Aggiungere TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID a Settings (config.py)
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T20:36:19+00:00'
+  updated_at: '2026-06-09T20:36:34+00:00'
+- id: f8464ead-3eda-46bc-b280-4f5fc470deb6
+  name: Creare TelegramService (httpx client per Bot API)
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T20:36:19+00:00'
+  updated_at: '2026-06-09T20:37:13+00:00'
+- id: e34c02e2-cb01-4337-a16b-40db55964662
+  name: Creare TelegramNotifier (event listener)
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T20:36:19+00:00'
+  updated_at: '2026-06-09T20:37:30+00:00'
+- id: f3db7b3a-9906-489c-b760-3ec7e744963f
+  name: Modificare NotificationService per evitare duplicati se Telegram è configurato
+  status: Completed
+  order: 3
+  created_at: '2026-06-09T20:36:19+00:00'
+  updated_at: '2026-06-09T20:37:43+00:00'
+- id: e5495be3-f3d2-419d-ac2d-46591b0c207e
+  name: Registrare TelegramNotifier in startup (main.py)
+  status: Completed
+  order: 4
+  created_at: '2026-06-09T20:36:19+00:00'
+  updated_at: '2026-06-09T20:37:59+00:00'
+relations: []

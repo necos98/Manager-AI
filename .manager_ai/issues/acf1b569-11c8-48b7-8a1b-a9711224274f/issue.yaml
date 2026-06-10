@@ -1,0 +1,30 @@
+schema_version: 1
+id: acf1b569-11c8-48b7-8a1b-a9711224274f
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Evitare processi backend duplicati all'avvio
+status: Finished
+priority: 4
+category: null
+created_at: '2026-06-09T21:10:44.745546+00:00'
+updated_at: '2026-06-09T21:14:00.488070+00:00'
+finished_at: '2026-06-09T21:14:00.488084+00:00'
+tasks:
+- id: 0282c575-b1ea-445e-9bc4-478bb60d0301
+  name: Aggiungere funzione _kill_existing_backend(port) in start.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T21:13:06+00:00'
+  updated_at: '2026-06-09T21:13:26+00:00'
+- id: c14b35cc-32b4-4164-9cb9-3b1a6a1f6517
+  name: Chiamare _kill_existing_backend() in main() prima del backend
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T21:13:06+00:00'
+  updated_at: '2026-06-09T21:13:33+00:00'
+- id: d8ead047-7612-4657-ba2c-1da580b8d0f8
+  name: Verifica sintattica e test con netstat simulato
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T21:13:06+00:00'
+  updated_at: '2026-06-09T21:13:53+00:00'
+relations: []

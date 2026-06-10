@@ -276,8 +276,81 @@ def _ensure_app_icon():
         print(f"[!] Could not create logo.ico: {e}")
 
 
+def _get_pids_on_port(port: int) -> list[int]:
+    """Return list of PIDs listening on *port* (Windows netstat).
+
+    Uses ``netstat -ano`` to find TCP connections in LISTENING state
+    on the given port.  Returns an empty list when nothing is found.
+    """
+    try:
+        result = subprocess.run(
+            ["netstat", "-ano"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        print(f"[!] netstat not found — skipping port-{port} check")
+        return []
+
+    pids: list[int] = []
+    needle = f":{port}"
+    for line in result.stdout.splitlines():
+        # Typical output:  TCP    0.0.0.0:8001    0.0.0.0:LISTENING    12345
+        line = line.strip()
+        if needle not in line:
+            continue
+        if "LISTENING" not in line:
+            continue
+        parts = line.split()
+        if not parts:
+            continue
+        try:
+            pid = int(parts[-1])
+            pids.append(pid)
+        except (ValueError, IndexError):
+            continue
+    return pids
+
+
+def _kill_existing_backend(port: int) -> None:
+    """Kill any existing backend process listening on *port*.
+
+    Prints status messages along the way.  Never raises — errors are
+    logged as warnings and swallowed so the launcher can proceed.
+    """
+    pids = _get_pids_on_port(port)
+
+    if not pids:
+        print(f"[ok] Nessun backend precedente trovato sulla porta {port}")
+        return
+
+    for pid in pids:
+        print(f"[...] Trovato backend già in esecuzione su PID {pid}, terminazione...")
+        try:
+            kill_result = subprocess.run(
+                ["taskkill", "/F", "/PID", str(pid)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if kill_result.returncode == 0:
+                print(f"[ok] Processo PID {pid} terminato con successo")
+            else:
+                print(
+                    f"[!] Impossibile terminare il processo PID {pid}: "
+                    f"{kill_result.stderr.strip() or kill_result.stdout.strip()}"
+                )
+        except FileNotFoundError:
+            print(f"[!] taskkill non trovato — impossibile terminare PID {pid}")
+        except Exception as exc:
+            print(f"[!] Errore durante la terminazione del PID {pid}: {exc}")
+
+
 def main():
     backend_port = int(os.environ.get("BACKEND_PORT", 8000))
+
+    _kill_existing_backend(backend_port)
 
     check_prerequisites()
     setup_frontend()

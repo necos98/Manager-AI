@@ -1,0 +1,24 @@
+schema_version: 1
+id: d0f262c8-b047-44c3-b0c0-75c6c7d5b2cb
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Rimuovere fallback Hermes CLI da NotificationService
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T21:03:24.820078+00:00'
+updated_at: '2026-06-09T21:06:11.428729+00:00'
+finished_at: '2026-06-09T21:06:11.428740+00:00'
+tasks:
+- id: c8ba09ea-ec73-4294-8799-2a9179641958
+  name: NotificationService — rimuovere Hermes CLI fallback e semplificare logging
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T21:04:35+00:00'
+  updated_at: '2026-06-09T21:06:04+00:00'
+- id: 0d8e168b-b923-4163-b73a-6948a01e7a4f
+  name: HermesProvider — rimuovere build_notification_command
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T21:04:35+00:00'
+  updated_at: '2026-06-09T21:06:05+00:00'
+relations: []

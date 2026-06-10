@@ -1,0 +1,42 @@
+schema_version: 1
+id: fa0a2932-c248-4187-b6d2-3531bc5f605c
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Queue Registry - Registro interno dispacciamento coda
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T22:00:31.851375+00:00'
+updated_at: '2026-06-09T22:09:04.905452+00:00'
+finished_at: '2026-06-09T22:09:04.905461+00:00'
+tasks:
+- id: 1e27c598-4af6-4dc6-b248-e8ca98807e34
+  name: Creare modello QueueEntry con enum QueueEntryStatus
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T22:06:06+00:00'
+  updated_at: '2026-06-09T22:06:34+00:00'
+- id: 22605856-3b00-4e35-9a3f-8e50a7eea61f
+  name: Aggiornare IssueQueueService con metodi QueueRegistryService e nuova logica FIFO
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T22:06:06+00:00'
+  updated_at: '2026-06-09T22:07:04+00:00'
+- id: 5d32f9af-a561-440d-9db5-b3d047fbb08f
+  name: Aggiornare shared_tools MCP (queue_add/queue_list/queue_remove/queue_position) per usare QueueRegistry
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T22:06:06+00:00'
+  updated_at: '2026-06-09T22:07:33+00:00'
+- id: 3936d680-5275-47a7-9a3d-ec4cd6e5e1a0
+  name: Generare e applicare migration database per tabella queue_entries
+  status: Completed
+  order: 3
+  created_at: '2026-06-09T22:06:06+00:00'
+  updated_at: '2026-06-09T22:08:17+00:00'
+- id: 297bdae6-5047-4d3e-8632-be015d02e3cd
+  name: 'Verificare il flusso completo: register → dispatching → dispatched'
+  status: Completed
+  order: 4
+  created_at: '2026-06-09T22:06:06+00:00'
+  updated_at: '2026-06-09T22:08:58+00:00'
+relations: []

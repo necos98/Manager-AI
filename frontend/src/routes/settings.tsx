@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Loader2, Bot, BookOpen, Play, Terminal } from "lucide-react";
+import { AlertTriangle, Loader2, Bot, BookOpen, Play, Terminal, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
-import { useSettings, useResetAllSettings, useInstallHermesMcp, useInstallHermesSkills, useHermesCommands } from "@/features/settings/hooks";
+import { useSettings, useUpdateSetting, useResetAllSettings, useInstallHermesMcp, useInstallHermesSkills, useHermesCommands } from "@/features/settings/hooks";
 import { SettingsForm } from "@/features/settings/components/settings-form";
 import { TerminalCommandsEditor } from "@/features/terminals/components/terminal-commands-editor";
 import { TerminalPanel } from "@/features/terminals/components/terminal-panel";
@@ -19,7 +19,7 @@ import {
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import type { Setting } from "@/shared/types";
 
-const TABS = ["Server", "Tool Descriptions", "Response Messages", "Terminal", "Agent CLI", "Hermes", "Preferences"] as const;
+const TABS = ["Server", "Tool Descriptions", "Response Messages", "Terminal", "Agent CLI", "Hermes", "Preferences", "Telegram"] as const;
 type SettingsTab = (typeof TABS)[number];
 
 function getCategory(key: string): string {
@@ -28,6 +28,7 @@ function getCategory(key: string): string {
   if (key.endsWith(".response_message")) return "Response Messages";
   if (key === "agent_provider") return "_hidden";
   if (key.startsWith("claude.") || key === "ask_brainstorm_command") return "Agent CLI";
+  if (key.startsWith("telegram.")) return "Telegram";
   return "Other";
 }
 
@@ -296,6 +297,168 @@ function PreferencesPanel() {
   );
 }
 
+function TelegramSettingsPanel() {
+  const { data: settings, isLoading } = useSettings();
+  const updateSetting = useUpdateSetting();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-16" />
+        <Skeleton className="h-16" />
+        <Skeleton className="h-16" />
+      </div>
+    );
+  }
+
+  const botToken = settings?.find((s: Setting) => s.key === "telegram.bot_token");
+  const chatId = settings?.find((s: Setting) => s.key === "telegram.chat_id");
+  const notificationsEnabled = settings?.find((s: Setting) => s.key === "telegram.notifications_enabled");
+
+  const isConfigured =
+    botToken?.value &&
+    chatId?.value &&
+    notificationsEnabled?.value === "true";
+
+  const [showToken, setShowToken] = useState(false);
+  const [tokenInput, setTokenInput] = useState(botToken?.value ?? "");
+  const [chatIdInput, setChatIdInput] = useState(chatId?.value ?? "");
+
+  function handleToggleNotifications(enabled: boolean) {
+    if (notificationsEnabled) {
+      updateSetting.mutate({ key: "telegram.notifications_enabled", value: enabled ? "true" : "false" });
+    }
+  }
+
+  function handleSaveToken() {
+    if (botToken && tokenInput !== botToken.value) {
+      updateSetting.mutate({ key: "telegram.bot_token", value: tokenInput });
+    }
+  }
+
+  function handleSaveChatId() {
+    if (chatId && chatIdInput !== chatId.value) {
+      updateSetting.mutate({ key: "telegram.chat_id", value: chatIdInput });
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Status indicator */}
+      <div className={`border rounded-lg p-4 flex items-center gap-3 ${
+        isConfigured ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
+      }`}>
+        <span className="text-lg">{isConfigured ? "🟢" : "🔴"}</span>
+        <div>
+          <p className="font-medium text-sm">
+            {isConfigured ? "Telegram configurato" : "Telegram non configurato"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {isConfigured
+              ? "Le notifiche Telegram sono attive e funzionanti."
+              : "Inserisci il Bot Token e il Chat ID qui sotto, poi attiva le notifiche."}
+          </p>
+        </div>
+        <span className={`ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+          isConfigured
+            ? "bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-400"
+            : "bg-amber-100 text-amber-800 dark:bg-amber-800/30 dark:text-amber-400"
+        }`}>
+          {isConfigured ? "Attivo" : "Inattivo"}
+        </span>
+      </div>
+
+      {/* Toggle notifications */}
+      <div className="border rounded-lg p-4 flex items-center justify-between">
+        <div className="flex items-start gap-3">
+          <MessageSquare className="size-5 mt-0.5 text-primary" />
+          <div>
+            <p className="font-medium text-sm">Notifiche Telegram attive</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Invia notifiche su Telegram quando una issue viene completata o
+              quando un agente fa una domanda.
+            </p>
+          </div>
+        </div>
+        {notificationsEnabled && (
+          <button
+            role="switch"
+            aria-checked={notificationsEnabled.value === "true"}
+            onClick={() => handleToggleNotifications(notificationsEnabled.value !== "true")}
+            disabled={updateSetting.isPending}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+              notificationsEnabled.value === "true" ? "bg-primary" : "bg-input"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                notificationsEnabled.value === "true" ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        )}
+      </div>
+
+      {/* Bot Token */}
+      <div className="border rounded-lg p-4">
+        <label className="font-medium text-sm block mb-1">Bot Token</label>
+        <p className="text-xs text-muted-foreground mb-3">
+          Il token del tuo bot Telegram (da @BotFather). Verrà salvato in chiaro nel database.
+        </p>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <input
+              type={showToken ? "text" : "password"}
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+              placeholder="Inserisci il token del bot..."
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+            />
+          </div>
+          <button
+            onClick={() => setShowToken(!showToken)}
+            className="inline-flex items-center justify-center h-9 px-3 text-sm rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+            title={showToken ? "Nascondi token" : "Mostra token"}
+          >
+            {showToken ? "🙈" : "👁️"}
+          </button>
+          <button
+            onClick={handleSaveToken}
+            disabled={updateSetting.isPending || tokenInput === (botToken?.value ?? "")}
+            className="inline-flex items-center justify-center h-9 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50"
+          >
+            {updateSetting.isPending ? "Salvataggio..." : "Salva"}
+          </button>
+        </div>
+      </div>
+
+      {/* Chat ID */}
+      <div className="border rounded-lg p-4">
+        <label className="font-medium text-sm block mb-1">Chat ID</label>
+        <p className="text-xs text-muted-foreground mb-3">
+          L'ID della chat Telegram dove ricevere le notifiche (es. il tuo ID utente o un gruppo).
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={chatIdInput}
+            onChange={(e) => setChatIdInput(e.target.value)}
+            placeholder="Inserisci il Chat ID..."
+            className="flex h-9 flex-1 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+          />
+          <button
+            onClick={handleSaveChatId}
+            disabled={updateSetting.isPending || chatIdInput === (chatId?.value ?? "")}
+            className="inline-flex items-center justify-center h-9 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50"
+          >
+            {updateSetting.isPending ? "Salvataggio..." : "Salva"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SettingsPage() {
   const { data: settings, isLoading, error } = useSettings();
   const resetAll = useResetAllSettings();
@@ -371,11 +534,13 @@ function SettingsPage() {
         <HermesCommandsPanel />
       ) : activeTab === "Preferences" ? (
         <PreferencesPanel />
+      ) : activeTab === "Telegram" ? (
+        <TelegramSettingsPanel />
       ) : (
         <SettingsForm settings={filteredSettings} />
       )}
 
-      {activeTab !== "Terminal" && activeTab !== "Hermes" && activeTab !== "Preferences" && (
+      {activeTab !== "Terminal" && activeTab !== "Hermes" && activeTab !== "Preferences" && activeTab !== "Telegram" && (
         <div className="mt-8 pt-6 border-t">
           <Button
             variant="ghost"

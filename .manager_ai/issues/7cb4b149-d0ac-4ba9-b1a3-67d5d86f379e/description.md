@@ -1,0 +1,1 @@
+issue di test per notifica, ti chiedo di chiudere questa issue per verificare l'invio della notifica

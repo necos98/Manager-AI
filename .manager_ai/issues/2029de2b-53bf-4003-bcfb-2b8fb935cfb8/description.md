@@ -1,0 +1,1 @@
+issue di test: ti chiedo semplicemente di contrassegnare questa issue a completata, perchè devo testare il sistema di notifiche

@@ -284,6 +284,22 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         // Invalidate terminal queries when a new terminal is spawned
         if (data.type === "terminal_created") {
           queryClient.invalidateQueries({ queryKey: ["terminals"] });
+          queryClient.invalidateQueries({ queryKey: ["queue", "running"] });
+          queryClient.invalidateQueries({ queryKey: ["queue", "status"] });
+        }
+
+        if (data.type === "terminal_closed") {
+          queryClient.invalidateQueries({ queryKey: ["queue", "running"] });
+          queryClient.invalidateQueries({ queryKey: ["queue", "status"] });
+        }
+
+        // Invalidate queue on issue status changes
+        if (data.type === "issue_status_changed") {
+          const ns = data.new_status;
+          if (ns === "Queued" || ns === "Reasoning" || ns === "Finished") {
+            queryClient.invalidateQueries({ queryKey: ["queue", "queued"] });
+            queryClient.invalidateQueries({ queryKey: ["queue", "status"] });
+          }
         }
 
         if (

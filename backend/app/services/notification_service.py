@@ -1,19 +1,19 @@
-"""Notification service — sends Telegram notifications via Hermes CLI.
+"""Notification service — logs issue events to a dedicated file.
 
-Listens to Manager AI events (via EventService) and spawns a lightweight
-``hermes chat -q`` subprocess to deliver notifications on Telegram.
-Also writes a dedicated log file (backend/logs/notifications.log).
+Listens to Manager AI events (via EventService) and writes them to a
+dedicated log file (backend/logs/notifications.log) for audit trail.
+Does NOT send any notifications — TelegramNotifier handles that when
+Telegram is configured.  This service only logs.
 """
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from typing import Any
 
-from app.providers.hermes_provider import HermesProvider
 from app.services.event_service import BaseNotifier, event_service
+from app.services.telegram_service import telegram_service
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ _NOTIFICATION_LOG_DATE_FMT = "%Y-%m-%d %H:%M:%S"
 
 
 class NotificationService(BaseNotifier):
-    """Listens to events and spawns Hermes CLI notifications."""
+    """Listens to events and writes them to a dedicated log file."""
 
     def __init__(self) -> None:
         event_service.register(self)
@@ -78,6 +78,11 @@ class NotificationService(BaseNotifier):
     async def _handle_event(self, event: dict[str, Any]) -> None:
         event_type = event.get("type", "")
 
+        # If direct Telegram Bot API is configured, skip the Hermes CLI fallback
+        # to avoid duplicate notifications (TelegramNotifier handles it).
+        if telegram_service.is_configured():
+            return
+
         if event_type == "issue_status_changed" and event.get("new_status") == "Finished":
             await self._notify_issue_finished(event)
 
@@ -119,7 +124,6 @@ class NotificationService(BaseNotifier):
             "Notifying issue finished: %s (%s) — %s",
             issue_name, event.get("issue_id", "unknown"), project_name,
         )
-        await self._run_hermes_command(hermes_message)
 
     async def _notify_question_asked(self, event: dict[str, Any]) -> None:
         project_name = event.get("project_name", "")
@@ -152,32 +156,6 @@ class NotificationService(BaseNotifier):
             "Notifying question asked on issue %s: %.80s",
             issue_name, question,
         )
-        await self._run_hermes_command(hermes_message)
 
-    @staticmethod
-    async def _run_hermes_command(message: str) -> None:
-        """Spawn ``hermes chat -q <message> --quiet`` in a subprocess.
 
-        The Hermes CLI must be on ``PATH``. Failures are logged but never
-        propagated — the caller (EventService) must not be blocked.
-        """
-        cmd = HermesProvider.build_notification_command(message)
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.DEVNULL,
-                stderr=asyncio.subprocess.DEVNULL,
-            )
-            await proc.wait()
-            if proc.returncode != 0:
-                logger.warning(
-                    "Hermes notification exited with code %d (message: %.80s)",
-                    proc.returncode, message,
-                )
-        except FileNotFoundError:
-            logger.warning(
-                "Hermes CLI not found on PATH — cannot send notification: %.80s",
-                message,
-            )
-        except Exception:
-            logger.exception("Failed to send Hermes notification: %.80s", message)
+

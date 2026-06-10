@@ -1589,3 +1589,158 @@ async def delete_issue(session: AsyncSession, project_id: str, issue_id: str) ->
         return {"success": True, "issue_id": issue_id}
     except AppError as e:
         return {"error": e.message}
+
+
+# ── 🆕 Issue Queue Tools ─────────────────────────────────────────────────────
+
+
+async def queue_add(session: AsyncSession, project_id: str, issue_id: str) -> dict:
+    """Add an issue to the FIFO queue (status → QUEUED).
+
+    Validates that the issue is in NEW or ACCEPTED status.
+    If this is the first queued issue and no issues are currently
+    running, auto-starts it immediately.
+    """
+    from app.models.issue import IssueStatus
+    from app.services.issue_service import IssueService
+    from app.utils.datetime import iso_now
+
+    svc = IssueService(session)
+    try:
+        issue = await svc.get_for_project(issue_id, project_id)
+    except AppError as e:
+        return {"error": str(e)}
+
+    allowed = {IssueStatus.NEW.value, IssueStatus.ACCEPTED.value}
+    if issue.status not in allowed:
+        return {
+            "error": f"Issue must be in NEW or ACCEPTED status to queue, got {issue.status}",
+        }
+
+    await svc.update_fields(issue_id, project_id, status=IssueStatus.QUEUED)
+    await session.commit()
+
+    await _emit_event({
+        "type": "issue_status_changed",
+        "new_status": IssueStatus.QUEUED.value,
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": issue_display_name(issue),
+        "timestamp": iso_now(),
+    })
+
+    # Check if this is the only queued issue and nothing is running
+    # If so, auto-start immediately (handled by IssueQueueService event)
+    return {
+        "id": issue_id,
+        "project_id": project_id,
+        "status": IssueStatus.QUEUED.value,
+    }
+
+
+async def queue_list(session: AsyncSession, project_id: str) -> dict:
+    """List all pending queue entries with their FIFO position.
+
+    Uses the persistent QueueRegistry instead of relying on the
+    volatile QUEUED issue status.
+    """
+    from app.services.issue_queue_service import IssueQueueService
+
+    registry = IssueQueueService()
+    entries = await registry.list_queue(project_id)
+
+    # Filter to only pending entries for active queue display
+    pending = [e for e in entries if e["status"] == "pending"]
+
+    items = []
+    for idx, entry in enumerate(pending):
+        items.append({
+            "position": idx + 1,
+            "issue_id": entry["issue_id"],
+            "issue_name": "",
+            "description": "",
+            "created_at": entry.get("created_at", ""),
+        })
+
+    return {"queued": items, "total": len(items)}
+
+
+async def queue_remove(session: AsyncSession, project_id: str, issue_id: str) -> dict:
+    """Remove an issue from the queue.
+
+    QUEUED → NEW (if it was New before queueing) or CANCELED.
+    """
+    from app.models.issue import IssueStatus
+    from app.services.issue_service import IssueService
+    from app.utils.datetime import iso_now
+
+    svc = IssueService(session)
+    try:
+        issue = await svc.get_for_project(issue_id, project_id)
+    except AppError as e:
+        return {"error": str(e)}
+
+    if issue.status != IssueStatus.QUEUED.value:
+        return {
+            "error": f"Issue is not QUEUED, got {issue.status}",
+        }
+
+    # Default to NEW for clean dequeue. We don't track original status,
+    # so we use NEW for simplicity.
+    target_status = IssueStatus.NEW.value
+    await svc.update_fields(issue_id, project_id, status=target_status)
+    await session.commit()
+
+    # Mark the QueueEntry as dispatched (removed from active queue)
+    from app.services.issue_queue_service import IssueQueueService
+    registry = IssueQueueService()
+    await registry.mark_dispatched(issue_id)
+
+    await _emit_event({
+        "type": "issue_status_changed",
+        "new_status": target_status,
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": issue_display_name(issue),
+        "timestamp": iso_now(),
+    })
+
+    return {
+        "id": issue_id,
+        "project_id": project_id,
+        "status": target_status,
+    }
+
+
+async def queue_position(session: AsyncSession, project_id: str, issue_id: str) -> dict:
+    """Get the 1-based position of a QUEUED issue in the FIFO queue.
+
+    Uses the persistent QueueRegistry to calculate position.
+    Returns null if the issue has no pending QueueEntry.
+    """
+    from app.services.issue_queue_service import IssueQueueService
+
+    registry = IssueQueueService()
+    entries = await registry.list_queue(project_id)
+
+    # Filter to pending entries only
+    pending = [e for e in entries if e["status"] == "pending"]
+
+    for idx, entry in enumerate(pending):
+        if entry["issue_id"] == issue_id:
+            return {
+                "position": idx + 1,
+                "issue_id": issue_id,
+                "total": len(pending),
+            }
+
+    # Check if there's any QueueEntry at all
+    all_entries = [e for e in entries if e["issue_id"] == issue_id]
+    if all_entries:
+        return {
+            "position": None,
+            "issue_id": issue_id,
+            "status": all_entries[0]["status"],
+        }
+
+    return {"position": None, "issue_id": issue_id, "status": "no_entry"}

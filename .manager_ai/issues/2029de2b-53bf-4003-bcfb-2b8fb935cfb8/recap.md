@@ -1,0 +1,1 @@
+Issue di test per il sistema di notifiche. Completata senza implementazione come richiesto. Tutti i passaggi di notifica (event emission, Telegram gateway) dovrebbero essere triggerati per verifica.

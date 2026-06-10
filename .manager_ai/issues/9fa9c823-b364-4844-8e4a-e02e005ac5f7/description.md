@@ -1,0 +1,1 @@
+TEST notifica arricchita — Se ricevi progetto, nome e descrizione, funziona! 🎉

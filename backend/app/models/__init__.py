@@ -10,6 +10,7 @@ from app.models.pipeline_event_rule import PipelineEventRule
 from app.models.pipeline_run import PipelineMessage, PipelineRun, PipelineRunStatus, PipelineStepRun, PipelineStepRunStatus
 from app.models.project import Project
 from app.models.project_file import ProjectFile
+from app.models.queue_entry import QueueEntry, QueueEntryStatus
 from app.models.project_link import ProjectLink
 from app.models.project_skill import ProjectSkill
 from app.models.project_variable import ProjectVariable
@@ -25,6 +26,7 @@ __all__ = [
     "Pipeline", "PipelineEventRule", "PipelineMessage", "PipelineRun", "PipelineRunStatus",
     "PipelineStep", "PipelineStepRun", "PipelineStepRunStatus",
     "Project", "ProjectFile", "ProjectLink",
+ "QueueEntry", "QueueEntryStatus",
     "ProjectSkill", "ProjectVariable",
     "PromptTemplate", "Question", "Setting", "Task", "TerminalCommand",
 ]

@@ -1,0 +1,121 @@
+Ricevo questo errore nel frontend:
+
+ReferenceError: useUpdateSetting is not defined
+    at Zie (index-pxTvBv6V.js:574:57021)
+    at Q_ (index-pxTvBv6V.js:48:47928)
+    at jx (index-pxTvBv6V.js:48:70703)
+    at oA (index-pxTvBv6V.js:48:81011)
+    at DA (index-pxTvBv6V.js:48:116666)
+    at VB (index-pxTvBv6V.js:48:115709)
+    at Py (index-pxTvBv6V.js:48:115539)
+    at RA (index-pxTvBv6V.js:48:112353)
+    at sE (index-pxTvBv6V.js:48:124168)
+    at Gh (index-pxTvBv6V.js:48:122734)
+ZT @ index-pxTvBv6V.js:48
+UC @ index-pxTvBv6V.js:48
+a.componentDidCatch.e.callback @ index-pxTvBv6V.js:48
+gT @ index-pxTvBv6V.js:48
+vT @ index-pxTvBv6V.js:48
+lA @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+gi @ index-pxTvBv6V.js:48
+fA @ index-pxTvBv6V.js:48
+OA @ index-pxTvBv6V.js:48
+nE @ index-pxTvBv6V.js:48
+eE @ index-pxTvBv6V.js:48
+RA @ index-pxTvBv6V.js:48
+sE @ index-pxTvBv6V.js:48
+Gh @ index-pxTvBv6V.js:48
+HA @ index-pxTvBv6V.js:48
+(anonymous) @ index-pxTvBv6V.js:48Understand this error
+index-pxTvBv6V.js:514 ErrorBoundary caught: ReferenceError: useUpdateSetting is not defined
+    at Zie (index-pxTvBv6V.js:574:57021)
+    at Q_ (index-pxTvBv6V.js:48:47928)
+    at jx (index-pxTvBv6V.js:48:70703)
+    at oA (index-pxTvBv6V.js:48:81011)
+    at DA (index-pxTvBv6V.js:48:116666)
+    at VB (index-pxTvBv6V.js:48:115709)
+    at Py (index-pxTvBv6V.js:48:115539)
+    at RA (index-pxTvBv6V.js:48:112353)
+    at sE (index-pxTvBv6V.js:48:124168)
+    at Gh (index-pxTvBv6V.js:48:122734)

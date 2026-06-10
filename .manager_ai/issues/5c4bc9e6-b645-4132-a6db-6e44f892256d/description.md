@@ -1,0 +1,1 @@
+TEST notifica domanda — Se ricevi una domanda su Telegram, funziona!

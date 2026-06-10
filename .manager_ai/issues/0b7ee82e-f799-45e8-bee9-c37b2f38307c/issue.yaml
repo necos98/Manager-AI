@@ -1,0 +1,42 @@
+schema_version: 1
+id: 0b7ee82e-f799-45e8-bee9-c37b2f38307c
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Issue Queue System - Coda Issue Sincrona FIFO
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T19:34:13.254815+00:00'
+updated_at: '2026-06-09T21:36:53.603212+00:00'
+finished_at: '2026-06-09T21:36:53.603223+00:00'
+tasks:
+- id: 40613104-b61c-4073-a64a-eb5e36b3742a
+  name: Aggiungere status QUEUED al modello IssueStatus
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T21:31:22+00:00'
+  updated_at: '2026-06-09T21:31:40+00:00'
+- id: 0ef7ab3b-8539-4ae4-a238-5e2f6190ce73
+  name: Creare IssueQueueService (event listener)
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T21:31:22+00:00'
+  updated_at: '2026-06-09T21:32:13+00:00'
+- id: d5d7313e-1d8a-4907-8826-26ceb6fcc5e1
+  name: Aggiungere MCP tools queue_add/queue_list/queue_remove/queue_position in shared_tools.py
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T21:31:22+00:00'
+  updated_at: '2026-06-09T21:32:38+00:00'
+- id: f16bff85-db2f-4329-87f1-2e0b96bc0e36
+  name: Registrare i queue MCP tools su orchestrator_server.py
+  status: Completed
+  order: 3
+  created_at: '2026-06-09T21:31:22+00:00'
+  updated_at: '2026-06-09T21:32:56+00:00'
+- id: 2a103226-16de-47a9-8f56-d5eef3f63e3a
+  name: Registrare IssueQueueService nel lifespan di main.py
+  status: Completed
+  order: 4
+  created_at: '2026-06-09T21:31:22+00:00'
+  updated_at: '2026-06-09T21:33:11+00:00'
+relations: []

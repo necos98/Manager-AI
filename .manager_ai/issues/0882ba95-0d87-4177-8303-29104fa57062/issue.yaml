@@ -1,0 +1,36 @@
+schema_version: 1
+id: 0882ba95-0d87-4177-8303-29104fa57062
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix EventService.notify() called in force_finish_issue_endpoint
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T19:24:52.550227+00:00'
+updated_at: '2026-06-09T19:27:45.180820+00:00'
+finished_at: '2026-06-09T19:27:45.180830+00:00'
+tasks:
+- id: 74f5b452-7a5c-44e3-9be0-f38766311305
+  name: Verifica sintassi e import di issues.py e shared_tools.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T19:26:38+00:00'
+  updated_at: '2026-06-09T19:26:58+00:00'
+- id: b717c68c-6615-4cc3-b537-8f97b17efe3b
+  name: Verifica backend e test endpoint force-finish
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T19:26:38+00:00'
+  updated_at: '2026-06-09T19:27:17+00:00'
+- id: 0105dcb8-4d41-4860-a814-17bda6c84531
+  name: Verifica sintassi notification_service.py e hermes_provider.py
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T19:26:38+00:00'
+  updated_at: '2026-06-09T19:27:27+00:00'
+- id: e36f1e64-83a6-4086-af96-32e54e6c4b80
+  name: Commit del fix con messaggio descrittivo
+  status: Completed
+  order: 3
+  created_at: '2026-06-09T19:26:38+00:00'
+  updated_at: '2026-06-09T19:27:39+00:00'
+relations: []

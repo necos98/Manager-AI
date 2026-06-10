@@ -59,12 +59,3 @@ class HermesProvider(AgentProvider):
         if tool_guidance:
             cmd += ["-s", "tool-guidance"]
         return cmd
-
-    @staticmethod
-    def build_notification_command(message: str) -> list[str]:
-        """Build a hermes chat -q command to send a notification via Telegram.
-
-        The returned list can be passed directly to ``asyncio.create_subprocess_exec``.
-        Hermes will invoke ``send_message`` to deliver the notification.
-        """
-        return ["hermes", "chat", "-q", message, "--quiet"]

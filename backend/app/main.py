@@ -31,7 +31,7 @@ from app.storage import memory_store as memory_store_module
 from app.storage import issue_store as issue_store_module
 from app.storage import file_store as file_store_module
 from app.middleware import ErrorLoggerMiddleware
-from app.routers import activity, agents, events, files, issue_relations, issues, library, memories, network, pipeline_runs, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, questions, settings as settings_router, system, tasks, terminals, terminal_commands
+from app.routers import activity, agents, events, files, issue_relations, issues, library, memories, network, pipeline_runs, pipelines, plugins, project_links, project_settings, project_skills, project_templates, project_variables, projects, queue, questions, settings as settings_router, system, tasks, terminals, terminal_commands
 from app.routers.projects import install_claude_resources_to
 from cryptography.fernet import Fernet
 
@@ -41,6 +41,8 @@ from app.models.issue import Issue
 from app.models.project import Project
 from app.services.agent_service import AgentService
 from app.services.notification_service import NotificationService
+from app.services.telegram_notifier import TelegramNotifier
+from app.services.issue_queue_service import IssueQueueService
 from app.services.pipeline_service import PipelineService
 from app.models.pipeline_run import PipelineRun, PipelineRunStatus
 from app.utils.datetime import now
@@ -335,6 +337,35 @@ async def lifespan(app):
         await _startup_cleanup_orphaned_runs(async_session)
         await _startup_install_claude_resources(rows)
         _ = NotificationService()  # register as event listener
+        _ = IssueQueueService()  # register as event listener for FIFO queue
+        # Read Telegram config from DB and apply to TelegramService
+        # so the settings UI can control it without restart.
+        try:
+            async with async_session() as sess:
+                from app.services.settings_service import SettingsService
+                svc = SettingsService(sess)
+                try:
+                    bot_token = await svc.get("telegram.bot_token")
+                except KeyError:
+                    bot_token = ""
+                try:
+                    chat_id = await svc.get("telegram.chat_id")
+                except KeyError:
+                    chat_id = ""
+                try:
+                    enabled_str = await svc.get("telegram.notifications_enabled")
+                    notifications_enabled = enabled_str == "true"
+                except KeyError:
+                    notifications_enabled = False
+
+                _ = TelegramNotifier(
+                    bot_token=bot_token,
+                    chat_id=chat_id,
+                    notifications_enabled=notifications_enabled,
+                )
+        except Exception:
+            logger.exception("Failed to configure Telegram from DB; falling back to env")
+            _ = TelegramNotifier()  # register as event listener (direct Telegram API)
     except Exception:
         logger.exception("Non-critical startup ops failed; continuing")
 
@@ -423,6 +454,7 @@ app.include_router(terminals.router)
 app.include_router(terminal_commands.router)
 app.include_router(project_variables.router)
 app.include_router(events.router)
+app.include_router(queue.router)
 app.include_router(activity.router)
 app.include_router(library.router)
 app.include_router(memories.project_scoped)

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from "./routes/__root"
 import { Route as TerminalsRouteImport } from "./routes/terminals"
 import { Route as SettingsRouteImport } from "./routes/settings"
+import { Route as QueueRouteImport } from "./routes/queue"
 import { Route as QuestionsRouteImport } from "./routes/questions"
 import { Route as ProvidersRouteImport } from "./routes/providers"
 import { Route as PipelinesRouteImport } from "./routes/pipelines"
@@ -43,6 +44,11 @@ const TerminalsRoute = TerminalsRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: "/settings",
   path: "/settings",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QueueRoute = QueueRouteImport.update({
+  id: "/queue",
+  path: "/queue",
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuestionsRoute = QuestionsRouteImport.update({
@@ -178,6 +184,7 @@ export interface FileRoutesByFullPath {
   "/pipelines": typeof PipelinesRoute
   "/providers": typeof ProvidersRoute
   "/questions": typeof QuestionsRoute
+  "/queue": typeof QueueRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   "/pipelines": typeof PipelinesRoute
   "/providers": typeof ProvidersRoute
   "/questions": typeof QuestionsRoute
+  "/queue": typeof QueueRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -232,6 +240,7 @@ export interface FileRoutesById {
   "/pipelines": typeof PipelinesRoute
   "/providers": typeof ProvidersRoute
   "/questions": typeof QuestionsRoute
+  "/queue": typeof QueueRoute
   "/settings": typeof SettingsRoute
   "/terminals": typeof TerminalsRoute
   "/projects/$projectId": typeof ProjectsProjectIdRouteWithChildren
@@ -261,6 +270,7 @@ export interface FileRouteTypes {
     | "/pipelines"
     | "/providers"
     | "/questions"
+    | "/queue"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
     | "/pipelines"
     | "/providers"
     | "/questions"
+    | "/queue"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | "/pipelines"
     | "/providers"
     | "/questions"
+    | "/queue"
     | "/settings"
     | "/terminals"
     | "/projects/$projectId"
@@ -342,6 +354,7 @@ export interface RootRouteChildren {
   PipelinesRoute: typeof PipelinesRoute
   ProvidersRoute: typeof ProvidersRoute
   QuestionsRoute: typeof QuestionsRoute
+  QueueRoute: typeof QueueRoute
   SettingsRoute: typeof SettingsRoute
   TerminalsRoute: typeof TerminalsRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
@@ -363,6 +376,13 @@ declare module "@tanstack/react-router" {
       path: "/settings"
       fullPath: "/settings"
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/queue": {
+      id: "/queue"
+      path: "/queue"
+      fullPath: "/queue"
+      preLoaderRoute: typeof QueueRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/questions": {
@@ -584,6 +604,7 @@ const rootRouteChildren: RootRouteChildren = {
   PipelinesRoute: PipelinesRoute,
   ProvidersRoute: ProvidersRoute,
   QuestionsRoute: QuestionsRoute,
+  QueueRoute: QueueRoute,
   SettingsRoute: SettingsRoute,
   TerminalsRoute: TerminalsRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,

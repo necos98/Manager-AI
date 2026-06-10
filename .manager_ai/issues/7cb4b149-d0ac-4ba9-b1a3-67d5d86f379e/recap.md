@@ -1,0 +1,1 @@
+Issue di test chiusa su richiesta per verificare l'invio della notifica Telegram. Nessuna modifica al codice necessaria.

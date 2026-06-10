@@ -67,6 +67,11 @@ from app.mcp.shared_tools import (
     disable_plugin_tool as _disable_plugin_tool,
     # Memory search
     memory_search as _memory_search,
+    # Issue Queue
+    queue_add as _queue_add,
+    queue_list as _queue_list,
+    queue_remove as _queue_remove,
+    queue_position as _queue_position,
 )
 
 logger = logging.getLogger(__name__)
@@ -391,3 +396,48 @@ async def enable_plugin(project_id: str, plugin_name: str) -> dict:
 async def disable_plugin(project_id: str, plugin_name: str) -> dict:
     async with async_session() as session:
         return await _disable_plugin_tool(session, project_id, plugin_name)
+
+
+# ── 8) Issue Queue Tools ──────────────────────────────────────────────────────
+
+
+@orchestrator_mcp.tool(
+    description="Add an issue to the FIFO queue (status → QUEUED). "
+                "Validates that the issue is in NEW or ACCEPTED status. "
+                "Parameters: project_id (required), issue_id (required). "
+                "Returns: {id, project_id, status}."
+)
+async def queue_add(project_id: str, issue_id: str) -> dict:
+    async with async_session() as session:
+        return await _queue_add(session, project_id, issue_id)
+
+
+@orchestrator_mcp.tool(
+    description="List all QUEUED issues with their position (1-based FIFO order). "
+                "Parameters: project_id (required). "
+                "Returns: {queued: [{position, issue_id, issue_name, description, created_at}], total}."
+)
+async def queue_list(project_id: str) -> dict:
+    async with async_session() as session:
+        return await _queue_list(session, project_id)
+
+
+@orchestrator_mcp.tool(
+    description="Remove an issue from the queue (QUEUED → NEW). "
+                "Parameters: project_id (required), issue_id (required). "
+                "Returns: {id, project_id, status}."
+)
+async def queue_remove(project_id: str, issue_id: str) -> dict:
+    async with async_session() as session:
+        return await _queue_remove(session, project_id, issue_id)
+
+
+@orchestrator_mcp.tool(
+    description="Get the 1-based position of a QUEUED issue in the FIFO queue. "
+                "Returns null position if the issue is not QUEUED. "
+                "Parameters: project_id (required), issue_id (required). "
+                "Returns: {position, issue_id, total} or {position: null, issue_id, status}."
+)
+async def queue_position(project_id: str, issue_id: str) -> dict:
+    async with async_session() as session:
+        return await _queue_position(session, project_id, issue_id)

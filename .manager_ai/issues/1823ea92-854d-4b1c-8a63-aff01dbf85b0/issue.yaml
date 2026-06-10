@@ -1,0 +1,24 @@
+schema_version: 1
+id: 1823ea92-854d-4b1c-8a63-aff01dbf85b0
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix EventService.notify -> emit in issues router
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T19:13:42.872102+00:00'
+updated_at: '2026-06-09T19:15:12.362550+00:00'
+finished_at: '2026-06-09T19:15:12.362560+00:00'
+tasks:
+- id: 489017f1-ff10-49c8-87c7-3e8642a13517
+  name: Replace event_service.notify with event_service.emit in both endpoints (line 133 and 159)
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T19:14:40+00:00'
+  updated_at: '2026-06-09T19:14:55+00:00'
+- id: 0a0259f9-4bf7-4cea-828d-56b6a0f47bf0
+  name: Verify syntax and test the fix
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T19:14:40+00:00'
+  updated_at: '2026-06-09T19:15:10+00:00'
+relations: []

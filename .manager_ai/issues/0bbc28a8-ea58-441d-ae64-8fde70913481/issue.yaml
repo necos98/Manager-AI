@@ -2,12 +2,12 @@ schema_version: 1
 id: 0bbc28a8-ea58-441d-ae64-8fde70913481
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: Sistema notifiche Telegram via Hermes su eventi issue
-status: Accepted
+status: Finished
 priority: 2
 category: null
 created_at: '2026-06-09T17:55:46.355708+00:00'
-updated_at: '2026-06-09T17:57:30.952165+00:00'
-finished_at: null
+updated_at: '2026-06-09T18:19:05.585557+00:00'
+finished_at: '2026-06-09T18:19:05.585568+00:00'
 tasks:
 - id: 725e0b12-42a0-436c-b1c9-3fcf851f361c
   name: Aggiungere build_notification_command in HermesProvider
@@ -29,8 +29,8 @@ tasks:
   updated_at: '2026-06-09T17:58:19+00:00'
 - id: 10c60b8b-12ad-45cc-b262-9dd89b0891f8
   name: Verificare il funzionamento
-  status: In Progress
+  status: Completed
   order: 3
   created_at: '2026-06-09T17:57:34+00:00'
-  updated_at: '2026-06-09T17:58:20+00:00'
+  updated_at: '2026-06-09T18:18:58+00:00'
 relations: []

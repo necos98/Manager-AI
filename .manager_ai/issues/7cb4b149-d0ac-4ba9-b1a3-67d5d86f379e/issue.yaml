@@ -1,0 +1,12 @@
+schema_version: 1
+id: 7cb4b149-d0ac-4ba9-b1a3-67d5d86f379e
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Test notifica notifica Telegram
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T19:45:25.946187+00:00'
+updated_at: '2026-06-09T19:47:33.099642+00:00'
+finished_at: '2026-06-09T19:47:33.099653+00:00'
+tasks: []
+relations: []

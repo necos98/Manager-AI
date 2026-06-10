@@ -1,0 +1,1 @@
+TEST — Verifica notifiche Telegram su completamento issue. Se ricevi questo messaggio su Telegram, il sistema funziona!

@@ -3,6 +3,7 @@ import {
   Cable,
   HelpCircle,
   LayoutDashboard,
+  ListOrdered,
   Settings,
   Smartphone,
   Star,
@@ -138,6 +139,17 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                     <Link to="/dashboard">
                       <LayoutDashboard />
                       <span>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={!!matchRoute({ to: "/queue", fuzzy: true })}
+                  >
+                    <Link to="/queue">
+                      <ListOrdered />
+                      <span>Queue</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

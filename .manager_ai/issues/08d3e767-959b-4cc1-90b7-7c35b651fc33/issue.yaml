@@ -1,0 +1,18 @@
+schema_version: 1
+id: 08d3e767-959b-4cc1-90b7-7c35b651fc33
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Fix: useUpdateSetting is not defined in TelegramSettingsPanel (missing import in settings.tsx)'
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T20:52:02.816379+00:00'
+updated_at: '2026-06-09T20:53:15.162965+00:00'
+finished_at: '2026-06-09T20:53:15.162976+00:00'
+tasks:
+- id: 215ac268-3883-4b1f-9295-1895f4b6692a
+  name: Add useUpdateSetting to import in settings.tsx
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T20:52:50+00:00'
+  updated_at: '2026-06-09T20:53:11+00:00'
+relations: []

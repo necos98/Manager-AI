@@ -1,0 +1,54 @@
+schema_version: 1
+id: b1e5d007-f712-4eac-85c2-baaf126715ce
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: UI Globale Coda Issue - Sezione globale queue + running
+status: Accepted
+priority: 3
+category: null
+created_at: '2026-06-09T21:47:37.494600+00:00'
+updated_at: '2026-06-09T21:49:40.673474+00:00'
+finished_at: null
+tasks:
+- id: 3bd080bc-f56c-4945-9f8e-99b97eb3221b
+  name: 'Backend: creare router queue.py con 3 endpoint globali (GET /api/queue, /queue/running, /queue/status)'
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T21:49:37+00:00'
+  updated_at: '2026-06-09T21:50:09+00:00'
+- id: 6621f06f-f7b0-4286-8035-7373349828e5
+  name: 'Backend: registrare router queue in main.py'
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T21:49:37+00:00'
+  updated_at: '2026-06-09T21:50:28+00:00'
+- id: 36400efd-bb63-4391-a0c3-917a7fef3168
+  name: 'Frontend: creare API hooks (features/queue/api.ts + hooks.ts)'
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T21:49:37+00:00'
+  updated_at: '2026-06-09T21:51:13+00:00'
+- id: 3ba96346-2bf9-464c-becc-9c54aa6ed9df
+  name: 'Frontend: creare pagina route /queue (routes/queue.tsx)'
+  status: Completed
+  order: 3
+  created_at: '2026-06-09T21:49:37+00:00'
+  updated_at: '2026-06-09T21:53:44+00:00'
+- id: 034609fc-7461-4f68-a443-b5a361e4db25
+  name: 'Frontend: registrare route in routeTree.gen.ts'
+  status: Completed
+  order: 4
+  created_at: '2026-06-09T21:49:37+00:00'
+  updated_at: '2026-06-09T21:53:52+00:00'
+- id: 45d8b9fa-3750-4653-bec9-0eb658e3a5f6
+  name: 'Frontend: aggiungere voce Queue nella sidebar Global'
+  status: Completed
+  order: 5
+  created_at: '2026-06-09T21:49:37+00:00'
+  updated_at: '2026-06-09T21:54:12+00:00'
+- id: 8737e14a-d704-45d1-a44a-1fd6846d4ff6
+  name: 'Verifica: avviare backend e testare endpoint + pagina'
+  status: In Progress
+  order: 6
+  created_at: '2026-06-09T21:49:37+00:00'
+  updated_at: '2026-06-09T21:54:13+00:00'
+relations: []

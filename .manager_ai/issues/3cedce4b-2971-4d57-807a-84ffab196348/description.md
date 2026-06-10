@@ -1,0 +1,1 @@
+TEST notifica da REST API - se ricevi questo messaggio, il fix funziona!

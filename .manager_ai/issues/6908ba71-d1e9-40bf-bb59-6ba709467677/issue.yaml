@@ -1,0 +1,48 @@
+schema_version: 1
+id: 6908ba71-d1e9-40bf-bb59-6ba709467677
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: UI Settings > Telegram con toggle e configurazione token/chat_id
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-09T20:42:25.481369+00:00'
+updated_at: '2026-06-09T20:48:00.865526+00:00'
+finished_at: '2026-06-09T20:48:00.865538+00:00'
+tasks:
+- id: c64bc257-685c-4520-8891-429b0620a064
+  name: Aggiungere chiavi Telegram a default_settings.json
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T20:44:52+00:00'
+  updated_at: '2026-06-09T20:45:07+00:00'
+- id: 3eea8410-18c8-4feb-a566-034d4af3c2a7
+  name: Modificare TelegramService per supportare configurazione dinamica (configure() + notifications_enabled)
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T20:44:52+00:00'
+  updated_at: '2026-06-09T20:45:32+00:00'
+- id: 5a53519f-0301-4dbe-8440-c71b5589cfe0
+  name: Modificare TelegramNotifier per ricevere config dal DB
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T20:44:52+00:00'
+  updated_at: '2026-06-09T20:45:46+00:00'
+- id: f36f3e0d-825d-4015-b22b-ff26d5b55fc1
+  name: Aggiornare main.py lifespan per leggere config Telegram dal DB
+  status: Completed
+  order: 3
+  created_at: '2026-06-09T20:44:52+00:00'
+  updated_at: '2026-06-09T20:46:06+00:00'
+- id: 54a75221-b9d5-472b-842b-3c26e404622d
+  name: Aggiornare settings router per riconfigurare TelegramService in tempo reale
+  status: Completed
+  order: 4
+  created_at: '2026-06-09T20:44:52+00:00'
+  updated_at: '2026-06-09T20:46:26+00:00'
+- id: e455444e-3dcf-44e1-8ed4-2596944cb6b0
+  name: UI — Aggiungere tab Telegram con toggle, input token/chat_id, status indicator
+  status: Completed
+  order: 5
+  created_at: '2026-06-09T20:44:52+00:00'
+  updated_at: '2026-06-09T20:47:20+00:00'
+relations: []

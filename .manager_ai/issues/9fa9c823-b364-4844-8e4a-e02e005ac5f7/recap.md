@@ -1,0 +1,1 @@
+Test completato con successo! Le notifiche arricchite funzionano perfettamente.

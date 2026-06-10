@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     terminal_max_buffer_bytes: int = 100_000
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
+    # Telegram notification settings
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+
     model_config = {"env_file": ".env"}
 
     @field_validator("backend_port")

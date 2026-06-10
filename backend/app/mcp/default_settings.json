@@ -79,5 +79,8 @@
   "tool.pause_pipeline.description": "Mette in pausa la pipeline orchestrata o non orchestrata. Se uno step è in esecuzione (RUNNING), il terminale viene killato e lo step marcato FAILED. La pipeline può essere ripresa con resume_pipeline. Parametri: run_id (required).",
   "tool.resume_pipeline.description": "Riprende una pipeline in pausa (PAUSED). La rimette in stato WAITING_FOR_STEP, pronta per start_pipeline_step. Parametri: run_id (required).",
   "tool.cancel_pipeline.description": "Annulla una pipeline in esecuzione (RUNNING). Il terminale dello step corrente viene killato e la pipeline marcata FAILED. Non può essere ripresa. Parametri: run_id (required).",
+  "telegram.bot_token": "",
+  "telegram.chat_id": "",
+  "telegram.notifications_enabled": "false",
   "hermes_commands": "[{\"name\":\"Verifica Connessione MCP\",\"description\":\"Testa la connessione MCP tra Manager AI e Hermes Agent\",\"command\":\"hermes mcp list\"},{\"name\":\"Lista Skill Hermes\",\"description\":\"Mostra le skill installate in Hermes Agent\",\"command\":\"hermes skills list\"},{\"name\":\"Stato Sessione Hermes\",\"description\":\"Mostra lo stato della sessione Hermes corrente\",\"command\":\"hermes status\"}]"
 }

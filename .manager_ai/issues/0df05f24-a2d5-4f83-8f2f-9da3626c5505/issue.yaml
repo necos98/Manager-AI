@@ -1,0 +1,48 @@
+schema_version: 1
+id: 0df05f24-a2d5-4f83-8f2f-9da3626c5505
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Arricchire notifiche Telegram con progetto, descrizione e recap
+status: Finished
+priority: 2
+category: null
+created_at: '2026-06-09T18:45:58.856947+00:00'
+updated_at: '2026-06-09T18:56:27.927931+00:00'
+finished_at: '2026-06-09T18:56:27.927940+00:00'
+tasks:
+- id: 2bb2c1af-556f-490c-b982-ef4f84614f28
+  name: Aggiungere project_name, description, recap a force_finish_issue in shared_tools.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-09T18:47:19+00:00'
+  updated_at: '2026-06-09T18:56:18+00:00'
+- id: c7ca83b2-61ba-42d9-8cb7-6b4f0fe996a9
+  name: Aggiungere project_name, description, recap a complete_issue in shared_tools.py
+  status: Completed
+  order: 1
+  created_at: '2026-06-09T18:47:19+00:00'
+  updated_at: '2026-06-09T18:56:19+00:00'
+- id: b791d1cf-9221-4b29-90f6-62e2d3a87e8c
+  name: Aggiungere project_name e issue_name a ask_user_question in shared_tools.py
+  status: Completed
+  order: 2
+  created_at: '2026-06-09T18:47:19+00:00'
+  updated_at: '2026-06-09T18:56:21+00:00'
+- id: b718acaa-b23b-4c49-bdd1-6325542b1a1c
+  name: Aggiornare _notify_issue_finished in notification_service.py
+  status: Completed
+  order: 3
+  created_at: '2026-06-09T18:47:19+00:00'
+  updated_at: '2026-06-09T18:56:22+00:00'
+- id: ec1c39c1-3dd8-425b-b05b-5b4d56dbb12f
+  name: Aggiornare _notify_question_asked in notification_service.py
+  status: Completed
+  order: 4
+  created_at: '2026-06-09T18:47:19+00:00'
+  updated_at: '2026-06-09T18:56:23+00:00'
+- id: 1d1af247-19af-4080-9d71-dc0e24ebd82b
+  name: Verifica e test — eseguire pytest
+  status: Completed
+  order: 5
+  created_at: '2026-06-09T18:47:19+00:00'
+  updated_at: '2026-06-09T18:56:04+00:00'
+relations: []
