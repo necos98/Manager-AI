@@ -143,7 +143,7 @@ function RootLayout() {
       </div>
 
       {/* Main content area */}
-      <div className="min-w-0 flex flex-1 flex-col main-content-gradient">
+      <div className="min-w-0 flex flex-1 flex-col">
         {/* Mobile header: Sheet-based trigger for ProjectSidebar */}
         <header className="md:hidden flex h-12 items-center px-4 border-b bg-background shrink-0">
           <Sheet>
