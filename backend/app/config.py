@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     backend_port: int = 8000
     hook_timeout_seconds: int = 300
     terminal_max_buffer_bytes: int = 100_000
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173"
 
     # Telegram notification settings
     telegram_bot_token: str = ""

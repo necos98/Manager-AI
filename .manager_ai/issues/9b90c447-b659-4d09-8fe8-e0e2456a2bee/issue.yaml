@@ -1,0 +1,36 @@
+schema_version: 1
+id: 9b90c447-b659-4d09-8fe8-e0e2456a2bee
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix CORS e URL double-slash nelle API calls del frontend
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-10T18:04:24.188575+00:00'
+updated_at: '2026-06-10T18:11:05.044733+00:00'
+finished_at: '2026-06-10T18:11:05.044749+00:00'
+tasks:
+- id: 7861efec-8a08-42bf-b53a-bb33c00e3533
+  name: Update cors_origins in config.py — add port 4173 + env var support
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T18:08:33+00:00'
+  updated_at: '2026-06-10T18:08:53+00:00'
+- id: 648def6d-d840-4b5a-8316-a9479fb06450
+  name: Add enabled guard to useIssues in hooks.ts
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T18:08:33+00:00'
+  updated_at: '2026-06-10T18:09:16+00:00'
+- id: bece0793-a8d8-421c-a37b-9687cd609adc
+  name: Audit and fix other hooks missing projectId guard
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T18:08:33+00:00'
+  updated_at: '2026-06-10T18:10:15+00:00'
+- id: 9055362d-6531-41d4-8d32-598ccfd8c983
+  name: Verification — syntax check and review
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T18:08:33+00:00'
+  updated_at: '2026-06-10T18:10:49+00:00'
+relations: []

@@ -17,6 +17,7 @@ export function useIssues(projectId: string, status?: IssueStatus, search?: stri
   return useQuery({
     queryKey: [...issueKeys.all(projectId), "list", { status, search, tag, limit, offset }],
     queryFn: () => api.fetchIssues(projectId, status, search, tag, limit, offset),
+    enabled: Boolean(projectId),
   });
 }
 
@@ -24,6 +25,7 @@ export function useIssue(projectId: string, issueId: string) {
   return useQuery({
     queryKey: issueKeys.detail(projectId, issueId),
     queryFn: () => api.fetchIssue(projectId, issueId),
+    enabled: Boolean(projectId) && Boolean(issueId),
   });
 }
 
@@ -131,6 +133,7 @@ export function useFeedback(projectId: string, issueId: string) {
   return useQuery({
     queryKey: feedbackKeys.all(projectId, issueId),
     queryFn: () => api.fetchFeedback(projectId, issueId),
+    enabled: Boolean(projectId) && Boolean(issueId),
   });
 }
 
@@ -150,6 +153,7 @@ export function useProjectTags(projectId: string) {
     queryKey: [...issueKeys.all(projectId), "tags"],
     queryFn: () => api.fetchProjectTags(projectId),
     staleTime: 60_000,
+    enabled: Boolean(projectId),
   });
 }
 
