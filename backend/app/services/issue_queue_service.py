@@ -650,3 +650,125 @@ class IssueQueueService(BaseNotifier):
                 "IssueQueueService failed in _maybe_auto_start_first for project %s",
                 project_id,
             )
+
+
+# ── Standalone helpers (fallback when IssueQueueService is None) ──────────
+
+
+async def _queue_add_direct(
+    session: AsyncSession, project_id: str, issue_id: str,
+) -> dict:
+    """Add an issue to the FIFO queue without requiring IssueQueueService.
+
+    Fallback used when issue_queue_service_ref is None (IssueQueueService
+    was not initialized during startup). Validates the issue, creates the
+    QueueEntry directly, and emits the event for other listeners.
+
+    Returns {id, project_id, status} on success.
+    Raises AppError on validation failure.
+    """
+    from app.models.issue import IssueStatus
+    from app.utils.datetime import iso_now
+
+    svc = IssueService(session)
+    try:
+        issue = await svc.get_for_project(issue_id, project_id)
+    except AppError as e:
+        raise AppError(str(e))
+
+    allowed = {IssueStatus.NEW.value, IssueStatus.ACCEPTED.value}
+    if issue.status not in allowed:
+        raise AppError(
+            f"Issue must be in NEW or ACCEPTED status to queue, "
+            f"got {issue.status}",
+        )
+
+    # Create QueueEntry directly (same logic as IssueQueueService.register())
+    result = await session.execute(
+        select(sa_func.coalesce(sa_func.max(QueueEntry.order), 0))
+        .where(QueueEntry.project_id == project_id)
+    )
+    max_order: int = result.scalar() or 0
+
+    entry = QueueEntry(
+        issue_id=issue_id,
+        project_id=project_id,
+        status=QueueEntryStatus.PENDING,
+        order=max_order + 1,
+    )
+    session.add(entry)
+    await session.commit()
+
+    # Emit event for any other listeners (also logged by NotificationService)
+    await event_service.emit({
+        "type": "issue_status_changed",
+        "new_status": IssueStatus.QUEUED.value,
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": issue.name or "",
+        "timestamp": iso_now(),
+    })
+
+    return {
+        "id": issue_id,
+        "project_id": project_id,
+        "status": issue.status,
+    }
+
+
+async def _queue_remove_direct(
+    session: AsyncSession, project_id: str, issue_id: str,
+) -> dict:
+    """Remove an issue from the FIFO queue without requiring IssueQueueService.
+
+    Fallback used when issue_queue_service_ref is None (IssueQueueService
+    was not initialized during startup). Looks up the pending QueueEntry,
+    marks it as dispatched, and emits the event.
+
+    Returns {id, project_id, status} on success.
+    Raises AppError if the issue has no pending queue entry.
+    """
+    from app.utils.datetime import iso_now
+
+    svc = IssueService(session)
+    try:
+        issue = await svc.get_for_project(issue_id, project_id)
+    except AppError as e:
+        raise AppError(str(e))
+
+    # Find the pending QueueEntry
+    result = await session.execute(
+        select(QueueEntry)
+        .where(
+            QueueEntry.issue_id == issue_id,
+            QueueEntry.status == QueueEntryStatus.PENDING,
+        )
+        .order_by(QueueEntry.order.asc())
+        .limit(1)
+    )
+    entry = result.scalar_one_or_none()
+
+    if entry is None:
+        raise AppError(
+            f"Issue {issue_id} is not in the queue (no pending QueueEntry)",
+        )
+
+    # Mark as dispatched
+    entry.status = QueueEntryStatus.DISPATCHED
+    await session.commit()
+
+    # Emit event for other listeners
+    await event_service.emit({
+        "type": "issue_status_changed",
+        "new_status": issue.status,
+        "project_id": project_id,
+        "issue_id": issue_id,
+        "issue_name": issue.name or "",
+        "timestamp": iso_now(),
+    })
+
+    return {
+        "id": issue_id,
+        "project_id": project_id,
+        "status": issue.status,
+    }
