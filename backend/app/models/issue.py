@@ -11,7 +11,6 @@ from app.database import Base
 
 class IssueStatus(str, enum.Enum):
     NEW = "New"
-    QUEUED = "Queued"
     REASONING = "Reasoning"
     PLANNED = "Planned"
     ACCEPTED = "Accepted"

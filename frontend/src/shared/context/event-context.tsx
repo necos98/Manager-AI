@@ -293,10 +293,16 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
           queryClient.invalidateQueries({ queryKey: ["queue", "status"] });
         }
 
+        // Invalidate queue on queue entry events
+        if (data.type === "queue_entry_created" || data.type === "queue_entry_removed") {
+          queryClient.invalidateQueries({ queryKey: ["queue", "queued"] });
+          queryClient.invalidateQueries({ queryKey: ["queue", "status"] });
+        }
+
         // Invalidate queue on issue status changes
         if (data.type === "issue_status_changed") {
           const ns = data.new_status;
-          if (ns === "Queued" || ns === "Reasoning" || ns === "Finished") {
+          if (ns === "Reasoning" || ns === "Finished") {
             queryClient.invalidateQueries({ queryKey: ["queue", "queued"] });
             queryClient.invalidateQueries({ queryKey: ["queue", "status"] });
           }

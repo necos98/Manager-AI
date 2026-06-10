@@ -1,0 +1,60 @@
+schema_version: 1
+id: 112ca367-8263-4e12-b2c3-61ce93bb4f23
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Remove QUEUED status from issues — make queue a separate container with own table
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-10T20:58:27.237450+00:00'
+updated_at: '2026-06-10T21:05:33.549093+00:00'
+finished_at: '2026-06-10T21:05:33.549105+00:00'
+tasks:
+- id: 6bb32cd3-c73a-41a1-a58a-f67fdfdf838c
+  name: Remove QUEUED from IssueStatus enum
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T21:02:39+00:00'
+  updated_at: '2026-06-10T21:02:52+00:00'
+- id: 185ddb67-d9c4-43ac-b76a-3d411d4618fc
+  name: Change add_to_queue event to queue_entry_created
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T21:02:39+00:00'
+  updated_at: '2026-06-10T21:03:00+00:00'
+- id: ad6f0410-d600-4787-8cff-d72fd18f5c0a
+  name: Change remove_from_queue event to queue_entry_removed
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T21:02:39+00:00'
+  updated_at: '2026-06-10T21:03:08+00:00'
+- id: 38b866e7-677a-4e44-aa08-667247d46e38
+  name: Update notify() to listen for queue_entry_created
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T21:02:39+00:00'
+  updated_at: '2026-06-10T21:03:22+00:00'
+- id: 0b5f4a26-cf59-481b-b654-2e37638aa47c
+  name: Update frontend event handlers
+  status: Completed
+  order: 4
+  created_at: '2026-06-10T21:02:39+00:00'
+  updated_at: '2026-06-10T21:03:49+00:00'
+- id: bdb0344e-054c-4cb0-8e16-45562897feef
+  name: Clean up QUEUED references in comments
+  status: Completed
+  order: 5
+  created_at: '2026-06-10T21:02:39+00:00'
+  updated_at: '2026-06-10T21:04:37+00:00'
+- id: d53e78ae-8b78-4521-bced-dec5251c0cf6
+  name: Update tests
+  status: Completed
+  order: 6
+  created_at: '2026-06-10T21:02:39+00:00'
+  updated_at: '2026-06-10T21:05:13+00:00'
+- id: 41bbefd4-164c-4d1d-b9cb-955e8a71dbe0
+  name: Write project memory
+  status: Completed
+  order: 7
+  created_at: '2026-06-10T21:02:39+00:00'
+  updated_at: '2026-06-10T21:05:28+00:00'
+relations: []

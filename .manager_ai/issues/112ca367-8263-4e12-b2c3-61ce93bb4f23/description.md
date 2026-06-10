@@ -1,0 +1,1 @@
+Non voglio che ci sia lo stato "QUEUED" nella issue, perchè poi non viene più visualizzato nel kanban e in tutte le altre cose. La queue deve semplicemente essere un contenitore di issue, punto. Con la propria tabella. Quando aggiungo una issue alla queue non deve cambiarsi nessun tipo di stato.

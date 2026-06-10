@@ -1,7 +1,7 @@
 """
 Global queue status endpoints — aggregated across all projects.
 
-- GET /api/queue         — all QUEUED issues (global FIFO)
+- GET /api/queue         — all queued issues (global FIFO)
 - GET /api/queue/running — all issues with active terminals
 - GET /api/queue/status  — aggregate counts + pause state
 """
@@ -86,7 +86,7 @@ async def list_global_queue(
 ):
     """Return all pending queue entries across all projects, ordered by QueueEntry.order ASC.
 
-    Uses the persistent QueueEntry table instead of IssueStatus.QUEUED.
+    Uses the persistent QueueEntry table.
     """
     from sqlalchemy import select
 
@@ -188,7 +188,7 @@ async def get_queue_status(
 ):
     """Return aggregate queue status (counts + pause state).
 
-    Uses QueueEntry table instead of IssueStatus.QUEUED for queued count.
+    Uses QueueEntry table for queued count.
     """
     from sqlalchemy import select, func as sa_func
     from app.models.queue_entry import QueueEntry, QueueEntryStatus

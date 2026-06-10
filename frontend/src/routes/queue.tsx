@@ -37,9 +37,13 @@ function QueuePage() {
   useEffect(() => {
     if (!events) return;
     const unsubscribe = events.subscribe((event: WsEventData) => {
+      if (event.type === "queue_entry_created" || event.type === "queue_entry_removed") {
+        queryClient.invalidateQueries({ queryKey: queueKeys.queued });
+        queryClient.invalidateQueries({ queryKey: queueKeys.status });
+      }
       if (event.type === "issue_status_changed") {
         const ns = event.new_status;
-        if (ns === "Queued" || ns === "Reasoning" || ns === "Finished") {
+        if (ns === "Reasoning" || ns === "Finished") {
           queryClient.invalidateQueries({ queryKey: queueKeys.queued });
           queryClient.invalidateQueries({ queryKey: queueKeys.status });
         }

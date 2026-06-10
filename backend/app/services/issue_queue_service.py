@@ -6,8 +6,7 @@ dequeues the next pending issue, changes it to ``REASONING``, and calls
 
 Maintains a persistent ``QueueEntry`` registry (DB-backed) so the queue
 never loses track of dispatched issues. Membership is tracked exclusively
-via ``QueueEntry`` — ``IssueStatus.QUEUED`` is deprecated and no longer
-used for queue logic.
+via ``QueueEntry``.
 
 Registered as a BaseNotifier on EventService at startup in main.py.
 """
@@ -247,7 +246,7 @@ class IssueQueueService(BaseNotifier):
         is running.
 
         Called at application startup to resume processing of issues that were
-        QUEUED before shutdown/restart.  Fire-and-forget — failures are logged
+        queued before shutdown/restart.  Fire-and-forget — failures are logged
         but never crash startup.
         """
         if not self._enabled:
@@ -359,8 +358,7 @@ class IssueQueueService(BaseNotifier):
             )
 
         await event_service.emit({
-            "type": "issue_status_changed",
-            "new_status": IssueStatus.QUEUED.value,
+            "type": "queue_entry_created",
             "project_id": project_id,
             "issue_id": issue_id,
             "issue_name": issue.name or "",
@@ -404,8 +402,7 @@ class IssueQueueService(BaseNotifier):
         await self.mark_dispatched(issue_id)
 
         await event_service.emit({
-            "type": "issue_status_changed",
-            "new_status": issue.status,
+            "type": "queue_entry_removed",
             "project_id": project_id,
             "issue_id": issue_id,
             "issue_name": issue.name or "",
@@ -467,20 +464,22 @@ class IssueQueueService(BaseNotifier):
 
     async def notify(self, event: dict) -> None:
         """Called by EventService for every emitted event."""
-        if event.get("type") != "issue_status_changed":
+        event_type = event.get("type")
+        project_id = event.get("project_id")
+        issue_id = event.get("issue_id")
+
+        if event_type == "queue_entry_created" and project_id and issue_id:
+            # Always register the queue entry, regardless of auto-processing state
+            asyncio.create_task(self._on_issue_queued(project_id, issue_id))
+
+        if event_type != "issue_status_changed":
             return
 
         new_status = event.get("new_status")
-        project_id = event.get("project_id")
-        issue_id = event.get("issue_id")
 
         if new_status == "Finished" and project_id and self._enabled:
             # Auto-processing: dequeue next pending issue
             asyncio.create_task(self._on_issue_finished(project_id, issue_id))
-
-        elif new_status == "Queued" and project_id and issue_id:
-            # Always register the queue entry, regardless of auto-processing state
-            asyncio.create_task(self._on_issue_queued(project_id, issue_id))
 
         elif new_status == "Reasoning" and issue_id and self._enabled:
             # When _dequeue_and_run emits this event, it already marked
@@ -551,8 +550,7 @@ class IssueQueueService(BaseNotifier):
                     issue_service = IssueService(session)
 
                     # Change status from current (NEW or ACCEPTED) to REASONING.
-                    # QueueEntry is the authoritative record — Issue.status no longer
-                    # goes through QUEUED.
+                    # QueueEntry is the authoritative record.
                     await issue_service.update_status(
                         next_entry.issue_id, project_id, IssueStatus.REASONING,
                     )
@@ -609,7 +607,7 @@ class IssueQueueService(BaseNotifier):
     async def _maybe_auto_start_first(
         self, project_id: str, issue_id: str,
     ) -> None:
-        """Auto-start the first QUEUED issue if no issues are currently running.
+        """Auto-start the first queued issue if no issues are currently running.
 
         This handles the case where the queue was empty and the first
         issue is being added — there's no FINISHED event to trigger
@@ -701,8 +699,7 @@ async def _queue_add_direct(
 
     # Emit event for any other listeners (also logged by NotificationService)
     await event_service.emit({
-        "type": "issue_status_changed",
-        "new_status": IssueStatus.QUEUED.value,
+        "type": "queue_entry_created",
         "project_id": project_id,
         "issue_id": issue_id,
         "issue_name": issue.name or "",
@@ -759,8 +756,7 @@ async def _queue_remove_direct(
 
     # Emit event for other listeners
     await event_service.emit({
-        "type": "issue_status_changed",
-        "new_status": issue.status,
+        "type": "queue_entry_removed",
         "project_id": project_id,
         "issue_id": issue_id,
         "issue_name": issue.name or "",

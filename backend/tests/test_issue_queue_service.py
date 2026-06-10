@@ -500,13 +500,12 @@ class TestEventHandling:
             mock_finish.assert_awaited_once_with("p1", "i1")
 
     @pytest.mark.asyncio
-    async def test_notify_queued_routes_correctly(self, queue_service):
-        """Queued event triggers _on_issue_queued."""
+    async def test_notify_queue_entry_created_routes_correctly(self, queue_service):
+        """queue_entry_created event triggers _on_issue_queued."""
         with patch.object(queue_service, "_on_issue_queued",
                           new_callable=AsyncMock) as mock_queued:
             await queue_service.notify({
-                "type": "issue_status_changed",
-                "new_status": "Queued",
+                "type": "queue_entry_created",
                 "project_id": "p1",
                 "issue_id": "i1",
             })
@@ -551,7 +550,7 @@ class TestEventHandling:
     async def test_notify_reasoning_flag_does_not_affect_other_statuses(
         self, queue_service,
     ):
-        """The flag only affects Reasoning — Finished and Queued still work."""
+        """The flag only affects Reasoning — Finished and queue_entry_created still work."""
         with (
             patch.object(queue_service, "_on_issue_finished",
                           new_callable=AsyncMock) as mock_finish,
@@ -571,13 +570,11 @@ class TestEventHandling:
             await asyncio.sleep(0)
             mock_finish.assert_awaited_once_with("p1", "i1")
 
-            # Queued event with the flag — should still dispatch
+            # queue_entry_created event — should dispatch regardless of flag
             await queue_service.notify({
-                "type": "issue_status_changed",
-                "new_status": "Queued",
+                "type": "queue_entry_created",
                 "project_id": "p2",
                 "issue_id": "i2",
-                "_queue_dispatching_handled": True,
             })
             await asyncio.sleep(0)
             mock_queued.assert_awaited_once_with("p2", "i2")

@@ -1620,7 +1620,7 @@ async def queue_list(session: AsyncSession, project_id: str) -> dict:
     """List all pending queue entries with their FIFO position.
 
     Uses the persistent QueueRegistry instead of relying on the
-    volatile QUEUED issue status. Returns enriched issue details.
+    volatile issue status. Returns enriched issue details.
     """
     from app.services.issue_queue_service import issue_queue_service_ref
     from app.services.issue_service import IssueService

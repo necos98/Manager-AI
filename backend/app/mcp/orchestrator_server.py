@@ -417,7 +417,7 @@ async def queue_add(project_id: str, issue_id: str) -> dict:
 
 
 @orchestrator_mcp.tool(
-    description="List all QUEUED issues with their position (1-based FIFO order). "
+    description="List all queued issues with their position (1-based FIFO order). "
                 "Uses the persistent QueueEntry table. "
                 "Parameters: project_id (required). "
                 "Returns: {queued: [{position, issue_id, issue_name, description, created_at}], total}."
