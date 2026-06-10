@@ -1,12 +1,36 @@
 schema_version: 1
 id: 2cf6c712-6990-47ff-82e3-63151139e847
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: Queued
+name: Sostituire confirm() nativo con Dialog Radix in terminals.tsx
+status: Finished
 priority: 3
 category: null
 created_at: '2026-06-10T11:15:00.995143+00:00'
-updated_at: '2026-06-10T15:44:47.692461+00:00'
-finished_at: null
-tasks: []
+updated_at: '2026-06-10T19:10:36.807699+00:00'
+finished_at: '2026-06-10T19:10:36.807720+00:00'
+tasks:
+- id: 33136d2b-febd-40cd-af3f-5d3e2961933c
+  name: Aggiungere imports (useState, Button, Dialog components) in terminals.tsx
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T19:09:46+00:00'
+  updated_at: '2026-06-10T19:10:29+00:00'
+- id: f5d88cf3-a990-4ba8-8709-0634a06f6e95
+  name: Sostituire handleKill con pattern basato su stato confirmKillId
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T19:09:46+00:00'
+  updated_at: '2026-06-10T19:10:30+00:00'
+- id: c5d54cf0-0ae7-4042-aba7-6642ad0a8141
+  name: Aggiungere Dialog JSX di conferma kill
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T19:09:46+00:00'
+  updated_at: '2026-06-10T19:10:31+00:00'
+- id: a2849ab5-8e00-4186-b567-180af2dce6b5
+  name: Verificare compilazione TypeScript
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T19:09:46+00:00'
+  updated_at: '2026-06-10T19:10:32+00:00'
 relations: []

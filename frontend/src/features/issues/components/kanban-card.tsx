@@ -78,7 +78,7 @@ export function KanbanCard({ issue, hasTerminal, isBlocked = false, projectId, a
       <Card
         onClick={handleClick}
         className={[
-          "px-3 py-2.5 cursor-pointer transition-colors",
+          "px-3 py-2.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-accent/50",
           isSelected
             ? "ring-2 ring-primary bg-primary/5 hover:bg-primary/10"
             : "hover:bg-accent/50",
