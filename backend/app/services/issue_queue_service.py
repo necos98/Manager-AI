@@ -114,12 +114,18 @@ class IssueQueueService(BaseNotifier):
             return entry
 
     async def mark_dispatched(self, issue_id: str) -> Optional[QueueEntry]:
-        """Mark the dispatching QueueEntry for ``issue_id`` as ``dispatched``."""
+        """Mark the QueueEntry for ``issue_id`` as ``dispatched``.
+
+        Supports both DISPATCHING → DISPATCHED (normal issue completion)
+        and PENDING → DISPATCHED (manual removal from queue).
+        """
         async with async_session() as session:
             entry = await self._get_dispatching_by_issue(session, issue_id)
             if entry is None:
+                entry = await self._get_pending_by_issue(session, issue_id)
+            if entry is None:
                 logger.warning(
-                    "No dispatching QueueEntry found for issue %s — already dispatched?",
+                    "No active QueueEntry found for issue %s — already dispatched?",
                     issue_id,
                 )
                 return None

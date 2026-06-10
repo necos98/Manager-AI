@@ -31,6 +31,7 @@ function QueuePage() {
   const queryClient = useQueryClient();
   const removeFromQueue = useRemoveFromQueue();
   const [removeConfirm, setRemoveConfirm] = useState<{ projectId: string; issueId: string; issueName: string } | null>(null);
+  const setAutoProcess = useSetAutoProcess();
 
   // Subscribe to WebSocket events for real-time invalidation
   useEffect(() => {
@@ -67,7 +68,6 @@ function QueuePage() {
   const running = runningData?.running ?? [];
   const isPaused = statusData?.paused ?? false;
   const isAutoProcessEnabled = statusData?.auto_process_enabled ?? false;
-  const setAutoProcess = useSetAutoProcess();
 
   return (
     <div className="p-6 space-y-6">

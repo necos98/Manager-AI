@@ -33,6 +33,7 @@ import { EditableTaskList } from "./editable-task-list";
 import { InlineEditField } from "./inline-edit-field";
 import { TagInput } from "./tag-input";
 import { useDeleteIssue, useUpdateIssue, useProjectTags } from "@/features/issues/hooks";
+import { useQueuePosition } from "@/features/queue/hooks";
 import { useKillTerminal } from "@/features/terminals/hooks";
 import { usePipelineRuns } from "@/features/pipeline-runs/hooks";
 import { AgentChat } from "@/features/pipeline-runs/components/AgentChat";
@@ -61,6 +62,7 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
   const { data: availableTags } = useProjectTags(projectId);
   const { data: pipelineRuns } = usePipelineRuns(projectId, issue.id);
   const activeRun = pipelineRuns?.find((r) => r.status === "RUNNING") ?? null;
+  const { data: queuePosition } = useQueuePosition(issue.id, projectId);
   const [showTagInput, setShowTagInput] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("");
   const [newIssueOpen, setNewIssueOpen] = useState(false);
@@ -134,6 +136,11 @@ export function IssueDetail({ issue, projectId, terminalId }: IssueDetailProps) 
             {activeRun && (
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
                 Pipeline: {activeRun.pipeline_name}
+              </Badge>
+            )}
+            {queuePosition?.in_queue && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
+                In Queue (#{queuePosition.position})
               </Badge>
             )}
             <Select

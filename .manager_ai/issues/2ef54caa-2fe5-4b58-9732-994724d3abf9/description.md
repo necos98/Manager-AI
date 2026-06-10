@@ -1,0 +1,1 @@
+Non riesco a rimuovere una issue dalla queue, quando clicco il cestino non succede niente.
