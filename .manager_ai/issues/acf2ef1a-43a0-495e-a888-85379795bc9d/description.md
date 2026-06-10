@@ -1,0 +1,1 @@
+L'aggiungi alla queue non funziona, clicco il pulsante apposito "Add to queue" nella issue, ma non succede niente, lato console backend ritrovo questo "INFO:     127.0.0.1:55805 - "POST /api/queue/add HTTP/1.1" 503 Service Unavailable" risolvilo senza spaghetti code

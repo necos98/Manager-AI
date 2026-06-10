@@ -1,0 +1,36 @@
+schema_version: 1
+id: acf2ef1a-43a0-495e-a888-85379795bc9d
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix queue add endpoint returning 503 Service Unavailable
+status: Accepted
+priority: 3
+category: null
+created_at: '2026-06-10T20:41:53.082886+00:00'
+updated_at: '2026-06-10T20:47:39.388146+00:00'
+finished_at: null
+tasks:
+- id: e02bad47-2943-4866-9da9-f6156f410ebb
+  name: Add _queue_add_direct() standalone function in issue_queue_service.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T20:47:35+00:00'
+  updated_at: '2026-06-10T20:51:32+00:00'
+- id: de209247-d14c-4f72-88a9-a06ac7757258
+  name: Add _queue_remove_direct() standalone function in issue_queue_service.py
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T20:47:35+00:00'
+  updated_at: '2026-06-10T20:51:45+00:00'
+- id: 5b088f14-3b88-4db2-a2ea-30e8a5d8600b
+  name: Update REST endpoints in queue.py to use standalone fallback
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T20:47:35+00:00'
+  updated_at: '2026-06-10T20:51:46+00:00'
+- id: 0051992a-c0a1-4ed0-9151-15410d442c2c
+  name: Restart backend and verify queue add/remove works
+  status: In Progress
+  order: 3
+  created_at: '2026-06-10T20:47:35+00:00'
+  updated_at: '2026-06-10T20:51:50+00:00'
+relations: []

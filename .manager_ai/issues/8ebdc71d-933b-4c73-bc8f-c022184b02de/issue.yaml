@@ -1,0 +1,42 @@
+schema_version: 1
+id: 8ebdc71d-933b-4c73-bc8f-c022184b02de
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix 503 "Queue service not initialized" when adding issue to queue
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-10T20:28:12.040200+00:00'
+updated_at: '2026-06-10T20:38:04.072116+00:00'
+finished_at: '2026-06-10T20:38:04.072130+00:00'
+tasks:
+- id: ab7d152e-dff2-4312-99fa-95544350bfaa
+  name: Fix queue.py — lazy imports for issue_queue_service_ref
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T20:33:43+00:00'
+  updated_at: '2026-06-10T20:34:44+00:00'
+- id: 81fcf0d2-199d-4781-b36d-86db0c7238c9
+  name: Fix DB schema — create Alembic migration for missing columns
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T20:33:43+00:00'
+  updated_at: '2026-06-10T20:35:11+00:00'
+- id: b9ea6aec-288a-4545-96c8-097d0ab3f6a4
+  name: Restart backend and verify POST /api/queue/add works
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T20:33:43+00:00'
+  updated_at: '2026-06-10T20:37:19+00:00'
+- id: 1b85663f-ea21-4174-9f1c-39a19ef41d1c
+  name: Write project memory
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T20:33:43+00:00'
+  updated_at: '2026-06-10T20:37:48+00:00'
+- id: 47b14264-c9b1-41e3-b4de-296c85cb7e23
+  name: Complete issue with recap
+  status: Completed
+  order: 4
+  created_at: '2026-06-10T20:33:43+00:00'
+  updated_at: '2026-06-10T20:37:59+00:00'
+relations: []

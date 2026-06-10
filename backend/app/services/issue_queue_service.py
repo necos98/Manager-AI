@@ -467,9 +467,6 @@ class IssueQueueService(BaseNotifier):
 
     async def notify(self, event: dict) -> None:
         """Called by EventService for every emitted event."""
-        if not self._enabled:
-            return
-
         if event.get("type") != "issue_status_changed":
             return
 
@@ -477,14 +474,15 @@ class IssueQueueService(BaseNotifier):
         project_id = event.get("project_id")
         issue_id = event.get("issue_id")
 
-        if new_status == "Finished" and project_id:
+        if new_status == "Finished" and project_id and self._enabled:
+            # Auto-processing: dequeue next pending issue
             asyncio.create_task(self._on_issue_finished(project_id, issue_id))
 
         elif new_status == "Queued" and project_id and issue_id:
-            # Register the queue entry when an issue is queued
+            # Always register the queue entry, regardless of auto-processing state
             asyncio.create_task(self._on_issue_queued(project_id, issue_id))
 
-        elif new_status == "Reasoning" and issue_id:
+        elif new_status == "Reasoning" and issue_id and self._enabled:
             # When _dequeue_and_run emits this event, it already marked
             # the QueueEntry as DISPATCHING synchronously. The redundant
             # _on_issue_reasoning → mark_dispatching call below is wasted.
@@ -509,7 +507,8 @@ class IssueQueueService(BaseNotifier):
         """Handle a newly queued issue: register entry + maybe auto-start."""
         try:
             await self.register(issue_id, project_id)
-            await self._maybe_auto_start_first(project_id, issue_id)
+            if self._enabled:
+                await self._maybe_auto_start_first(project_id, issue_id)
         except Exception:
             logger.exception(
                 "IssueQueueService failed on queued for project %s", project_id,
