@@ -82,5 +82,6 @@
   "telegram.bot_token": "",
   "telegram.chat_id": "",
   "telegram.notifications_enabled": "false",
+  "queue_auto_process": "false",
   "hermes_commands": "[{\"name\":\"Verifica Connessione MCP\",\"description\":\"Testa la connessione MCP tra Manager AI e Hermes Agent\",\"command\":\"hermes mcp list\"},{\"name\":\"Lista Skill Hermes\",\"description\":\"Mostra le skill installate in Hermes Agent\",\"command\":\"hermes skills list\"},{\"name\":\"Stato Sessione Hermes\",\"description\":\"Mostra lo stato della sessione Hermes corrente\",\"command\":\"hermes status\"}]"
 }

@@ -1752,3 +1752,30 @@ async def queue_position(session: AsyncSession, project_id: str, issue_id: str) 
         }
 
     return {"position": None, "issue_id": issue_id, "status": "no_entry"}
+
+
+async def queue_set_auto_process(session: AsyncSession, enabled: bool) -> dict:
+    """Enable or disable automatic queue processing.
+
+    Persists the setting to the DB and updates the in-memory state
+    of the running IssueQueueService singleton.
+    """
+    from app.services.settings_service import SettingsService
+    svc = SettingsService(session)
+    await svc.set("queue_auto_process", "true" if enabled else "false")
+    await session.commit()
+
+    # Update the running singleton's state so the gate takes effect immediately
+    from app.services.issue_queue_service import issue_queue_service_ref
+    if issue_queue_service_ref is not None:
+        await issue_queue_service_ref.set_enabled(enabled)
+
+    return {"enabled": enabled, "status": "updated"}
+
+
+async def queue_get_auto_process(session: AsyncSession) -> dict:
+    """Get the current auto-processing toggle state."""
+    from app.services.settings_service import SettingsService
+    svc = SettingsService(session)
+    val = await svc.get("queue_auto_process")
+    return {"enabled": val.lower() == "true"}

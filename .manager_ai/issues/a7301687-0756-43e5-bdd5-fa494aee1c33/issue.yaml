@@ -2,11 +2,29 @@ schema_version: 1
 id: a7301687-0756-43e5-bdd5-fa494aee1c33
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
 name: 'Bug: Doppio start coda — race condition tra QUEUED→REASONING e QueueEntry→DISPATCHING'
-status: New
+status: Finished
 priority: 1
 category: null
 created_at: '2026-06-10T17:20:55.819404+00:00'
-updated_at: '2026-06-10T17:21:07.216298+00:00'
-finished_at: null
-tasks: []
+updated_at: '2026-06-10T17:29:50.106460+00:00'
+finished_at: '2026-06-10T17:29:50.106472+00:00'
+tasks:
+- id: 16a86c82-c22f-4b70-b6ec-d28becd88315
+  name: Aggiungere lock per-progetto in IssueQueueService.__init__ e _dequeue_and_run
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T17:27:10+00:00'
+  updated_at: '2026-06-10T17:28:25+00:00'
+- id: de9d150f-2927-4a09-9138-3825b54a55b6
+  name: Marcatura sincrona QueueEntry in _dequeue_and_run + _on_issue_reasoning tollerante
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T17:27:10+00:00'
+  updated_at: '2026-06-10T17:29:08+00:00'
+- id: 58ae34a1-9d58-472c-b72f-7a76833853ae
+  name: Verifica import e sintassi del file modificato
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T17:27:10+00:00'
+  updated_at: '2026-06-10T17:29:39+00:00'
 relations: []

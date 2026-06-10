@@ -30,6 +30,8 @@ from app.services.run_issue_service import run_issue
 
 logger = logging.getLogger(__name__)
 
+issue_queue_service_ref: Optional[IssueQueueService] = None
+
 
 class IssueQueueService(BaseNotifier):
     """Event listener that auto-starts the next queued issue after one finishes.
@@ -39,7 +41,11 @@ class IssueQueueService(BaseNotifier):
     """
 
     def __init__(self) -> None:
+        self._dequeue_locks: dict[str, asyncio.Lock] = {}
+        self._enabled = False
         event_service.register(self)
+        global issue_queue_service_ref
+        issue_queue_service_ref = self
         logger.info("IssueQueueService registered on EventService")
 
     # ------------------------------------------------------------------
@@ -77,15 +83,27 @@ class IssueQueueService(BaseNotifier):
         """Mark the pending QueueEntry for ``issue_id`` as ``dispatching``.
 
         Also sets ``dispatched_at`` to the current timestamp.
-        Returns the updated entry, or None if not found.
+        If the entry is already DISPATCHING (e.g. from synchronous marking
+        inside ``_dequeue_and_run``), returns it as a no-op.
+        Returns the updated entry, or None if no entry exists in any
+        active state (PENDING or DISPATCHING).
         """
         async with async_session() as session:
             entry = await self._get_pending_by_issue(session, issue_id)
             if entry is None:
-                logger.warning(
-                    "No pending QueueEntry found for issue %s", issue_id,
-                )
-                return None
+                # Already dispatching? (happens when _dequeue_and_run
+                # marks it synchronously before emitting events)
+                entry = await self._get_dispatching_by_issue(session, issue_id)
+                if entry is None:
+                    logger.warning(
+                        "No pending or dispatching QueueEntry found for issue %s",
+                        issue_id,
+                    )
+                else:
+                    logger.debug(
+                        "QueueEntry %s already DISPATCHING — no-op", entry.id,
+                    )
+                return entry
             entry.status = QueueEntryStatus.DISPATCHING
             entry.dispatched_at = datetime.now(timezone.utc)
             await session.commit()
@@ -209,6 +227,10 @@ class IssueQueueService(BaseNotifier):
         QUEUED before shutdown/restart.  Fire-and-forget — failures are logged
         but never crash startup.
         """
+        if not self._enabled:
+            logger.info("Auto queue processing is disabled — skipping startup_resume")
+            return
+
         try:
             async with async_session() as session:
                 result = await session.execute(
@@ -244,6 +266,41 @@ class IssueQueueService(BaseNotifier):
                 asyncio.create_task(self._dequeue_and_run(project_id))
         except Exception:
             logger.exception("IssueQueueService.startup_resume failed")
+
+    # ------------------------------------------------------------------
+    # Runtime toggle
+    # ------------------------------------------------------------------
+
+    async def load_state(self) -> None:
+        """Load the ``queue_auto_process`` setting from DB into ``self._enabled``.
+
+        Called at startup after construction.  Defaults to ``False`` if
+        the setting cannot be read.
+        """
+        try:
+            async with async_session() as session:
+                from app.services.settings_service import SettingsService
+                svc = SettingsService(session)
+                val = await svc.get("queue_auto_process")
+                self._enabled = val.lower() == "true"
+        except Exception:
+            logger.warning(
+                "Failed to load queue_auto_process setting; defaulting to disabled",
+            )
+            self._enabled = False
+
+    async def set_enabled(self, enabled: bool) -> None:
+        """Persist the toggle state and (if enabling) attempt to resume
+        queue processing."""
+        self._enabled = enabled
+        async with async_session() as session:
+            from app.services.settings_service import SettingsService
+            svc = SettingsService(session)
+            await svc.set("queue_auto_process", "true" if enabled else "false")
+            await session.commit()
+        logger.info("Queue auto-processing %s", "enabled" if enabled else "disabled")
+        if enabled:
+            asyncio.create_task(self.startup_resume())
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -294,6 +351,9 @@ class IssueQueueService(BaseNotifier):
 
     async def notify(self, event: dict) -> None:
         """Called by EventService for every emitted event."""
+        if not self._enabled:
+            return
+
         if event.get("type") != "issue_status_changed":
             return
 
@@ -346,76 +406,84 @@ class IssueQueueService(BaseNotifier):
 
     async def _dequeue_and_run(self, project_id: str) -> None:
         """Find the next pending QueueEntry and start the issue."""
-        try:
-            next_entry = await self.get_next_pending(project_id)
-            if next_entry is None:
-                logger.debug(
-                    "No pending queue entries for project %s — nothing to dequeue",
+        lock = self._dequeue_locks.setdefault(project_id, asyncio.Lock())
+        async with lock:
+            try:
+                next_entry = await self.get_next_pending(project_id)
+                if next_entry is None:
+                    logger.debug(
+                        "No pending queue entries for project %s — nothing to dequeue",
+                        project_id,
+                    )
+                    return
+
+                logger.info(
+                    "Dequeuing issue %s (order=%d) for project %s",
+                    next_entry.issue_id, next_entry.order, project_id,
+                )
+
+                # ★ Mark as DISPATCHING synchronously BEFORE update_status/emit
+                # This closes the race window: a second _on_issue_finished call
+                # won't find this entry as PENDING anymore.
+                await self.mark_dispatching(next_entry.issue_id)
+
+                async with async_session() as session:
+                    issue_service = IssueService(session)
+
+                    # Change status from current (NEW or ACCEPTED) to REASONING.
+                    # QueueEntry is the authoritative record — Issue.status no longer
+                    # goes through QUEUED.
+                    await issue_service.update_status(
+                        next_entry.issue_id, project_id, IssueStatus.REASONING,
+                    )
+                    await session.commit()
+
+                    # Emit status changed event for the transition
+                    # (_on_issue_reasoning → mark_dispatching is now a no-op
+                    #  because we already marked it synchronously above)
+                    from app.mcp.shared_tools import _emit_event
+                    from app.utils.datetime import iso_now
+
+                    # Fetch issue name for the event
+                    issue = await issue_service.get_for_project(
+                        next_entry.issue_id, project_id,
+                    )
+                    await _emit_event({
+                        "type": "issue_status_changed",
+                        "new_status": IssueStatus.REASONING.value,
+                        "project_id": project_id,
+                        "issue_id": next_entry.issue_id,
+                        "issue_name": issue.name or "",
+                        "timestamp": iso_now(),
+                    })
+
+                    # Start the issue via run_issue
+                    logger.info(
+                        "Starting run_issue for issue %s", next_entry.issue_id,
+                    )
+                    result = await run_issue(
+                        issue_id=next_entry.issue_id,
+                        project_id=project_id,
+                        session=session,
+                    )
+                    if "error" in result:
+                        logger.error(
+                            "Failed to start queued issue %s: %s",
+                            next_entry.issue_id, result["error"],
+                        )
+                        await self.mark_failed(
+                            next_entry.issue_id, result["error"],
+                        )
+                    else:
+                        logger.info(
+                            "Started queued issue %s — terminal %s",
+                            next_entry.issue_id, result.get("term_id"),
+                        )
+            except Exception:
+                logger.exception(
+                    "IssueQueueService failed to dequeue for project %s",
                     project_id,
                 )
-                return
-
-            logger.info(
-                "Dequeuing issue %s (order=%d) for project %s",
-                next_entry.issue_id, next_entry.order, project_id,
-            )
-
-            async with async_session() as session:
-                issue_service = IssueService(session)
-
-                # Change status from current (NEW or ACCEPTED) to REASONING.
-                # QueueEntry is the authoritative record — Issue.status no longer
-                # goes through QUEUED.
-                await issue_service.update_status(
-                    next_entry.issue_id, project_id, IssueStatus.REASONING,
-                )
-                await session.commit()
-
-                # Emit status changed event for the transition
-                # (this triggers _on_issue_reasoning → mark_dispatching)
-                from app.mcp.shared_tools import _emit_event
-                from app.utils.datetime import iso_now
-
-                # Fetch issue name for the event
-                issue = await issue_service.get_for_project(
-                    next_entry.issue_id, project_id,
-                )
-                await _emit_event({
-                    "type": "issue_status_changed",
-                    "new_status": IssueStatus.REASONING.value,
-                    "project_id": project_id,
-                    "issue_id": next_entry.issue_id,
-                    "issue_name": issue.name or "",
-                    "timestamp": iso_now(),
-                })
-
-                # Start the issue via run_issue
-                logger.info(
-                    "Starting run_issue for issue %s", next_entry.issue_id,
-                )
-                result = await run_issue(
-                    issue_id=next_entry.issue_id,
-                    project_id=project_id,
-                    session=session,
-                )
-                if "error" in result:
-                    logger.error(
-                        "Failed to start queued issue %s: %s",
-                        next_entry.issue_id, result["error"],
-                    )
-                    await self.mark_failed(
-                        next_entry.issue_id, result["error"],
-                    )
-                else:
-                    logger.info(
-                        "Started queued issue %s — terminal %s",
-                        next_entry.issue_id, result.get("term_id"),
-                    )
-        except Exception:
-            logger.exception(
-                "IssueQueueService failed to dequeue for project %s",
-                project_id,
-            )
 
     async def _maybe_auto_start_first(
         self, project_id: str, issue_id: str,

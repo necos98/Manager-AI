@@ -1,0 +1,48 @@
+schema_version: 1
+id: 1e1c1981-c74b-4d5a-b96b-6a74cab63d94
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Toggle per auto-processing coda issue (default disattivato, attivabile via MCP)
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-10T17:36:25.247011+00:00'
+updated_at: '2026-06-10T17:42:04.084415+00:00'
+finished_at: '2026-06-10T17:42:04.084448+00:00'
+tasks:
+- id: 285f6579-f7dd-4f9d-aa66-13006a9488ee
+  name: default_settings.json — Aggiungere queue_auto_process default
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T17:38:56+00:00'
+  updated_at: '2026-06-10T17:39:19+00:00'
+- id: aeb4f36f-4112-436d-b6eb-1a2aa9b7d3f6
+  name: issue_queue_service.py — Module ref, _enabled flag, load_state(), gates, set_enabled()
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T17:38:56+00:00'
+  updated_at: '2026-06-10T17:40:00+00:00'
+- id: b7712d6f-255e-4e08-89b7-aee0058c810d
+  name: main.py — Chiamata a load_state() dopo creazione IssueQueueService
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T17:38:56+00:00'
+  updated_at: '2026-06-10T17:40:11+00:00'
+- id: aeb0a109-6bb2-4a02-9648-2f1142a2284e
+  name: shared_tools.py — Funzioni queue_set_auto_process e queue_get_auto_process
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T17:38:56+00:00'
+  updated_at: '2026-06-10T17:40:28+00:00'
+- id: 2264d8b6-34ec-4f68-b219-3cdc282091ae
+  name: orchestrator_server.py — MCP tools queue_set_auto_process e queue_get_auto_process
+  status: Completed
+  order: 4
+  created_at: '2026-06-10T17:38:56+00:00'
+  updated_at: '2026-06-10T17:40:46+00:00'
+- id: 8114c75c-9ef0-41f4-abdf-da33775f4e4e
+  name: routers/queue.py — Aggiungere auto_process_enabled a QueueStatus endpoint
+  status: Completed
+  order: 5
+  created_at: '2026-06-10T17:38:56+00:00'
+  updated_at: '2026-06-10T17:41:04+00:00'
+relations: []

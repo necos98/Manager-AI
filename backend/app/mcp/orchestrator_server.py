@@ -72,6 +72,9 @@ from app.mcp.shared_tools import (
     queue_list as _queue_list,
     queue_remove as _queue_remove,
     queue_position as _queue_position,
+    # Auto-process toggle
+    queue_set_auto_process as _queue_set_auto_process,
+    queue_get_auto_process as _queue_get_auto_process,
 )
 
 logger = logging.getLogger(__name__)
@@ -444,3 +447,27 @@ async def queue_remove(project_id: str, issue_id: str) -> dict:
 async def queue_position(project_id: str, issue_id: str) -> dict:
     async with async_session() as session:
         return await _queue_position(session, project_id, issue_id)
+
+
+# ── 9) Queue Auto-Process Toggle Tools ──────────────────────────────────────
+
+
+@orchestrator_mcp.tool(
+    description="Enable or disable automatic queue processing. "
+                "When disabled (default), issues added to the queue will NOT "
+                "auto-start — you must start them manually via run_issue. "
+                "When enabled, the queue automatically dequeues and runs "
+                "the next pending issue after one finishes."
+)
+async def queue_set_auto_process(enabled: bool) -> dict:
+    async with async_session() as session:
+        return await _queue_set_auto_process(session, enabled)
+
+
+@orchestrator_mcp.tool(
+    description="Get the current auto-processing toggle state for the queue. "
+                "Returns whether automatic queue processing is currently enabled."
+)
+async def queue_get_auto_process() -> dict:
+    async with async_session() as session:
+        return await _queue_get_auto_process(session)

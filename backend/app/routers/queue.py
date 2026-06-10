@@ -53,6 +53,7 @@ class QueueStatus(BaseModel):
     queued_count: int
     running_count: int
     paused: bool
+    auto_process_enabled: bool
 
 
 class QueueResponse(BaseModel):
@@ -204,8 +205,12 @@ async def get_queue_status(
     paused_str = await settings_service.get("work_queue_paused")
     paused = paused_str.lower() == "true" if paused_str else False
 
+    auto_process_str = await settings_service.get("queue_auto_process")
+    auto_process_enabled = auto_process_str.lower() == "true" if auto_process_str else False
+
     return QueueStatus(
         queued_count=queued_count,
         running_count=running_count,
         paused=paused,
+        auto_process_enabled=auto_process_enabled,
     )
