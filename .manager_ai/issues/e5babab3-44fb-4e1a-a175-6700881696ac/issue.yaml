@@ -1,0 +1,36 @@
+schema_version: 1
+id: e5babab3-44fb-4e1a-a175-6700881696ac
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Evento ridondante in _dequeue_and_run
+status: Finished
+priority: 4
+category: null
+created_at: '2026-06-10T19:32:41.591224+00:00'
+updated_at: '2026-06-10T19:58:37.233976+00:00'
+finished_at: '2026-06-10T19:58:37.233985+00:00'
+tasks:
+- id: d77792a6-577a-4122-941a-c05a9d38d762
+  name: Aggiungere flag _queue_dispatching_handled all'evento in _dequeue_and_run()
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T19:57:12+00:00'
+  updated_at: '2026-06-10T19:57:49+00:00'
+- id: 1f2d1e1a-48a7-4919-aaf2-2efb3e44351f
+  name: Saltare _on_issue_reasoning in notify() quando il flag è presente
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T19:57:12+00:00'
+  updated_at: '2026-06-10T19:57:51+00:00'
+- id: 44c84c68-1ab7-49d1-beb7-5ed575d1c8dd
+  name: Scrivere test per la nuova logica
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T19:57:12+00:00'
+  updated_at: '2026-06-10T19:58:17+00:00'
+- id: ec214e72-9b67-4dbd-892b-a03b27db1d1e
+  name: Eseguire i test esistenti per verificare che passino
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T19:57:12+00:00'
+  updated_at: '2026-06-10T19:58:31+00:00'
+relations: []

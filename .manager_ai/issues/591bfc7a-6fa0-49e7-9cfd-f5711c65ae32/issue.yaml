@@ -1,0 +1,30 @@
+schema_version: 1
+id: 591bfc7a-6fa0-49e7-9cfd-f5711c65ae32
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: IssueQueueService() istanziato nelle route REST
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-10T19:32:30.969285+00:00'
+updated_at: '2026-06-10T19:42:03.048284+00:00'
+finished_at: '2026-06-10T19:42:03.048305+00:00'
+tasks:
+- id: 8d8adef1-9355-4adf-a326-7ae6081bdb25
+  name: Fix remove_from_queue() — usa issue_queue_service_ref invece di IssueQueueService()
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T19:40:43+00:00'
+  updated_at: '2026-06-10T19:41:14+00:00'
+- id: 3f33d947-1a43-4e5d-9421-39083d32c573
+  name: Fix get_queue_position() — usa issue_queue_service_ref invece di IssueQueueService()
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T19:40:43+00:00'
+  updated_at: '2026-06-10T19:41:16+00:00'
+- id: f474f042-97d1-4f0f-92ee-c455be14eebd
+  name: Verifica sintassi e test endpoint
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T19:40:43+00:00'
+  updated_at: '2026-06-10T19:41:54+00:00'
+relations: []

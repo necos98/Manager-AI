@@ -1,0 +1,36 @@
+schema_version: 1
+id: 097cae73-d605-492f-89ff-e6976948ed9e
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: '"Run Issue" button remains clickable when issue already has a running terminal'
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-10T20:15:12.900288+00:00'
+updated_at: '2026-06-10T20:18:37.660794+00:00'
+finished_at: '2026-06-10T20:18:37.660803+00:00'
+tasks:
+- id: 4eb365bb-52f8-47ac-943e-271ab6f0c6f7
+  name: Backend guard in terminal_operations.py:create_terminal() — reject with 409 if issue already has active terminal
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T20:16:42+00:00'
+  updated_at: '2026-06-10T20:18:27+00:00'
+- id: 260bd0c8-2d3c-4100-ae3d-218cacb6311f
+  name: Backend guard in run_issue_service.py:run_issue() — same duplicate check
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T20:16:42+00:00'
+  updated_at: '2026-06-10T20:18:28+00:00'
+- id: 787b0a80-a2ae-413a-b1af-0e6a82cc03f2
+  name: Frontend — disable 'Run Issue' button when terminal exists (useTerminals hook)
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T20:16:42+00:00'
+  updated_at: '2026-06-10T20:18:29+00:00'
+- id: cf4225f4-0b1d-404a-94cb-7164f107baac
+  name: 'Verify with curl: double POST returns 409, frontend button disables'
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T20:16:42+00:00'
+  updated_at: '2026-06-10T20:18:31+00:00'
+relations: []

@@ -1,0 +1,30 @@
+schema_version: 1
+id: bd7f85e0-efff-46bb-aa85-fd6413b0c132
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: '_maybe_auto_start_first: remove overly conservative pending_count==1 guard'
+status: Finished
+priority: 4
+category: null
+created_at: '2026-06-10T19:32:42.840913+00:00'
+updated_at: '2026-06-10T20:07:42.284381+00:00'
+finished_at: '2026-06-10T20:07:42.284393+00:00'
+tasks:
+- id: 687ac0e3-e92d-4259-8b3e-7e03916549b8
+  name: Rilassare il guard pending_count == 1 → pending_count < 1 in issue_queue_service.py
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T20:06:34+00:00'
+  updated_at: '2026-06-10T20:06:50+00:00'
+- id: ae7455bb-1d8d-41bf-b639-f35c5a24710a
+  name: Aggiornare test test_skips_when_multiple_pending per la nuova semantica
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T20:06:34+00:00'
+  updated_at: '2026-06-10T20:07:04+00:00'
+- id: aca160a4-a9de-4635-b903-f3390e459228
+  name: Eseguire i test per verificare che tutto passi
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T20:06:34+00:00'
+  updated_at: '2026-06-10T20:07:26+00:00'
+relations: []

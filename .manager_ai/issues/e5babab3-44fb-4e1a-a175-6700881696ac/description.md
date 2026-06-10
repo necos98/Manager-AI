@@ -1,0 +1,1 @@
+In _dequeue_and_run(), dopo aver marcato DISPATCHING sincronicamente, viene emesso issue_status_changed(Reasoning) che arriva di nuovo a IssueQueueService.notify() facendo un mark_dispatching() che trova gia DISPATCHING e fa no-op. Giro event-loop e query DB sprecati.

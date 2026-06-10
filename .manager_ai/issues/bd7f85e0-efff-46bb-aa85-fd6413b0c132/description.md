@@ -1,0 +1,1 @@
+_maybe_auto_start_first() parte solo se pending_count == 1. Con startup_resume() il riavvio e coperto, ma se startup_resume fallisce o la coda viene abilitata dopo il riavvio con piu di 1 pending, la coda rimane bloccata finche non arriva un Finished event.

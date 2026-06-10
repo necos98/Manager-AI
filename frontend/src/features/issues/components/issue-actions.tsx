@@ -18,6 +18,7 @@ import {
   useForceFinishIssue,
 } from "@/features/issues/hooks";
 import { useCreateTerminal } from "@/features/terminals/hooks";
+import { useTerminals } from "@/features/terminals/hooks";
 import { PipelineRunButton } from "@/features/pipeline-runs/components/PipelineRunButton";
 import { useQueuePosition, useAddToQueue, useRemoveFromQueue } from "@/features/queue/hooks";
 import type { Issue } from "@/shared/types";
@@ -63,6 +64,8 @@ export function IssueActions({ issue, projectId, onCreateFromHere }: IssueAction
   const completeIssue = useCompleteIssue(projectId, issue.id);
   const forceFinishIssue = useForceFinishIssue(projectId, issue.id);
   const createTerminal = useCreateTerminal();
+  const { data: issueTerminals } = useTerminals(projectId, issue.id);
+  const hasActiveTerminal = (issueTerminals?.length ?? 0) > 0;
 
   const { data: queuePosition } = useQueuePosition(issue.id, projectId);
   const addToQueue = useAddToQueue();
@@ -144,7 +147,7 @@ export function IssueActions({ issue, projectId, onCreateFromHere }: IssueAction
           size="sm"
           variant="outline"
           onClick={handleRunIssue}
-          disabled={isPending || createTerminal.isPending}
+          disabled={isPending || createTerminal.isPending || hasActiveTerminal}
           aria-label="Run issue in terminal"
         >
           <Play className="size-4 mr-1" />

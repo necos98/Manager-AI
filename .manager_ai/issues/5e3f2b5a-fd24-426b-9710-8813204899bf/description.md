@@ -1,0 +1,1 @@
+Race condition nellassegnazione dellordine FIFO in IssueQueueService.register(): due queue_add concorrenti per lo stesso progetto possono leggere lo stesso max(order) e ottenere lo stesso order, rompendo la garanzia FIFO. Usare SELECT ... FOR UPDATE o un lock applicativo per serializzare.

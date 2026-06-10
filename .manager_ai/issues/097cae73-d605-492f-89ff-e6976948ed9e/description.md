@@ -1,0 +1,1 @@
+All'interno del dettaglio di una issue, il pulsante "Run Issue" è cliccabile anche quando la issue è effettivamente in "running". Non credo ci sia un servizio che gestisce i terminali in running, o sbaglio?

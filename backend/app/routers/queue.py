@@ -271,43 +271,23 @@ async def add_to_queue(
 ):
     """Add an issue to the FIFO queue.
 
-    Validates that the issue is in NEW or ACCEPTED status.
-    Creates a QueueEntry and emits ``issue_status_changed(Queued)``
-    to trigger the ``IssueQueueService`` event listener.
+    Delegates to ``IssueQueueService.add_to_queue()`` for the
+    shared validation and event emission logic.
     """
-    from app.models.issue import IssueStatus
-    from app.services.issue_service import IssueService
-    from app.utils.datetime import iso_now
-    from app.mcp.shared_tools import _emit_event
-
-    svc = IssueService(db)
-    try:
-        issue = await svc.get_for_project(body.issue_id, body.project_id)
-    except AppError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    allowed = {IssueStatus.NEW.value, IssueStatus.ACCEPTED.value}
-    if issue.status not in allowed:
+    registry = issue_queue_service_ref
+    if registry is None:
         raise HTTPException(
-            status_code=400,
-            detail=f"Issue must be in NEW or ACCEPTED status to queue, got {issue.status}",
+            status_code=503,
+            detail="Queue service not initialized",
         )
 
-    # Emit synthetic Queued event — IssueQueueService.notify() picks it up
-    # and calls register() to create the QueueEntry
-    await _emit_event({
-        "type": "issue_status_changed",
-        "new_status": IssueStatus.QUEUED.value,
-        "project_id": body.project_id,
-        "issue_id": body.issue_id,
-        "issue_name": issue.name or "",
-        "timestamp": iso_now(),
-    })
+    try:
+        result = await registry.add_to_queue(db, body.project_id, body.issue_id)
+    except AppError as e:
+        raise HTTPException(status_code=400, detail=e.message)
 
     return {
-        "id": body.issue_id,
-        "project_id": body.project_id,
-        "status": issue.status,
+        **result,
         "message": "Issue added to queue",
     }
 
@@ -319,41 +299,23 @@ async def remove_from_queue(
 ):
     """Remove an issue from the FIFO queue.
 
-    Marks the pending QueueEntry as dispatched. The issue retains its
-    original status — QueueEntry is the authoritative membership record.
+    Delegates to ``IssueQueueService.remove_from_queue()`` for the
+    shared queue membership check and event emission logic.
     """
-    from app.services.issue_queue_service import IssueQueueService
-    from app.utils.datetime import iso_now
-    from app.mcp.shared_tools import _emit_event
-
-    registry = IssueQueueService()
-    entry = await registry.get_pending_entry(body.issue_id)
-    if entry is None:
+    registry = issue_queue_service_ref
+    if registry is None:
         raise HTTPException(
-            status_code=404,
-            detail=f"Issue {body.issue_id} is not in the queue",
+            status_code=503,
+            detail="Queue service not initialized",
         )
 
-    await registry.mark_dispatched(body.issue_id)
-
-    # Look up issue name
-    from app.services.issue_service import IssueService
-    svc = IssueService(db)
-    issue = await svc.get_by_id(body.issue_id)
-
-    await _emit_event({
-        "type": "issue_status_changed",
-        "new_status": issue.status if issue else "",
-        "project_id": body.project_id,
-        "issue_id": body.issue_id,
-        "issue_name": issue.name if issue else "",
-        "timestamp": iso_now(),
-    })
+    try:
+        result = await registry.remove_from_queue(db, body.project_id, body.issue_id)
+    except AppError as e:
+        raise HTTPException(status_code=404, detail=e.message)
 
     return {
-        "id": body.issue_id,
-        "project_id": body.project_id,
-        "status": issue.status if issue else "",
+        **result,
         "message": "Issue removed from queue",
     }
 
@@ -369,9 +331,12 @@ async def get_queue_position(
     Returns ``{position, issue_id, in_queue, status}``.
     ``position`` is null when the issue is not in the queue.
     """
-    from app.services.issue_queue_service import IssueQueueService
-
-    registry = IssueQueueService()
+    registry = issue_queue_service_ref
+    if registry is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Queue service not initialized",
+        )
     entries = await registry.list_queue(project_id)
 
     # Filter to pending entries only

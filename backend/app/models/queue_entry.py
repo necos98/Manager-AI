@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, Integer, String, Text, func
+from sqlalchemy import DateTime, Enum, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -25,6 +25,10 @@ class QueueEntry(Base):
     """
 
     __tablename__ = "queue_entries"
+
+    __table_args__ = (
+        UniqueConstraint("project_id", "order", name="uq_queue_entries_project_order"),
+    )
 
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True,

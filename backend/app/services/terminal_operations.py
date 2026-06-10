@@ -127,6 +127,15 @@ async def create_terminal(
     data, db: AsyncSession, service: TerminalService
 ) -> dict:
     """Create a PTY terminal, inject env vars and startup commands."""
+    # ── Guard: reject if issue already has an active terminal ─────────
+    if data.issue_id:
+        existing = service.list_active(project_id=data.project_id, issue_id=data.issue_id)
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Issue {data.issue_id} already has an active terminal ({existing[0]['id']})"
+            )
+
     terminal, project_path, project_shell, is_wsl = await _create_terminal_base(
         db, service,
         project_id=data.project_id,

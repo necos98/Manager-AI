@@ -1600,41 +1600,20 @@ async def queue_add(session: AsyncSession, project_id: str, issue_id: str) -> di
     Validates that the issue is in NEW or ACCEPTED status.
     The issue retains its original status — QueueEntry is the
     authoritative record of queue membership.
-    If this is the first queued issue and no issues are currently
-    running, auto-starts it immediately.
+    Delegates to ``IssueQueueService.add_to_queue()`` for the
+    shared logic.
     """
-    from app.models.issue import IssueStatus
-    from app.services.issue_service import IssueService
-    from app.utils.datetime import iso_now
+    from app.services.issue_queue_service import issue_queue_service_ref
 
-    svc = IssueService(session)
+    if issue_queue_service_ref is None:
+        return {"error": "Queue service not initialized"}
+
     try:
-        issue = await svc.get_for_project(issue_id, project_id)
+        return await issue_queue_service_ref.add_to_queue(
+            session, project_id, issue_id,
+        )
     except AppError as e:
-        return {"error": str(e)}
-
-    allowed = {IssueStatus.NEW.value, IssueStatus.ACCEPTED.value}
-    if issue.status not in allowed:
-        return {
-            "error": f"Issue must be in NEW or ACCEPTED status to queue, got {issue.status}",
-        }
-
-    # Issue retains its original status — no change to QUEUED.
-    # Queue membership is tracked exclusively via QueueEntry.
-    await _emit_event({
-        "type": "issue_status_changed",
-        "new_status": IssueStatus.QUEUED.value,
-        "project_id": project_id,
-        "issue_id": issue_id,
-        "issue_name": issue_display_name(issue),
-        "timestamp": iso_now(),
-    })
-
-    return {
-        "id": issue_id,
-        "project_id": project_id,
-        "status": issue.status,
-    }
+        return {"error": e.message}
 
 
 async def queue_list(session: AsyncSession, project_id: str) -> dict:
@@ -1643,11 +1622,13 @@ async def queue_list(session: AsyncSession, project_id: str) -> dict:
     Uses the persistent QueueRegistry instead of relying on the
     volatile QUEUED issue status. Returns enriched issue details.
     """
-    from app.services.issue_queue_service import IssueQueueService
+    from app.services.issue_queue_service import issue_queue_service_ref
     from app.services.issue_service import IssueService
 
-    registry = IssueQueueService()
-    entries = await registry.list_queue(project_id)
+    if issue_queue_service_ref is None:
+        return {"error": "Queue service not initialized", "queued": [], "total": 0}
+
+    entries = await issue_queue_service_ref.list_queue(project_id)
 
     # Filter to only pending entries for active queue display
     pending = [e for e in entries if e["status"] == "pending"]
@@ -1681,43 +1662,20 @@ async def queue_remove(session: AsyncSession, project_id: str, issue_id: str) ->
     """Remove an issue from the queue.
 
     The issue retains its original status — membership is tracked
-    exclusively via QueueEntry. The pending QueueEntry is marked
-    as dispatched.
+    exclusively via QueueEntry. Delegates to
+    ``IssueQueueService.remove_from_queue()`` for the shared logic.
     """
-    from app.services.issue_queue_service import IssueQueueService
-    from app.utils.datetime import iso_now
+    from app.services.issue_queue_service import issue_queue_service_ref
 
-    svc = IssueService(session)
+    if issue_queue_service_ref is None:
+        return {"error": "Queue service not initialized"}
+
     try:
-        issue = await svc.get_for_project(issue_id, project_id)
+        return await issue_queue_service_ref.remove_from_queue(
+            session, project_id, issue_id,
+        )
     except AppError as e:
-        return {"error": str(e)}
-
-    # Check queue membership via QueueEntry, not Issue.status
-    registry = IssueQueueService()
-    entry = await registry.get_pending_entry(issue_id)
-    if entry is None:
-        return {
-            "error": f"Issue {issue_id} is not in the queue (no pending QueueEntry)",
-        }
-
-    # Mark QueueEntry as dispatched — issue keeps its original status
-    await registry.mark_dispatched(issue_id)
-
-    await _emit_event({
-        "type": "issue_status_changed",
-        "new_status": issue.status,
-        "project_id": project_id,
-        "issue_id": issue_id,
-        "issue_name": issue_display_name(issue),
-        "timestamp": iso_now(),
-    })
-
-    return {
-        "id": issue_id,
-        "project_id": project_id,
-        "status": issue.status,
-    }
+        return {"error": e.message}
 
 
 async def queue_position(session: AsyncSession, project_id: str, issue_id: str) -> dict:
@@ -1726,10 +1684,12 @@ async def queue_position(session: AsyncSession, project_id: str, issue_id: str) 
     Uses the persistent QueueRegistry to calculate position.
     Returns null if the issue has no pending QueueEntry.
     """
-    from app.services.issue_queue_service import IssueQueueService
+    from app.services.issue_queue_service import issue_queue_service_ref
 
-    registry = IssueQueueService()
-    entries = await registry.list_queue(project_id)
+    if issue_queue_service_ref is None:
+        return {"position": None, "issue_id": issue_id, "status": "service_unavailable"}
+
+    entries = await issue_queue_service_ref.list_queue(project_id)
 
     # Filter to pending entries only
     pending = [e for e in entries if e["status"] == "pending"]

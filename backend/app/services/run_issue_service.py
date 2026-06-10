@@ -74,7 +74,12 @@ async def run_issue(
     except KeyError:
         return {"error": f"Unknown agent provider: {effective_provider}"}
 
-    # ── 4) Create terminal ───────────────────────────────────────────────
+    # ── 4) Guard: reject if issue already has an active terminal ──────────
+    existing = terminal_service.list_active(project_id=project_id, issue_id=issue_id)
+    if existing:
+        return {"error": f"Issue {issue_id} already has an active terminal ({existing[0]['id']})"}
+
+    # ── 5) Create terminal ───────────────────────────────────────────────
     term = terminal_service.create(
         issue_id=issue_id,
         project_id=project_id,

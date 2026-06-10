@@ -1,0 +1,30 @@
+schema_version: 1
+id: a58f9271-d6ae-44c0-8be5-2faf0f29c51e
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Logica duplicata MCP e REST per queue
+status: Finished
+priority: 4
+category: null
+created_at: '2026-06-10T19:32:34.771984+00:00'
+updated_at: '2026-06-10T20:15:28.674040+00:00'
+finished_at: '2026-06-10T20:15:28.674050+00:00'
+tasks:
+- id: 058513a3-bd25-4925-9cf5-74757153a6d1
+  name: Aggiungere add_to_queue() e remove_from_queue() a IssueQueueService
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T20:12:27+00:00'
+  updated_at: '2026-06-10T20:15:10+00:00'
+- id: cd431096-f761-40c1-a8a6-d60e0bb50ff7
+  name: Refactor MCP shared_tools.py — queue_add, queue_remove, fix singleton in queue_list/queue_position
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T20:12:27+00:00'
+  updated_at: '2026-06-10T20:15:20+00:00'
+- id: 12c0c3a4-c552-49fc-b8d7-6294052bce86
+  name: Refactor REST routers/queue.py — add_to_queue e remove_from_queue usano service
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T20:12:27+00:00'
+  updated_at: '2026-06-10T20:15:21+00:00'
+relations: []

@@ -1,0 +1,1 @@
+queue_add e queue_remove esistono sia in shared_tools.py (MCP) che in routers/queue.py (REST) con logica duplicata. Rischio che un cambiamento di validazione venga applicato solo a un percorso. Estrarre in un service layer comune.

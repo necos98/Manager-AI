@@ -21,7 +21,10 @@ from typing import Optional
 
 from sqlalchemy import select, func as sa_func
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import async_session
+from app.exceptions import AppError
 from app.models.issue import IssueStatus
 from app.models.queue_entry import QueueEntry, QueueEntryStatus
 from app.services.event_service import BaseNotifier, event_service
@@ -42,11 +45,22 @@ class IssueQueueService(BaseNotifier):
 
     def __init__(self) -> None:
         self._dequeue_locks: dict[str, asyncio.Lock] = {}
+        self._register_locks: dict[str, asyncio.Lock] = {}
         self._enabled = False
         event_service.register(self)
         global issue_queue_service_ref
         issue_queue_service_ref = self
         logger.info("IssueQueueService registered on EventService")
+
+    # ------------------------------------------------------------------
+    # Lock helpers
+    # ------------------------------------------------------------------
+
+    def _get_register_lock(self, project_id: str) -> asyncio.Lock:
+        """Get or create a per-project lock for serializing register() calls."""
+        if project_id not in self._register_locks:
+            self._register_locks[project_id] = asyncio.Lock()
+        return self._register_locks[project_id]
 
     # ------------------------------------------------------------------
     # QueueRegistryService methods
@@ -56,28 +70,31 @@ class IssueQueueService(BaseNotifier):
         """Create a new QueueEntry with status ``pending``.
 
         Assigns ``order`` = max existing order for the project + 1.
+        Serialized per-project via ``_get_register_lock`` to prevent
+        two concurrent calls from reading the same ``max(order)``.
         """
-        async with async_session() as session:
-            # Determine next order for this project
-            result = await session.execute(
-                select(sa_func.coalesce(sa_func.max(QueueEntry.order), 0))
-                .where(QueueEntry.project_id == project_id)
-            )
-            max_order: int = result.scalar() or 0
+        async with self._get_register_lock(project_id):
+            async with async_session() as session:
+                # Determine next order for this project
+                result = await session.execute(
+                    select(sa_func.coalesce(sa_func.max(QueueEntry.order), 0))
+                    .where(QueueEntry.project_id == project_id)
+                )
+                max_order: int = result.scalar() or 0
 
-            entry = QueueEntry(
-                issue_id=issue_id,
-                project_id=project_id,
-                status=QueueEntryStatus.PENDING,
-                order=max_order + 1,
-            )
-            session.add(entry)
-            await session.commit()
-            logger.info(
-                "QueueEntry registered: issue=%s project=%s order=%s",
-                issue_id, project_id, entry.order,
-            )
-            return entry
+                entry = QueueEntry(
+                    issue_id=issue_id,
+                    project_id=project_id,
+                    status=QueueEntryStatus.PENDING,
+                    order=max_order + 1,
+                )
+                session.add(entry)
+                await session.commit()
+                logger.info(
+                    "QueueEntry registered: issue=%s project=%s order=%s",
+                    issue_id, project_id, entry.order,
+                )
+                return entry
 
     async def mark_dispatching(self, issue_id: str) -> Optional[QueueEntry]:
         """Mark the pending QueueEntry for ``issue_id`` as ``dispatching``.
@@ -309,6 +326,99 @@ class IssueQueueService(BaseNotifier):
             asyncio.create_task(self.startup_resume())
 
     # ------------------------------------------------------------------
+    # Queue operations — shared between MCP and REST
+    # ------------------------------------------------------------------
+
+    async def add_to_queue(
+        self, session: AsyncSession, project_id: str, issue_id: str,
+    ) -> dict:
+        """Add an issue to the FIFO queue.
+
+        Validates that the issue is in NEW or ACCEPTED status.
+        Emits an ``issue_status_changed → Queued`` event so the
+        event-based queue listener picks it up and registers a
+        ``QueueEntry``.
+
+        Returns ``{id, project_id, status}`` on success.
+        Raises ``AppError`` on validation failure.
+        """
+        from app.models.issue import IssueStatus
+        from app.utils.datetime import iso_now
+
+        svc = IssueService(session)
+        try:
+            issue = await svc.get_for_project(issue_id, project_id)
+        except AppError as e:
+            raise AppError(str(e))
+
+        allowed = {IssueStatus.NEW.value, IssueStatus.ACCEPTED.value}
+        if issue.status not in allowed:
+            raise AppError(
+                f"Issue must be in NEW or ACCEPTED status to queue, "
+                f"got {issue.status}",
+            )
+
+        await event_service.emit({
+            "type": "issue_status_changed",
+            "new_status": IssueStatus.QUEUED.value,
+            "project_id": project_id,
+            "issue_id": issue_id,
+            "issue_name": issue.name or "",
+            "timestamp": iso_now(),
+        })
+
+        return {
+            "id": issue_id,
+            "project_id": project_id,
+            "status": issue.status,
+        }
+
+    async def remove_from_queue(
+        self, session: AsyncSession, project_id: str, issue_id: str,
+    ) -> dict:
+        """Remove an issue from the FIFO queue.
+
+        Looks up the pending ``QueueEntry``, marks it as dispatched,
+        and emits an ``issue_status_changed`` event.
+
+        Returns ``{id, project_id, status}`` on success.
+        Raises ``AppError`` if the issue has no pending queue entry.
+        """
+        from app.utils.datetime import iso_now
+
+        svc = IssueService(session)
+        try:
+            issue = await svc.get_for_project(issue_id, project_id)
+        except AppError as e:
+            raise AppError(str(e))
+
+        # Check queue membership via QueueEntry, not Issue.status
+        entry = await self.get_pending_entry(issue_id)
+        if entry is None:
+            raise AppError(
+                f"Issue {issue_id} is not in the queue "
+                f"(no pending QueueEntry)",
+            )
+
+        # Mark QueueEntry as dispatched — issue keeps its original status
+        await self.mark_dispatched(issue_id)
+
+        await event_service.emit({
+            "type": "issue_status_changed",
+            "new_status": issue.status,
+            "project_id": project_id,
+            "issue_id": issue_id,
+            "issue_name": issue.name or "",
+            "timestamp": iso_now(),
+        })
+
+        return {
+            "id": issue_id,
+            "project_id": project_id,
+            "status": issue.status,
+        }
+
+    # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
@@ -375,6 +485,11 @@ class IssueQueueService(BaseNotifier):
             asyncio.create_task(self._on_issue_queued(project_id, issue_id))
 
         elif new_status == "Reasoning" and issue_id:
+            # When _dequeue_and_run emits this event, it already marked
+            # the QueueEntry as DISPATCHING synchronously. The redundant
+            # _on_issue_reasoning → mark_dispatching call below is wasted.
+            if event.get("_queue_dispatching_handled"):
+                return
             # Mark as dispatching when the issue actually starts
             asyncio.create_task(self._on_issue_reasoning(issue_id))
 
@@ -461,6 +576,7 @@ class IssueQueueService(BaseNotifier):
                         "issue_id": next_entry.issue_id,
                         "issue_name": issue.name or "",
                         "timestamp": iso_now(),
+                        "_queue_dispatching_handled": True,
                     })
 
                     # Start the issue via run_issue
@@ -514,8 +630,8 @@ class IssueQueueService(BaseNotifier):
                 )
                 pending_count: int = result.scalar() or 0
 
-                # Only auto-start if this is the ONLY pending entry
-                if pending_count != 1:
+                # Only auto-start if there's at least one pending entry
+                if pending_count < 1:
                     return
 
                 # Check if any issue is currently running for this project

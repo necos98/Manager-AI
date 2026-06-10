@@ -1,0 +1,1 @@
+Nessun test unitario per IssueQueueService: la classe centrale del sistema di queue non ha copertura. Testare: add, auto-start, finish, startup_resume, doppio evento Finished, rimozione manuale, queue_add concorrenti, coda disabilitata, ordine FIFO multi-progetto.

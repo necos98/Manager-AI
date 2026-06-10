@@ -1,0 +1,1 @@
+In routers/queue.py, le route POST /remove e GET /position creano nuove istanze di IssueQueueService() invece di usare il singleton issue_queue_service_ref. Ogni chiamata registra un nuovo notifier su EventService: non rompe nulla ma inquina la lista dei notifier.
