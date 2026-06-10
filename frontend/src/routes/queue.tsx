@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useGlobalQueue, useGlobalRunning } from "@/features/queue/hooks";
+import { useGlobalQueue, useGlobalRunning, useSetAutoProcess } from "@/features/queue/hooks";
 import { useQueueStatus } from "@/features/queue/hooks";
 import { useEvents, type WsEventData } from "@/shared/context/event-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Switch } from "@/shared/components/ui/switch";
 import { useEffect } from "react";
 import { queueKeys } from "@/features/queue/hooks";
 
@@ -53,6 +54,8 @@ function QueuePage() {
   const queued = queuedData?.queued ?? [];
   const running = runningData?.running ?? [];
   const isPaused = statusData?.paused ?? false;
+  const isAutoProcessEnabled = statusData?.auto_process_enabled ?? false;
+  const setAutoProcess = useSetAutoProcess();
 
   return (
     <div className="p-6 space-y-6">
@@ -65,6 +68,16 @@ function QueuePage() {
               ⏸ Paused
             </span>
           )}
+          <label className="flex items-center gap-2 text-xs cursor-pointer">
+            <Switch
+              checked={isAutoProcessEnabled}
+              onCheckedChange={(checked) => setAutoProcess.mutate(checked)}
+              disabled={setAutoProcess.isPending}
+            />
+            <span className={isAutoProcessEnabled ? "text-emerald-500 font-medium" : "text-muted-foreground"}>
+              Auto-process
+            </span>
+          </label>
           <span>{running.length} running</span>
           <span>{queued.length} queued</span>
         </div>

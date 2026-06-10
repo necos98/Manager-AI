@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "./api";
 
 export const queueKeys = {
@@ -29,5 +29,15 @@ export function useQueueStatus() {
     queryKey: queueKeys.status,
     queryFn: api.fetchQueueStatus,
     refetchInterval: 10_000,
+  });
+}
+
+export function useSetAutoProcess() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (enabled: boolean) => api.setAutoProcess(enabled),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queueKeys.status });
+    },
   });
 }

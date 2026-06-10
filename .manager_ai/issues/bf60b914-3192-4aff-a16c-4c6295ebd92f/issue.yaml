@@ -1,0 +1,36 @@
+schema_version: 1
+id: bf60b914-3192-4aff-a16c-4c6295ebd92f
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Aggiungere toggle UI per auto-processo coda
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-10T17:52:12.189090+00:00'
+updated_at: '2026-06-10T18:00:28.375959+00:00'
+finished_at: '2026-06-10T18:00:28.375977+00:00'
+tasks:
+- id: ecb22f5e-e23d-4c74-ad02-a43e6b481e43
+  name: 'Backend: endpoint POST /api/queue/auto-process'
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T17:59:13+00:00'
+  updated_at: '2026-06-10T17:59:30+00:00'
+- id: 10c48b8b-3b64-4440-b5fa-ee9e64567eef
+  name: 'Frontend: Switch shadcn component'
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T17:59:13+00:00'
+  updated_at: '2026-06-10T17:59:37+00:00'
+- id: 0f01bb9d-5169-487f-a614-5352ccd4995f
+  name: 'Frontend: API + mutation hook'
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T17:59:13+00:00'
+  updated_at: '2026-06-10T17:59:57+00:00'
+- id: b9637ec4-69df-4af5-9fc7-338ea9fd6cd3
+  name: 'Frontend: toggle in Queue page'
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T17:59:13+00:00'
+  updated_at: '2026-06-10T18:00:18+00:00'
+relations: []

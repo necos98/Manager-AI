@@ -1,4 +1,4 @@
-import { apiGet } from "@/shared/api/client";
+import { apiGet, apiPost } from "@/shared/api/client";
 
 export interface QueuedIssueItem {
   position: number;
@@ -24,6 +24,7 @@ export interface QueueStatus {
   queued_count: number;
   running_count: number;
   paused: boolean;
+  auto_process_enabled: boolean;
 }
 
 export interface QueueResponse {
@@ -46,4 +47,8 @@ export function fetchGlobalRunning(): Promise<RunningResponse> {
 
 export function fetchQueueStatus(): Promise<QueueStatus> {
   return apiGet<QueueStatus>("/queue/status");
+}
+
+export function setAutoProcess(enabled: boolean): Promise<{ enabled: boolean }> {
+  return apiPost("/queue/auto-process", { enabled });
 }

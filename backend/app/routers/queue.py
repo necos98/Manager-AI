@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.issue import IssueStatus
 from app.models.queue_entry import QueueEntry, QueueEntryStatus
+from app.services.issue_queue_service import issue_queue_service_ref
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
 from app.services.settings_service import SettingsService
@@ -54,6 +55,10 @@ class QueueStatus(BaseModel):
     running_count: int
     paused: bool
     auto_process_enabled: bool
+
+
+class SetAutoProcessRequest(BaseModel):
+    enabled: bool
 
 
 class QueueResponse(BaseModel):
@@ -214,3 +219,23 @@ async def get_queue_status(
         paused=paused,
         auto_process_enabled=auto_process_enabled,
     )
+
+
+@router.post("/auto-process")
+async def set_auto_process(
+    body: SetAutoProcessRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Enable or disable automatic queue processing.
+
+    Persists the ``queue_auto_process`` setting and updates the in-memory
+    state of the running ``IssueQueueService`` singleton.
+    """
+    svc = SettingsService(db)
+    await svc.set("queue_auto_process", "true" if body.enabled else "false")
+    await db.commit()
+
+    if issue_queue_service_ref is not None:
+        await issue_queue_service_ref.set_enabled(body.enabled)
+
+    return {"enabled": body.enabled}
