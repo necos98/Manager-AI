@@ -9,8 +9,10 @@ Usage:
     python start.py --port 8001           Custom backend port
 """
 
+import os
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -61,6 +63,11 @@ def parse_args() -> argparse.Namespace:
 
 def start_backend(config) -> subprocess.Popen:
     """Start uvicorn backend subprocess."""
+    env = os.environ.copy()
+    if config.is_testing:
+        env["DATABASE_URL"] = (
+            f"sqlite+aiosqlite:///{config.root / 'data' / 'manager_ai_testing.db'}"
+        )
     return subprocess.Popen(
         [
             str(config.venv_python), "-m", "uvicorn",
@@ -69,6 +76,7 @@ def start_backend(config) -> subprocess.Popen:
             "--port", str(config.backend_port),
         ],
         cwd=str(config.backend_dir),
+        env=env,
     )
 
 
@@ -98,6 +106,12 @@ def main() -> None:
     run_migrations(config)
     backend_proc = start_backend(config)
     wait_for_ready("Backend", backend_proc, config.backend_port)
+
+    if config.is_testing:
+        timer = threading.Timer(config.auto_kill_seconds, backend_proc.terminate)
+        timer.daemon = True
+        timer.start()
+        print(f"[...] Auto-kill in {config.auto_kill_seconds}s")
 
     processes = [backend_proc]
     if not config.backend_only and frontend_proc is not None:

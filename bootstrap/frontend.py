@@ -64,10 +64,12 @@ def build_frontend(config: Config) -> None:
 def start_dev_server(config: Config) -> subprocess.Popen:
     """Start Vite dev server (HMR). Returns Popen."""
     npm = _npm_cmd(config.is_windows)
+    frontend_env = {**os.environ, "BACKEND_URL": f"http://localhost:{config.backend_port}"}
     print("[...] Starting frontend dev server (HMR)...")
     return subprocess.Popen(
-        [npm, "run", "dev"],
+        [npm, "run", "dev", "--", "--port", str(config.frontend_port)],
         cwd=str(config.frontend_dir),
+        env=frontend_env,
     )
 
 
@@ -77,7 +79,7 @@ def start_preview_server(config: Config) -> subprocess.Popen:
     frontend_env = {**os.environ, "BACKEND_URL": f"http://localhost:{config.backend_port}"}
     print("[...] Starting frontend preview server...")
     return subprocess.Popen(
-        [npm, "run", "preview"],
+        [npm, "run", "preview", "--", "--port", str(config.frontend_port)],
         cwd=str(config.frontend_dir),
         env=frontend_env,
     )

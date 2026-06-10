@@ -102,6 +102,13 @@ def convert_icon(root: Path) -> None:
 
 # ── Wait helpers ────────────────────────────────────────────────────────────
 
+def find_free_port() -> int:
+    """Return a free ephemeral port from the OS."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", 0))
+        return s.getsockname()[1]
+
+
 def wait_for_ready(name: str, proc: subprocess.Popen, port: int, timeout: int = 30) -> None:
     """Wait for a server process to start listening on *port*."""
     print(f"[...] Waiting for {name} to be ready...")

@@ -24,6 +24,10 @@ class Config:
     backend_port: int = 8000
     frontend_port: int = 4173
 
+    # Testing / Workbench mode
+    is_testing: bool = False
+    auto_kill_seconds: int = 60
+
     # CLI mode flags (set by start.py after parsing args)
     desktop_mode: bool = False
     dev_mode: bool = False
@@ -62,6 +66,15 @@ def load_config(root: Path | None = None) -> Config:
 
     _load_dotenv(root / ".env")
 
+    is_testing = os.environ.get("IS_TESTING", "").lower() == "true"
+    backend_port = int(os.environ.get("BACKEND_PORT", 8000))
+    frontend_port = int(os.environ.get("FRONTEND_PORT", 4173))
+
+    if is_testing:
+        from bootstrap.desktop import find_free_port
+
+        backend_port = find_free_port()
+
     return Config(
         root=root,
         backend_dir=root / "backend",
@@ -69,6 +82,8 @@ def load_config(root: Path | None = None) -> Config:
         venv_dir=root / "venv",
         data_dir=root / "data",
         is_windows=platform.system() == "Windows",
-        backend_port=int(os.environ.get("BACKEND_PORT", 8000)),
-        frontend_port=int(os.environ.get("FRONTEND_PORT", 4173)),
+        backend_port=backend_port,
+        frontend_port=frontend_port,
+        is_testing=is_testing,
+        auto_kill_seconds=int(os.environ.get("AUTO_KILL_SECONDS", 60)),
     )
