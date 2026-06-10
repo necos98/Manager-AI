@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { CheckCircle, FilePlus, XCircle, Loader2, Play, Ban } from "lucide-react";
+import { CheckCircle, FilePlus, XCircle, Loader2, Play, Ban, ListPlus, ListX } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -19,6 +19,7 @@ import {
 } from "@/features/issues/hooks";
 import { useCreateTerminal } from "@/features/terminals/hooks";
 import { PipelineRunButton } from "@/features/pipeline-runs/components/PipelineRunButton";
+import { useQueuePosition, useAddToQueue, useRemoveFromQueue } from "@/features/queue/hooks";
 import type { Issue } from "@/shared/types";
 
 interface IssueActionsProps {
@@ -62,6 +63,13 @@ export function IssueActions({ issue, projectId, onCreateFromHere }: IssueAction
   const completeIssue = useCompleteIssue(projectId, issue.id);
   const forceFinishIssue = useForceFinishIssue(projectId, issue.id);
   const createTerminal = useCreateTerminal();
+
+  const { data: queuePosition } = useQueuePosition(issue.id, projectId);
+  const addToQueue = useAddToQueue();
+  const removeFromQueue = useRemoveFromQueue();
+  const isQueueable = issue.status === "New" || issue.status === "Accepted";
+  const isInQueue = queuePosition?.in_queue === true;
+  const queuePositionNumber = queuePosition?.position;
 
   const isPending =
     acceptIssue.isPending ||
@@ -147,6 +155,39 @@ export function IssueActions({ issue, projectId, onCreateFromHere }: IssueAction
           issueId={issue.id}
           disabled={isPending}
         />
+        {isQueueable && !isInQueue && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => addToQueue.mutate({ projectId, issueId: issue.id })}
+            disabled={isPending || addToQueue.isPending}
+            aria-label="Add issue to queue"
+          >
+            {addToQueue.isPending ? (
+              <Loader2 className="size-4 mr-1 animate-spin" />
+            ) : (
+              <ListPlus className="size-4 mr-1" />
+            )}
+            {addToQueue.isPending ? "Adding..." : "Add to Queue"}
+          </Button>
+        )}
+        {isQueueable && isInQueue && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-amber-600 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-950"
+            onClick={() => removeFromQueue.mutate({ projectId, issueId: issue.id })}
+            disabled={isPending || removeFromQueue.isPending}
+            aria-label="Remove issue from queue"
+          >
+            {removeFromQueue.isPending ? (
+              <Loader2 className="size-4 mr-1 animate-spin" />
+            ) : (
+              <ListX className="size-4 mr-1" />
+            )}
+            {removeFromQueue.isPending ? "Removing..." : `Remove from Queue (#${queuePositionNumber})`}
+          </Button>
+        )}
         <Button
           size="sm"
           variant="outline"

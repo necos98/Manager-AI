@@ -10,11 +10,12 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.exceptions import AppError
 from app.models.issue import IssueStatus
 from app.models.queue_entry import QueueEntry, QueueEntryStatus
 from app.services.issue_queue_service import issue_queue_service_ref
@@ -239,3 +240,156 @@ async def set_auto_process(
         await issue_queue_service_ref.set_enabled(body.enabled)
 
     return {"enabled": body.enabled}
+
+
+# ── Individual queue operations ──────────────────────────────────────────────
+
+
+class QueueAddRequest(BaseModel):
+    project_id: str
+    issue_id: str
+
+
+class QueueRemoveRequest(BaseModel):
+    project_id: str
+    issue_id: str
+
+
+@router.post("/add")
+async def add_to_queue(
+    body: QueueAddRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Add an issue to the FIFO queue.
+
+    Validates that the issue is in NEW or ACCEPTED status.
+    Creates a QueueEntry and emits ``issue_status_changed(Queued)``
+    to trigger the ``IssueQueueService`` event listener.
+    """
+    from app.models.issue import IssueStatus
+    from app.services.issue_service import IssueService
+    from app.utils.datetime import iso_now
+    from app.mcp.shared_tools import _emit_event
+
+    svc = IssueService(db)
+    try:
+        issue = await svc.get_for_project(body.issue_id, body.project_id)
+    except AppError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    allowed = {IssueStatus.NEW.value, IssueStatus.ACCEPTED.value}
+    if issue.status not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Issue must be in NEW or ACCEPTED status to queue, got {issue.status}",
+        )
+
+    # Emit synthetic Queued event — IssueQueueService.notify() picks it up
+    # and calls register() to create the QueueEntry
+    await _emit_event({
+        "type": "issue_status_changed",
+        "new_status": IssueStatus.QUEUED.value,
+        "project_id": body.project_id,
+        "issue_id": body.issue_id,
+        "issue_name": issue.name or "",
+        "timestamp": iso_now(),
+    })
+
+    return {
+        "id": body.issue_id,
+        "project_id": body.project_id,
+        "status": issue.status,
+        "message": "Issue added to queue",
+    }
+
+
+@router.post("/remove")
+async def remove_from_queue(
+    body: QueueRemoveRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove an issue from the FIFO queue.
+
+    Marks the pending QueueEntry as dispatched. The issue retains its
+    original status — QueueEntry is the authoritative membership record.
+    """
+    from app.services.issue_queue_service import IssueQueueService
+    from app.utils.datetime import iso_now
+    from app.mcp.shared_tools import _emit_event
+
+    registry = IssueQueueService()
+    entry = await registry.get_pending_entry(body.issue_id)
+    if entry is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Issue {body.issue_id} is not in the queue",
+        )
+
+    await registry.mark_dispatched(body.issue_id)
+
+    # Look up issue name
+    from app.services.issue_service import IssueService
+    svc = IssueService(db)
+    issue = await svc.get_by_id(body.issue_id)
+
+    await _emit_event({
+        "type": "issue_status_changed",
+        "new_status": issue.status if issue else "",
+        "project_id": body.project_id,
+        "issue_id": body.issue_id,
+        "issue_name": issue.name if issue else "",
+        "timestamp": iso_now(),
+    })
+
+    return {
+        "id": body.issue_id,
+        "project_id": body.project_id,
+        "status": issue.status if issue else "",
+        "message": "Issue removed from queue",
+    }
+
+
+@router.get("/position/{issue_id}")
+async def get_queue_position(
+    issue_id: str,
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get the 1-based FIFO queue position for a specific issue.
+
+    Returns ``{position, issue_id, in_queue, status}``.
+    ``position`` is null when the issue is not in the queue.
+    """
+    from app.services.issue_queue_service import IssueQueueService
+
+    registry = IssueQueueService()
+    entries = await registry.list_queue(project_id)
+
+    # Filter to pending entries only
+    pending = [e for e in entries if e["status"] == "pending"]
+
+    for idx, entry in enumerate(pending):
+        if entry["issue_id"] == issue_id:
+            return {
+                "position": idx + 1,
+                "issue_id": issue_id,
+                "in_queue": True,
+                "status": "pending",
+            }
+
+    # Check if there's any QueueEntry at all (already dispatched/failed)
+    all_entries = [e for e in entries if e["issue_id"] == issue_id]
+    if all_entries:
+        return {
+            "position": None,
+            "issue_id": issue_id,
+            "in_queue": False,
+            "status": all_entries[0]["status"],
+        }
+
+    return {
+        "position": None,
+        "issue_id": issue_id,
+        "in_queue": False,
+        "status": "no_entry",
+    }

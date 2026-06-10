@@ -41,3 +41,38 @@ export function useSetAutoProcess() {
     },
   });
 }
+
+export function useQueuePosition(issueId: string, projectId: string) {
+  return useQuery({
+    queryKey: [...queueKeys.all, "position", issueId],
+    queryFn: () => api.fetchQueuePosition(issueId, projectId),
+    enabled: Boolean(issueId) && Boolean(projectId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useAddToQueue() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ projectId, issueId }: { projectId: string; issueId: string }) =>
+      api.addToQueue(projectId, issueId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queueKeys.queued });
+      queryClient.invalidateQueries({ queryKey: queueKeys.status });
+      queryClient.invalidateQueries({ queryKey: queueKeys.all });
+    },
+  });
+}
+
+export function useRemoveFromQueue() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ projectId, issueId }: { projectId: string; issueId: string }) =>
+      api.removeFromQueue(projectId, issueId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queueKeys.queued });
+      queryClient.invalidateQueries({ queryKey: queueKeys.status });
+      queryClient.invalidateQueries({ queryKey: queueKeys.all });
+    },
+  });
+}

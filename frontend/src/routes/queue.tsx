@@ -1,13 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useGlobalQueue, useGlobalRunning, useSetAutoProcess } from "@/features/queue/hooks";
+import { useGlobalQueue, useGlobalRunning, useSetAutoProcess, useRemoveFromQueue } from "@/features/queue/hooks";
 import { useQueueStatus } from "@/features/queue/hooks";
 import { useEvents, type WsEventData } from "@/shared/context/event-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Switch } from "@/shared/components/ui/switch";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { queueKeys } from "@/features/queue/hooks";
+import { Button } from "@/shared/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog";
+import { Trash2, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/queue")({
   component: QueuePage,
@@ -19,6 +29,8 @@ function QueuePage() {
   const { data: statusData } = useQueueStatus();
   const events = useEvents();
   const queryClient = useQueryClient();
+  const removeFromQueue = useRemoveFromQueue();
+  const [removeConfirm, setRemoveConfirm] = useState<{ projectId: string; issueId: string; issueName: string } | null>(null);
 
   // Subscribe to WebSocket events for real-time invalidation
   useEffect(() => {
@@ -158,6 +170,7 @@ function QueuePage() {
                     <th className="text-left py-2 px-2">Issue</th>
                     <th className="text-left py-2 px-2">Project</th>
                     <th className="text-right py-2 pl-2">Created</th>
+                    <th className="text-right py-2 pl-2 w-20">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -198,6 +211,24 @@ function QueuePage() {
                       <td className="py-2 pl-2 text-right text-muted-foreground text-xs">
                         {new Date(item.created_at).toLocaleString()}
                       </td>
+                      <td className="py-2 pl-2 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() =>
+                            setRemoveConfirm({
+                              projectId: item.project_id,
+                              issueId: item.issue_id,
+                              issueName: item.issue_name || item.issue_description || "(unnamed)",
+                            })
+                          }
+                          disabled={removeFromQueue.isPending}
+                          aria-label="Remove from queue"
+                        >
+                          <Trash2 className="size-3" />
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -206,6 +237,46 @@ function QueuePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Remove confirmation */}
+      <Dialog open={removeConfirm !== null} onOpenChange={() => setRemoveConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove from Queue?</DialogTitle>
+            <DialogDescription>
+              Remove <span className="font-medium">{removeConfirm?.issueName}</span> from the queue.
+              The issue itself will not be affected.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemoveConfirm(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={removeFromQueue.isPending}
+              onClick={() => {
+                if (!removeConfirm) return;
+                removeFromQueue.mutate(
+                  { projectId: removeConfirm.projectId, issueId: removeConfirm.issueId },
+                  {
+                    onSuccess: () => setRemoveConfirm(null),
+                  },
+                );
+              }}
+            >
+              {removeFromQueue.isPending ? (
+                <>
+                  <Loader2 className="size-4 mr-1 animate-spin" />
+                  Removing...
+                </>
+              ) : (
+                "Remove"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

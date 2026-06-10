@@ -1,0 +1,36 @@
+schema_version: 1
+id: 24ee7ce8-6abe-44e1-aaf3-8844740c451e
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Queue management from issue detail page + remove from Queue section
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-10T18:14:43.955502+00:00'
+updated_at: '2026-06-10T18:20:25.065520+00:00'
+finished_at: '2026-06-10T18:20:25.065549+00:00'
+tasks:
+- id: d2beb6fa-bb28-4419-930b-de21258a85fc
+  name: 'Backend: REST endpoints for queue add/remove/position in queue.py router'
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T18:17:00+00:00'
+  updated_at: '2026-06-10T18:17:50+00:00'
+- id: fefb5865-486a-4df0-967c-26581570bea6
+  name: 'Frontend API: new queue functions (api.ts) and hooks (hooks.ts)'
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T18:17:00+00:00'
+  updated_at: '2026-06-10T18:18:30+00:00'
+- id: ad230a50-37b0-4dc3-9548-645f8208add0
+  name: 'Frontend: Issue detail page queue Add/Remove buttons in IssueActions'
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T18:17:00+00:00'
+  updated_at: '2026-06-10T18:19:05+00:00'
+- id: 2d240363-90a2-498b-90b7-3057138ed7ad
+  name: 'Frontend: Queue page Remove button per row'
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T18:17:00+00:00'
+  updated_at: '2026-06-10T18:19:50+00:00'
+relations: []

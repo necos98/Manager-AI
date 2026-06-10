@@ -52,3 +52,22 @@ export function fetchQueueStatus(): Promise<QueueStatus> {
 export function setAutoProcess(enabled: boolean): Promise<{ enabled: boolean }> {
   return apiPost("/queue/auto-process", { enabled });
 }
+
+export function addToQueue(projectId: string, issueId: string): Promise<{ id: string; message: string }> {
+  return apiPost("/queue/add", { project_id: projectId, issue_id: issueId });
+}
+
+export function removeFromQueue(projectId: string, issueId: string): Promise<{ id: string; message: string }> {
+  return apiPost("/queue/remove", { project_id: projectId, issue_id: issueId });
+}
+
+export interface QueuePositionResponse {
+  position: number | null;
+  issue_id: string;
+  in_queue: boolean;
+  status: string;
+}
+
+export function fetchQueuePosition(issueId: string, projectId: string): Promise<QueuePositionResponse> {
+  return apiGet<QueuePositionResponse>(`/queue/position/${issueId}?project_id=${projectId}`);
+}
