@@ -130,6 +130,7 @@ function QueuePage() {
             <span className={`inline-flex rounded-full h-2 w-2 ${dispatchStatus.dotClass}`} />
             {dispatchStatus.label}
           </span>
+          </div>
       </div>
 
       {/* In esecuzione */}
