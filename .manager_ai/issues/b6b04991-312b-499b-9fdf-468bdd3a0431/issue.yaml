@@ -1,0 +1,30 @@
+schema_version: 1
+id: b6b04991-312b-499b-9fdf-468bdd3a0431
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Auto-resume coda dopo restart — queue non riparte all'avvio
+status: Finished
+priority: 1
+category: null
+created_at: '2026-06-10T17:00:59.171176+00:00'
+updated_at: '2026-06-10T17:06:11.690304+00:00'
+finished_at: '2026-06-10T17:06:11.690322+00:00'
+tasks:
+- id: 853b2797-92dc-4609-9af4-f44a5a00b9d4
+  name: Add startup_resume() method to IssueQueueService
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T17:05:11+00:00'
+  updated_at: '2026-06-10T17:05:37+00:00'
+- id: 6bf518ec-f12e-4b45-b633-d32214a0cb12
+  name: Call startup_resume() from main.py during lifespan startup
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T17:05:11+00:00'
+  updated_at: '2026-06-10T17:05:47+00:00'
+- id: 703afbea-3078-4e13-821a-22d870f6a2bb
+  name: Verify implementation — syntax check and logic review
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T17:05:11+00:00'
+  updated_at: '2026-06-10T17:06:02+00:00'
+relations: []

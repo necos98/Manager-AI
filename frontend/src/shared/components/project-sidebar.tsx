@@ -4,6 +4,7 @@ import {
   HelpCircle,
   LayoutDashboard,
   ListOrdered,
+  Plus,
   Settings,
   Smartphone,
   Star,
@@ -34,6 +35,7 @@ import { useProjects, useUpdateProject } from "@/features/projects/hooks";
 import { useTerminalCount } from "@/features/terminals/hooks";
 import { usePendingCount } from "@/features/questions/hooks";
 import type { Project } from "@/shared/types";
+import { QuickCreateIssueDialog } from "@/features/issues/components/quick-create-issue-dialog";
 
 interface ProjectSidebarProps {
   activeProject: Project | null;
@@ -42,9 +44,11 @@ interface ProjectSidebarProps {
 function ProjectSidebarItem({
   project,
   isActive,
+  onQuickCreate,
 }: {
   project: Project;
   isActive: boolean;
+  onQuickCreate: () => void;
 }) {
   const updateProject = useUpdateProject(project.id);
   const isFavorited = !!project.favorited_at;
@@ -68,6 +72,9 @@ function ProjectSidebarItem({
           fill={isFavorited ? "currentColor" : "none"}
         />
       </SidebarMenuAction>
+      <SidebarMenuAction onClick={onQuickCreate} tooltip="Quick create issue">
+        <Plus />
+      </SidebarMenuAction>
     </SidebarMenuItem>
   );
 }
@@ -81,6 +88,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
   const matchRoute = useMatchRoute();
 
   const [smartphoneQrOpen, setSmartphoneQrOpen] = useState(false);
+  const [quickCreateProjectId, setQuickCreateProjectId] = useState<string | null>(null);
 
   return (
     <>
@@ -109,6 +117,7 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
                       key={project.id}
                       project={project}
                       isActive={isActive}
+                      onQuickCreate={() => setQuickCreateProjectId(project.id)}
                     />
                   );
                 })}
@@ -260,6 +269,14 @@ export function ProjectSidebar({ activeProject }: ProjectSidebarProps) {
       <SmartphoneQrDialog
         open={smartphoneQrOpen}
         onOpenChange={setSmartphoneQrOpen}
+      />
+
+      <QuickCreateIssueDialog
+        projectId={quickCreateProjectId ?? ""}
+        open={quickCreateProjectId !== null}
+        onOpenChange={(open) => {
+          if (!open) setQuickCreateProjectId(null);
+        }}
       />
     </>
   );

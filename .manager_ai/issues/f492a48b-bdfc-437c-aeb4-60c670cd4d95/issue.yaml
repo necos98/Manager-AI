@@ -1,0 +1,12 @@
+schema_version: 1
+id: f492a48b-bdfc-437c-aeb4-60c670cd4d95
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Indicatore stato dispatch coda (attivo/in pausa/fermo)
+status: New
+priority: 3
+category: null
+created_at: '2026-06-10T17:01:00.448430+00:00'
+updated_at: '2026-06-10T17:01:08.700344+00:00'
+finished_at: null
+tasks: []
+relations: []

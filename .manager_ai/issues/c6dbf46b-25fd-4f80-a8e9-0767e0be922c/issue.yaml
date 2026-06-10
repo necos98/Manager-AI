@@ -1,0 +1,60 @@
+schema_version: 1
+id: c6dbf46b-25fd-4f80-a8e9-0767e0be922c
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Refactoring coda: QueueEntry single source of truth (eliminare dual-state)'
+status: Finished
+priority: 1
+category: null
+created_at: '2026-06-10T17:07:45.589438+00:00'
+updated_at: '2026-06-10T17:22:43.730191+00:00'
+finished_at: '2026-06-10T17:22:43.730215+00:00'
+tasks:
+- id: 27b7e55f-54fe-4de7-9fca-5a579cbfeb36
+  name: 'shared_tools.py — queue_add(): rimuovi status QUEUED, aggiungi register diretto'
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T17:14:04+00:00'
+  updated_at: '2026-06-10T17:22:10+00:00'
+- id: c8f99433-e058-4ba6-a7df-5f12666b0ef0
+  name: 'shared_tools.py — queue_remove(): sostituisci controllo QUEUED con QueueEntry PENDING'
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T17:14:04+00:00'
+  updated_at: '2026-06-10T17:22:26+00:00'
+- id: 6ecc0eb5-07a4-4ffb-8e43-b4d906911b1a
+  name: 'issue_queue_service.py — _dequeue_and_run(): NEW/ACCEPTED → REASONING'
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T17:14:04+00:00'
+  updated_at: '2026-06-10T17:22:27+00:00'
+- id: 3088e013-fb51-416a-94c9-8b8a2c212f16
+  name: 'issue_queue_service.py — _on_issue_queued(): rimuovi register()'
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T17:14:04+00:00'
+  updated_at: '2026-06-10T17:22:29+00:00'
+- id: 6bf97f1d-e770-4a32-afc2-9329b3590e5f
+  name: 'routers/queue.py — GET /api/queue: query da QueueEntry'
+  status: Completed
+  order: 4
+  created_at: '2026-06-10T17:14:04+00:00'
+  updated_at: '2026-06-10T17:22:30+00:00'
+- id: 801c60af-e5b7-43d2-803f-3a61d5c0f92c
+  name: 'routers/queue.py — GET /api/queue/status: count da QueueEntry'
+  status: Completed
+  order: 5
+  created_at: '2026-06-10T17:14:04+00:00'
+  updated_at: '2026-06-10T17:22:31+00:00'
+- id: 77451419-c95a-4a94-8afb-f604cce2e0aa
+  name: 'orchestrator queue_list: arricchisci con issue_name/description'
+  status: Completed
+  order: 6
+  created_at: '2026-06-10T17:14:04+00:00'
+  updated_at: '2026-06-10T17:22:32+00:00'
+- id: b0d4e80f-8566-45eb-a91d-530afd6b4de3
+  name: Verifica sintassi e test
+  status: Completed
+  order: 7
+  created_at: '2026-06-10T17:14:04+00:00'
+  updated_at: '2026-06-10T17:22:34+00:00'
+relations: []

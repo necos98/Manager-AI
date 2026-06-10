@@ -303,7 +303,9 @@ async def lifespan(app):
         await _startup_cleanup_orphaned_runs(async_session)
         await _startup_install_claude_resources(rows)
         _ = NotificationService()  # register as event listener
-        _ = IssueQueueService()  # register as event listener for FIFO queue
+        issue_queue_service = IssueQueueService()  # register as event listener for FIFO queue
+        # Resume queue processing: auto-start pending QUEUED issues after restart
+        asyncio.create_task(issue_queue_service.startup_resume())
         # Read Telegram config from DB and apply to TelegramService
         # so the settings UI can control it without restart.
         try:

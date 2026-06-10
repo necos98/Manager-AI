@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.issue import IssueStatus
+from app.models.queue_entry import QueueEntry, QueueEntryStatus
 from app.services.issue_service import IssueService
 from app.services.project_service import ProjectService
 from app.services.settings_service import SettingsService
@@ -76,34 +77,48 @@ def get_terminal_service() -> TerminalService:
 async def list_global_queue(
     db: AsyncSession = Depends(get_db),
 ):
-    """Return all QUEUED issues across all non-archived projects, ordered by created_at ASC."""
+    """Return all pending queue entries across all projects, ordered by QueueEntry.order ASC.
+
+    Uses the persistent QueueEntry table instead of IssueStatus.QUEUED.
+    """
+    from sqlalchemy import select
+
     issue_service = IssueService(db)
     project_service = ProjectService(db)
 
-    projects = await project_service.list_all(archived=False)
+    # Query pending QueueEntries across all projects
+    result = await db.execute(
+        select(QueueEntry)
+        .where(QueueEntry.status == QueueEntryStatus.PENDING)
+        .order_by(QueueEntry.order.asc())
+    )
+    entries = result.scalars().all()
 
     all_queued: list[QueuedIssueItem] = []
+    project_cache: dict[str, str] = {}
 
-    for project in projects:
-        issues = await issue_service.list_by_project(
-            project.id,
-            status=IssueStatus.QUEUED,
-        )
-        for issue in issues:
-            all_queued.append(
-                QueuedIssueItem(
-                    position=0,  # set below
-                    issue_id=issue.id,
-                    issue_name=issue.name or "",
-                    issue_description=(issue.description or "")[:120],
-                    project_id=project.id,
-                    project_name=project.name,
-                    created_at=issue.created_at,
-                )
+    for entry in entries:
+        # Look up issue details
+        issue = await issue_service.get_by_id(entry.issue_id)
+        if issue is None:
+            continue
+
+        # Cache project name
+        if entry.project_id not in project_cache:
+            project = await project_service.get_by_id(entry.project_id)
+            project_cache[entry.project_id] = project.name if project else ""
+
+        all_queued.append(
+            QueuedIssueItem(
+                position=0,  # set below
+                issue_id=entry.issue_id,
+                issue_name=issue.name or "",
+                issue_description=(issue.description or "")[:120],
+                project_id=entry.project_id,
+                project_name=project_cache.get(entry.project_id, ""),
+                created_at=entry.created_at.isoformat() if entry.created_at else "",
             )
-
-    # Sort globally by created_at ASC (FIFO)
-    all_queued.sort(key=lambda i: i.created_at)
+        )
 
     # Assign 1-based FIFO positions
     for idx, item in enumerate(all_queued, start=1):
@@ -164,20 +179,21 @@ async def get_queue_status(
     db: AsyncSession = Depends(get_db),
     svc: TerminalService = Depends(get_terminal_service),
 ):
-    """Return aggregate queue status (counts + pause state)."""
-    issue_service = IssueService(db)
-    project_service = ProjectService(db)
+    """Return aggregate queue status (counts + pause state).
+
+    Uses QueueEntry table instead of IssueStatus.QUEUED for queued count.
+    """
+    from sqlalchemy import select, func as sa_func
+    from app.models.queue_entry import QueueEntry, QueueEntryStatus
+
     settings_service = SettingsService(db)
 
-    projects = await project_service.list_all(archived=False)
-
-    queued_count = 0
-    for project in projects:
-        issues = await issue_service.list_by_project(
-            project.id,
-            status=IssueStatus.QUEUED,
-        )
-        queued_count += len(issues)
+    # Count pending QueueEntries across all projects
+    result = await db.execute(
+        select(sa_func.count(QueueEntry.id))
+        .where(QueueEntry.status == QueueEntryStatus.PENDING)
+    )
+    queued_count: int = result.scalar() or 0
 
     running_count = sum(
         1

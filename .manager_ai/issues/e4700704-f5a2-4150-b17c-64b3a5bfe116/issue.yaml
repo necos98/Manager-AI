@@ -1,0 +1,12 @@
+schema_version: 1
+id: e4700704-f5a2-4150-b17c-64b3a5bfe116
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Pulsante "Rimuovi dalla coda" nella UI globale /queue
+status: New
+priority: 3
+category: null
+created_at: '2026-06-10T17:01:01.717009+00:00'
+updated_at: '2026-06-10T17:01:09.969433+00:00'
+finished_at: null
+tasks: []
+relations: []

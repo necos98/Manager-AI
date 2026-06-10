@@ -1,12 +1,30 @@
 schema_version: 1
 id: 984b1236-f1de-4a57-b64b-b5dcc4177911
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: Queued
+name: Breadcrumb navigation dinamico nell'header
+status: Accepted
 priority: 2
 category: null
 created_at: '2026-06-10T11:14:44.654825+00:00'
-updated_at: '2026-06-10T15:44:27.689222+00:00'
+updated_at: '2026-06-10T17:08:10.036713+00:00'
 finished_at: null
-tasks: []
+tasks:
+- id: 60d1f05f-e0b0-44f3-80dc-c4e449246434
+  name: Creare il componente PageBreadcrumb in frontend/src/shared/components/page-breadcrumb.tsx
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T17:08:05+00:00'
+  updated_at: '2026-06-10T17:08:59+00:00'
+- id: cec2aa8b-5276-4721-8074-7a14cbcfcd62
+  name: Integrare PageBreadcrumb nel root layout __root.tsx
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T17:08:05+00:00'
+  updated_at: '2026-06-10T17:09:34+00:00'
+- id: 4e3401b4-409b-47a3-92ee-4b066e871215
+  name: Verificare il breadcrumb su tutte le route principali
+  status: In Progress
+  order: 2
+  created_at: '2026-06-10T17:08:05+00:00'
+  updated_at: '2026-06-10T17:09:37+00:00'
 relations: []

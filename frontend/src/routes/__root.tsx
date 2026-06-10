@@ -10,6 +10,7 @@ import { ProjectSidebar } from "@/shared/components/project-sidebar";
 import { EventProvider } from "@/shared/context/event-context";
 import { ErrorBoundary } from "@/shared/components/error-boundary";
 import { CommandPalette } from "@/features/command-palette/components/command-palette";
+import { PageBreadcrumb } from "@/shared/components/page-breadcrumb";
 import { useKeyboardShortcuts } from "@/shared/hooks/use-keyboard-shortcuts";
 import { useProject } from "@/features/projects/hooks";
 import { TerminalProvider } from "@/features/terminals/contexts/terminal-context";
@@ -162,7 +163,7 @@ function RootLayout() {
             </SheetContent>
           </Sheet>
         </header>
-
+        <PageBreadcrumb />
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
           <ErrorBoundary>
             <Outlet />

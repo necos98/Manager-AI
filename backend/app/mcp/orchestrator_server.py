@@ -402,8 +402,9 @@ async def disable_plugin(project_id: str, plugin_name: str) -> dict:
 
 
 @orchestrator_mcp.tool(
-    description="Add an issue to the FIFO queue (status → QUEUED). "
-                "Validates that the issue is in NEW or ACCEPTED status. "
+    description="Add an issue to the FIFO queue. "
+    "Validates that the issue is in NEW or ACCEPTED status. "
+    "The issue retains its original status — QueueEntry is the authoritative record. "
                 "Parameters: project_id (required), issue_id (required). "
                 "Returns: {id, project_id, status}."
 )
@@ -414,6 +415,7 @@ async def queue_add(project_id: str, issue_id: str) -> dict:
 
 @orchestrator_mcp.tool(
     description="List all QUEUED issues with their position (1-based FIFO order). "
+                "Uses the persistent QueueEntry table. "
                 "Parameters: project_id (required). "
                 "Returns: {queued: [{position, issue_id, issue_name, description, created_at}], total}."
 )
@@ -423,7 +425,8 @@ async def queue_list(project_id: str) -> dict:
 
 
 @orchestrator_mcp.tool(
-    description="Remove an issue from the queue (QUEUED → NEW). "
+    description="Remove an issue from the queue. "
+                "The issue retains its original status — membership is tracked via QueueEntry. "
                 "Parameters: project_id (required), issue_id (required). "
                 "Returns: {id, project_id, status}."
 )
@@ -433,8 +436,8 @@ async def queue_remove(project_id: str, issue_id: str) -> dict:
 
 
 @orchestrator_mcp.tool(
-    description="Get the 1-based position of a QUEUED issue in the FIFO queue. "
-                "Returns null position if the issue is not QUEUED. "
+    description="Get the 1-based position of a pending issue in the FIFO queue. "
+                "Returns null position if the issue has no pending QueueEntry. "
                 "Parameters: project_id (required), issue_id (required). "
                 "Returns: {position, issue_id, total} or {position: null, issue_id, status}."
 )

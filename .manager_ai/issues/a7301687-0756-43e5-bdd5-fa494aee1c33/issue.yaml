@@ -1,0 +1,12 @@
+schema_version: 1
+id: a7301687-0756-43e5-bdd5-fa494aee1c33
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: 'Bug: Doppio start coda — race condition tra QUEUED→REASONING e QueueEntry→DISPATCHING'
+status: New
+priority: 1
+category: null
+created_at: '2026-06-10T17:20:55.819404+00:00'
+updated_at: '2026-06-10T17:21:07.216298+00:00'
+finished_at: null
+tasks: []
+relations: []

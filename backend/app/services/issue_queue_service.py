@@ -1,12 +1,13 @@
 """Issue Queue Service — FIFO event-driven queue for issues.
 
 Listens for ``issue_status_changed → Finished`` events and automatically
-dequeues the next ``QUEUED`` issue, changes it to ``REASONING``, and calls
+dequeues the next pending issue, changes it to ``REASONING``, and calls
 ``run_issue()`` on it.
 
 Maintains a persistent ``QueueEntry`` registry (DB-backed) so the queue
-never loses track of dispatched issues — unlike the previous approach
-that relied solely on the volatile ``QUEUED`` issue status.
+never loses track of dispatched issues. Membership is tracked exclusively
+via ``QueueEntry`` — ``IssueStatus.QUEUED`` is deprecated and no longer
+used for queue logic.
 
 Registered as a BaseNotifier on EventService at startup in main.py.
 """
@@ -197,8 +198,64 @@ class IssueQueueService(BaseNotifier):
             ]
 
     # ------------------------------------------------------------------
+    # Startup resume
+    # ------------------------------------------------------------------
+
+    async def startup_resume(self) -> None:
+        """Scan all projects for pending QueueEntries and auto-start if nothing
+        is running.
+
+        Called at application startup to resume processing of issues that were
+        QUEUED before shutdown/restart.  Fire-and-forget — failures are logged
+        but never crash startup.
+        """
+        try:
+            async with async_session() as session:
+                result = await session.execute(
+                    select(QueueEntry.project_id)
+                    .where(QueueEntry.status == QueueEntryStatus.PENDING)
+                    .distinct()
+                )
+                project_ids = [row[0] for row in result.all()]
+
+            if not project_ids:
+                logger.debug("startup_resume: no pending queue entries found")
+                return
+
+            for project_id in project_ids:
+                async with async_session() as sess:
+                    issue_service = IssueService(sess)
+                    running = await issue_service.list_by_project(
+                        project_id,
+                        status=IssueStatus.REASONING,
+                    )
+
+                if running:
+                    logger.info(
+                        "startup_resume: project %s has a running issue — skipping",
+                        project_id,
+                    )
+                    continue
+
+                logger.info(
+                    "startup_resume: auto-starting next queued issue for project %s",
+                    project_id,
+                )
+                asyncio.create_task(self._dequeue_and_run(project_id))
+        except Exception:
+            logger.exception("IssueQueueService.startup_resume failed")
+
+    # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    async def get_pending_entry(self, issue_id: str) -> Optional[QueueEntry]:
+        """Get the pending QueueEntry for an issue, if any.
+
+        Returns None if the issue has no pending queue entry.
+        """
+        async with async_session() as session:
+            return await self._get_pending_by_issue(session, issue_id)
 
     @staticmethod
     async def _get_pending_by_issue(
@@ -306,7 +363,9 @@ class IssueQueueService(BaseNotifier):
             async with async_session() as session:
                 issue_service = IssueService(session)
 
-                # Change status from QUEUED to REASONING
+                # Change status from current (NEW or ACCEPTED) to REASONING.
+                # QueueEntry is the authoritative record — Issue.status no longer
+                # goes through QUEUED.
                 await issue_service.update_status(
                     next_entry.issue_id, project_id, IssueStatus.REASONING,
                 )
