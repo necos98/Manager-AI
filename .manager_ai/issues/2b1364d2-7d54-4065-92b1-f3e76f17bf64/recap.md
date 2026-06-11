@@ -1,0 +1,1 @@
+Test issue completed successfully. Full workflow validated: New → Reasoning → Planned → Accepted → Finished. All status transitions worked correctly via MCP tools (create_issue_spec, create_issue_plan, create_plan_tasks, accept_issue, complete_issue). No code changes needed — pure workflow validation test.

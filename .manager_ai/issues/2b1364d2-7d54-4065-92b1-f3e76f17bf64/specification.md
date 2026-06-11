@@ -1,0 +1,1 @@
+Test issue for workflow validation. No implementation needed — purpose is to verify the full issue lifecycle (New → Reasoning → Planned → Accepted → Completed) works end-to-end. Success criteria: issue moves through all statuses and is marked Finished with a recap.
