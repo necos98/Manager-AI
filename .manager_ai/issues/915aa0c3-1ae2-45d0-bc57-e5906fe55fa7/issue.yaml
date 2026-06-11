@@ -1,13 +1,13 @@
 schema_version: 1
 id: 915aa0c3-1ae2-45d0-bc57-e5906fe55fa7
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: New
+name: Test chat agente
+status: Finished
 priority: 3
 category: null
 created_at: '2026-06-11T09:50:39.617539+00:00'
-updated_at: '2026-06-11T09:50:39.617539+00:00'
-finished_at: null
+updated_at: '2026-06-11T10:12:15.584275+00:00'
+finished_at: '2026-06-11T10:12:15.584290+00:00'
 deleted_at: null
 tasks: []
 relations: []

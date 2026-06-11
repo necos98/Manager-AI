@@ -1,0 +1,1 @@
+Test 2 di chat agente, non devi fare nulla se non terminare la issue.

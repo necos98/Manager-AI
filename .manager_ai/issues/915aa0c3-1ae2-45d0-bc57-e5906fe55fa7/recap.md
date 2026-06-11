@@ -1,0 +1,1 @@
+Issue di test chiusa senza modifiche. Nessuna implementazione necessaria — verifica funzionamento chat agente completata.
