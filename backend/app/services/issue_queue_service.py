@@ -1,13 +1,14 @@
 """Issue Queue Service — FIFO event-driven queue for issues.
 
-Listens for ``issue_status_changed → Finished`` events and automatically
-dequeues the next pending issue, changes it to ``REASONING``, and calls
-``run_issue()`` on it.
+Status-independent: the queue tracks its own state (RUNNING/DONE/STALLED)
+via ``QueueEntry`` and does NOT modify ``IssueStatus``. It reacts to
+``issue_status_changed → Finished`` events to mark entries DONE and
+advance the queue.
 
-Maintains a persistent ``QueueEntry`` registry (DB-backed) so the queue
-never loses track of dispatched issues. Membership is tracked exclusively
-via ``QueueEntry``.
+Terminal liveness is checked via ``TerminalService.list_active()`` to
+detect stalled entries (terminal died without issue finishing).
 
+Membership is tracked exclusively via ``QueueEntry``.
 Registered as a BaseNotifier on EventService at startup in main.py.
 """
 
@@ -24,7 +25,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_session
 from app.exceptions import AppError
-from app.models.issue import IssueStatus
 from app.models.queue_entry import QueueEntry, QueueEntryStatus
 from app.services.event_service import BaseNotifier, event_service
 from app.services.issue_service import IssueService
@@ -95,68 +95,66 @@ class IssueQueueService(BaseNotifier):
                 )
                 return entry
 
-    async def mark_dispatching(self, issue_id: str) -> Optional[QueueEntry]:
-        """Mark the pending QueueEntry for ``issue_id`` as ``dispatching``.
-
-        Also sets ``dispatched_at`` to the current timestamp.
-        If the entry is already DISPATCHING (e.g. from synchronous marking
-        inside ``_dequeue_and_run``), returns it as a no-op.
-        Returns the updated entry, or None if no entry exists in any
-        active state (PENDING or DISPATCHING).
-        """
+    async def mark_running(
+        self, issue_id: str, terminal_id: str,
+    ) -> Optional[QueueEntry]:
+        """Mark a PENDING QueueEntry as RUNNING and record the terminal_id."""
         async with async_session() as session:
             entry = await self._get_pending_by_issue(session, issue_id)
             if entry is None:
-                # Already dispatching? (happens when _dequeue_and_run
-                # marks it synchronously before emitting events)
-                entry = await self._get_dispatching_by_issue(session, issue_id)
-                if entry is None:
-                    logger.warning(
-                        "No pending or dispatching QueueEntry found for issue %s",
-                        issue_id,
-                    )
-                else:
-                    logger.debug(
-                        "QueueEntry %s already DISPATCHING — no-op", entry.id,
-                    )
-                return entry
-            entry.status = QueueEntryStatus.DISPATCHING
-            entry.dispatched_at = datetime.now(timezone.utc)
-            await session.commit()
-            logger.info(
-                "QueueEntry %s marked DISPATCHING at %s",
-                entry.id, entry.dispatched_at,
-            )
-            return entry
-
-    async def mark_dispatched(self, issue_id: str) -> Optional[QueueEntry]:
-        """Mark the QueueEntry for ``issue_id`` as ``dispatched``.
-
-        Supports both DISPATCHING → DISPATCHED (normal issue completion)
-        and PENDING → DISPATCHED (manual removal from queue).
-        """
-        async with async_session() as session:
-            entry = await self._get_dispatching_by_issue(session, issue_id)
-            if entry is None:
-                entry = await self._get_pending_by_issue(session, issue_id)
-            if entry is None:
                 logger.warning(
-                    "No active QueueEntry found for issue %s — already dispatched?",
+                    "No pending QueueEntry found for issue %s to mark running",
                     issue_id,
                 )
                 return None
-            entry.status = QueueEntryStatus.DISPATCHED
+            entry.status = QueueEntryStatus.RUNNING
+            entry.last_terminal_id = terminal_id
+            entry.dispatched_at = datetime.now(timezone.utc)
+            entry.status_changed_at = datetime.now(timezone.utc)
             await session.commit()
-            logger.info("QueueEntry %s marked DISPATCHED", entry.id)
+            logger.info(
+                "QueueEntry %s marked RUNNING (terminal=%s)", entry.id, terminal_id,
+            )
+            return entry
+
+    async def mark_done(self, issue_id: str) -> Optional[QueueEntry]:
+        """Mark a RUNNING QueueEntry as DONE."""
+        async with async_session() as session:
+            entry = await self._find_running_entry(session, issue_id)
+            if entry is None:
+                logger.warning(
+                    "No RUNNING QueueEntry found for issue %s to mark done",
+                    issue_id,
+                )
+                return None
+            entry.status = QueueEntryStatus.DONE
+            entry.status_changed_at = datetime.now(timezone.utc)
+            await session.commit()
+            logger.info("QueueEntry %s marked DONE", entry.id)
+            return entry
+
+    async def mark_stalled(self, issue_id: str) -> Optional[QueueEntry]:
+        """Mark a RUNNING QueueEntry as STALLED (terminal died without FINISHED)."""
+        async with async_session() as session:
+            entry = await self._find_running_entry(session, issue_id)
+            if entry is None:
+                logger.warning(
+                    "No RUNNING QueueEntry found for issue %s to mark stalled",
+                    issue_id,
+                )
+                return None
+            entry.status = QueueEntryStatus.STALLED
+            entry.status_changed_at = datetime.now(timezone.utc)
+            await session.commit()
+            logger.warning("QueueEntry %s marked STALLED", entry.id)
             return entry
 
     async def mark_failed(
         self, issue_id: str, error_message: str,
     ) -> Optional[QueueEntry]:
-        """Mark the active QueueEntry for ``issue_id`` as ``failed``."""
+        """Mark a RUNNING or PENDING QueueEntry as FAILED."""
         async with async_session() as session:
-            # Try dispatching first, then pending
-            entry = await self._get_dispatching_by_issue(session, issue_id)
+            entry = await self._find_running_entry(session, issue_id)
             if entry is None:
                 entry = await self._get_pending_by_issue(session, issue_id)
             if entry is None:
@@ -167,6 +165,7 @@ class IssueQueueService(BaseNotifier):
                 return None
             entry.status = QueueEntryStatus.FAILED
             entry.error_message = error_message[:1000]
+            entry.status_changed_at = datetime.now(timezone.utc)
             await session.commit()
             logger.error(
                 "QueueEntry %s marked FAILED: %s", entry.id, error_message,
@@ -212,6 +211,8 @@ class IssueQueueService(BaseNotifier):
                     "created_at": e.created_at.isoformat() if e.created_at else None,
                     "dispatched_at": e.dispatched_at.isoformat() if e.dispatched_at else None,
                     "error_message": e.error_message,
+                    "last_terminal_id": e.last_terminal_id,
+                    "retry_count": e.retry_count,
                 }
                 for e in entries
             ]
@@ -233,6 +234,8 @@ class IssueQueueService(BaseNotifier):
                     "created_at": e.created_at.isoformat() if e.created_at else None,
                     "dispatched_at": e.dispatched_at.isoformat() if e.dispatched_at else None,
                     "error_message": e.error_message,
+                    "last_terminal_id": e.last_terminal_id,
+                    "retry_count": e.retry_count,
                 }
                 for e in entries
             ]
@@ -245,8 +248,11 @@ class IssueQueueService(BaseNotifier):
         """Scan all projects for pending QueueEntries and auto-start if nothing
         is running.
 
-        Called at application startup to resume processing of issues that were
-        queued before shutdown/restart.  Fire-and-forget — failures are logged
+        Also detects STALLED entries: RUNNING QueueEntries whose terminal
+        is no longer active (server restart). These are re-queued as PENDING
+        so they get retried.
+
+        Called at application startup. Fire-and-forget — failures are logged
         but never crash startup.
         """
         if not self._enabled:
@@ -254,7 +260,30 @@ class IssueQueueService(BaseNotifier):
             return
 
         try:
+            from app.services.terminal_service import terminal_service
+
             async with async_session() as session:
+                # Mark RUNNING entries without active terminal as STALLED
+                running_result = await session.execute(
+                    select(QueueEntry)
+                    .where(QueueEntry.status == QueueEntryStatus.RUNNING)
+                )
+                for entry in running_result.scalars().all():
+                    active_terms = terminal_service.list_active(
+                        project_id=entry.project_id, issue_id=entry.issue_id,
+                    )
+                    if not active_terms:
+                        entry.status = QueueEntryStatus.STALLED
+                        entry.status_changed_at = datetime.now(timezone.utc)
+                        logger.warning(
+                            "QueueEntry %s marked STALLED at startup (no active terminal)",
+                            entry.id,
+                        )
+                        # Retry: re-queue as PENDING
+                        await self.register(entry.issue_id, entry.project_id)
+                await session.commit()
+
+                # Find projects with PENDING entries to auto-start
                 result = await session.execute(
                     select(QueueEntry.project_id)
                     .where(QueueEntry.status == QueueEntryStatus.PENDING)
@@ -267,10 +296,10 @@ class IssueQueueService(BaseNotifier):
                 return
 
             for project_id in project_ids:
-                active_reasoning = await self._count_active_reasoning(project_id)
-                if active_reasoning > 0:
+                active_running = await self._count_active_running(project_id)
+                if active_running > 0:
                     logger.info(
-                        "startup_resume: project %s has a running issue — skipping",
+                        "startup_resume: project %s has a RUNNING entry — skipping",
                         project_id,
                     )
                     continue
@@ -337,7 +366,6 @@ class IssueQueueService(BaseNotifier):
         Returns ``{id, project_id, status}`` on success.
         Raises ``AppError`` on validation failure.
         """
-        from app.models.issue import IssueStatus
         from app.utils.datetime import iso_now
 
         svc = IssueService(session)
@@ -346,14 +374,8 @@ class IssueQueueService(BaseNotifier):
         except AppError as e:
             raise AppError(str(e))
 
-        allowed = {IssueStatus.NEW.value, IssueStatus.ACCEPTED.value}
-        if issue.status not in allowed:
-            raise AppError(
-                f"Issue must be in NEW or ACCEPTED status to queue, "
-                f"got {issue.status}",
-            )
-
-        # Register synchronously so QueueEntry exists when response returns
+        # Register synchronously so QueueEntry exists when response returns.
+        # No status validation — any issue can be queued.
         await self.register(issue_id, project_id)
 
         await event_service.emit({
@@ -378,11 +400,12 @@ class IssueQueueService(BaseNotifier):
     ) -> dict:
         """Remove an issue from the FIFO queue.
 
-        Looks up the pending ``QueueEntry``, marks it as dispatched,
-        and emits an ``issue_status_changed`` event.
+        Can only remove PENDING entries. RUNNING entries cannot be removed
+        (issue is currently being processed).
+        Marks the QueueEntry as DONE and emits a ``queue_entry_removed`` event.
 
         Returns ``{id, project_id, status}`` on success.
-        Raises ``AppError`` if the issue has no pending queue entry.
+        Raises ``AppError`` if the issue has no pending queue entry or is RUNNING.
         """
         from app.utils.datetime import iso_now
 
@@ -392,16 +415,23 @@ class IssueQueueService(BaseNotifier):
         except AppError as e:
             raise AppError(str(e))
 
-        # Check queue membership via QueueEntry, not Issue.status
-        entry = await self.get_pending_entry(issue_id)
-        if entry is None:
+        # Check queue membership via QueueEntry
+        pending_entry = await self.get_pending_entry(issue_id)
+        if pending_entry is not None:
+            await self.mark_done(issue_id)
+        else:
+            # Check if RUNNING — can't remove running issues
+            async with async_session() as s:
+                running = await self._find_running_entry(s, issue_id)
+            if running is not None:
+                raise AppError(
+                    f"Issue {issue_id} is currently RUNNING and cannot "
+                    f"be removed from the queue",
+                )
             raise AppError(
                 f"Issue {issue_id} is not in the queue "
                 f"(no pending QueueEntry)",
             )
-
-        # Mark QueueEntry as dispatched — issue keeps its original status
-        await self.mark_dispatched(issue_id)
 
         await event_service.emit({
             "type": "queue_entry_removed",
@@ -446,51 +476,34 @@ class IssueQueueService(BaseNotifier):
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def _get_dispatching_by_issue(
+    async def _find_running_entry(
         session, issue_id: str,
     ) -> Optional[QueueEntry]:
-        """Find the dispatching QueueEntry for an issue."""
+        """Find the RUNNING QueueEntry for an issue."""
         result = await session.execute(
             select(QueueEntry)
             .where(
                 QueueEntry.issue_id == issue_id,
-                QueueEntry.status == QueueEntryStatus.DISPATCHING,
+                QueueEntry.status == QueueEntryStatus.RUNNING,
             )
             .limit(1)
         )
         return result.scalar_one_or_none()
 
-    async def _count_active_reasoning(self, project_id: str) -> int:
-        """Count REASONING issues that have an active QueueEntry.
+    async def _count_active_running(self, project_id: str) -> int:
+        """Count QueueEntry in RUNNING state for this project.
 
-        An active QueueEntry is one in PENDING or DISPATCHING state.
-        REASONING issues whose QueueEntry is FAILED or DISPATCHED are
-        considered "ghosts" — ``run_issue`` failed after marking the
-        entry, leaving the issue stuck. They should not block the queue.
+        Does NOT look at IssueStatus — the queue is status-independent.
         """
         async with async_session() as session:
-            issue_service = IssueService(session)
-            running = await issue_service.list_by_project(
-                project_id, status=IssueStatus.REASONING,
-            )
-            if not running:
-                return 0
-            active = 0
-            for issue in running:
-                result = await session.execute(
-                    select(QueueEntry)
-                    .where(
-                        QueueEntry.issue_id == issue.id,
-                        QueueEntry.status.in_([
-                            QueueEntryStatus.PENDING,
-                            QueueEntryStatus.DISPATCHING,
-                        ]),
-                    )
-                    .limit(1)
+            result = await session.execute(
+                select(sa_func.count(QueueEntry.id))
+                .where(
+                    QueueEntry.project_id == project_id,
+                    QueueEntry.status == QueueEntryStatus.RUNNING,
                 )
-                if result.scalar_one_or_none():
-                    active += 1
-            return active
+            )
+            return result.scalar() or 0
 
     # ------------------------------------------------------------------
     # Event handling
@@ -503,33 +516,26 @@ class IssueQueueService(BaseNotifier):
         issue_id = event.get("issue_id")
 
         if event_type == "queue_entry_created" and project_id and issue_id:
-            # Always register the queue entry, regardless of auto-processing state
             asyncio.create_task(self._on_issue_queued(project_id, issue_id))
+            return
 
         if event_type != "issue_status_changed":
             return
 
         new_status = event.get("new_status")
 
-        if new_status == "Finished" and project_id and self._enabled:
-            # Auto-processing: dequeue next pending issue
+        if new_status == "Finished" and project_id and issue_id and self._enabled:
             asyncio.create_task(self._on_issue_finished(project_id, issue_id))
 
-        elif new_status == "Reasoning" and issue_id and self._enabled:
-            # When _dequeue_and_run emits this event, it already marked
-            # the QueueEntry as DISPATCHING synchronously. The redundant
-            # _on_issue_reasoning → mark_dispatching call below is wasted.
-            if event.get("_queue_dispatching_handled"):
-                return
-            # Mark as dispatching when the issue actually starts
-            asyncio.create_task(self._on_issue_reasoning(issue_id))
-
     async def _on_issue_finished(self, project_id: str, issue_id: str) -> None:
-        """Handle a finished issue: mark dispatched + dequeue next."""
+        """Issue FINISHED → find RUNNING QueueEntry → mark DONE → dequeue next."""
         try:
-            # Mark this issue's QueueEntry as dispatched
-            await self.mark_dispatched(issue_id)
-            # Dequeue the next pending issue
+            done = await self.mark_done(issue_id)
+            if done is None:
+                logger.warning(
+                    "Issue %s finished but no RUNNING QueueEntry found "
+                    "(finished outside the queue?)", issue_id,
+                )
             await self._dequeue_and_run(project_id)
         except Exception:
             logger.exception(
@@ -537,15 +543,13 @@ class IssueQueueService(BaseNotifier):
             )
 
     async def _on_issue_queued(self, project_id: str, issue_id: str) -> None:
-        """Handle a newly queued issue: register entry + maybe auto-start.
+        """Handle a newly queued issue: ensure entry exists + maybe auto-start.
 
         Registration is idempotent — skips if entry already exists
         (e.g., from synchronous register() in add_to_queue).
-        Falls back to the original ``_maybe_auto_start_first`` logic
-        even when add_to_queue did the registration.
+        Auto-starts if no RUNNING entry exists for this project.
         """
         try:
-            # Check if already registered (e.g., by add_to_queue)
             existing = await self.get_pending_entry(issue_id)
             if existing is None:
                 await self.register(issue_id, project_id)
@@ -556,20 +560,15 @@ class IssueQueueService(BaseNotifier):
                 "IssueQueueService failed on queued for project %s", project_id,
             )
 
-    async def _on_issue_reasoning(self, issue_id: str) -> None:
-        """Handle an issue starting: mark QueueEntry as dispatching."""
-        try:
-            await self.mark_dispatching(issue_id)
-        except Exception:
-            logger.exception(
-                "IssueQueueService failed marking dispatching for issue %s",
-                issue_id,
-            )
-
     async def _dequeue_and_run(self, project_id: str) -> None:
-        """Find the next pending QueueEntry and start the issue."""
+        """Find the next PENDING QueueEntry and start the issue.
+
+        Does NOT modify IssueStatus. Tracks state via QueueEntry (RUNNING).
+        Saves the terminal_id from run_issue() for liveness checks.
+        """
         lock = self._dequeue_locks.setdefault(project_id, asyncio.Lock())
         async with lock:
+            next_entry = None
             try:
                 next_entry = await self.get_next_pending(project_id)
                 if next_entry is None:
@@ -584,41 +583,7 @@ class IssueQueueService(BaseNotifier):
                     next_entry.issue_id, next_entry.order, project_id,
                 )
 
-                # ★ Mark as DISPATCHING synchronously BEFORE update_status/emit
-                # This closes the race window: a second _on_issue_finished call
-                # won't find this entry as PENDING anymore.
-                await self.mark_dispatching(next_entry.issue_id)
-
                 async with async_session() as session:
-                    issue_service = IssueService(session)
-
-                    # Change status from current (NEW or ACCEPTED) to REASONING.
-                    # QueueEntry is the authoritative record.
-                    await issue_service.update_status(
-                        next_entry.issue_id, project_id, IssueStatus.REASONING,
-                    )
-                    await session.commit()
-
-                    # Emit status changed event for the transition
-                    # (_on_issue_reasoning → mark_dispatching is now a no-op
-                    #  because we already marked it synchronously above)
-                    from app.mcp.shared_tools import _emit_event
-                    from app.utils.datetime import iso_now
-
-                    # Fetch issue name for the event
-                    issue = await issue_service.get_for_project(
-                        next_entry.issue_id, project_id,
-                    )
-                    await _emit_event({
-                        "type": "issue_status_changed",
-                        "new_status": IssueStatus.REASONING.value,
-                        "project_id": project_id,
-                        "issue_id": next_entry.issue_id,
-                        "issue_name": issue.name or "",
-                        "timestamp": iso_now(),
-                        "_queue_dispatching_handled": True,
-                    })
-
                     # Start the issue via run_issue
                     logger.info(
                         "Starting run_issue for issue %s", next_entry.issue_id,
@@ -636,16 +601,24 @@ class IssueQueueService(BaseNotifier):
                         await self.mark_failed(
                             next_entry.issue_id, result["error"],
                         )
-                    else:
-                        logger.info(
-                            "Started queued issue %s — terminal %s",
-                            next_entry.issue_id, result.get("term_id"),
-                        )
+                        return
+
+                    terminal_id = result.get("term_id", "")
+                    await self.mark_running(next_entry.issue_id, terminal_id)
+                    logger.info(
+                        "Started queued issue %s — terminal %s",
+                        next_entry.issue_id, terminal_id,
+                    )
             except Exception:
                 logger.exception(
                     "IssueQueueService failed to dequeue for project %s",
                     project_id,
                 )
+                if next_entry is not None:
+                    await self.mark_failed(
+                        next_entry.issue_id,
+                        "Exception in _dequeue_and_run",
+                    )
 
     async def _maybe_auto_start_first(
         self, project_id: str, issue_id: str,
@@ -674,9 +647,9 @@ class IssueQueueService(BaseNotifier):
                 if pending_count < 1:
                     return
 
-                # Check if any issue is actively running for this project
-                active_reasoning = await self._count_active_reasoning(project_id)
-                if active_reasoning == 0:
+                # Check if any QueueEntry is RUNNING for this project
+                active_running = await self._count_active_running(project_id)
+                if active_running == 0:
                     logger.info(
                         "Auto-starting first queued issue %s for project %s",
                         issue_id, project_id,
@@ -698,13 +671,11 @@ async def _queue_add_direct(
     """Add an issue to the FIFO queue without requiring IssueQueueService.
 
     Fallback used when issue_queue_service_ref is None (IssueQueueService
-    was not initialized during startup). Validates the issue, creates the
-    QueueEntry directly, and emits the event for other listeners.
+    was not initialized during startup). Creates the QueueEntry directly
+    and emits the event. No status validation — any issue can be queued.
 
     Returns {id, project_id, status} on success.
-    Raises AppError on validation failure.
     """
-    from app.models.issue import IssueStatus
     from app.utils.datetime import iso_now
 
     svc = IssueService(session)
@@ -712,13 +683,6 @@ async def _queue_add_direct(
         issue = await svc.get_for_project(issue_id, project_id)
     except AppError as e:
         raise AppError(str(e))
-
-    allowed = {IssueStatus.NEW.value, IssueStatus.ACCEPTED.value}
-    if issue.status not in allowed:
-        raise AppError(
-            f"Issue must be in NEW or ACCEPTED status to queue, "
-            f"got {issue.status}",
-        )
 
     # Create QueueEntry directly (same logic as IssueQueueService.register())
     result = await session.execute(
@@ -764,7 +728,7 @@ async def _queue_remove_direct(
 
     Fallback used when issue_queue_service_ref is None (IssueQueueService
     was not initialized during startup). Looks up the pending QueueEntry,
-    marks it as dispatched, and emits the event.
+    marks it as DONE, and emits the event.
 
     Returns {id, project_id, status} on success.
     Raises AppError if the issue has no pending queue entry.
@@ -794,8 +758,8 @@ async def _queue_remove_direct(
             f"Issue {issue_id} is not in the queue (no pending QueueEntry)",
         )
 
-    # Mark as dispatched
-    entry.status = QueueEntryStatus.DISPATCHED
+    # Mark as DONE
+    entry.status = QueueEntryStatus.DONE
     await session.commit()
 
     # Emit event for other listeners

@@ -23,7 +23,7 @@ export interface RunningIssueItem {
 export interface QueueStatus {
   queued_count: number;
   running_count: number;
-  dispatching_count: number;
+  stalled_count: number;
   paused: boolean;
   auto_process_enabled: boolean;
 }

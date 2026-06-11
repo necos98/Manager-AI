@@ -53,7 +53,7 @@ class RunningIssueItem(BaseModel):
 class QueueStatus(BaseModel):
     queued_count: int
     running_count: int
-    dispatching_count: int
+    stalled_count: int
     paused: bool
     auto_process_enabled: bool
 
@@ -139,42 +139,57 @@ async def list_global_running(
     db: AsyncSession = Depends(get_db),
     svc: TerminalService = Depends(get_terminal_service),
 ):
-    """Return all issues currently running (active terminals) across all projects."""
-    issue_service = IssueService(db)
+    """Return all issues currently running across all projects.
 
-    terminals = svc.list_active()
-    # Filter out standalone terminals (no project/issue)
-    terminals = [
-        t
-        for t in terminals
-        if t.get("project_id") and t.get("issue_id")
-    ]
+    Primary source: QueueEntry with status RUNNING.
+    Cross-referenced with TerminalService for terminal details.
+    """
+    from sqlalchemy import select
+
+    issue_service = IssueService(db)
+    project_service = ProjectService(db)
+
+    # Get RUNNING QueueEntries as primary source
+    result = await db.execute(
+        select(QueueEntry)
+        .where(QueueEntry.status == QueueEntryStatus.RUNNING)
+        .order_by(QueueEntry.order.asc())
+    )
+    running_entries = result.scalars().all()
 
     # Build project name map
-    project_ids = {t["project_id"] for t in terminals if t.get("project_id")}
-    project_service = ProjectService(db)
+    project_ids = {e.project_id for e in running_entries}
     projects = await project_service.list_all(archived=False)
     project_map = {p.id: p.name for p in projects}
 
-    items: list[RunningIssueItem] = []
-    for term in terminals:
-        project_id = term["project_id"]
-        issue_id = term["issue_id"]
+    # Cross-reference with active terminals for terminal_id
+    active_terminals = svc.list_active()
+    term_by_issue: dict[str, dict] = {}
+    for t in active_terminals:
+        iid = t.get("issue_id")
+        if iid:
+            term_by_issue[iid] = t
 
-        # Get issue name + status
-        issue = await issue_service.get_by_id(issue_id)
+    items: list[RunningIssueItem] = []
+    for entry in running_entries:
+        issue = await issue_service.get_by_id(entry.issue_id)
         issue_name = issue.name if issue else None
         issue_status = issue.status if issue else None
 
+        # Prefer live terminal, fall back to last_terminal_id on QueueEntry
+        term = term_by_issue.get(entry.issue_id, {})
+        terminal_id = term.get("id") or entry.last_terminal_id or ""
+        started_at = term.get("started_at")
+
         items.append(
             RunningIssueItem(
-                issue_id=issue_id,
+                issue_id=entry.issue_id,
                 issue_name=issue_name,
-                project_id=project_id,
-                project_name=project_map.get(project_id),
-                terminal_id=term["id"],
+                project_id=entry.project_id,
+                project_name=project_map.get(entry.project_id),
+                terminal_id=terminal_id,
                 issue_status=issue_status,
-                started_at=term.get("started_at"),
+                started_at=started_at,
             )
         )
 
@@ -184,36 +199,35 @@ async def list_global_running(
 @router.get("/status", response_model=QueueStatus)
 async def get_queue_status(
     db: AsyncSession = Depends(get_db),
-    svc: TerminalService = Depends(get_terminal_service),
 ):
     """Return aggregate queue status (counts + pause state).
 
-    Uses QueueEntry table for queued count.
+    All counts derived from QueueEntry table — status-independent.
     """
     from sqlalchemy import select, func as sa_func
-    from app.models.queue_entry import QueueEntry, QueueEntryStatus
 
     settings_service = SettingsService(db)
 
-    # Count pending QueueEntries across all projects
+    # Count PENDING QueueEntries across all projects
     result = await db.execute(
         select(sa_func.count(QueueEntry.id))
         .where(QueueEntry.status == QueueEntryStatus.PENDING)
     )
     queued_count: int = result.scalar() or 0
 
-    running_count = sum(
-        1
-        for t in svc.list_active()
-        if t.get("project_id") and t.get("issue_id")
-    )
-
-    # Count dispatching QueueEntries (in the process of being dispatched)
+    # Count RUNNING QueueEntries
     result = await db.execute(
         select(sa_func.count(QueueEntry.id))
-        .where(QueueEntry.status == QueueEntryStatus.DISPATCHING)
+        .where(QueueEntry.status == QueueEntryStatus.RUNNING)
     )
-    dispatching_count: int = result.scalar() or 0
+    running_count: int = result.scalar() or 0
+
+    # Count STALLED QueueEntries
+    result = await db.execute(
+        select(sa_func.count(QueueEntry.id))
+        .where(QueueEntry.status == QueueEntryStatus.STALLED)
+    )
+    stalled_count: int = result.scalar() or 0
 
     paused_str = await settings_service.get("work_queue_paused")
     paused = paused_str.lower() == "true" if paused_str else False
@@ -224,7 +238,7 @@ async def get_queue_status(
     return QueueStatus(
         queued_count=queued_count,
         running_count=running_count,
-        dispatching_count=dispatching_count,
+        stalled_count=stalled_count,
         paused=paused,
         auto_process_enabled=auto_process_enabled,
     )
@@ -328,7 +342,7 @@ async def get_queue_position(
         )
     entries = await registry.list_queue(project_id)
 
-    # Filter to pending entries only
+    # Filter to pending entries only for position calculation
     pending = [e for e in entries if e["status"] == "pending"]
 
     for idx, entry in enumerate(pending):
@@ -340,7 +354,17 @@ async def get_queue_position(
                 "status": "pending",
             }
 
-    # Check if there's any QueueEntry at all (already dispatched/failed)
+    # Check running entries
+    running = [e for e in entries if e["status"] == "running" and e["issue_id"] == issue_id]
+    if running:
+        return {
+            "position": None,
+            "issue_id": issue_id,
+            "in_queue": False,
+            "status": "running",
+        }
+
+    # Check if there's any QueueEntry at all (done/failed/stalled)
     all_entries = [e for e in entries if e["issue_id"] == issue_id]
     if all_entries:
         return {

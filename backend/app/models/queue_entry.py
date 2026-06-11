@@ -11,9 +11,10 @@ from app.database import Base
 
 class QueueEntryStatus(str, enum.Enum):
     PENDING = "pending"
-    DISPATCHING = "dispatching"
-    DISPATCHED = "dispatched"
+    RUNNING = "running"
+    DONE = "done"
     FAILED = "failed"
+    STALLED = "stalled"
 
 
 class QueueEntry(Base):
@@ -51,6 +52,15 @@ class QueueEntry(Base):
         DateTime, server_default=func.now(),
     )
     dispatched_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True,
+    )
+    retry_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0",
+    )
+    last_terminal_id: Mapped[Optional[str]] = mapped_column(
+        String(36), nullable=True,
+    )
+    status_changed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True,
     )
     error_message: Mapped[Optional[str]] = mapped_column(

@@ -1609,7 +1609,7 @@ async def restore_issue(session: AsyncSession, project_id: str, issue_id: str) -
 async def queue_add(session: AsyncSession, project_id: str, issue_id: str) -> dict:
     """Add an issue to the FIFO queue.
 
-    Validates that the issue is in NEW or ACCEPTED status.
+    Any issue can be queued regardless of status.
     The issue retains its original status — QueueEntry is the
     authoritative record of queue membership.
     Delegates to ``IssueQueueService.add_to_queue()`` for the
@@ -1629,10 +1629,10 @@ async def queue_add(session: AsyncSession, project_id: str, issue_id: str) -> di
 
 
 async def queue_list(session: AsyncSession, project_id: str) -> dict:
-    """List all pending queue entries with their FIFO position.
+    """List all queue entries with their FIFO position.
 
-    Uses the persistent QueueRegistry instead of relying on the
-    volatile issue status. Returns enriched issue details.
+    Groups entries by status: pending (waiting), running, stalled, done, failed.
+    Uses the persistent QueueRegistry.
     """
     from app.services.issue_queue_service import issue_queue_service_ref
     from app.services.issue_service import IssueService
@@ -1641,33 +1641,41 @@ async def queue_list(session: AsyncSession, project_id: str) -> dict:
         return {"error": "Queue service not initialized", "queued": [], "total": 0}
 
     entries = await issue_queue_service_ref.list_queue(project_id)
-
-    # Filter to only pending entries for active queue display
-    pending = [e for e in entries if e["status"] == "pending"]
-
     svc = IssueService(session)
-    items = []
-    for idx, entry in enumerate(pending):
-        # Enrich with issue name and description
-        issue_name = ""
-        description = ""
-        try:
-            issue = await svc.get_by_id(entry["issue_id"])
+
+    async def _enrich(items_list):
+        result_items = []
+        for idx, entry in enumerate(items_list):
+            issue_name = ""
+            description = ""
+            try:
+                issue = await svc.get_by_id(entry["issue_id"])
+            except Exception:
+                pass
             if issue:
                 issue_name = issue.name or ""
                 description = (issue.description or "")[:120]
-        except Exception:
-            pass  # Gracefully degrade if issue lookup fails
 
-        items.append({
-            "position": idx + 1,
-            "issue_id": entry["issue_id"],
-            "issue_name": issue_name,
-            "description": description,
-            "created_at": entry.get("created_at", ""),
-        })
+            result_items.append({
+                "position": idx + 1,
+                "issue_id": entry["issue_id"],
+                "issue_name": issue_name,
+                "description": description,
+                "status": entry["status"],
+                "created_at": entry.get("created_at", ""),
+            })
+        return result_items
 
-    return {"queued": items, "total": len(items)}
+    pending = [e for e in entries if e["status"] == "pending"]
+    running = [e for e in entries if e["status"] == "running"]
+    stalled = [e for e in entries if e["status"] == "stalled"]
+
+    return {
+        "queued": await _enrich(pending),
+        "running": await _enrich(running),
+        "stalled": await _enrich(stalled),
+        "total": len(pending),
+    }
 
 
 async def queue_remove(session: AsyncSession, project_id: str, issue_id: str) -> dict:

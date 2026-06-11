@@ -72,11 +72,12 @@ function QueuePage() {
   const running = runningData?.running ?? [];
   const isPaused = statusData?.paused ?? false;
   const isAutoProcessEnabled = statusData?.auto_process_enabled ?? false;
-  const dispatchingCount = statusData?.dispatching_count ?? 0;
+  const stalledCount = statusData?.stalled_count ?? 0;
 
   // Dispatch status logic
-  const isActive = dispatchingCount > 0 || running.length > 0;
+  const isActive = running.length > 0;
   const isWaiting = queued.length > 0 && !isActive;
+  const isStalled = stalledCount > 0 && !isActive;
   const isStopped = isPaused && !isActive;
 
   let dispatchStatus: { label: string; colorClass: string; dotClass: string } | null = null;
@@ -85,6 +86,12 @@ function QueuePage() {
       label: "Attivo",
       colorClass: "text-emerald-600 dark:text-emerald-400",
       dotClass: "bg-emerald-500",
+    };
+  } else if (isStalled) {
+    dispatchStatus = {
+      label: "Stalled",
+      colorClass: "text-orange-600 dark:text-orange-400",
+      dotClass: "bg-orange-500",
     };
   } else if (isWaiting) {
     dispatchStatus = {
