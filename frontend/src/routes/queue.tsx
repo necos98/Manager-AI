@@ -30,7 +30,7 @@ function QueuePage() {
   const events = useEvents();
   const queryClient = useQueryClient();
   const removeFromQueue = useRemoveFromQueue();
-  const [removeConfirm, setRemoveConfirm] = useState<{ projectId: string; issueId: string; issueName: string } | null>(null);
+  const [removeConfirm, setRemoveConfirm] = useState<{ projectId: string; issueId: string; issueName: string; force: boolean } | null>(null);
   const setAutoProcess = useSetAutoProcess();
 
   // Subscribe to WebSocket events for real-time invalidation
@@ -39,6 +39,7 @@ function QueuePage() {
     const unsubscribe = events.subscribe((event: WsEventData) => {
       if (event.type === "queue_entry_created" || event.type === "queue_entry_removed") {
         queryClient.invalidateQueries({ queryKey: queueKeys.queued });
+        queryClient.invalidateQueries({ queryKey: queueKeys.running });
         queryClient.invalidateQueries({ queryKey: queueKeys.status });
       }
       if (event.type === "issue_status_changed") {
@@ -169,7 +170,7 @@ function QueuePage() {
           ) : (
             <ul className="space-y-2">
               {running.map((item) => (
-                <li key={item.terminal_id}>
+                <li key={item.terminal_id} className="flex items-center justify-between">
                   <Link
                     to="/projects/$projectId/issues/$issueId"
                     params={{ projectId: item.project_id, issueId: item.issue_id }}
@@ -186,6 +187,23 @@ function QueuePage() {
                       in {item.project_name || item.project_id}
                     </span>
                   </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                    onClick={() =>
+                      setRemoveConfirm({
+                        projectId: item.project_id,
+                        issueId: item.issue_id,
+                        issueName: item.issue_name || "(unnamed)",
+                        force: true,
+                      })
+                    }
+                    disabled={removeFromQueue.isPending}
+                    aria-label="Stop and remove from queue"
+                  >
+                    <Trash2 className="size-3" />
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -270,6 +288,7 @@ function QueuePage() {
                               projectId: item.project_id,
                               issueId: item.issue_id,
                               issueName: item.issue_name || item.issue_description || "(unnamed)",
+                              force: false,
                             })
                           }
                           disabled={removeFromQueue.isPending}
@@ -291,10 +310,13 @@ function QueuePage() {
       <Dialog open={removeConfirm !== null} onOpenChange={() => setRemoveConfirm(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Remove from Queue?</DialogTitle>
+            <DialogTitle>{removeConfirm?.force ? "Stop and Remove?" : "Remove from Queue?"}</DialogTitle>
             <DialogDescription>
-              Remove <span className="font-medium">{removeConfirm?.issueName}</span> from the queue.
-              The issue itself will not be affected.
+              {removeConfirm?.force ? (
+                <>Stop and remove <span className="font-medium">{removeConfirm?.issueName}</span> from the queue. The running terminal will be killed.</>
+              ) : (
+                <>Remove <span className="font-medium">{removeConfirm?.issueName}</span> from the queue. The issue itself will not be affected.</>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -307,7 +329,11 @@ function QueuePage() {
               onClick={() => {
                 if (!removeConfirm) return;
                 removeFromQueue.mutate(
-                  { projectId: removeConfirm.projectId, issueId: removeConfirm.issueId },
+                  {
+                    projectId: removeConfirm.projectId,
+                    issueId: removeConfirm.issueId,
+                    force: removeConfirm.force,
+                  },
                   {
                     onSuccess: () => setRemoveConfirm(null),
                   },
@@ -319,6 +345,8 @@ function QueuePage() {
                   <Loader2 className="size-4 mr-1 animate-spin" />
                   Removing...
                 </>
+              ) : removeConfirm?.force ? (
+                "Stop and Remove"
               ) : (
                 "Remove"
               )}

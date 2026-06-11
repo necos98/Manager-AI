@@ -56,10 +56,12 @@ export function useAddToQueue() {
   return useMutation({
     mutationFn: ({ projectId, issueId }: { projectId: string; issueId: string }) =>
       api.addToQueue(projectId, issueId),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queueKeys.queued });
+      queryClient.invalidateQueries({ queryKey: queueKeys.running });
       queryClient.invalidateQueries({ queryKey: queueKeys.status });
       queryClient.invalidateQueries({ queryKey: queueKeys.all });
+      queryClient.invalidateQueries({ queryKey: [...queueKeys.all, "position", variables.issueId] });
     },
   });
 }
@@ -67,12 +69,14 @@ export function useAddToQueue() {
 export function useRemoveFromQueue() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ projectId, issueId }: { projectId: string; issueId: string }) =>
-      api.removeFromQueue(projectId, issueId),
-    onSuccess: () => {
+    mutationFn: ({ projectId, issueId, force }: { projectId: string; issueId: string; force?: boolean }) =>
+      api.removeFromQueue(projectId, issueId, force ?? false),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queueKeys.queued });
+      queryClient.invalidateQueries({ queryKey: queueKeys.running });
       queryClient.invalidateQueries({ queryKey: queueKeys.status });
       queryClient.invalidateQueries({ queryKey: queueKeys.all });
+      queryClient.invalidateQueries({ queryKey: [...queueKeys.all, "position", variables.issueId] });
     },
   });
 }

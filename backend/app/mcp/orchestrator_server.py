@@ -437,12 +437,12 @@ async def queue_list(project_id: str) -> dict:
 @orchestrator_mcp.tool(
     description="Remove an issue from the queue. "
                 "The issue retains its original status — membership is tracked via QueueEntry. "
-                "Parameters: project_id (required), issue_id (required). "
+                "Parameters: project_id (required), issue_id (required), force (optional bool, default false — set true to stop and remove a RUNNING issue). "
                 "Returns: {id, project_id, status}."
 )
-async def queue_remove(project_id: str, issue_id: str) -> dict:
+async def queue_remove(project_id: str, issue_id: str, force: bool = False) -> dict:
     async with async_session() as session:
-        return await _queue_remove(session, project_id, issue_id)
+        return await _queue_remove(session, project_id, issue_id, force=force)
 
 
 @orchestrator_mcp.tool(

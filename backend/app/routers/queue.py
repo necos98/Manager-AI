@@ -276,6 +276,7 @@ class QueueAddRequest(BaseModel):
 class QueueRemoveRequest(BaseModel):
     project_id: str
     issue_id: str
+    force: bool = False
 
 
 @router.post("/add")
@@ -314,11 +315,13 @@ async def remove_from_queue(
     from app.services.issue_queue_service import _queue_remove_direct
 
     if issue_queue_service_ref is not None:
-        result = await issue_queue_service_ref.remove_from_queue(db, body.project_id, body.issue_id)
+        result = await issue_queue_service_ref.remove_from_queue(
+            db, body.project_id, body.issue_id, force=body.force,
+        )
         return {**result, "message": "Issue removed from queue"}
 
     # Fallback when IssueQueueService is not initialized
-    result = await _queue_remove_direct(db, body.project_id, body.issue_id)
+    result = await _queue_remove_direct(db, body.project_id, body.issue_id, force=body.force)
     return {**result, "message": "Issue removed from queue"}
 
 

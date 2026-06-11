@@ -58,8 +58,8 @@ export function addToQueue(projectId: string, issueId: string): Promise<{ id: st
   return apiPost("/queue/add", { project_id: projectId, issue_id: issueId });
 }
 
-export function removeFromQueue(projectId: string, issueId: string): Promise<{ id: string; message: string }> {
-  return apiPost("/queue/remove", { project_id: projectId, issue_id: issueId });
+export function removeFromQueue(projectId: string, issueId: string, force: boolean = false): Promise<{ id: string; message: string }> {
+  return apiPost("/queue/remove", { project_id: projectId, issue_id: issueId, force });
 }
 
 export interface QueuePositionResponse {

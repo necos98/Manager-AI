@@ -1678,12 +1678,14 @@ async def queue_list(session: AsyncSession, project_id: str) -> dict:
     }
 
 
-async def queue_remove(session: AsyncSession, project_id: str, issue_id: str) -> dict:
+async def queue_remove(session: AsyncSession, project_id: str, issue_id: str, force: bool = False) -> dict:
     """Remove an issue from the queue.
 
     The issue retains its original status — membership is tracked
-    exclusively via QueueEntry. Delegates to
-    ``IssueQueueService.remove_from_queue()`` for the shared logic.
+    exclusively via QueueEntry. Set ``force=True`` to stop and remove
+    a RUNNING issue (kills the terminal).
+    Delegates to ``IssueQueueService.remove_from_queue()`` for the
+    shared logic.
     """
     from app.services.issue_queue_service import issue_queue_service_ref
 
@@ -1692,7 +1694,7 @@ async def queue_remove(session: AsyncSession, project_id: str, issue_id: str) ->
 
     try:
         return await issue_queue_service_ref.remove_from_queue(
-            session, project_id, issue_id,
+            session, project_id, issue_id, force=force,
         )
     except AppError as e:
         return {"error": e.message}

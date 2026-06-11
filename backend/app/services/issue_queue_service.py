@@ -397,15 +397,18 @@ class IssueQueueService(BaseNotifier):
 
     async def remove_from_queue(
         self, session: AsyncSession, project_id: str, issue_id: str,
+        force: bool = False,
     ) -> dict:
         """Remove an issue from the FIFO queue.
 
-        Can only remove PENDING entries. RUNNING entries cannot be removed
-        (issue is currently being processed).
-        Marks the QueueEntry as DONE and emits a ``queue_entry_removed`` event.
+        Removes PENDING entries by marking them DONE.
+        When ``force=True``, also handles RUNNING entries by killing
+        the terminal and marking DONE.
+        Emits a ``queue_entry_removed`` event.
 
         Returns ``{id, project_id, status}`` on success.
-        Raises ``AppError`` if the issue has no pending queue entry or is RUNNING.
+        Raises ``AppError`` if the issue has no queue entry or is RUNNING
+        without ``force``.
         """
         from app.utils.datetime import iso_now
 
@@ -420,18 +423,30 @@ class IssueQueueService(BaseNotifier):
         if pending_entry is not None:
             await self.mark_done(issue_id)
         else:
-            # Check if RUNNING — can't remove running issues
             async with async_session() as s:
                 running = await self._find_running_entry(s, issue_id)
             if running is not None:
-                raise AppError(
-                    f"Issue {issue_id} is currently RUNNING and cannot "
-                    f"be removed from the queue",
+                if not force:
+                    raise AppError(
+                        f"Issue {issue_id} is currently RUNNING. "
+                        f"Use force=true to stop and remove it.",
+                    )
+                # Kill the terminal and mark as done
+                from app.services.terminal_service import terminal_service
+                active_terms = terminal_service.list_active(
+                    project_id=project_id, issue_id=issue_id,
                 )
-            raise AppError(
-                f"Issue {issue_id} is not in the queue "
-                f"(no pending QueueEntry)",
-            )
+                for term in active_terms:
+                    terminal_service.kill(term["id"])
+                await self.mark_done(issue_id)
+                logger.info(
+                    "Force-removed RUNNING issue %s from queue", issue_id,
+                )
+            else:
+                raise AppError(
+                    f"Issue {issue_id} is not in the queue "
+                    f"(no pending or running QueueEntry)",
+                )
 
         await event_service.emit({
             "type": "queue_entry_removed",
@@ -723,15 +738,17 @@ async def _queue_add_direct(
 
 async def _queue_remove_direct(
     session: AsyncSession, project_id: str, issue_id: str,
+    force: bool = False,
 ) -> dict:
     """Remove an issue from the FIFO queue without requiring IssueQueueService.
 
     Fallback used when issue_queue_service_ref is None (IssueQueueService
     was not initialized during startup). Looks up the pending QueueEntry,
-    marks it as DONE, and emits the event.
+    marks it as DONE, and emits the event. When ``force=True``, also
+    handles RUNNING entries by killing the terminal.
 
     Returns {id, project_id, status} on success.
-    Raises AppError if the issue has no pending queue entry.
+    Raises AppError if the issue has no queue entry or is RUNNING without force.
     """
     from app.utils.datetime import iso_now
 
@@ -741,7 +758,7 @@ async def _queue_remove_direct(
     except AppError as e:
         raise AppError(str(e))
 
-    # Find the pending QueueEntry
+    # Find the pending QueueEntry first
     result = await session.execute(
         select(QueueEntry)
         .where(
@@ -754,13 +771,38 @@ async def _queue_remove_direct(
     entry = result.scalar_one_or_none()
 
     if entry is None:
-        raise AppError(
-            f"Issue {issue_id} is not in the queue (no pending QueueEntry)",
+        # Check if RUNNING
+        result = await session.execute(
+            select(QueueEntry)
+            .where(
+                QueueEntry.issue_id == issue_id,
+                QueueEntry.status == QueueEntryStatus.RUNNING,
+            )
+            .limit(1)
         )
-
-    # Mark as DONE
-    entry.status = QueueEntryStatus.DONE
-    await session.commit()
+        running_entry = result.scalar_one_or_none()
+        if running_entry is not None:
+            if not force:
+                raise AppError(
+                    f"Issue {issue_id} is currently RUNNING. "
+                    f"Use force=true to stop and remove it.",
+                )
+            from app.services.terminal_service import terminal_service
+            active_terms = terminal_service.list_active(
+                project_id=project_id, issue_id=issue_id,
+            )
+            for term in active_terms:
+                terminal_service.kill(term["id"])
+            running_entry.status = QueueEntryStatus.DONE
+            await session.commit()
+        else:
+            raise AppError(
+                f"Issue {issue_id} is not in the queue (no pending or running QueueEntry)",
+            )
+    else:
+        # Mark as DONE
+        entry.status = QueueEntryStatus.DONE
+        await session.commit()
 
     # Emit event for other listeners
     await event_service.emit({
