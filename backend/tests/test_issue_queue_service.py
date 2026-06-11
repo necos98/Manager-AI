@@ -101,13 +101,14 @@ class TestQueueEntryModel:
     """QueueEntryStatus enum and QueueEntry model defaults."""
 
     def test_enum_values(self):
-        assert QueueEntryStatus.PENDING == "pending"
-        assert QueueEntryStatus.DISPATCHING == "dispatching"
-        assert QueueEntryStatus.DISPATCHED == "dispatched"
-        assert QueueEntryStatus.FAILED == "failed"
+        assert QueueEntryStatus.PENDING == "PENDING"
+        assert QueueEntryStatus.RUNNING == "RUNNING"
+        assert QueueEntryStatus.DONE == "DONE"
+        assert QueueEntryStatus.FAILED == "FAILED"
+        assert QueueEntryStatus.STALLED == "STALLED"
 
     def test_enum_members(self):
-        assert len(QueueEntryStatus) == 4
+        assert len(QueueEntryStatus) == 5
 
     @pytest.mark.asyncio
     async def test_queue_entry_defaults(self, db_session):
@@ -176,13 +177,13 @@ class TestIssueQueueServiceConstructor:
 
 
 # ==============================================================================
-# TASK 2: Test registry CRUD — register, mark_dispatching, mark_dispatched,
+# TASK 2: Test registry CRUD — register, mark_running, mark_done,
 #          mark_failed
 # ==============================================================================
 
 
 class TestRegistryCRUD:
-    """register, mark_dispatching, mark_dispatched, mark_failed methods."""
+    """register, mark_running, mark_done, mark_failed, mark_stalled methods."""
 
     @pytest.mark.asyncio
     async def test_register_creates_entry_with_order(self, queue_service, project, db_session):
@@ -216,66 +217,58 @@ class TestRegistryCRUD:
         assert e2.order == 1  # project B starts at 1
         assert e3.order == 2
 
-    # -- mark_dispatching tests --
+    # -- mark_running tests --
 
     @pytest.mark.asyncio
-    async def test_mark_dispatching_success(self, queue_service, project, db_session):
-        """mark_dispatching() changes PENDING → DISPATCHING with dispatched_at."""
+    async def test_mark_running_success(self, queue_service, project, db_session):
+        """mark_running() changes PENDING → RUNNING with dispatched_at and terminal_id."""
         entry = await queue_service.register("iss-1", project.id)
         assert entry.status == QueueEntryStatus.PENDING
 
-        result = await queue_service.mark_dispatching("iss-1")
+        result = await queue_service.mark_running("iss-1", "term-test")
         assert result is not None
-        assert result.status == QueueEntryStatus.DISPATCHING
+        assert result.status == QueueEntryStatus.RUNNING
         assert result.dispatched_at is not None
+        assert result.last_terminal_id == "term-test"
 
     @pytest.mark.asyncio
-    async def test_mark_dispatching_already_dispatching(self, queue_service, project, db_session):
-        """mark_dispatching() is a no-op if entry is already DISPATCHING."""
-        e1 = await queue_service.register("iss-1", project.id)
-        await queue_service.mark_dispatching("iss-1")
-        result = await queue_service.mark_dispatching("iss-1")
-        assert result is not None
-        assert result.status == QueueEntryStatus.DISPATCHING
-
-    @pytest.mark.asyncio
-    async def test_mark_dispatching_missing_entry(self, queue_service):
-        """mark_dispatching() returns None for unknown issue_id."""
-        result = await queue_service.mark_dispatching("nonexistent")
+    async def test_mark_running_missing_entry(self, queue_service):
+        """mark_running() returns None for unknown issue_id."""
+        result = await queue_service.mark_running("nonexistent", "term-test")
         assert result is None
 
-    # -- mark_dispatched tests --
+    # -- mark_done tests --
 
     @pytest.mark.asyncio
-    async def test_mark_dispatched_from_dispatching(self, queue_service, project, db_session):
-        """mark_dispatched() changes DISPATCHING → DISPATCHED (normal completion)."""
+    async def test_mark_done_from_running(self, queue_service, project, db_session):
+        """mark_done() changes RUNNING → DONE (normal completion)."""
         await queue_service.register("iss-1", project.id)
-        await queue_service.mark_dispatching("iss-1")
-        result = await queue_service.mark_dispatched("iss-1")
+        await queue_service.mark_running("iss-1", "term-test")
+        result = await queue_service.mark_done("iss-1")
         assert result is not None
-        assert result.status == QueueEntryStatus.DISPATCHED
+        assert result.status == QueueEntryStatus.DONE
 
     @pytest.mark.asyncio
-    async def test_mark_dispatched_from_pending(self, queue_service, project, db_session):
-        """mark_dispatched() changes PENDING → DISPATCHED (manual removal)."""
+    async def test_mark_done_from_pending(self, queue_service, project, db_session):
+        """mark_done() changes PENDING → DONE (manual removal)."""
         await queue_service.register("iss-1", project.id)
-        result = await queue_service.mark_dispatched("iss-1")
+        result = await queue_service.mark_done("iss-1")
         assert result is not None
-        assert result.status == QueueEntryStatus.DISPATCHED
+        assert result.status == QueueEntryStatus.DONE
 
     @pytest.mark.asyncio
-    async def test_mark_dispatched_missing_entry(self, queue_service):
-        """mark_dispatched() returns None for unknown issue_id."""
-        result = await queue_service.mark_dispatched("nonexistent")
+    async def test_mark_done_missing_entry(self, queue_service):
+        """mark_done() returns None for unknown issue_id."""
+        result = await queue_service.mark_done("nonexistent")
         assert result is None
 
     # -- mark_failed tests --
 
     @pytest.mark.asyncio
-    async def test_mark_failed_from_dispatching(self, queue_service, project, db_session):
-        """mark_failed() changes DISPATCHING → FAILED with error_message."""
+    async def test_mark_failed_from_running(self, queue_service, project, db_session):
+        """mark_failed() changes RUNNING → FAILED with error_message."""
         await queue_service.register("iss-1", project.id)
-        await queue_service.mark_dispatching("iss-1")
+        await queue_service.mark_running("iss-1", "term-test")
         result = await queue_service.mark_failed("iss-1", "Something went wrong")
         assert result is not None
         assert result.status == QueueEntryStatus.FAILED
@@ -294,7 +287,7 @@ class TestRegistryCRUD:
         """mark_failed() truncates error_message to 1000 characters."""
         long_msg = "x" * 2000
         await queue_service.register("iss-1", project.id)
-        await queue_service.mark_dispatching("iss-1")
+        await queue_service.mark_running("iss-1", "term-test")
         result = await queue_service.mark_failed("iss-1", long_msg)
         assert len(result.error_message) == 1000
 
@@ -335,9 +328,9 @@ class TestQuery:
     async def test_get_next_pending_ignores_non_pending(
         self, queue_service, project, db_session,
     ):
-        """get_next_pending() does not return dispatched/failed entries."""
+        """get_next_pending() does not return done/failed entries."""
         await queue_service.register("iss-1", project.id)
-        await queue_service.mark_dispatched("iss-1")
+        await queue_service.mark_done("iss-1")
         result = await queue_service.get_next_pending(project.id)
         assert result is None
 
@@ -396,7 +389,7 @@ class TestQuery:
         assert "status" in e
         assert "order" in e
         assert "created_at" in e
-        assert e["status"] == "pending"
+        assert e["status"] == "PENDING"
 
     # -- list_all_global tests --
 
@@ -439,9 +432,9 @@ class TestQuery:
     async def test_get_pending_entry_ignores_non_pending(
         self, queue_service, project, db_session,
     ):
-        """get_pending_entry() does not return dispatched entries."""
+        """get_pending_entry() does not return done entries."""
         await queue_service.register("iss-1", project.id)
-        await queue_service.mark_dispatched("iss-1")
+        await queue_service.mark_done("iss-1")
         entry = await queue_service.get_pending_entry("iss-1")
         assert entry is None
 
@@ -474,12 +467,10 @@ class TestEventHandling:
         with (
             patch.object(queue_service_disabled, "_on_issue_finished") as mock_finish,
             patch.object(queue_service_disabled, "_on_issue_queued") as mock_queued,
-            patch.object(queue_service_disabled, "_on_issue_reasoning") as mock_reason,
         ):
             await queue_service_disabled.notify(event)
             mock_finish.assert_not_called()
             mock_queued.assert_not_called()
-            mock_reason.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_notify_finished_routes_correctly(self, queue_service):
@@ -513,53 +504,29 @@ class TestEventHandling:
             mock_queued.assert_awaited_once_with("p1", "i1")
 
     @pytest.mark.asyncio
-    async def test_notify_reasoning_routes_correctly(self, queue_service):
-        """Reasoning event triggers _on_issue_reasoning."""
-        with patch.object(queue_service, "_on_issue_reasoning",
-                          new_callable=AsyncMock) as mock_reason:
-            await queue_service.notify({
-                "type": "issue_status_changed",
-                "new_status": "Reasoning",
-                "project_id": "p1",
-                "issue_id": "i1",
-            })
-            await asyncio.sleep(0)
-            mock_reason.assert_awaited_once_with("i1")
-
-    @pytest.mark.asyncio
-    async def test_notify_reasoning_skipped_with_flag(self, queue_service):
-        """Reasoning event with _queue_dispatching_handled=True skips _on_issue_reasoning.
-
-        _dequeue_and_run marks the QueueEntry as DISPATCHING synchronously
-        before emitting the event, so the redundant _on_issue_reasoning
-        → mark_dispatching call is wasted and should be skipped.
-        """
-        with patch.object(queue_service, "_on_issue_reasoning",
-                          new_callable=AsyncMock) as mock_reason:
-            await queue_service.notify({
-                "type": "issue_status_changed",
-                "new_status": "Reasoning",
-                "project_id": "p1",
-                "issue_id": "i1",
-                "_queue_dispatching_handled": True,
-            })
-            await asyncio.sleep(0)
-            mock_reason.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_notify_reasoning_flag_does_not_affect_other_statuses(
-        self, queue_service,
-    ):
-        """The flag only affects Reasoning — Finished and queue_entry_created still work."""
+    async def test_notify_ignores_reasoning(self, queue_service):
+        """Reasoning events are no longer processed by notify."""
         with (
             patch.object(queue_service, "_on_issue_finished",
                           new_callable=AsyncMock) as mock_finish,
             patch.object(queue_service, "_on_issue_queued",
                           new_callable=AsyncMock) as mock_queued,
-            patch.object(queue_service, "_on_issue_reasoning",
-                          new_callable=AsyncMock) as mock_reason,
         ):
-            # Finished event with the flag — should still dispatch
+            await queue_service.notify({
+                "type": "issue_status_changed",
+                "new_status": "Reasoning",
+                "project_id": "p1",
+                "issue_id": "i1",
+            })
+            await asyncio.sleep(0)
+            mock_finish.assert_not_called()
+            mock_queued.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_notify_finished_with_flag_works(self, queue_service):
+        """Finished event with _queue_dispatching_handled flag still dispatches."""
+        with patch.object(queue_service, "_on_issue_finished",
+                          new_callable=AsyncMock) as mock_finish:
             await queue_service.notify({
                 "type": "issue_status_changed",
                 "new_status": "Finished",
@@ -570,7 +537,27 @@ class TestEventHandling:
             await asyncio.sleep(0)
             mock_finish.assert_awaited_once_with("p1", "i1")
 
-            # queue_entry_created event — should dispatch regardless of flag
+    @pytest.mark.asyncio
+    async def test_notify_queue_and_finished_independent(self, queue_service):
+        """queue_entry_created and Finished events both work."""
+        with (
+            patch.object(queue_service, "_on_issue_finished",
+                          new_callable=AsyncMock) as mock_finish,
+            patch.object(queue_service, "_on_issue_queued",
+                          new_callable=AsyncMock) as mock_queued,
+        ):
+            # Finished event
+            await queue_service.notify({
+                "type": "issue_status_changed",
+                "new_status": "Finished",
+                "project_id": "p1",
+                "issue_id": "i1",
+                "_queue_dispatching_handled": True,
+            })
+            await asyncio.sleep(0)
+            mock_finish.assert_awaited_once_with("p1", "i1")
+
+            # queue_entry_created event
             await queue_service.notify({
                 "type": "queue_entry_created",
                 "project_id": "p2",
@@ -579,14 +566,11 @@ class TestEventHandling:
             await asyncio.sleep(0)
             mock_queued.assert_awaited_once_with("p2", "i2")
 
-            # Reasoning event with the flag — should be skipped
-            mock_reason.assert_not_called()
-
     @pytest.mark.asyncio
     async def test_on_issue_finished(
         self, queue_service, project, db_session,
     ):
-        """_on_issue_finished marks dispatched and dequeues next."""
+        """_on_issue_finished marks done and dequeues next."""
         await queue_service.register("iss-1", project.id)
         await queue_service.register("iss-2", project.id)
 
@@ -599,7 +583,7 @@ class TestEventHandling:
         ):
             await queue_service._on_issue_finished(project.id, "iss-1")
 
-        # First issue should now be dispatched
+        # First issue should now be done
         entry_1 = await queue_service.get_pending_entry("iss-1")
         assert entry_1 is None  # no longer pending
 
@@ -635,22 +619,6 @@ class TestEventHandling:
         assert entry.status == QueueEntryStatus.PENDING
         mock_auto.assert_awaited_once_with(project.id, "iss-1")
 
-    @pytest.mark.asyncio
-    async def test_on_issue_reasoning_marks_dispatching(
-        self, queue_service, project, db_session,
-    ):
-        """_on_issue_reasoning marks QueueEntry as DISPATCHING."""
-        await queue_service.register("iss-1", project.id)
-        await queue_service._on_issue_reasoning("iss-1")
-        # Entry should now be DISPATCHING
-        from sqlalchemy import select
-        async with db_session.begin():
-            result = await db_session.execute(
-                select(QueueEntry).where(QueueEntry.issue_id == "iss-1")
-            )
-            entry = result.scalar_one()
-        assert entry.status == QueueEntryStatus.DISPATCHING
-
 
 # ==============================================================================
 # TASK 5: Test auto-start e dequeue — _dequeue_and_run, _maybe_auto_start_first,
@@ -665,7 +633,7 @@ class TestDequeueAndRun:
     async def test_dequeue_and_run_success(
         self, queue_service, project, db_session,
     ):
-        """_dequeue_and_run() marks dispatching, updates status, emits event, runs."""
+        """_dequeue_and_run() marks running and calls run_issue."""
         from app.services.issue_service import IssueService
         isvc = IssueService(db_session)
         issue = await isvc.create(
@@ -679,16 +647,19 @@ class TestDequeueAndRun:
         with (
             patch("app.services.issue_queue_service.run_issue",
                   new_callable=AsyncMock, return_value=run_issue_result) as mock_run,
-            patch("app.mcp.shared_tools._emit_event",
-                  new_callable=AsyncMock) as mock_emit,
         ):
             await queue_service._dequeue_and_run(project.id)
 
         mock_run.assert_awaited_once()
-        mock_emit.assert_awaited_once()
-        call_args = mock_emit.call_args[0][0]
-        assert call_args["type"] == "issue_status_changed"
-        assert call_args["new_status"] == "Reasoning"
+        # Entry should now be RUNNING
+        from sqlalchemy import select
+        async with db_session.begin():
+            result = await db_session.execute(
+                select(QueueEntry).where(QueueEntry.issue_id == issue.id)
+            )
+            entry = result.scalar_one()
+        assert entry.status == QueueEntryStatus.RUNNING
+        assert entry.last_terminal_id == "term-1"
 
     @pytest.mark.asyncio
     async def test_dequeue_and_run_no_pending(self, queue_service, project):
@@ -791,9 +762,9 @@ class TestMaybeAutoStartFirst:
             priority=1,
         )
         await isvc.create_spec(issue.id, project.id, "# Spec")
-        # Register QueueEntry + mark DISPATCHING to simulate an active run
+        # Register QueueEntry + mark RUNNING to simulate an active run
         await queue_service.register(issue.id, project.id)
-        await queue_service.mark_dispatching(issue.id)
+        await queue_service.mark_running(issue.id, "term-test")
 
         with patch.object(queue_service, "_dequeue_and_run",
                           new_callable=AsyncMock) as mock_deq:
@@ -1112,7 +1083,7 @@ class TestGhostReasoning:
         )
         await isvc.create_spec(ghost_issue.id, project.id, "# Spec")
         await queue_service.register(ghost_issue.id, project.id)
-        await queue_service.mark_dispatching(ghost_issue.id)
+        await queue_service.mark_running(ghost_issue.id, "term-test")
         await queue_service.mark_failed(ghost_issue.id, "PTY creation failed")
 
         # Create a real pending issue
@@ -1133,11 +1104,11 @@ class TestGhostReasoning:
     async def test_active_reasoning_still_blocks(
         self, queue_service, project, db_session,
     ):
-        """A REASONING issue with an active DISPATCHING QueueEntry blocks auto-start."""
+        """A REASONING issue with an active RUNNING QueueEntry blocks auto-start."""
         from app.services.issue_service import IssueService
         isvc = IssueService(db_session)
 
-        # Create running issue: REASONING status + DISPATCHING QueueEntry
+        # Create running issue: REASONING status + RUNNING QueueEntry
         running_issue = await isvc.create(
             project_id=project.id,
             description="Running issue",
@@ -1145,7 +1116,7 @@ class TestGhostReasoning:
         )
         await isvc.create_spec(running_issue.id, project.id, "# Spec")
         await queue_service.register(running_issue.id, project.id)
-        await queue_service.mark_dispatching(running_issue.id)
+        await queue_service.mark_running(running_issue.id, "term-test")
 
         # Create a pending issue
         pending_issue = await isvc.create(
@@ -1177,7 +1148,7 @@ class TestGhostReasoning:
         )
         await isvc.create_spec(ghost.id, project.id, "# Spec")
         await queue_service.register(ghost.id, project.id)
-        await queue_service.mark_dispatching(ghost.id)
+        await queue_service.mark_running(ghost.id, "term-test")
         await queue_service.mark_failed(ghost.id, "crashed")
 
         # Pending entry

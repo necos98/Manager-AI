@@ -10,11 +10,11 @@ from app.database import Base
 
 
 class QueueEntryStatus(str, enum.Enum):
-    PENDING = "pending"
-    RUNNING = "running"
-    DONE = "done"
-    FAILED = "failed"
-    STALLED = "stalled"
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    DONE = "DONE"
+    FAILED = "FAILED"
+    STALLED = "STALLED"
 
 
 class QueueEntry(Base):

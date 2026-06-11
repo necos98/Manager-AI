@@ -1,8 +1,8 @@
-"""Issue Queue Service — FIFO event-driven queue for issues.
+"""Issue Queue Service -- FIFO event-driven queue for issues.
 
 Status-independent: the queue tracks its own state (RUNNING/DONE/STALLED)
 via ``QueueEntry`` and does NOT modify ``IssueStatus``. It reacts to
-``issue_status_changed → Finished`` events to mark entries DONE and
+``issue_status_changed -&gt; Finished`` events to mark entries DONE and
 advance the queue.
 
 Terminal liveness is checked via ``TerminalService.list_active()`` to
@@ -38,7 +38,7 @@ issue_queue_service_ref: Optional[IssueQueueService] = None
 class IssueQueueService(BaseNotifier):
     """Event listener that auto-starts the next queued issue after one finishes.
 
-    Also serves as QueueRegistryService — provides methods for registering
+    Also serves as QueueRegistryService -- provides methods for registering
     and tracking queue entries in the persistent ``queue_entries`` table.
     """
 
@@ -65,16 +65,39 @@ class IssueQueueService(BaseNotifier):
     # QueueRegistryService methods
     # ------------------------------------------------------------------
 
-    async def register(self, issue_id: str, project_id: str) -> QueueEntry:
+    async def register(self, issue_id: str, project_id: str, skip_if_exists: bool = False) -> QueueEntry:
         """Create a new QueueEntry with status ``pending``.
 
         Assigns ``order`` = max existing order for the project + 1.
         Serialized per-project via ``_get_register_lock`` to prevent
         two concurrent calls from reading the same ``max(order)``.
+
+        When ``skip_if_exists=True``, returns the existing entry silently
+        instead of raising ``AppError`` (used by event handlers for
+        idempotent re-registration).
         """
         async with self._get_register_lock(project_id):
             async with async_session() as session:
-                # Determine next order for this project
+                existing = await session.execute(
+                    select(QueueEntry)
+                    .where(
+                        QueueEntry.issue_id == issue_id,
+                        QueueEntry.status.in_([
+                            QueueEntryStatus.PENDING,
+                            QueueEntryStatus.RUNNING,
+                        ]),
+                    )
+                    .limit(1)
+                )
+                existing_entry = existing.scalar_one_or_none()
+                if existing_entry is not None:
+                    if skip_if_exists:
+                        return existing_entry
+                    raise AppError(
+                        f"Issue {issue_id} is already in the queue "
+                        f"(pending or running)",
+                    )
+
                 result = await session.execute(
                     select(sa_func.coalesce(sa_func.max(QueueEntry.order), 0))
                     .where(QueueEntry.project_id == project_id)
@@ -118,12 +141,14 @@ class IssueQueueService(BaseNotifier):
             return entry
 
     async def mark_done(self, issue_id: str) -> Optional[QueueEntry]:
-        """Mark a RUNNING QueueEntry as DONE."""
+        """Mark a RUNNING or PENDING QueueEntry as DONE."""
         async with async_session() as session:
             entry = await self._find_running_entry(session, issue_id)
             if entry is None:
+                entry = await self._get_pending_by_issue(session, issue_id)
+            if entry is None:
                 logger.warning(
-                    "No RUNNING QueueEntry found for issue %s to mark done",
+                    "No active QueueEntry found for issue %s to mark done",
                     issue_id,
                 )
                 return None
@@ -252,11 +277,11 @@ class IssueQueueService(BaseNotifier):
         is no longer active (server restart). These are re-queued as PENDING
         so they get retried.
 
-        Called at application startup. Fire-and-forget — failures are logged
+        Called at application startup. Fire-and-forget -- failures are logged
         but never crash startup.
         """
         if not self._enabled:
-            logger.info("Auto queue processing is disabled — skipping startup_resume")
+            logger.info("Auto queue processing is disabled -- skipping startup_resume")
             return
 
         try:
@@ -279,8 +304,8 @@ class IssueQueueService(BaseNotifier):
                             "QueueEntry %s marked STALLED at startup (no active terminal)",
                             entry.id,
                         )
-                        # Retry: re-queue as PENDING
-                        await self.register(entry.issue_id, entry.project_id)
+                        # Retry: re-queue as PENDING (skip if already re-queued)
+                        await self.register(entry.issue_id, entry.project_id, skip_if_exists=True)
                 await session.commit()
 
                 # Find projects with PENDING entries to auto-start
@@ -299,7 +324,7 @@ class IssueQueueService(BaseNotifier):
                 active_running = await self._count_active_running(project_id)
                 if active_running > 0:
                     logger.info(
-                        "startup_resume: project %s has a RUNNING entry — skipping",
+                        "startup_resume: project %s has a RUNNING entry -- skipping",
                         project_id,
                     )
                     continue
@@ -350,7 +375,7 @@ class IssueQueueService(BaseNotifier):
             asyncio.create_task(self.startup_resume())
 
     # ------------------------------------------------------------------
-    # Queue operations — shared between MCP and REST
+    # Queue operations -- shared between MCP and REST
     # ------------------------------------------------------------------
 
     async def add_to_queue(
@@ -358,13 +383,8 @@ class IssueQueueService(BaseNotifier):
     ) -> dict:
         """Add an issue to the FIFO queue.
 
-        Validates that the issue is in NEW or ACCEPTED status.
-        Registers a ``QueueEntry`` synchronously so it exists when
-        the response reaches the caller.  Emits a
-        ``queue_entry_created`` event for other listeners.
-
-        Returns ``{id, project_id, status}`` on success.
-        Raises ``AppError`` on validation failure.
+        Raises ``AppError`` if the issue is already in the queue
+        (has a PENDING or RUNNING QueueEntry).
         """
         from app.utils.datetime import iso_now
 
@@ -375,7 +395,7 @@ class IssueQueueService(BaseNotifier):
             raise AppError(str(e))
 
         # Register synchronously so QueueEntry exists when response returns.
-        # No status validation — any issue can be queued.
+        # No status validation -- any issue can be queued.
         await self.register(issue_id, project_id)
 
         await event_service.emit({
@@ -401,9 +421,8 @@ class IssueQueueService(BaseNotifier):
     ) -> dict:
         """Remove an issue from the FIFO queue.
 
-        Removes PENDING entries by marking them DONE.
-        When ``force=True``, also handles RUNNING entries by killing
-        the terminal and marking DONE.
+        Hard-deletes the QueueEntry record. When ``force=True``, also
+        kills the terminal for RUNNING entries before deleting.
         Emits a ``queue_entry_removed`` event.
 
         Returns ``{id, project_id, status}`` on success.
@@ -418,35 +437,44 @@ class IssueQueueService(BaseNotifier):
         except AppError as e:
             raise AppError(str(e))
 
-        # Check queue membership via QueueEntry
-        pending_entry = await self.get_pending_entry(issue_id)
-        if pending_entry is not None:
-            await self.mark_done(issue_id)
-        else:
-            async with async_session() as s:
-                running = await self._find_running_entry(s, issue_id)
-            if running is not None:
-                if not force:
-                    raise AppError(
-                        f"Issue {issue_id} is currently RUNNING. "
-                        f"Use force=true to stop and remove it.",
-                    )
-                # Kill the terminal and mark as done
+        # Delete any active QueueEntry (PENDING or RUNNING)
+        async with async_session() as s:
+            result = await s.execute(
+                select(QueueEntry).where(
+                    QueueEntry.issue_id == issue_id,
+                    QueueEntry.status.in_([
+                        QueueEntryStatus.PENDING,
+                        QueueEntryStatus.RUNNING,
+                    ]),
+                ).limit(1)
+            )
+            entry = result.scalar_one_or_none()
+
+            if entry is None:
+                raise AppError(
+                    f"Issue {issue_id} is not in the queue",
+                )
+
+            if entry.status == QueueEntryStatus.RUNNING and not force:
+                raise AppError(
+                    f"Issue {issue_id} is currently RUNNING. "
+                    f"Use force=true to stop and remove it.",
+                )
+
+            # Kill terminal only if entry is actually RUNNING
+            if force and entry.status == QueueEntryStatus.RUNNING:
                 from app.services.terminal_service import terminal_service
                 active_terms = terminal_service.list_active(
                     project_id=project_id, issue_id=issue_id,
                 )
                 for term in active_terms:
                     terminal_service.kill(term["id"])
-                await self.mark_done(issue_id)
-                logger.info(
-                    "Force-removed RUNNING issue %s from queue", issue_id,
-                )
-            else:
-                raise AppError(
-                    f"Issue {issue_id} is not in the queue "
-                    f"(no pending or running QueueEntry)",
-                )
+
+            await s.delete(entry)
+            await s.commit()
+            logger.info(
+                "QueueEntry %s deleted for issue %s", entry.id, issue_id,
+            )
 
         await event_service.emit({
             "type": "queue_entry_removed",
@@ -508,7 +536,7 @@ class IssueQueueService(BaseNotifier):
     async def _count_active_running(self, project_id: str) -> int:
         """Count QueueEntry in RUNNING state for this project.
 
-        Does NOT look at IssueStatus — the queue is status-independent.
+        Does NOT look at IssueStatus -- the queue is status-independent.
         """
         async with async_session() as session:
             result = await session.execute(
@@ -543,7 +571,7 @@ class IssueQueueService(BaseNotifier):
             asyncio.create_task(self._on_issue_finished(project_id, issue_id))
 
     async def _on_issue_finished(self, project_id: str, issue_id: str) -> None:
-        """Issue FINISHED → find RUNNING QueueEntry → mark DONE → dequeue next."""
+        """Issue FINISHED -&gt; find RUNNING QueueEntry -&gt; mark DONE -&gt; dequeue next."""
         try:
             done = await self.mark_done(issue_id)
             if done is None:
@@ -560,14 +588,13 @@ class IssueQueueService(BaseNotifier):
     async def _on_issue_queued(self, project_id: str, issue_id: str) -> None:
         """Handle a newly queued issue: ensure entry exists + maybe auto-start.
 
-        Registration is idempotent — skips if entry already exists
-        (e.g., from synchronous register() in add_to_queue).
+        Registration is idempotent via ``skip_if_exists=True`` -- silently
+        returns existing entry if already registered (e.g., from synchronous
+        register() in add_to_queue).
         Auto-starts if no RUNNING entry exists for this project.
         """
         try:
-            existing = await self.get_pending_entry(issue_id)
-            if existing is None:
-                await self.register(issue_id, project_id)
+            await self.register(issue_id, project_id, skip_if_exists=True)
             if self._enabled:
                 await self._maybe_auto_start_first(project_id, issue_id)
         except Exception:
@@ -576,11 +603,7 @@ class IssueQueueService(BaseNotifier):
             )
 
     async def _dequeue_and_run(self, project_id: str) -> None:
-        """Find the next PENDING QueueEntry and start the issue.
-
-        Does NOT modify IssueStatus. Tracks state via QueueEntry (RUNNING).
-        Saves the terminal_id from run_issue() for liveness checks.
-        """
+        """Find the next PENDING QueueEntry and start the issue. Does NOT modify IssueStatus. Tracks state via QueueEntry (RUNNING). Saves the terminal_id from run_issue() for liveness checks."""
         lock = self._dequeue_locks.setdefault(project_id, asyncio.Lock())
         async with lock:
             next_entry = None
@@ -588,7 +611,7 @@ class IssueQueueService(BaseNotifier):
                 next_entry = await self.get_next_pending(project_id)
                 if next_entry is None:
                     logger.debug(
-                        "No pending queue entries for project %s — nothing to dequeue",
+                        "No pending queue entries for project %s -- nothing to dequeue",
                         project_id,
                     )
                     return
@@ -621,7 +644,7 @@ class IssueQueueService(BaseNotifier):
                     terminal_id = result.get("term_id", "")
                     await self.mark_running(next_entry.issue_id, terminal_id)
                     logger.info(
-                        "Started queued issue %s — terminal %s",
+                        "Started queued issue %s -- terminal %s",
                         next_entry.issue_id, terminal_id,
                     )
             except Exception:
@@ -638,12 +661,7 @@ class IssueQueueService(BaseNotifier):
     async def _maybe_auto_start_first(
         self, project_id: str, issue_id: str,
     ) -> None:
-        """Auto-start the first queued issue if no issues are currently running.
-
-        This handles the case where the queue was empty and the first
-        issue is being added — there's no FINISHED event to trigger
-        dequeue, so we start immediately.
-        """
+        """Auto-start the first queued issue if no issues are currently running. When queue was empty and first issue is added, start it immediately since no FINISHED event will trigger dequeue."""
         try:
             async with async_session() as session:
                 issue_service = IssueService(session)
@@ -677,7 +695,7 @@ class IssueQueueService(BaseNotifier):
             )
 
 
-# ── Standalone helpers (fallback when IssueQueueService is None) ──────────
+# -- Standalone helpers (fallback when IssueQueueService is None) ----------
 
 
 async def _queue_add_direct(
@@ -687,7 +705,7 @@ async def _queue_add_direct(
 
     Fallback used when issue_queue_service_ref is None (IssueQueueService
     was not initialized during startup). Creates the QueueEntry directly
-    and emits the event. No status validation — any issue can be queued.
+    and emits the event. No status validation -- any issue can be queued.
 
     Returns {id, project_id, status} on success.
     """
@@ -698,6 +716,24 @@ async def _queue_add_direct(
         issue = await svc.get_for_project(issue_id, project_id)
     except AppError as e:
         raise AppError(str(e))
+
+    # Check for existing active entry (duplicate prevention)
+    existing = await session.execute(
+        select(QueueEntry)
+        .where(
+            QueueEntry.issue_id == issue_id,
+            QueueEntry.status.in_([
+                QueueEntryStatus.PENDING,
+                QueueEntryStatus.RUNNING,
+            ]),
+        )
+        .limit(1)
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise AppError(
+            f"Issue {issue_id} is already in the queue "
+            f"(pending or running)",
+        )
 
     # Create QueueEntry directly (same logic as IssueQueueService.register())
     result = await session.execute(
@@ -742,10 +778,8 @@ async def _queue_remove_direct(
 ) -> dict:
     """Remove an issue from the FIFO queue without requiring IssueQueueService.
 
-    Fallback used when issue_queue_service_ref is None (IssueQueueService
-    was not initialized during startup). Looks up the pending QueueEntry,
-    marks it as DONE, and emits the event. When ``force=True``, also
-    handles RUNNING entries by killing the terminal.
+    Fallback used when issue_queue_service_ref is None. Hard-deletes the
+    QueueEntry record. When ``force=True``, also kills the terminal.
 
     Returns {id, project_id, status} on success.
     Raises AppError if the issue has no queue entry or is RUNNING without force.
@@ -758,51 +792,40 @@ async def _queue_remove_direct(
     except AppError as e:
         raise AppError(str(e))
 
-    # Find the pending QueueEntry first
+    # Find and delete any active QueueEntry (PENDING or RUNNING)
     result = await session.execute(
-        select(QueueEntry)
-        .where(
+        select(QueueEntry).where(
             QueueEntry.issue_id == issue_id,
-            QueueEntry.status == QueueEntryStatus.PENDING,
-        )
-        .order_by(QueueEntry.order.asc())
-        .limit(1)
+            QueueEntry.status.in_([
+                QueueEntryStatus.PENDING,
+                QueueEntryStatus.RUNNING,
+            ]),
+        ).limit(1)
     )
     entry = result.scalar_one_or_none()
 
     if entry is None:
-        # Check if RUNNING
-        result = await session.execute(
-            select(QueueEntry)
-            .where(
-                QueueEntry.issue_id == issue_id,
-                QueueEntry.status == QueueEntryStatus.RUNNING,
-            )
-            .limit(1)
+        raise AppError(
+            f"Issue {issue_id} is not in the queue",
         )
-        running_entry = result.scalar_one_or_none()
-        if running_entry is not None:
-            if not force:
-                raise AppError(
-                    f"Issue {issue_id} is currently RUNNING. "
-                    f"Use force=true to stop and remove it.",
-                )
-            from app.services.terminal_service import terminal_service
-            active_terms = terminal_service.list_active(
-                project_id=project_id, issue_id=issue_id,
-            )
-            for term in active_terms:
-                terminal_service.kill(term["id"])
-            running_entry.status = QueueEntryStatus.DONE
-            await session.commit()
-        else:
-            raise AppError(
-                f"Issue {issue_id} is not in the queue (no pending or running QueueEntry)",
-            )
-    else:
-        # Mark as DONE
-        entry.status = QueueEntryStatus.DONE
-        await session.commit()
+
+    if entry.status == QueueEntryStatus.RUNNING and not force:
+        raise AppError(
+            f"Issue {issue_id} is currently RUNNING. "
+            f"Use force=true to stop and remove it.",
+        )
+
+    # Kill terminal only if entry is actually RUNNING
+    if force and entry.status == QueueEntryStatus.RUNNING:
+        from app.services.terminal_service import terminal_service
+        active_terms = terminal_service.list_active(
+            project_id=project_id, issue_id=issue_id,
+        )
+        for term in active_terms:
+            terminal_service.kill(term["id"])
+
+    await session.delete(entry)
+    await session.commit()
 
     # Emit event for other listeners
     await event_service.emit({

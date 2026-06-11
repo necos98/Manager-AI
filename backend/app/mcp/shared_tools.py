@@ -1666,9 +1666,9 @@ async def queue_list(session: AsyncSession, project_id: str) -> dict:
             })
         return result_items
 
-    pending = [e for e in entries if e["status"] == "pending"]
-    running = [e for e in entries if e["status"] == "running"]
-    stalled = [e for e in entries if e["status"] == "stalled"]
+    pending = [e for e in entries if e["status"] == "PENDING"]
+    running = [e for e in entries if e["status"] == "RUNNING"]
+    stalled = [e for e in entries if e["status"] == "STALLED"]
 
     return {
         "queued": await _enrich(pending),
@@ -1714,7 +1714,7 @@ async def queue_position(session: AsyncSession, project_id: str, issue_id: str) 
     entries = await issue_queue_service_ref.list_queue(project_id)
 
     # Filter to pending entries only
-    pending = [e for e in entries if e["status"] == "pending"]
+    pending = [e for e in entries if e["status"] == "PENDING"]
 
     for idx, entry in enumerate(pending):
         if entry["issue_id"] == issue_id:

@@ -346,7 +346,7 @@ async def get_queue_position(
     entries = await registry.list_queue(project_id)
 
     # Filter to pending entries only for position calculation
-    pending = [e for e in entries if e["status"] == "pending"]
+    pending = [e for e in entries if e["status"] == "PENDING"]
 
     for idx, entry in enumerate(pending):
         if entry["issue_id"] == issue_id:
@@ -354,17 +354,17 @@ async def get_queue_position(
                 "position": idx + 1,
                 "issue_id": issue_id,
                 "in_queue": True,
-                "status": "pending",
+                "status": "PENDING",
             }
 
     # Check running entries
-    running = [e for e in entries if e["status"] == "running" and e["issue_id"] == issue_id]
+    running = [e for e in entries if e["status"] == "RUNNING" and e["issue_id"] == issue_id]
     if running:
         return {
             "position": None,
             "issue_id": issue_id,
             "in_queue": False,
-            "status": "running",
+            "status": "RUNNING",
         }
 
     # Check if there's any QueueEntry at all (done/failed/stalled)
