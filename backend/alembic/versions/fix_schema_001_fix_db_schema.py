@@ -29,19 +29,33 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _get_columns(conn, table_name):
+    """Return set of column names for a table (SQLite-compatible)."""
+    result = conn.execute(sa.text(f"PRAGMA table_info('{table_name}')"))
+    return {row[1] for row in result}
+
+
 def upgrade() -> None:
+    conn = op.get_bind()
+
     # Add rejection_count to pipeline_runs (missing from chain)
-    with op.batch_alter_table("pipeline_runs", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column("rejection_count", sa.Integer(), nullable=False, server_default=sa.text("0"))
-        )
+    existing = _get_columns(conn, "pipeline_runs")
+    if "rejection_count" not in existing:
+        with op.batch_alter_table("pipeline_runs", schema=None) as batch_op:
+            batch_op.add_column(
+                sa.Column("rejection_count", sa.Integer(), nullable=False, server_default=sa.text("0"))
+            )
 
     # Add intent to agents and drop system_prompt (both missing from chain)
-    with op.batch_alter_table("agents", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column("intent", sa.Text(), nullable=False, server_default="")
-        )
-        batch_op.drop_column("system_prompt")
+    existing = _get_columns(conn, "agents")
+    if "intent" not in existing or "system_prompt" in existing:
+        with op.batch_alter_table("agents", schema=None) as batch_op:
+            if "intent" not in existing:
+                batch_op.add_column(
+                    sa.Column("intent", sa.Text(), nullable=False, server_default="")
+                )
+            if "system_prompt" in existing:
+                batch_op.drop_column("system_prompt")
 
 
 def downgrade() -> None:
