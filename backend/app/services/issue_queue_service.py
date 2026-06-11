@@ -267,14 +267,8 @@ class IssueQueueService(BaseNotifier):
                 return
 
             for project_id in project_ids:
-                async with async_session() as sess:
-                    issue_service = IssueService(sess)
-                    running = await issue_service.list_by_project(
-                        project_id,
-                        status=IssueStatus.REASONING,
-                    )
-
-                if running:
+                active_reasoning = await self._count_active_reasoning(project_id)
+                if active_reasoning > 0:
                     logger.info(
                         "startup_resume: project %s has a running issue — skipping",
                         project_id,
@@ -305,8 +299,10 @@ class IssueQueueService(BaseNotifier):
                 svc = SettingsService(session)
                 val = await svc.get("queue_auto_process")
                 self._enabled = val.lower() == "true"
+        except KeyError:
+            self._enabled = False
         except Exception:
-            logger.warning(
+            logger.exception(
                 "Failed to load queue_auto_process setting; defaulting to disabled",
             )
             self._enabled = False
@@ -368,9 +364,8 @@ class IssueQueueService(BaseNotifier):
             "timestamp": iso_now(),
         })
 
-        # Auto-start if enabled (runs in background, not via event handler)
-        if self._enabled:
-            asyncio.create_task(self._maybe_auto_start_first(project_id, issue_id))
+        # Auto-start is handled by the event-driven _on_issue_queued path
+        # (triggered by the queue_entry_created event emitted above)
 
         return {
             "id": issue_id,
@@ -464,6 +459,38 @@ class IssueQueueService(BaseNotifier):
             .limit(1)
         )
         return result.scalar_one_or_none()
+
+    async def _count_active_reasoning(self, project_id: str) -> int:
+        """Count REASONING issues that have an active QueueEntry.
+
+        An active QueueEntry is one in PENDING or DISPATCHING state.
+        REASONING issues whose QueueEntry is FAILED or DISPATCHED are
+        considered "ghosts" — ``run_issue`` failed after marking the
+        entry, leaving the issue stuck. They should not block the queue.
+        """
+        async with async_session() as session:
+            issue_service = IssueService(session)
+            running = await issue_service.list_by_project(
+                project_id, status=IssueStatus.REASONING,
+            )
+            if not running:
+                return 0
+            active = 0
+            for issue in running:
+                result = await session.execute(
+                    select(QueueEntry)
+                    .where(
+                        QueueEntry.issue_id == issue.id,
+                        QueueEntry.status.in_([
+                            QueueEntryStatus.PENDING,
+                            QueueEntryStatus.DISPATCHING,
+                        ]),
+                    )
+                    .limit(1)
+                )
+                if result.scalar_one_or_none():
+                    active += 1
+            return active
 
     # ------------------------------------------------------------------
     # Event handling
@@ -647,13 +674,9 @@ class IssueQueueService(BaseNotifier):
                 if pending_count < 1:
                     return
 
-                # Check if any issue is currently running for this project
-                running = await issue_service.list_by_project(
-                    project_id,
-                    status=IssueStatus.REASONING,
-                )
-
-                if not running:
+                # Check if any issue is actively running for this project
+                active_reasoning = await self._count_active_reasoning(project_id)
+                if active_reasoning == 0:
                     logger.info(
                         "Auto-starting first queued issue %s for project %s",
                         issue_id, project_id,
@@ -721,6 +744,11 @@ async def _queue_add_direct(
         "issue_name": issue.name or "",
         "timestamp": iso_now(),
     })
+
+    # If the queue service is now available and auto-process is enabled,
+    # attempt to auto-start the first pending issue
+    if issue_queue_service_ref and issue_queue_service_ref._enabled:
+        await issue_queue_service_ref._maybe_auto_start_first(project_id, issue_id)
 
     return {
         "id": issue_id,

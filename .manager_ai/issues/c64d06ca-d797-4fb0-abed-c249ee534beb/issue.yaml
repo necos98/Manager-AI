@@ -1,0 +1,43 @@
+schema_version: 1
+id: c64d06ca-d797-4fb0-abed-c249ee534beb
+project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
+name: Fix auto-queue not starting issues
+status: Finished
+priority: 3
+category: null
+created_at: '2026-06-10T21:34:44.174793+00:00'
+updated_at: '2026-06-10T21:51:23.630131+00:00'
+finished_at: '2026-06-10T21:51:23.630145+00:00'
+deleted_at: null
+tasks:
+- id: a6cb8724-9707-4c56-9ff8-e8dfa9a0fbf4
+  name: Fix _queue_add_direct to support auto-start
+  status: Completed
+  order: 0
+  created_at: '2026-06-10T21:48:20+00:00'
+  updated_at: '2026-06-10T21:49:12+00:00'
+- id: 641daedd-6fb7-41d3-8572-593121961ed5
+  name: Tighten load_state() error handling
+  status: Completed
+  order: 1
+  created_at: '2026-06-10T21:48:20+00:00'
+  updated_at: '2026-06-10T21:49:13+00:00'
+- id: f3c54883-05ad-4639-98f2-f24bf3dcf59f
+  name: Add ghost REASONING recovery via _count_active_reasoning
+  status: Completed
+  order: 2
+  created_at: '2026-06-10T21:48:20+00:00'
+  updated_at: '2026-06-10T21:49:13+00:00'
+- id: 327da74d-f1bd-4140-b70e-7e23a8e06e76
+  name: Remove redundant create_task from add_to_queue()
+  status: Completed
+  order: 3
+  created_at: '2026-06-10T21:48:20+00:00'
+  updated_at: '2026-06-10T21:49:18+00:00'
+- id: e70d0397-3b4b-4259-aa06-730869d00aa8
+  name: Add/update tests and verify all pass
+  status: Completed
+  order: 4
+  created_at: '2026-06-10T21:48:20+00:00'
+  updated_at: '2026-06-10T21:51:17+00:00'
+relations: []

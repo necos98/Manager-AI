@@ -780,7 +780,7 @@ class TestMaybeAutoStartFirst:
     async def test_skips_when_issue_running(
         self, queue_service, project, db_session,
     ):
-        """Does NOT auto-start when a REASONING issue exists for project."""
+        """Does NOT auto-start when a REASONING issue with active QueueEntry exists."""
         await queue_service.register("iss-1", project.id)
         # Create and start an issue to make it "running"
         from app.services.issue_service import IssueService
@@ -791,7 +791,9 @@ class TestMaybeAutoStartFirst:
             priority=1,
         )
         await isvc.create_spec(issue.id, project.id, "# Spec")
-        # Now it's REASONING
+        # Register QueueEntry + mark DISPATCHING to simulate an active run
+        await queue_service.register(issue.id, project.id)
+        await queue_service.mark_dispatching(issue.id)
 
         with patch.object(queue_service, "_dequeue_and_run",
                           new_callable=AsyncMock) as mock_deq:
@@ -1003,3 +1005,212 @@ class TestMultiProjectFIFO:
         entries = await queue_service.list_queue(project.id)
         for i, e in enumerate(entries, start=1):
             assert e["order"] == i
+
+
+# ==============================================================================
+# TASK 8: Test _queue_add_direct auto-start support
+# ==============================================================================
+
+
+class TestQueueAddDirect:
+    """_queue_add_direct() auto-start when service becomes available."""
+
+    @pytest.mark.asyncio
+    async def test_add_direct_auto_starts_when_service_available(
+        self, project, db_session,
+    ):
+        """_queue_add_direct calls _maybe_auto_start_first when ref._enabled."""
+        from app.services.issue_service import IssueService
+        isvc = IssueService(db_session)
+        issue = await isvc.create(
+            project_id=project.id,
+            description="Queue test issue",
+            priority=1,
+        )
+
+        mock_svc = AsyncMock()
+        mock_svc._enabled = True
+        mock_svc._maybe_auto_start_first = AsyncMock()
+
+        with (
+            patch("app.services.issue_queue_service.issue_queue_service_ref", mock_svc),
+        ):
+            from app.services.issue_queue_service import _queue_add_direct
+            result = await _queue_add_direct(db_session, project.id, issue.id)
+
+        assert result["id"] == issue.id
+        mock_svc._maybe_auto_start_first.assert_awaited_once_with(project.id, issue.id)
+
+    @pytest.mark.asyncio
+    async def test_add_direct_no_auto_start_when_ref_none(
+        self, project, db_session,
+    ):
+        """_queue_add_direct skips auto-start when ref is None."""
+        from app.services.issue_service import IssueService
+        isvc = IssueService(db_session)
+        issue = await isvc.create(
+            project_id=project.id,
+            description="Queue test issue",
+            priority=1,
+        )
+
+        with (
+            patch("app.services.issue_queue_service.issue_queue_service_ref", None),
+        ):
+            from app.services.issue_queue_service import _queue_add_direct
+            result = await _queue_add_direct(db_session, project.id, issue.id)
+
+        assert result["id"] == issue.id
+
+    @pytest.mark.asyncio
+    async def test_add_direct_no_auto_start_when_disabled(
+        self, project, db_session,
+    ):
+        """_queue_add_direct skips auto-start when ref exists but _enabled=False."""
+        from app.services.issue_service import IssueService
+        isvc = IssueService(db_session)
+        issue = await isvc.create(
+            project_id=project.id,
+            description="Queue test issue",
+            priority=1,
+        )
+
+        mock_svc = AsyncMock()
+        mock_svc._enabled = False
+
+        with (
+            patch("app.services.issue_queue_service.issue_queue_service_ref", mock_svc),
+        ):
+            from app.services.issue_queue_service import _queue_add_direct
+            result = await _queue_add_direct(db_session, project.id, issue.id)
+
+        assert result["id"] == issue.id
+        mock_svc._maybe_auto_start_first.assert_not_called()
+
+
+# ==============================================================================
+# TASK 9: Test ghost REASONING recovery
+# ==============================================================================
+
+
+class TestGhostReasoning:
+    """Ghost REASONING issues (FAILED QueueEntry) don't block queue."""
+
+    @pytest.mark.asyncio
+    async def test_ghost_does_not_block_auto_start(
+        self, queue_service, project, db_session,
+    ):
+        """A REASONING issue with FAILED QueueEntry does not block auto-start."""
+        from app.services.issue_service import IssueService
+        isvc = IssueService(db_session)
+
+        # Create ghost issue: REASONING status + FAILED QueueEntry
+        ghost_issue = await isvc.create(
+            project_id=project.id,
+            description="Ghost issue",
+            priority=1,
+        )
+        await isvc.create_spec(ghost_issue.id, project.id, "# Spec")
+        await queue_service.register(ghost_issue.id, project.id)
+        await queue_service.mark_dispatching(ghost_issue.id)
+        await queue_service.mark_failed(ghost_issue.id, "PTY creation failed")
+
+        # Create a real pending issue
+        live_issue = await isvc.create(
+            project_id=project.id,
+            description="Live issue",
+            priority=2,
+        )
+        await queue_service.register(live_issue.id, project.id)
+
+        with patch.object(queue_service, "_dequeue_and_run",
+                          new_callable=AsyncMock) as mock_deq:
+            await queue_service._maybe_auto_start_first(project.id, live_issue.id)
+
+        mock_deq.assert_awaited_once_with(project.id)
+
+    @pytest.mark.asyncio
+    async def test_active_reasoning_still_blocks(
+        self, queue_service, project, db_session,
+    ):
+        """A REASONING issue with an active DISPATCHING QueueEntry blocks auto-start."""
+        from app.services.issue_service import IssueService
+        isvc = IssueService(db_session)
+
+        # Create running issue: REASONING status + DISPATCHING QueueEntry
+        running_issue = await isvc.create(
+            project_id=project.id,
+            description="Running issue",
+            priority=1,
+        )
+        await isvc.create_spec(running_issue.id, project.id, "# Spec")
+        await queue_service.register(running_issue.id, project.id)
+        await queue_service.mark_dispatching(running_issue.id)
+
+        # Create a pending issue
+        pending_issue = await isvc.create(
+            project_id=project.id,
+            description="Pending issue",
+            priority=2,
+        )
+        await queue_service.register(pending_issue.id, project.id)
+
+        with patch.object(queue_service, "_dequeue_and_run",
+                          new_callable=AsyncMock) as mock_deq:
+            await queue_service._maybe_auto_start_first(project.id, pending_issue.id)
+
+        mock_deq.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_ghost_startup_resume(
+        self, queue_service, project, db_session,
+    ):
+        """startup_resume() skips ghost REASONING and auto-starts pending."""
+        from app.services.issue_service import IssueService
+        isvc = IssueService(db_session)
+
+        # Create ghost
+        ghost = await isvc.create(
+            project_id=project.id,
+            description="Ghost",
+            priority=1,
+        )
+        await isvc.create_spec(ghost.id, project.id, "# Spec")
+        await queue_service.register(ghost.id, project.id)
+        await queue_service.mark_dispatching(ghost.id)
+        await queue_service.mark_failed(ghost.id, "crashed")
+
+        # Pending entry
+        await queue_service.register("iss-live", project.id)
+
+        with patch.object(queue_service, "_dequeue_and_run",
+                          new_callable=AsyncMock) as mock_deq:
+            await queue_service.startup_resume()
+            await asyncio.sleep(0)
+
+        mock_deq.assert_awaited_once_with(project.id)
+
+
+# ==============================================================================
+# TASK 10: Test load_state error handling
+# ==============================================================================
+
+
+class TestLoadStateErrorHandling:
+    """load_state() handles KeyError vs Exception differently."""
+
+    @pytest.mark.asyncio
+    async def test_load_state_other_exception_logged(
+        self, queue_service, db_session,
+    ):
+        """Non-KeyError exception logs traceback and defaults to False."""
+        svc = queue_service
+        with (
+            patch("app.services.issue_queue_service.async_session",
+                  side_effect=RuntimeError("DB connection failed")),
+            patch("app.services.issue_queue_service.logger") as mock_logger,
+        ):
+            await svc.load_state()
+
+        assert svc._enabled is False
+        mock_logger.exception.assert_called_once()
