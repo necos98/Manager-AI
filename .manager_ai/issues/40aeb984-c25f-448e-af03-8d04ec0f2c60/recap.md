@@ -1,0 +1,1 @@
+Test issue cycled through all states: New → Reasoning → Planned → Accepted → Finished. Validated that spec writing, plan creation, task tracking, auto-accept, and completion all work correctly via MCP tools. No code changes needed.

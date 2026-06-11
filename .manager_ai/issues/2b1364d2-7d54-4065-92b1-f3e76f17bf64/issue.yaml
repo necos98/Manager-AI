@@ -1,13 +1,25 @@
 schema_version: 1
 id: 2b1364d2-7d54-4065-92b1-f3e76f17bf64
 project_id: 1baae1c7-22f1-4091-abec-b49da70cf46c
-name: null
-status: New
+name: Test issue — mark as completed
+status: Finished
 priority: 3
 category: null
 created_at: '2026-06-10T21:32:12.139930+00:00'
-updated_at: '2026-06-10T21:32:12.139930+00:00'
-finished_at: null
+updated_at: '2026-06-11T08:43:48.217680+00:00'
+finished_at: '2026-06-11T08:43:48.217695+00:00'
 deleted_at: null
-tasks: []
+tasks:
+- id: b6fc3baa-4532-4883-ab0a-95c6cb380b5a
+  name: Accept the issue (Planned → Accepted)
+  status: Completed
+  order: 0
+  created_at: '2026-06-11T08:43:27+00:00'
+  updated_at: '2026-06-11T08:43:39+00:00'
+- id: 45a2bb98-8f30-42bc-a50a-5d4212f9aad5
+  name: Complete the issue with recap (Accepted → Finished)
+  status: Completed
+  order: 1
+  created_at: '2026-06-11T08:43:27+00:00'
+  updated_at: '2026-06-11T08:43:45+00:00'
 relations: []
